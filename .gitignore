@@ -1,12 +1,8 @@
-# Python 编译缓存
 __pycache__/
 module/__pycache__/
 
-# 用户数据
-data/user.json.enc
+data/*
 
-# 日志文件
-logs/*
+assets/fonts/*
 
-# 配置文件
-config/bot_config.json
+config.json
