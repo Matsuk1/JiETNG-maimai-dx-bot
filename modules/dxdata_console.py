@@ -14,6 +14,7 @@ def load_dxdata(url, save_to: str = None, split=True):
         if save_to:
             with open(save_to, "w", encoding="utf-8") as file:
                 json.dump(data, file, ensure_ascii=False, indent=2)
+            print(f"文件已成功保存为 {save_to}")
 
         return data
 

@@ -1,7 +1,7 @@
 import pymysql
 from config_loader import HOST, USER, PASSWORD, DATABASE, MAIMAI_VERSION, songs, read_dxdata
 
-def get_single_ra(level, score) :
+def get_single_ra(level, score, ap_clear=False) :
     if score >= 100.5000 :
         ra_kake = 0.224
     elif score >= 100.4999 :
@@ -54,7 +54,20 @@ def get_single_ra(level, score) :
     else :
         ra = int(level * 100.5 * ra_kake)
 
+    if ap_clear:
+        ra += 1
+
     return ra
+
+def get_ideal_score(score: float) -> float:
+    if 99.0000 <= score < 99.5000:
+        return 99.5000
+    elif 99.5000 <= score < 100.0000:
+        return 100.0000
+    elif 100.0000 <= score < 100.5000:
+        return 100.5000
+    else:
+        return score
 
 def read_record(user_id, recent=False):
     table = "recent_records" if recent else "best_records"
@@ -130,6 +143,25 @@ def write_record(user_id, record_json, recent=False, replace=True):
     finally:
         conn.close()
 
+def delete_record(user_id, recent=False):
+    table = "recent_records" if recent else "best_records"
+    print(f"[*] Deleting from DB table `{table}` for user_id = {user_id}\n")
+
+    conn = pymysql.connect(
+        host=HOST,
+        user=USER,
+        password=PASSWORD,
+        database=DATABASE,
+        charset="utf8mb4"
+    )
+
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(f"DELETE FROM {table} WHERE user_id = %s", (user_id,))
+        conn.commit()
+    finally:
+        conn.close()
+
 def filter_highest_achievement(data: list) -> list:
     result = {}
     for entry in data:
@@ -149,16 +181,17 @@ def get_detailed_info(song_record):
                     if record['difficulty'] == sheet['difficulty']:
                         found = True
                         record['internalLevelValue'] = sheet['internalLevelValue']
-                        record['version'] = "BEST-15" if song['version'] == MAIMAI_VERSION else "BEST-35"
-                        record['version_title'] = song['version']
-                        record['ra'] = get_single_ra(float(sheet['internalLevelValue']), float(record['score'][:-1]))
+                        record['new_song'] = True if song['version'] in MAIMAI_VERSION else False
+                        record['version'] = song['version']
+                        ap_clear = "ap" in record['combo-icon']
+                        record['ra'] = get_single_ra(float(sheet['internalLevelValue']), float(record['score'][:-1]), ap_clear)
                         record['id'] = sheet['internalId'] if 'internalId' in sheet else -1
                         record['url'] = f"https://shama.dxrating.net/images/cover/v2/{song['imageName']}.jpg"
 
         if not found :
             record['internalLevelValue'] = 0
+            record['new_song'] = True
             record['version'] = "UNKNOWN"
-            record['version_title'] = "UNKNOWN"
             record['ra'] = 0
             record['id'] = -1
             record['url'] = "https://maimaidx.jp/maimai-mobile/img/Icon/c22d52b387e3f829.png"

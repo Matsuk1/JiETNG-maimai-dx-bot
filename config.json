@@ -1,0 +1,36 @@
+{
+    "admin_id": [
+        "U0b3989b7f797f4d22d2bd1b89ca530b3",
+        "QQ3922774786"
+    ],
+    "maimai_version": [
+        "PRiSM PLUS",
+        "CiRCLE"
+    ],
+    "domain": "jietng.matsuki.top",
+    "file_path": {
+        "dxdata_list": "./data/dxdata.json",
+        "user_list": "./data/user.json.enc",
+        "notice_file": "./data/notice.json",
+        "fonts_folder": "./assets/fonts/",
+        "logo": "./assets/pics/logo.jpg",
+        "notice_back": "./assets/pics/notice_back.png"
+    },
+    "record_database": {
+        "host": "localhost",
+        "user": "root",
+        "password": "Matsuki+2007",
+        "database": "records"
+    },
+    "urls": {
+        "dxdata": "https://raw.githubusercontent.com/gekichumai/dxrating/refs/heads/main/packages/dxdata/dxdata.json",
+    },
+    "line_channel": {
+        "access_token": "ifgNORl30W37yenQ4wNeTQ9TDq36JXAmV/2XvrDmb5BZxFza9c905x2+ISVA4gcDTgEF3iW6CAZoeANjMwRfj+6jGyYwZvaRkmhL1gCoYzUPmt6guQDOgpPatl9noged12f+O2TXPFdmIb6Nux3ruwdB04t89/1O/w1cDnyilFU=",
+        "secret": "09a568984a6acdcde6f33ad5895b85f1"
+    },
+    "keys": {
+        "user_data": "QSmq55_SqC8N994QlLpGEEMVQOVEt21DYK_CnLzrMvA=",
+        "bind_token": "matsuki+2007_10_10_lzm_garbage_0912",
+    }
+}

@@ -68,7 +68,7 @@ def render_basic_info_image(song_json, cover_img):
         img, song_json, key='type',
         size=(100, 30),
         position=(cover_x + cover_size - 100, cover_y + cover_size - 30),
-        save_dir='./config/icon/kind',
+        save_dir='./assets/icon/kind',
         url_func=lambda value: "https://maimaidx.jp/maimai-mobile/img/music_standard.png" if value == "std" else "https://maimaidx.jp/maimai-mobile/img/music_dx.png",
         verify=False
     )
@@ -221,7 +221,7 @@ def render_song_info_small_img(song_json, cover_img):
         img, song_json, key='type',
         size=(100, 30),
         position=(cover_x + cover_size - 100, cover_y + cover_size - 30),
-        save_dir='./config/icon/kind',
+        save_dir='./assets/icon/kind',
         url_func=lambda value: "https://maimaidx.jp/maimai-mobile/img/music_standard.png" if value == "std" else "https://maimaidx.jp/maimai-mobile/img/music_dx.png",
         verify=False
     )

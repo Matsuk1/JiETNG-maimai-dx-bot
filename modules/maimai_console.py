@@ -1,11 +1,12 @@
 import json
 import requests
 from lxml import etree
+from record_console import get_detailed_info
 
 def fetch_dom(session: requests.Session, url: str) -> etree._Element:
     resp = session.get(url)
     html = resp.text
-    if "エラー" in html:
+    if "再度ログインしてください" in html:
         return None
     return etree.HTML(html)
 
@@ -46,6 +47,9 @@ def get_maimai_records(session: requests.Session):
     for page_num in range(5):
         url = f"https://maimaidx.jp/maimai-mobile/record/musicGenre/search/?genre=99&diff={page_num}"
         dom = fetch_dom(session, url)
+        if dom is None:
+            return []
+
         music_blocks = dom.xpath('//div[contains(@class, "w_450")]')
 
         for block in music_blocks:
@@ -168,6 +172,9 @@ def get_recent_records(session: requests.Session):
 
     url = "https://maimaidx.jp/maimai-mobile/record/"
     dom = fetch_dom(session, url)
+    if dom is None:
+        return []
+
     music_blocks = dom.xpath('//div[contains(@class, "p_10") and contains(@class, "t_l")]')
 
     if music_blocks:

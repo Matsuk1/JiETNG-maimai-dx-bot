@@ -52,7 +52,7 @@ def format_playlog_item(item):
 
     name = item['music']['name']
     difficulty = difficulties[item['difficulty']]
-    score = f"{item['achievement'] / 10000}%"
+    score = f"{(item['achievement'] / 10000):.4f}%"
     dx_score = f"{item['deluxe_score']} / {item['total_combo'] * 3}"
 
     # kind: 根据 is_deluxe 判断
@@ -116,3 +116,5 @@ def get_fakemai_records(token):
         formated_logs.append(format_playlog_item(item))
 
     return formated_logs
+
+print(get_fakemai_records("v2.local.H76zhsLgh62aMStgDVg3_6fOaVTY93YEodg2CbeQNfrw3tF1uh7IA59CzHunv_ErC9uPhJ0Wa4bHR3qBm1D9QSKE0fooUn1novveOSqsYyAPj-9502xkRb9Txg5k92i3_4oWJ8fY5bEbNblsDaN86V7w4afESOqruMyuw71f17A31W47R9XM9jLlS904YMtapLcjf4rtub8RgLHTskMFj1Hr7mqVELCq062EfXK7D9-yuPA-vnUoDq_KnhImixHem-u88iHwozpFVsUL3qS71tKUDkhmp8bUi4uoGJcQ8ztNhU1Z9hBygSCl_8hgU27HBVlDIPvN-TGfe-zyWNhr.bnVsbA"))

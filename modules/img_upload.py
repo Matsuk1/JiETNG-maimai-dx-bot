@@ -2,6 +2,33 @@ import requests
 from io import BytesIO
 from PIL import Image
 
+def upload_to_matsuki(img):
+    url = 'https://img.matsuki.top/upload'
+    token = 'matsuki2007'
+
+    # 自动压缩，不放大
+    img = img.copy()
+    img.thumbnail((1720, 1720))
+
+    img_io = BytesIO()
+    img.save(img_io, format='PNG')
+    img_io.seek(0)
+
+    files = {'file': ('image.png', img_io, 'image/png')}
+    headers = {'X-Token': token}
+
+    try:
+        resp = requests.post(url, files=files, headers=headers)
+        if resp.status_code == 200:
+            data = resp.json()
+            if data.get("success"):
+                print("[matsuki] 上传成功：", data["url"])
+                return data["url"]
+        print("[matsuki] 上传失败：", resp.text)
+    except Exception as e:
+        print("[matsuki] 请求异常：", e)
+    return None
+
 def upload_to_uguu(img):
     url = "https://uguu.se/upload.php"
 
@@ -53,6 +80,11 @@ def smart_upload(img):
 
     print("[smart_upload] 切换 0x0 上传")
     url = upload_to_0x0(img)
+    if url:
+        return url
+
+    print("[smart_upload] 切换 matsuki 上传")
+    url = upload_to_matsuki(img)
     if url:
         return url
 

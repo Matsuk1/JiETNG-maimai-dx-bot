@@ -48,7 +48,7 @@ def create_thumbnail(song, thumb_size=(300, 150), padding=15):
         img, song, key='kind',
         size=(40, 12),
         position=(padding + 80 - 40, padding + 80 - 12),
-        save_dir='./config/icon/kind',
+        save_dir='./assets/icon/kind',
         url_func=lambda value: "https://maimaidx.jp/maimai-mobile/img/music_standard.png" if value == "std" else "https://maimaidx.jp/maimai-mobile/img/music_dx.png",
         verify=False
     )
@@ -74,14 +74,14 @@ def create_thumbnail(song, thumb_size=(300, 150), padding=15):
         img, song, key='score-icon',
         size=(65, 30),
         position=(score_x_offset - 60, padding + line_spacing),
-        save_dir='./config/icon/score',
+        save_dir='./assets/icon/score',
         url_func=lambda value: f"https://maimaidx.jp/maimai-mobile/img/music_icon_{value}.png",
         verify=False
     )
 
     # --- 版本标题 + dx-score ---
     draw.text((text_x_offset, padding + line_spacing * 2),
-              song['version_title'].replace(" PLUS", "+").replace("でらっくす", "DX"),
+              song['version'].replace(" PLUS", "+").replace("でらっくす", "DX"),
               fill=text_color, font=font_small)
 
     draw.text((score_x_offset, padding + line_spacing * 2),
@@ -113,7 +113,7 @@ def create_thumbnail(song, thumb_size=(300, 150), padding=15):
                 img, {'star': str(star_num)}, key='star',
                 size=(80, 16),
                 position=(padding + 80, thumb_size[1] - 32),
-                save_dir='./config/icon/dx-star',
+                save_dir='./assets/icon/dx-star',
                 url_func=lambda value: f"https://maimaidx.jp/maimai-mobile/img/music_icon_dxstar_detail_{value}.png",
                 verify=False
             )
@@ -126,7 +126,7 @@ def create_thumbnail(song, thumb_size=(300, 150), padding=15):
         img, song, key='combo-icon',
         size=(40, 45),
         position=(padding - 5, thumb_size[1] - 48),
-        save_dir='./config/icon/combo',
+        save_dir='./assets/icon/combo',
         url_func=lambda value: f"https://maimaidx.jp/maimai-mobile/img/music_icon_{value}.png",
         verify=False
     )
@@ -136,7 +136,7 @@ def create_thumbnail(song, thumb_size=(300, 150), padding=15):
         img, song, key='dx-icon',
         size=(40, 45),
         position=(padding + 40, thumb_size[1] - 48),
-        save_dir='./config/icon/dx',
+        save_dir='./assets/icon/dx',
         url_func=lambda value: f"https://maimaidx.jp/maimai-mobile/img/music_icon_{value}.png",
         verify=False
     )
@@ -243,16 +243,17 @@ def generate_records_picture(up_songs=[], down_songs=[], title="RECORD"):
 def create_small_record(cover, icon, icon_type):
     img_width = 150
     img_height = 150
-    record_img = Image.new("RGBA", (img_width, img_height), (255, 255, 255))
+    record_img = Image.new("RGBA", (img_width, img_height), (255, 255, 255, 255))
     draw = ImageDraw.Draw(record_img)
 
+    # 加载封面图片
     response = requests.get(cover, verify=False)
     cover_img = Image.open(BytesIO(response.content)).resize((150, 150))
     record_img.paste(cover_img, (0, 0))
 
-    if not icon == "back":
+    if icon != "back":
         try:
-            file_path = f"./config/icon/{icon_type}/{icon}.png"
+            file_path = f"./assets/icon/{icon_type}/{icon}.png"
             if not os.path.exists(file_path):
                 print(f"\n\n{file_path}\n\n")
                 response = requests.get(f"https://maimaidx.jp/maimai-mobile/img/music_icon_{icon}.png", verify=False)
@@ -261,14 +262,18 @@ def create_small_record(cover, icon, icon_type):
 
             icon_img = Image.open(file_path)
 
+            # 计算缩放
             aspect_ratio = icon_img.height / icon_img.width
             new_height = int(130 * aspect_ratio)
-
             resized_img = icon_img.resize((130, new_height), Image.LANCZOS)
 
+            # 阴影处理
+            shadow = Image.new("RGBA", record_img.size, (0, 0, 0, 150))  # 半透明黑色遮罩
+            record_img = Image.alpha_composite(record_img.convert("RGBA"), shadow)
+
+            # 粘贴图标
             x_offset = (record_img.width - 130) // 2
             y_offset = (record_img.height - new_height) // 2
-
             record_img.paste(resized_img, (x_offset, y_offset), resized_img.convert("RGBA"))
 
         except Exception as e:
@@ -276,7 +281,7 @@ def create_small_record(cover, icon, icon_type):
 
     return record_img
 
-def generate_plate_image(target_data, img_width=1700, img_height=600, max_per_row=9, margin=20, headers={}):
+def recent_generate_plate_image(target_data, title, img_width=1700, img_height=600, max_per_row=9, margin=20, headers={}):
     level_width = 100
     img_size = 150
     row_height = img_size + margin
@@ -297,8 +302,8 @@ def generate_plate_image(target_data, img_width=1700, img_height=600, max_per_ro
 
     add_ = 15
     for key, value in headers.items() :
-        draw.text((margin + 50, margin + add_), f"{key.upper()}:", fill="black", font=font_huge)
-        draw.text((margin + 350, margin + add_), f"{value['clear']} / {value['all']}", fill="black", font=font_huge)
+        draw.text((margin + 100, margin + add_), f"{key.upper()}:", fill="black", font=font_huge)
+        draw.text((margin + 400, margin + add_), f"{value['clear']} / {value['all']}", fill="black", font=font_huge)
         add_ += 40
 
     y_offset = margin + 30 + 180
@@ -316,6 +321,63 @@ def generate_plate_image(target_data, img_width=1700, img_height=600, max_per_ro
 
         y_offset += row_height  # 每个等级后换行
 
+    footer_text = ["Generated by JiETNG.", "© 2025 Matsuki.", "All rights reserved."]
+    for i, text in enumerate(footer_text):
+        draw.text((margin + 20, total_height - 150 + i * 35), text, fill=(0, 0, 0), font=font_huge)
+
+    logo_img = Image.open(LOGO_PATH).resize((130, 130))
+    final_img.paste(logo_img, (img_width - 180, total_height - 150))
+
+    return final_img
+
+def generate_plate_image(target_data, title, img_width=1700, img_height=600, max_per_row=9, margin=20, headers={}):
+    level_width = 100
+    img_size = 150
+    row_height = img_size + margin
+
+    rows = []
+    rows_num = 0
+    level_list = ["15", "14+", "14", "13+", "13", "12+", "12", "11+", "11", "10+", "10"]
+    for level in level_list:
+        row_imgs = [entry["img"] for entry in target_data if entry["level"] == level]
+        rows_num += math.ceil(len(row_imgs) / max_per_row)
+        if row_imgs:
+            rows.append((level, row_imgs))
+
+    total_height = rows_num * row_height + margin + 170 + 190
+
+    final_img = Image.new("RGB", (img_width, total_height), "white")
+    draw = ImageDraw.Draw(final_img)
+
+    add_ = 15
+    for key, value in headers.items():
+        draw.text((margin + 50, margin + add_), f"{key.upper()}:", fill="black", font=font_huge)
+        draw.text((margin + 350, margin + add_), f"{value['clear']} / {value['all']}", fill="black", font=font_huge)
+        add_ += 40
+
+    # 添加右侧标题
+    title_text_size = draw.textlength(f"{title}の達成表", font=font_huge_huge)
+    title_x = img_width - margin - title_text_size - 30
+    title_y = margin - 25
+    draw.text((title_x, title_y), f"{title}の達成表", fill=(206, 206, 206), font=font_huge_huge)
+
+    # 渲染主体图像内容
+    y_offset = margin + 30 + 180
+    for level, img_list in rows:
+        draw.text((margin, y_offset + img_size // 3), level, fill="black", font=font_for_plate)
+
+        x_offset = level_width + margin
+        for i, img in enumerate(img_list):
+            if i > 0 and i % max_per_row == 0:
+                y_offset += row_height
+                x_offset = level_width + margin
+
+            final_img.paste(img, (x_offset, y_offset))
+            x_offset += img_size + margin
+
+        y_offset += row_height
+
+    # 页脚
     footer_text = ["Generated by JiETNG.", "© 2025 Matsuki.", "All rights reserved."]
     for i, text in enumerate(footer_text):
         draw.text((margin + 20, total_height - 150 + i * 35), text, fill=(0, 0, 0), font=font_huge)
