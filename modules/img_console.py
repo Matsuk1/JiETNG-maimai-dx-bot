@@ -3,18 +3,28 @@ import requests
 from PIL import Image, ImageDraw, ImageFont
 from config_loader import fonts_folder
 
+
+def _load_font(path, size):
+    """加载指定字体，若缺失则回退到 PIL 默认字体。"""
+    try:
+        return ImageFont.truetype(path, size)
+    except OSError:
+        print(f"[img_console] Font resource missing at {path}, fallback to default font.")
+        return ImageFont.load_default()
+
+
 # 字体加载
 font_path = os.path.join(fonts_folder, "mplus-1p-regular.ttf")
 
-font_title = ImageFont.truetype(font_path, 34)
-font_info = ImageFont.truetype(font_path, 24)
+font_title = _load_font(font_path, 34)
+font_info = _load_font(font_path, 24)
 
-font_for_plate = ImageFont.truetype(font_path, 40)
-font_huge_huge = ImageFont.truetype(font_path, 170)
-font_huge  = ImageFont.truetype(font_path, 28)
-font_large = ImageFont.truetype(font_path, 19)
-font_small = ImageFont.truetype(font_path, 14)
-font_tiny = ImageFont.truetype(font_path, 6)
+font_for_plate = _load_font(font_path, 40)
+font_huge_huge = _load_font(font_path, 170)
+font_huge  = _load_font(font_path, 28)
+font_large = _load_font(font_path, 19)
+font_small = _load_font(font_path, 14)
+font_tiny = _load_font(font_path, 6)
 
 def paste_icon(img, song, key, size, position, save_dir, url_func, verify=False):
     """
