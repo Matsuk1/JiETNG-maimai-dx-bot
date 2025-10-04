@@ -295,9 +295,8 @@ def maimai_update(user_id):
                 (12000, "🥳 銅レー おめでとう！"),
                 (10000, "🥳 紫レー おめでとう！"),
             ]
-            iwau_msg = None
             for th, msg in thresholds:
-                if rct_ra < th <= now_ra:  # 跨过阈值
+                if rct_ra < th <= now_ra:
                     iwau_msg = msg
                     break
 
