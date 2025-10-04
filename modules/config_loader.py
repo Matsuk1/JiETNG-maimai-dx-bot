@@ -1,5 +1,10 @@
+import copy
 import json
 import os
+import secrets
+
+from cryptography.fernet import Fernet
+
 from json_encrypt import *
 
 CONFIG_PATH = "./config.json"
@@ -42,13 +47,36 @@ default_config = {
 }
 
 # 自动创建 config 目录
-os.makedirs(os.path.dirname(CONFIG_PATH), exist_ok=True)
+config_dir = os.path.dirname(CONFIG_PATH)
+if config_dir:
+    os.makedirs(config_dir, exist_ok=True)
+
+
+def _ensure_fernet_key(value: str) -> str:
+    """确保提供的字符串可以作为 Fernet key 使用，若不合法则重新生成。"""
+
+    if not isinstance(value, str):
+        value = ""
+
+    try:
+        Fernet(value.encode())
+    except (ValueError, TypeError):
+        value = Fernet.generate_key().decode()
+
+    return value
+
+
+def _ensure_bind_token(value: str) -> str:
+    """bind_token 允许为空，但为空时自动生成一个随机字符串，避免运行时报错。"""
+
+    if not isinstance(value, str) or not value:
+        value = secrets.token_urlsafe(16)
+
+    return value
 
 # 加载配置，若不存在则创建；若缺字段则补全
 if not os.path.exists(CONFIG_PATH):
-    with open(CONFIG_PATH, 'w', encoding='utf-8') as f:
-        json.dump(default_config, f, indent=4, ensure_ascii=False)
-    _config = default_config
+    _config = copy.deepcopy(default_config)
 else:
     with open(CONFIG_PATH, 'r', encoding='utf-8') as file:
         _config = json.load(file)
@@ -63,9 +91,12 @@ else:
 
     deep_update(default_config, _config)
 
-    # 写回更新后的配置
-    with open(CONFIG_PATH, 'w', encoding='utf-8') as f:
-        json.dump(_config, f, indent=4, ensure_ascii=False)
+_config["keys"]["user_data"] = _ensure_fernet_key(_config["keys"].get("user_data", ""))
+_config["keys"]["bind_token"] = _ensure_bind_token(_config["keys"].get("bind_token", ""))
+
+# 写回更新后的配置
+with open(CONFIG_PATH, 'w', encoding='utf-8') as f:
+    json.dump(_config, f, indent=4, ensure_ascii=False)
 
 # 顶层字段
 admin_id = _config["admin_id"]
