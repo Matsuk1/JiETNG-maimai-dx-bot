@@ -52,4 +52,3 @@ def decrypt_directory_recursively(directory):
                 continue
             if os.path.isfile(full_path):
                 decrypt_file(full_path)
-

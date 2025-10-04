@@ -1,5 +1,5 @@
 import pymysql
-from config_loader import HOST, USER, PASSWORD, DATABASE, MAIMAI_VERSION, songs, read_dxdata
+from config_loader import HOST, USER, PASSWORD, DATABASE, MAIMAI_VERSION, songs, read_dxdata, read_user, users
 
 def get_single_ra(level, score, ap_clear=False) :
     if score >= 100.5000 :
@@ -59,6 +59,36 @@ def get_single_ra(level, score, ap_clear=False) :
 
     return ra
 
+def get_yang_single_ra(song_record, eight_adding=False):
+    level = float(song_record['internalLevelValue'])
+    achievement = float(song_record['score'][:-1])
+    dx_score = eval(song_record['dx_score'].replace(",", ""))
+    score = level * max(min((achievement - 100), dx_score), 0)
+    
+    if not eight_adding:
+        return round(score, 2)
+
+    if song_record['combo_icon'] == 'fcp':
+        score += 1
+    elif 'ap' in song_record['combo_icon']:
+        score += 2
+
+    if achievement >= 100.90:
+        score += 1
+    if achievement >= 100.95:
+        score += 1
+    if achievement >= 100.98:
+        score += 1
+
+    if dx_score >= 0.93:
+        score += 1
+    if dx_score >= 0.95:
+        score += 1
+    if dx_score >= 0.97:
+        score += 1
+
+    return round(score, 2)
+
 def get_ideal_score(score: float) -> float:
     if 99.0000 <= score < 99.5000:
         return 99.5000
@@ -69,7 +99,9 @@ def get_ideal_score(score: float) -> float:
     else:
         return score
 
-def read_record(user_id, recent=False):
+def read_record(user_id, recent=False, yang=False):
+    read_user()
+
     table = "recent_records" if recent else "best_records"
     print(f"[*] Reading from DB table `{table}` for user_id = {user_id}\n")
 
@@ -94,14 +126,14 @@ def read_record(user_id, recent=False):
             item.pop("user_id", None)
             records.append(item)
 
-        return get_detailed_info(records)
+        return get_detailed_info(records, users[user_id]['version'], yang)
 
     finally:
         conn.close()
 
-def write_record(user_id, record_json, recent=False, replace=True):
+def write_record(user_id, record_json, recent=False):
     table = "recent_records" if recent else "best_records"
-    print(f"[*] Writing to DB table `{table}` for user_id = {user_id}\n")
+    print(f"[*] Writing to DB table {table} for user_id = {user_id}\n")
 
     conn = pymysql.connect(
         host=HOST,
@@ -113,16 +145,12 @@ def write_record(user_id, record_json, recent=False, replace=True):
 
     try:
         with conn.cursor() as cursor:
-            if not replace:
-                old_records = read_record(user_id, recent)
-                record_json = filter_highest_achievement(record_json + old_records)
-
             cursor.execute(f"DELETE FROM {table} WHERE user_id = %s", (user_id,))
 
             sql = f"""
             INSERT INTO {table} (
-                user_id, `name`, difficulty, kind, score, `dx-score`,
-                `score-icon`, `combo-icon`, `dx-icon`
+                user_id, name, difficulty, kind, score, dx_score,
+                score_icon, combo_icon, sync_icon
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
 
@@ -133,10 +161,10 @@ def write_record(user_id, record_json, recent=False, replace=True):
                     song.get("difficulty"),
                     song.get("kind"),
                     song.get("score"),
-                    song.get("dx-score"),
-                    song.get("score-icon"),
-                    song.get("combo-icon"),
-                    song.get("dx-icon"),
+                    song.get("dx_score"),
+                    song.get("score_icon"),
+                    song.get("combo_icon"),
+                    song.get("sync_icon"),
                 ))
 
         conn.commit()
@@ -145,7 +173,7 @@ def write_record(user_id, record_json, recent=False, replace=True):
 
 def delete_record(user_id, recent=False):
     table = "recent_records" if recent else "best_records"
-    print(f"[*] Deleting from DB table `{table}` for user_id = {user_id}\n")
+    print(f"[*] Deleting from DB table {table} for user_id = {user_id}\n")
 
     conn = pymysql.connect(
         host=HOST,
@@ -170,7 +198,7 @@ def filter_highest_achievement(data: list) -> list:
             result[key] = entry
     return list(result.values())
 
-def get_detailed_info(song_record):
+def get_detailed_info(song_record, ver="jp", yang=False):
     read_dxdata()
 
     for record in song_record :
@@ -181,12 +209,14 @@ def get_detailed_info(song_record):
                     if record['difficulty'] == sheet['difficulty']:
                         found = True
                         record['internalLevelValue'] = sheet['internalLevelValue']
-                        record['new_song'] = True if song['version'] in MAIMAI_VERSION else False
+                        record['new_song'] = True if song['version'] in MAIMAI_VERSION[ver] else False
                         record['version'] = song['version']
-                        ap_clear = "ap" in record['combo-icon']
-                        record['ra'] = get_single_ra(float(sheet['internalLevelValue']), float(record['score'][:-1]), ap_clear)
+                        ap_clear = "ap" in record['combo_icon']
+                        record['ra'] = get_single_ra(float(record['internalLevelValue']), float(record['score'][:-1]), (ap_clear and ver == "jp"))
                         record['id'] = sheet['internalId'] if 'internalId' in sheet else -1
                         record['url'] = f"https://shama.dxrating.net/images/cover/v2/{song['imageName']}.jpg"
+                        if yang:
+                            record['ra'] = get_yang_single_ra(record)
 
         if not found :
             record['internalLevelValue'] = 0

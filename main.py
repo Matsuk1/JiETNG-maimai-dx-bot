@@ -12,6 +12,7 @@ import time
 import traceback
 import os
 import urllib.parse
+import urllib3
 import math
 import difflib
 import numpy
@@ -19,13 +20,14 @@ import base64
 import warnings
 import threading
 import queue
+import textwrap
 
 from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
 
 from datetime import timedelta
 
-from flask import Flask, request, abort, render_template
+from flask import Flask, request, abort, render_template, redirect
 
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
@@ -33,6 +35,7 @@ from linebot.models import MessageEvent, TextMessage, TextSendMessage, ImageSend
 from linebot import __version__ as linebot_version
 
 sys.path.append(os.path.join(os.path.dirname(__file__), 'modules'))
+from admin_tools import *
 from song_info_generate import *
 from record_picture_generate import *
 from user_console import *
@@ -45,10 +48,10 @@ from config_loader import *
 from create_button_list import *
 from reply_text import *
 from note_score import *
-from fakemai_console import get_fakemai_records
 from img_upload import smart_upload
 from img_console import combine_with_rounded_background, wrap_in_rounded_background
 
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 if linebot_version.startswith("3."):
     warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -56,15 +59,14 @@ divider = "-" * 33
 
 app = Flask(__name__)
 
-# 主任务队列（比如消息处理）
+# 主任务队列
 task_queue = queue.Queue(maxsize=10)
 concurrency_limit = threading.Semaphore(3)
 
-# Web任务队列（比如网页绑定、图像上传等）
+# Web任务队列
 webtask_queue = queue.Queue(maxsize=10)
 webtask_concurrency_limit = threading.Semaphore(1)
 
-# 通用任务处理函数
 def run_task_with_limit(func, args, sem, q):
     with sem:
         task_done = threading.Event()
@@ -74,6 +76,7 @@ def run_task_with_limit(func, args, sem, q):
                 func(*args)
             except Exception as e:
                 print(f"[Task Error] {e}")
+                traceback.print_exc()
             finally:
                 task_done.set()
                 q.task_done()
@@ -146,6 +149,11 @@ def linebot_reply():
 
     return 'OK', 200
 
+@app.route("/linebot/adding", methods=["GET"])
+@app.route("/linebot/add", methods=["GET"])
+def line_add_page():
+    return redirect(LINE_ADDING_URL)
+
 @app.route("/linebot/sega_bind", methods=["GET", "POST"])
 def website_segaid_bind():
     token = request.args.get("token")
@@ -160,46 +168,32 @@ def website_segaid_bind():
     if request.method == "POST":
         segaid = request.form.get("segaid")
         password = request.form.get("password")
+        user_version = request.form.get("ver", "jp")
         if not segaid or not password:
             return render_template("error.html", message="すべての項目を入力してください"), 400
 
-        if process_sega_credentials(user_id, segaid, password):
+        if process_sega_credentials(user_id, segaid, password, user_version):
             return render_template("success.html")
         else:
             return render_template("error.html", message="SEGA ID と パスワード をもう一度確認してください"), 500
 
     return render_template("bind_form.html")
 
-def process_sega_credentials(user_id, segaid, password):
-    if not user_id.startswith(("QQ", "U")):
-        return False
+def process_sega_credentials(user_id, segaid, password, ver="jp"):
+    base = (
+        "https://maimaidx-eng.com/maimai-mobile"
+        if ver == "intl"
+        else "https://maimaidx.jp/maimai-mobile"
+    )
 
-    if fetch_dom(login_to_maimai(segaid, password), "https://maimaidx.jp/maimai-mobile/home/") is None:
+    session = login_to_maimai(segaid, password, ver=ver)
+    if fetch_dom(session, f"{base}/home/") is None:
         return False
 
     user_bind_sega_id(user_id, segaid)
     user_bind_sega_pwd(user_id, password)
+    user_set_version(user_id, ver)
     return True
-
-def bind_fake_token(user_id, fake_token):
-    read_user()
-
-    if user_id not in users:
-        add_user(user_id)
-
-    users[user_id]["fake_token"] = fake_token
-    write_user()
-
-def get_fake_token(user_id):
-    read_user()
-
-    if user_id not in users:
-        add_user(user_id)
-
-    if "fake_token" not in users[user_id]:
-        return ""
-
-    return users[user_id]["fake_token"]
 
 def user_bind_sega_id(user_id, sega_id):
     read_user()
@@ -208,9 +202,7 @@ def user_bind_sega_id(user_id, sega_id):
         add_user(user_id)
 
     users[user_id]['sega_id'] = sega_id
-
     write_user()
-    return "SEGA ID バインド完了！"
 
 def user_bind_sega_pwd(user_id, sega_pwd):
     read_user()
@@ -219,9 +211,16 @@ def user_bind_sega_pwd(user_id, sega_pwd):
         add_user(user_id)
 
     users[user_id]['sega_pwd'] = sega_pwd
-
     write_user()
-    return "SEGA PASSWORD バインド完了！"
+
+def user_set_version(user_id, version):
+    read_user()
+
+    if user_id not in users :
+        add_user(user_id)
+
+    users[user_id]['version'] = version
+    write_user()
 
 def get_user(user_id):
     read_user()
@@ -244,61 +243,98 @@ def get_user(user_id):
 
     return result
 
-def fakemai_update(fake_id, fake_token):
-    record = get_fakemai_records(fake_token)
-
-    if not record :
-        return False, "❌ fakemai レコードアップデート中エラーが発生しました！"
-
-    write_record(fake_id, record, replace=False)
-
-    return True, "✅ fakemaiレコードアップデート完了！"
-
 def async_maimai_update_task(user_id, reply_token):
-    update_success, reply_msg = maimai_update(user_id)
+    reply_msg = maimai_update(user_id)
+    smart_reply(user_id, reply_token, reply_msg)
+
+def async_generate_friend_b50_task(user_id, reply_token, friend_id):
+    reply_msg = generate_friend_b50(user_id, friend_id)
     smart_reply(user_id, reply_token, reply_msg)
 
 def maimai_update(user_id):
     messages = []
-    status = True
+    func_status = {
+        "User Info": True,
+        "Best Records": True,
+        "Recent Records": True
+    }
 
     read_user()
 
-    if user_id not in users :
+    if user_id not in users:
         return no_segaid
 
-    elif 'sega_id' not in users[user_id] or 'sega_pwd' not in users[user_id] :
+    elif 'sega_id' not in users[user_id] or 'sega_pwd' not in users[user_id]:
         return no_segaid
 
     sega_id = users[user_id]['sega_id']
     sega_pwd = users[user_id]['sega_pwd']
 
-    user_session = login_to_maimai(sega_id, sega_pwd)
-    user_info = get_maimai_info(user_session)
-    maimai_records = get_maimai_records(user_session)
-    recent_records = get_recent_records(user_session)
+    user_session = login_to_maimai(sega_id, sega_pwd, users[user_id]['version'])
+    if user_session == None:
+        return no_segaid
+
+    user_info = get_maimai_info(user_session, users[user_id]['version'])
+    maimai_records = get_maimai_records(user_session, users[user_id]['version'])
+    recent_records = get_recent_records(user_session, users[user_id]['version'])
+
+    error = False
+
+    iwau_msg = ""
 
     if user_info:
+        if "recent_rating" in users[user_id]:
+            rct_ra = int(users[user_id]["recent_rating"])
+            now_ra = int(user_info["rating"])
+            thresholds = [
+                (16000, "🎉 レーティング16000 おめでとう！"),
+                (15000, "🥳 虹レー おめでとう！"),
+                (14500, "🥳 白金レー おめでとう！"),
+                (14000, "🥳 金レー おめでとう！"),
+                (13000, "🥳 青レー おめでとう！"),
+                (12000, "🥳 銅レー おめでとう！"),
+                (10000, "🥳 紫レー おめでとう！"),
+            ]
+            iwau_msg = None
+            for th, msg in thresholds:
+                if rct_ra < th <= now_ra:  # 跨过阈值
+                    iwau_msg = msg
+                    break
+
+        users[user_id]["recent_rating"] = users[user_id]['personal_info']["rating"]
+
         users[user_id]['personal_info'] = user_info
         write_user()
     else:
-        status = False
+        func_status["User Info"] = False
+        error = True
 
     if maimai_records:
         write_record(user_id, maimai_records)
     else:
-        status = False
+        func_status["Best Records"] = False
+        error = True
 
     if recent_records:
         write_record(user_id, recent_records, recent=True)
     else:
-        status = False
+        func_status["Recent Records"] = False
+        error = True
 
-    if status:
-        messages.append(TextSendMessage(text="✅ maimai レコードアップデート完了！"))
+    details = "詳しい情報："
+    for func, status in func_status.items():
+        details += f"\n「{func}」Error" if not status else ""
+
+    if not error:
+        messages.append(TextSendMessage(text=f"✅ アップデート完了！"))
     else:
-        messages.append(TextSendMessage(text="❌ maimai レコードアップデート中エラーが発生しました！"))
-    return status, messages
+        messages.append(TextSendMessage(text=f"❗️アップデート中エラーが発生！"))
+        messages.append(TextSendMessage(text=details))
+
+    if len(iwau_msg):
+        messages.append(TextSendMessage(text=iwau_msg))
+
+    return messages
 
 def get_rc(level):
     result = f"LEVEL: {level}\n"
@@ -329,7 +365,7 @@ def search_song(acronym):
         result = result[:6]
 
     elif not result_num:
-        result = TextSendMessage(text="❓ こういう曲がないかも...")
+        result = TextSendMessage(text="❓ 条件に合う楽曲がないかも...")
 
     return result
 
@@ -349,7 +385,7 @@ def random_song(key=""):
             if sheet['regions']['jp']:
                 if not key or sheet['internalLevelValue'] in level_values:
                     valid_songs.append(song)
-                    break  # 一个 song 满足一次即可
+                    break
 
     if not valid_songs:
         return [TextSendMessage(text="❓ 条件に合う楽曲がないかも...")]
@@ -363,18 +399,32 @@ def random_song(key=""):
     return result
 
 def get_friends_list_buttons(user_id):
-    if user_id not in users :
+    read_user()
+    if user_id not in users:
         return no_segaid
 
-    elif 'sega_id' not in users[user_id] or 'sega_pwd' not in users[user_id] :
+    elif 'sega_id' not in users[user_id] or 'sega_pwd' not in users[user_id]:
         return no_segaid
 
     sega_id = users[user_id]['sega_id']
     sega_pwd = users[user_id]['sega_pwd']
 
-    user_session = login_to_maimai(sega_id, sega_pwd)
+    user_session = login_to_maimai(sega_id, sega_pwd, users[user_id]['version'])
 
-    return generate_flex_carousel("オトモダチリスト", format_favorite_friends(get_friends_list(user_session)))
+    friends_list = get_friends_list(user_session, users[user_id]['version'])
+
+    if user_id.startswith("U"):
+        return generate_flex_carousel("フレンドリスト・Friends List", format_favorite_friends(friends_list))
+
+    result = f"フレンドリスト・Friends List\n{divider}"
+    for frd in friends_list:
+        if not frd['is_favorite']:
+            continue
+        result += f"\n{frd['name']} - {frd['rating']}\n - [{frd['user_id']}]"
+
+    result += f"\n{divider}\nCommand: friend-b50 [friend_id]\nExample: friend-b50 100818313"
+
+    return TextSendMessage(text=result)
 
 def get_song_record(user_id, acronym) :
     read_dxdata()
@@ -402,7 +452,7 @@ def get_song_record(user_id, acronym) :
             result.append(message)
 
     if len(result) == 0 or len(result) > 6:
-        result = [TextSendMessage(text="❓ こういう曲がないかも...")]
+        result = [TextSendMessage(text="❓ 条件に合う楽曲がないかも...")]
 
     return result
 
@@ -445,7 +495,7 @@ def generate_plate_rcd(user_id, title, generate_user_info=True):
         target_icon = ["ap", "app"]
 
     elif plate_type == "舞舞" :
-        target_type = "dx"
+        target_type = "sync"
         target_icon = ["fdx", "fdxp"]
 
     version_rcd_data = list(filter(lambda x: x['version'] in target_version, song_record))
@@ -469,7 +519,7 @@ def generate_plate_rcd(user_id, title, generate_user_info=True):
             target_num[sheet['difficulty']]['all'] += 1
             for rcd in version_rcd_data:
                 if rcd['name'] == song['title'] and sheet['difficulty'] == rcd['difficulty'] and rcd['kind'] == song['type'] :
-                    icon = rcd[f'{target_type}-icon']
+                    icon = rcd[f'{target_type}_icon']
                     if icon in target_icon :
                         target_num[sheet['difficulty']]['clear'] += 1
 
@@ -501,36 +551,48 @@ def create_user_info_img(user_id, scale=1.5):
         nonlocal user_info
         if key in user_info and user_info[key]:
             try:
-                response = requests.get(user_info[key], verify=False)
+                url = user_info[key]
+
+                # 默认不带 headers
+                headers = None
+
+                if url.startswith("https://maimaidx-eng.com"):
+                    headers = {
+                        "Referer": "https://lng-tgk-aime-gw.am-all.net/common_auth/login?site_id=maimaidxex&redirect_url=https://maimaidx-eng.com/maimai-mobile/&back_url=https://maimai.sega.com/",
+                        "User-Agent": (
+                            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                            "AppleWebKit/537.36 (KHTML, like Gecko) "
+                            "Chrome/127.0.0.0 Safari/537.36"
+                        ),
+                        "Host": "maimaidx-eng.com",
+                    }
+
+                response = requests.get(url, headers=headers, verify=False)
+                response.raise_for_status()
+
                 img = Image.open(BytesIO(response.content))
                 if img.mode != "RGBA":
                     img = img.convert("RGBA")
                 img_resized = img.resize(size)
                 info_img.paste(img_resized, position, img_resized)
+
             except Exception as e:
                 print(f"加载图片失败 {user_info[key]}: {e}")
 
-    # 背景为名牌图
     paste_image("nameplate_url", (0, 0), (802, 128))
 
-    # 玩家图标（左侧）
     paste_image("icon_url", (15, 13), (100, 100))
 
-    # 等级评分块
     paste_image("rating_block_url", (129, 13), (131, 34))
     draw.text((188, 17), f"{user_info['rating']}", fill=(255, 255, 255), font=font_large)
 
-    # 名字
     draw.rectangle([129, 51, 129 + 266, 51 + 33], fill=(255, 255, 255))
     draw.text((135, 54), user_info['name'], fill=(0, 0, 0), font=font_large)
 
-    # 段位块
     paste_image("class_rank_url", (296, 10), (61, 37))
 
-    # 段位课程块
     paste_image("cource_rank_url", (322, 52), (75, 33))
 
-    # 奖杯信息
     def trophy_color(type):
         return {
             "normal": (255, 255, 255),
@@ -546,12 +608,31 @@ def create_user_info_img(user_id, scale=1.5):
     info_img = info_img.resize((int(img_width * scale), int(img_height * scale)), Image.LANCZOS)
     return info_img
 
-def selgen_records(user_id, type="best50", generate_user_info=True):
+def selgen_records(user_id, type="best50", command="", generate_user_info=True):
     read_user()
 
-    song_record = read_record(user_id)
+    if user_id not in users:
+        return no_segaid
+
+    song_record = read_record(user_id, yang = (type == "yang"))
     if not len(song_record):
         return no_record
+
+    if not command == "":
+        cmds = re.findall(r"-(\w+)\s+([^ -][^-]*)", command)
+        for cmd, cmd_num in cmds:
+            if cmd == "lv":
+                lv_start, lv_stop = map(float, cmd_num.split())
+                song_record = list(filter(lambda x: lv_start <= x['internalLevelValue'] <= lv_stop, song_record))
+            elif cmd == "ra":
+                ra_start, ra_stop = map(int, cmd_num.split())
+                song_record = list(filter(lambda x: ra_start <= x['ra'] <= ra_stop, song_record))
+            elif cmd == "dx":
+                dx_score = int(re.sub(r"\D", "", cmd_num))
+                song_record = list(filter(lambda x: eval(x['dx_score'].replace(",", "")) * 100 >= dx_score, song_record))
+            elif cmd == "scr":
+                score = float(re.sub(r"[^0-9.]", "", cmd_num))
+                song_record = list(filter(lambda x: eval(x['score'].replace("%", "")) >= score, song_record))
 
     up_songs = down_songs = []
 
@@ -578,14 +659,14 @@ def selgen_records(user_id, type="best50", generate_user_info=True):
     elif type == "allb35":
         up_songs = sorted(song_record, key=lambda x: -x["ra"])[:35]
 
-    elif type == "allp50":
-        up_songs_data = list(filter(lambda x: x['combo-icon'] == 'ap' or x['combo-icon'] == 'app', up_songs_data))
-        up_songs = sorted(up_songs_data, key=lambda x: -x["ra"])[:35]
+    elif type == "apb50":
+        up_songs_data = [x for x in up_songs_data if x.get("combo_icon") in ("ap", "app")]
+        up_songs = sorted(up_songs_data, key=lambda x: x.get("ra", 0), reverse=True)[:35]
 
-        down_songs_data = list(filter(lambda x: x['combo-icon'] == 'ap' or x['combo-icon'] == 'app', down_songs_data))
-        down_songs = sorted(down_songs_data, key=lambda x: -x["ra"])[:15]
+        down_songs_data = [x for x in down_songs_data if x.get("combo_icon") in ("ap", "app")]
+        down_songs = sorted(down_songs_data, key=lambda x: x.get("ra", 0), reverse=True)[:15]
 
-    elif type == "未発見":
+    elif type == "UNKNOWN":
         up_songs = list(filter(lambda x: x['version'] == "UNKNOWN", song_record))
 
     elif type == "rct50":
@@ -609,10 +690,55 @@ def selgen_records(user_id, type="best50", generate_user_info=True):
         up_songs = sorted(up_songs_data, key=lambda x: -x["ra"])[:35]
         down_songs = sorted(down_songs_data, key=lambda x: -x["ra"])[:15]
 
+    elif type == "yang":
+        for version in versions:
+            version_song_data = [x for x in song_record if x['version'] == version['version']]
+            if not version_song_data:
+                continue
+            count = math.ceil(len(version_song_data) * 0.05)
+            sorted_data = sorted(version_song_data, key=lambda x: -x["ra"])
+            up_songs.append(sorted_data[count - 1])
+        down_songs = []
+
     else:
         return selgen_records(user_id)
 
     img = generate_records_picture(up_songs, down_songs, type.upper())
+
+    if generate_user_info:
+        img = combine_with_rounded_background(create_user_info_img(user_id), img)
+
+    else:
+        img = wrap_in_rounded_background(img)
+
+    image_url = smart_upload(img)
+    message = ImageSendMessage(original_content_url=image_url, preview_image_url=image_url)
+    return message
+
+def generate_yang_rating(user_id, generate_user_info=True):
+    song_record = read_record(user_id, yang=True)
+    if not len(song_record):
+        return no_record
+
+    read_user()
+    now_version = MAIMAI_VERSION[users[user_id]['version']][-1]
+
+    version_records = []
+
+    read_dxdata()
+    for version in versions:
+        if version['version'] == now_version:
+            break
+
+        version_data = {}
+        version_data['version_title'] = version['version']
+        version_song_data = list(filter(lambda x: x['version'] == version['version'], song_record))
+        count = max(math.floor(version['count'] * 0.05), 1)
+        version_data['songs'] = sorted(version_song_data, key=lambda x: -x["ra"])[:count]
+        version_data['count'] = count
+        version_records.append(version_data)
+
+    img = generate_yang_records_picture(version_records)
 
     if generate_user_info:
         img = combine_with_rounded_background(create_user_info_img(user_id), img)
@@ -636,9 +762,11 @@ def generate_friend_b50(user_id, friend_id):
     sega_id = users[user_id]['sega_id']
     sega_pwd = users[user_id]['sega_pwd']
 
-    user_session = login_to_maimai(sega_id, sega_pwd)
+    user_session = login_to_maimai(sega_id, sega_pwd, users[user_id]['version'])
+    
+    friend_name, song_record = get_friend_records(user_session, friend_id, users[user_id]['version'])
 
-    song_record = get_detailed_info(get_friend_records(user_session, friend_id))
+    song_record = get_detailed_info(song_record, users[user_id]['version'])
 
     up_songs_data = list(filter(lambda x: x['new_song'] == False, song_record))
     down_songs_data = list(filter(lambda x: x['new_song'] == True, song_record))
@@ -650,13 +778,16 @@ def generate_friend_b50(user_id, friend_id):
     img = wrap_in_rounded_background(img)
 
     image_url = smart_upload(img)
-    message = ImageSendMessage(original_content_url=image_url, preview_image_url=image_url)
+    message = [
+        TextSendMessage(text=f"「{friend_name}」のBest Top 50"),
+        ImageSendMessage(original_content_url=image_url, preview_image_url=image_url)
+    ]
     return message
 
 def generate_level_records(user_id, level, generate_user_info=True):
     read_user()
 
-    song_record = read_record(user_id)
+    song_record = read_record(user_id, ver=users[user_id]["version"])
 
     if not len(song_record):
         return no_record
@@ -713,20 +844,23 @@ def smart_reply(user_id, reply_token, messages):
     if not isinstance(messages, list):
         messages = [messages]
 
-    notice_read = get_user_status(user_id, "notice_read")
+    if user_id not in users:
+        notice_read = True
+    else:
+        notice_read = get_user_status(user_id, "notice_read")
+
     if not notice_read:
-        noticement_json = get_latest_notice()
-        noticement = f"📢 お知らせ\n{divider}\n{noticement_json['content']}\n{divider}\n{noticement_json['date']}" if noticement_json else "通知ありません"
-        messages += [TextSendMessage(text=noticement)]
-        edit_user_status(user_id, "notice_read", True)
+        notice_json = get_latest_notice()
+        if notice_json:
+            notice = f"📢 お知らせ\n{divider}\n{notice_json['content']}\n{divider}\n{notice_json['date']}"
+            messages += [TextSendMessage(text=notice)]
+            edit_user_status(user_id, "notice_read", True)
 
     if reply_token.startswith("proxy"):
         try:
-            origin_ip = '127.0.0.1'
-
             message_dicts = [msg.as_json_dict() for msg in messages]
             debug_response = requests.post(
-                f"http://{origin_ip}:4001/jietng_reply",
+                PROXY_URL,
                 json={
                     "token": reply_token,
                     "messages": message_dicts
@@ -741,15 +875,13 @@ def smart_reply(user_id, reply_token, messages):
 def smart_push(user_id, reply_token, messages):
     if reply_token.startswith("proxy"):
         try:
-            origin_ip = '127.0.0.1'
-
             if not isinstance(messages, list):
                 messages = [messages]
 
             message_dicts = [msg.as_json_dict() for msg in messages]
 
             debug_response = requests.post(
-                f"http://{origin_ip}:4001/jietng_reply",
+                PROXY_URL,
                 json={
                     "token": reply_token,
                     "messages": message_dicts
@@ -774,7 +906,6 @@ def should_respond(event):
 
     return False
 
-
 #消息处理
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
@@ -792,13 +923,7 @@ def handle_message(event):
 def handle_text_message_task(event):
     user_message = event.message.text.strip()
     user_id = event.source.user_id
-    is_fake = False
-    fake_id = f"fake_{user_id}"
-    fake_token = get_fake_token(user_id)
-
-    if user_message.startswith("fakemai "):
-        user_message = user_message[8:]
-        is_fake = bool(fake_id)
+    id_use = user_id
 
     need_reply = True
 
@@ -824,8 +949,8 @@ def handle_text_message_task(event):
             buttons_template = ButtonsTemplate(
                 title='SEGA アカウント連携',
                 text=(
-                    'このボタンを押すとSEGAアカウントと連携されます\n'
-                    '有効期限は発行から2分です'
+                    'SEGA アカウントと連携されます\n'
+                    '有効期限は発行から2分間です'
                 ),
                 actions=[
                     URIAction(label='押しで連携', uri=bind_url)
@@ -837,33 +962,17 @@ def handle_text_message_task(event):
             )
 
         else:
-            reply_message = TextSendMessage(text=f"こちらはバインド用リンクです↓\n{bind_url}\nこのリンクは発行から10分間有効です")
+            reply_message = TextSendMessage(text=f"こちらはバインド用リンクです↓\n{bind_url}\n発行から2分間有効。")
 
     elif user_message.startswith(("segaid bind ", "pwd bind ")):
-        reply_message = TextSendMessage(text="SEGA IDの連携には「sega bind」コマンドをご利用ください")
-
-    elif user_message.startswith("bind fakemai "):
-        bind_fake_token(user_id, user_message[13:].strip())
-        reply_message = TextSendMessage(text="Binded Successfully!")
+        reply_message = TextSendMessage(text="SEGA IDの連携には「sega bind」コマンドをご利用ください。")
 
     elif user_message in ["unbind", "連携削除", "連携解消"]:
-        user_id = fake_id if is_fake else user_id
         delete_user(user_id)
-        reply_message = TextSendMessage(text="SEGA ID 連携解消成功！")
+        reply_message = TextSendMessage(text="SEGA ID 連携解消成功。")
 
     elif user_message in ["get me", "getme", "個人情報", "个人信息"]:
         reply_message = TextSendMessage(text=get_user(user_id))
-
-    elif user_message == "update fakemai" :
-        need_reply = False
-        reply_message = TextSendMessage(text="🥳 アップデートの順番に入った！")
-        smart_reply(
-            user_id,
-            event.reply_token,
-            reply_message
-        )
-        update_success, reply_text = fakemai_update(fake_id, fake_token)
-        smart_push(user_id, event.reply_token, TextSendMessage(text=reply_text))
 
     elif user_message in ["マイマイアップデート", "maimai update", "レコードアップデート", "record update"]:
         need_reply = False
@@ -873,62 +982,110 @@ def handle_text_message_task(event):
             smart_reply(user_id, event.reply_token, TextSendMessage(text="🙇 現在アップデート処理が混雑しています。後ほどお試しください。"))
 
     elif user_message.endswith(("の達成状況", "の達成情報", "の達成表")) :
-        id_use = fake_id if is_fake else user_id
-        reply_message = generate_plate_rcd(id_use, user_message.replace("の達成状況", "").replace("の達成情報", "").replace("の達成表", "").strip(), (not is_fake))
+        reply_message = generate_plate_rcd(id_use, user_message.replace("の達成状況", "").replace("の達成情報", "").replace("の達成表", "").strip())
 
     elif user_message.endswith("のレコード") :
-        id_use = fake_id if is_fake else user_id
         reply_message = get_song_record(id_use, user_message.replace("のレコード", "").strip())
 
-    elif user_message.lower() in ["ベスト50", "b50", "best 50"]:
-        id_use = fake_id if is_fake else user_id
-        reply_message = selgen_records(id_use, "best50", (not is_fake))
+    elif re.split(r"[ \n]", user_message.lower(), 1)[0] in ["ベスト50", "b50", "best 50"]:
+        reply_message = selgen_records(
+            id_use,
+            "best50",
+            re.split(r"[ \n]", user_message.lower(), 1)[1] if re.search(r"[ \n]", user_message) else ""
+        )
 
-    elif user_message.lower() in ["ベスト35", "b35", "best 35"]:
-        id_use = fake_id if is_fake else user_id
-        reply_message = selgen_records(id_use, "best35", (not is_fake))
+    elif re.split(r"[ \n]", user_message.lower(), 1)[0] in ["ベスト100", "b100", "best 100"]:
+        reply_message = selgen_records(
+            id_use,
+            "best100",
+            re.split(r"[ \n]", user_message.lower(), 1)[1] if re.search(r"[ \n]", user_message) else ""
+        )
 
-    elif user_message.lower() in ["ベスト15", "b15", "best 15"]:
-        id_use = fake_id if is_fake else user_id
-        reply_message = selgen_records(id_use, "best15", (not is_fake))
+    elif re.split(r"[ \n]", user_message.lower(), 1)[0] in ["ベスト35", "b35", "best 35"]:
+        reply_message = selgen_records(
+            id_use,
+            "best35",
+            re.split(r"[ \n]", user_message.lower(), 1)[1] if re.search(r"[ \n]", user_message) else ""
+        )
 
-    elif user_message.lower() in ["オールベスト50", "ab50", "all best 50"]:
-        id_use = fake_id if is_fake else user_id
-        reply_message = selgen_records(id_use, "allb50", (not is_fake))
+    elif re.split(r"[ \n]", user_message.lower(), 1)[0] in ["ベスト15", "b15", "best 15"]:
+        reply_message = selgen_records(
+            id_use,
+            "best15",
+            re.split(r"[ \n]", user_message.lower(), 1)[1] if re.search(r"[ \n]", user_message) else ""
+        )
 
-    elif user_message.lower() in ["オールベスト35", "ab35", "all best 35"]:
-        id_use = fake_id if is_fake else user_id
-        reply_message = selgen_records(id_use, "allb35", (not is_fake))
+    elif re.split(r"[ \n]", user_message.lower(), 1)[0] in ["オールベスト50", "ab50", "all best 50"]:
+        reply_message = selgen_records(
+            id_use,
+            "allb50",
+            re.split(r"[ \n]", user_message.lower(), 1)[1] if re.search(r"[ \n]", user_message) else ""
+        )
 
-    elif user_message.lower() in ["オールパーフェクト50", "ap50", "all perfect 50"]:
-        id_use = fake_id if is_fake else user_id
-        reply_message = selgen_records(id_use, "allp50", (not is_fake))
+    elif re.split(r"[ \n]", user_message.lower(), 1)[0] in ["オールベスト35", "ab35", "all best 35"]:
+        reply_message = selgen_records(
+            id_use,
+            "allb35",
+            re.split(r"[ \n]", user_message.lower(), 1)[1] if re.search(r"[ \n]", user_message) else ""
+        )
 
-    elif user_message.lower() in ["未発見", "unknown songs", "unknown data"]:
-        id_use = fake_id if is_fake else user_id
-        reply_message = selgen_records(id_use, "未発見", (not is_fake))
+    elif re.split(r"[ \n]", user_message.lower(), 1)[0] in ["オールパーフェクト50", "ap50", "all perfect 50", "apb50"]:
+        reply_message = selgen_records(
+            id_use,
+            "apb50",
+            re.split(r"[ \n]", user_message.lower(), 1)[1] if re.search(r"[ \n]", user_message) else ""
+        )
 
-    elif user_message.lower() in ["rct50", "r50", "recent 50"]:
-        id_use = fake_id if is_fake else user_id
-        reply_message = selgen_records(id_use, "rct50", (not is_fake))
+    elif re.split(r"[ \n]", user_message.lower(), 1)[0] in ["未発見", "unknown songs", "unknown data"]:
+        reply_message = selgen_records(
+            id_use,
+            "UNKNOWN",
+            re.split(r"[ \n]", user_message.lower(), 1)[1] if re.search(r"[ \n]", user_message) else ""
+        )
 
-    elif user_message.lower() in ["理想的ベスト50", "idealb50", "idlb50", "ideal best 50"]:
-        id_use = fake_id if is_fake else user_id
-        reply_message = selgen_records(id_use, "idealb50", (not is_fake))
+    elif re.split(r"[ \n]", user_message.lower(), 1)[0] in ["rct50", "r50", "recent 50"]:
+        reply_message = selgen_records(
+            id_use,
+            "rct50",
+            re.split(r"[ \n]", user_message.lower(), 1)[1] if re.search(r"[ \n]", user_message) else ""
+        )
 
-    elif user_message in ["friend list", "friends list", "友達リスト", "friend-b50"]:
+    elif re.split(r"[ \n]", user_message.lower(), 1)[0] in ["理想的ベスト50", "idealb50", "idlb50", "ideal best 50"]:
+        reply_message = selgen_records(
+            id_use,
+            "idealb50",
+            re.split(r"[ \n]", user_message.lower(), 1)[1] if re.search(r"[ \n]", user_message) else ""
+        )
+
+    elif re.split(r"[ \n]", user_message.lower(), 1)[0] in ["yang2", "yrating2", "yra2"]:
+        reply_message = selgen_records(
+            id_use,
+            "yang",
+            re.split(r"[ \n]", user_message.lower(), 1)[1] if re.search(r"[ \n]", user_message) else ""
+        )
+
+    elif user_message in ["yang", "yrating", "yra"]:
+        reply_message = generate_yang_rating(id_use)
+
+    elif user_message in ["friend list", "friends list", "friend-b50"]:
         reply_message = get_friends_list_buttons(user_id)
 
     elif user_message.startswith("friend-b50 "):
         friend_id = user_message.replace("friend-b50 ", "").strip()
-        reply_message = generate_friend_b50(user_id, friend_id)
-
+        need_reply = False
+        try:
+            webtask_queue.put_nowait((
+                async_generate_friend_b50_task,
+                (user_id, event.reply_token, friend_id)
+            ))
+        except queue.Full:
+            smart_reply(
+                user_id,
+                event.reply_token,
+                TextSendMessage(text="🙇 現在処理が混雑しています。後ほどお試しください。")
+            )
     elif user_message.endswith("のレコードリスト") :
-        id_use = fake_id if is_fake else user_id
-        reply_message = generate_level_records(id_use, user_message[:-8].strip(), (not is_fake))
-
-    elif user_message.endswith(("のレベルリスト", "の定数リスト")):
-        reply_message = TextSendMessage(text="最新のコマンド「XXのレコードリスト」をご利用ください")
+        reply_message = generate_level_records(id_use, user_message[:-8].strip())
 
     elif user_message.endswith("のバージョンリスト"):
         reply_message = generate_version_songs(user_message[:-9].replace("+", " plus").strip())
@@ -958,25 +1115,38 @@ def handle_text_message_task(event):
             reply_message = TextSendMessage(text=result)
 
         else:
-            reply_message = TextSendMessage(text="入力エラー")
-
-
-    elif user_message in ["お知らせ", "notice", "notification", "noticement", "通知"]:
-        noticement_json = get_latest_notice()
-        noticement = f"📢 お知らせ\n{divider}\n{noticement_json['content']}\n{divider}\n{noticement_json['date']}" if noticement_json else "通知ありません"
-        reply_message = TextSendMessage(text=noticement)
+            reply_message = TextSendMessage(text="❗️エラー")
 
     elif user_id in admin_id:
         if user_message == "dxdata update":
             load_dxdata(DXDATA_URL, dxdata_list)
             read_dxdata()
-            reply_message = TextSendMessage(text="updated")
+            reply_message = TextSendMessage(text="✅ Dxdata Updated")
 
         elif user_message.startswith("upload notice"):
             new_noticement = user_message.replace("upload notice", "").strip()
             upload_notice(new_noticement)
             edit_user_status_of_all("notice_read", False)
             reply_message = TextSendMessage(text="uploaded")
+
+        elif user_message == "service info":
+            service_info = get_service_info()
+            result = textwrap.dedent(f"""
+                サービス情報
+
+                · 総ユーザー数 | {service_info['LINE']['num'] + service_info['proxy']['num']}
+
+                · LINE ユーザー数 | {service_info['LINE']['num']}
+                  - 日本版 | {service_info['LINE']['jp']}
+                  - 海外版 | {service_info['LINE']['intl']}
+
+                · Proxy ユーザー数 | {service_info['proxy']['num']}
+                  - 日本版 | {service_info['proxy']['jp']}
+                  - 海外版 | {service_info['proxy']['intl']}
+
+                · Unknown Users | {service_info['unknown']}
+            """)
+            reply_message = TextSendMessage(text=result)
 
     else:
         need_reply = False
@@ -1001,14 +1171,17 @@ def handle_location_message(event):
         )
 
 def handle_location_message_task(event):
+    read_user()
+
     lat = event.message.latitude
     lng = event.message.longitude
+    user_id = event.source.user_id
 
-    stores = get_nearby_maimai_stores(lat, lng)
+    stores = get_nearby_maimai_stores(lat, lng, users[user_id]['version'])
     if not stores:
-        reply_message = TextSendMessage(text="🥹 周辺の設置店舗が見つからなかった...")
+        reply_message = TextSendMessage(text="🥹 周辺の設置店舗がないね？")
     else:
-        reply_message = [TextSendMessage(text="🗺️ 最寄りのmaimai設置店舗:")]
+        reply_message = [TextSendMessage(text="🗺️ 最寄りの maimai 設置店舗")]
         for i, store in enumerate(stores[:4]):
             reply_message.append(TextSendMessage(text=f"📌 {store['name']}\n{store['address']}\n（{store['distance']}）\n地図: {store['map_url']}"))
 
@@ -1019,4 +1192,4 @@ def handle_location_message_task(event):
     )
 
 if __name__ == "__main__":
-    app.run(port=5100, threaded=True)
+    app.run(host="0.0.0.0", port=PORT, threaded=True)

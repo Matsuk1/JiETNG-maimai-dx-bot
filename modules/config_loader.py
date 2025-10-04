@@ -7,14 +7,17 @@ CONFIG_PATH = "./config.json"
 # 默认配置
 default_config = {
     "admin_id": [],
-    "maimai_version": [],
+    "maimai_version": {
+        "jp": [],
+        "intl": []
+    },
     "domain": "jietng.example.com",
+    "port": 5000,
     "file_path": {
         "dxdata_list": "./data/dxdata.json",
         "user_list": "./data/user.json.enc",
         "notice_file": "./data/notice.json",
-        "fonts_folder": "./assets/fonts",
-        "notice_back": "./assets/pics/notice.png",
+        "font": "./assets/fonts/mplus-1p-regular.ttf",
         "logo": "./assets/pics/logo.png"
     },
     "record_database": {
@@ -24,7 +27,9 @@ default_config = {
         "database": "records"
     },
     "urls": {
+        "line_adding": "",
         "dxdata": "",
+        "proxy": ""
     },
     "line_channel": {
         "access_token": "",
@@ -69,13 +74,15 @@ MAIMAI_VERSION = _config["maimai_version"]
 # 域名字段
 DOMAIN = _config["domain"]
 
+# 服务端口
+PORT = _config["port"]
+
 # 文件路径字段
 file_path = _config["file_path"]
 dxdata_list = file_path["dxdata_list"]
 user_list = file_path["user_list"]
 NOTICE_FILE = file_path["notice_file"]
-fonts_folder = file_path["fonts_folder"]
-background_path = file_path["notice_back"]
+font_path = file_path["font"]
 LOGO_PATH = file_path["logo"]
 
 # 数据库配置字段
@@ -87,7 +94,9 @@ DATABASE = record_database["database"]
 
 # URL 配置字段
 urls = _config["urls"]
+LINE_ADDING_URL = urls["line_adding"]
 DXDATA_URL = urls["dxdata"]
+PROXY_URL = urls["proxy"]
 
 # LINE 配置字段
 line_channel = _config["line_channel"]

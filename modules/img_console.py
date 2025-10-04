@@ -1,10 +1,7 @@
 import os
 import requests
 from PIL import Image, ImageDraw, ImageFont
-from config_loader import fonts_folder
-
-# 字体加载
-font_path = os.path.join(fonts_folder, "mplus-1p-regular.ttf")
+from config_loader import font_path
 
 font_title = ImageFont.truetype(font_path, 34)
 font_info = ImageFont.truetype(font_path, 24)
@@ -17,9 +14,6 @@ font_small = ImageFont.truetype(font_path, 14)
 font_tiny = ImageFont.truetype(font_path, 6)
 
 def paste_icon(img, song, key, size, position, save_dir, url_func, verify=False):
-    """
-    下载图标并粘贴到背景图 img 上（保留透明区域）。
-    """
     if key in song and song[key]:
         try:
             os.makedirs(save_dir, exist_ok=True)

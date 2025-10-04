@@ -4,48 +4,103 @@ from lxml import etree
 from record_console import get_detailed_info
 
 def fetch_dom(session: requests.Session, url: str) -> etree._Element:
-    resp = session.get(url)
+    if url.startswith("https://maimaidx-eng.com"):
+        # 国际服
+        headers = {
+            "Referer": "https://lng-tgk-aime-gw.am-all.net/common_auth/login?site_id=maimaidxex&redirect_url=https://maimaidx-eng.com/maimai-mobile/&back_url=https://maimai.sega.com/",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                          "AppleWebKit/537.36 (KHTML, like Gecko) "
+                          "Chrome/127.0.0.0 Safari/537.36",
+            "Host": "maimaidx-eng.com"
+        }
+    else:
+        # 日服
+        headers = {
+            "Referer": "https://maimaidx.jp/maimai-mobile/login/",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                          "AppleWebKit/537.36 (KHTML, like Gecko) "
+                          "Chrome/127.0.0.0 Safari/537.36",
+            "Host": "maimaidx.jp"
+        }
+
+    resp = session.get(url, headers=headers)
+    resp.raise_for_status()
     html = resp.text
-    if "再度ログインしてください" in html:
+
+    if ("Please agree to the following terms of service before log in." in html or
+        "再度ログインしてください" in html):
         return None
+
     return etree.HTML(html)
 
-def login_to_maimai(sega_id: str, password: str):
-    session = requests.Session()
-    session.verify = False
+def login_to_maimai(sega_id: str, password: str, ver="jp"):
+    if ver == "intl":
+            session = requests.Session()
+            session.verify = False
+            resp = session.get("https://lng-tgk-aime-gw.am-all.net/common_auth/login?site_id=maimaidxex&redirect_url=https://maimaidx-eng.com/maimai-mobile/&back_url=https://maimai.sega.com/")
+            resp.raise_for_status()
 
-    response = session.get("https://maimaidx.jp/maimai-mobile/login/")
-    response.raise_for_status()
+            login_resp = session.post(
+                "https://lng-tgk-aime-gw.am-all.net/common_auth/login/sid/",
+                data={
+                    "sid": sega_id,
+                    "password": password,
+                    "retention": "1",
+                },
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+                allow_redirects=False
+            )
 
-    parser = etree.HTMLParser()
-    dom = etree.HTML(response.text, parser)
+            redirect_url = login_resp.headers.get("Location")
+            final_resp = session.get(
+                redirect_url,
+                headers={
+                    "Referer": "https://lng-tgk-aime-gw.am-all.net/common_auth/login?site_id=maimaidxex&redirect_url=https://maimaidx-eng.com/maimai-mobile/&back_url=https://maimai.sega.com/",
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                                  "AppleWebKit/537.36 (KHTML, like Gecko) "
+                                  "Chrome/127.0.0.0 Safari/537.36",
+                    "Host": "maimaidx-eng.com"
+                },
+                allow_redirects=True
+            )
 
-    token_list = dom.xpath('//input[@name="token"]/@value')
-    if not token_list:
-        raise Exception("Unable to fetch login token")
-    token = token_list[0]
+            return session
+    else:
+            session = requests.Session()
+            session.verify = False
 
-    login_response = session.post(
-        "https://maimaidx.jp/maimai-mobile/submit/",
-        data={
-            "segaId": sega_id,
-            "password": password,
-            "save_cookie": "on",
-            "token": token
-        },
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
-        allow_redirects=True
-    )
+            response = session.get("https://maimaidx.jp/maimai-mobile/login/")
+            response.raise_for_status()
 
-    aime_choose = session.get("https://maimaidx.jp/maimai-mobile/aimeList/submit/?idx=0")
-    return session
+            parser = etree.HTMLParser()
+            dom = etree.HTML(response.text, parser)
 
-def get_maimai_records(session: requests.Session):
+            token_list = dom.xpath('//input[@name="token"]/@value')
+            if not token_list:
+                raise Exception("Unable to fetch login token")
+            token = token_list[0]
+
+            login_response = session.post(
+                "https://maimaidx.jp/maimai-mobile/submit/",
+                data={
+                    "segaId": sega_id,
+                    "password": password,
+                    "save_cookie": "on",
+                    "token": token
+                },
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+                allow_redirects=True
+            )
+
+            aime_choose = session.get("https://maimaidx.jp/maimai-mobile/aimeList/submit/?idx=0")
+            return session
+def get_maimai_records(session: requests.Session, ver="jp"):
+    base = "https://maimaidx-eng.com/maimai-mobile" if ver == "intl" else "https://maimaidx.jp/maimai-mobile"
     difficulty = ['basic', 'advanced', 'expert', 'master', 'remaster']
     music_record = []
 
     for page_num in range(5):
-        url = f"https://maimaidx.jp/maimai-mobile/record/musicGenre/search/?genre=99&diff={page_num}"
+        url = f"{base}/record/musicGenre/search/?genre=99&diff={page_num}"
         dom = fetch_dom(session, url)
         if dom is None:
             return []
@@ -81,11 +136,11 @@ def get_maimai_records(session: requests.Session):
                 kind = "N/A"
 
             icons = block.xpath('.//img[contains(@class, "h_30")]/@src')
-            dx_icon = combo_icon = score_icon = ""
+            sync_icon = combo_icon = score_icon = ""
             for index, icon in enumerate(icons):
                 icon_tag = icon.split('/')[-1].split('.')[0].replace("music_icon_", "")
                 if index == 0:
-                    dx_icon = icon_tag
+                    sync_icon = icon_tag
                 elif index == 1:
                     combo_icon = icon_tag
                 elif index == 2:
@@ -96,16 +151,17 @@ def get_maimai_records(session: requests.Session):
                 "difficulty": difficulty[page_num],
                 "kind": kind,
                 "score": score,
-                "dx-score": dx_score,
-                "score-icon": score_icon,
-                "combo-icon": combo_icon,
-                "dx-icon": dx_icon
+                "dx_score": dx_score,
+                "score_icon": score_icon,
+                "combo_icon": combo_icon,
+                "sync_icon": sync_icon
             })
 
     return music_record
 
-def get_friends_list(session: requests.Session):
-    url = "https://maimaidx.jp/maimai-mobile/friend/"
+def get_friends_list(session: requests.Session, ver="jp"):
+    base = "https://maimaidx-eng.com/maimai-mobile" if ver == "intl" else "https://maimaidx.jp/maimai-mobile"
+    url = f"{base}/friend/"
     dom = fetch_dom(session, url)
     if dom is None:
         return []
@@ -119,7 +175,7 @@ def get_friends_list(session: requests.Session):
             rating = block.xpath('.//div[@class="rating_block"]/text()')[0].strip()
             user_id = block.xpath('.//form/input[@name="idx"]/@value')[0].strip()
             is_favorite = bool(
-                block.xpath('.//form[@action="https://maimaidx.jp/maimai-mobile/friend/favoriteOff/"]')
+                block.xpath(f'.//form[@action="{base}/friend/favoriteOff/"]')
             )
 
             friends.append({
@@ -167,10 +223,11 @@ def parse_level_value(input_str):
         except ValueError:
             raise ValueError(f"无法解析整数: {input_str}")
 
-def get_recent_records(session: requests.Session):
+def get_recent_records(session: requests.Session, ver="jp"):
+    base = "https://maimaidx-eng.com/maimai-mobile" if ver == "intl" else "https://maimaidx.jp/maimai-mobile"
     recent_record = []
 
-    url = "https://maimaidx.jp/maimai-mobile/record/"
+    url = f"{base}/record/"
     dom = fetch_dom(session, url)
     if dom is None:
         return []
@@ -218,35 +275,36 @@ def get_recent_records(session: requests.Session):
 
             icons = block.xpath('.//img[contains(@class, "h_35") and contains(@class, "m_5") and contains(@class, "f_l")]/@src')
 
-            combo_icon = dx_icon = "none"
+            combo_icon = sync_icon = "none"
 
             if len(icons) >= 1:
                 combo_icon = icons[0].split('/')[-1].split('.')[0]
                 combo_icon = combo_icon.replace("fc_dummy", "back")
 
             if len(icons) >= 2:
-                dx_icon = icons[1].split('/')[-1].split('.')[0]
-                dx_icon = dx_icon.replace("sync_dummy", "back")
+                sync_icon = icons[1].split('/')[-1].split('.')[0]
+                sync_icon = sync_icon.replace("sync_dummy", "back")
 
             recent_record.append({
                 "name": name,
                 "difficulty": difficulty,
                 "kind": kind,
                 "score": score,
-                "dx-score": dx_score,
-                "score-icon": score_icon.replace("plus", "p"),
-                "combo-icon": combo_icon.replace("plus", "p"),
-                "dx-icon": dx_icon.replace("plus", "p")
+                "dx_score": dx_score,
+                "score_icon": score_icon.replace("plus", "p"),
+                "combo_icon": combo_icon.replace("plus", "p"),
+                "sync_icon": sync_icon.replace("plus", "p")
             })
 
     return recent_record
 
-def get_friend_records(session: requests.Session, user_id: str):
+def get_friend_records(session: requests.Session, user_id: str, ver="jp"):
+    base = "https://maimaidx-eng.com/maimai-mobile" if ver == "intl" else "https://maimaidx.jp/maimai-mobile"
     difficulty = ['basic', 'advanced', 'expert', 'master', 'remaster']
     music_record = []
 
     for diff in range(5):
-        url = f"https://maimaidx.jp/maimai-mobile/friend/friendGenreVs/battleStart/?scoreType=2&genre=99&diff={diff}&idx={user_id}"
+        url = f"{base}/friend/friendGenreVs/battleStart/?scoreType=2&genre=99&diff={diff}&idx={user_id}"
         dom = fetch_dom(session, url)
         if dom is None:
             continue
@@ -282,11 +340,11 @@ def get_friend_records(session: requests.Session, user_id: str):
 
                 # 图标（取自右边 <td class="t_r f_0">）
                 icons = block.xpath('.//td[@class="t_r f_0"]/img/@src')
-                dx_icon = combo_icon = score_icon = ""
+                sync_icon = combo_icon = score_icon = ""
                 for index, icon in enumerate(icons):
                     icon_tag = icon.split('/')[-1].split('.')[0].replace("music_icon_", "")
                     if index == 0:
-                        dx_icon = icon_tag
+                        sync_icon = icon_tag
                     elif index == 1:
                         combo_icon = icon_tag
                     elif index == 2:
@@ -297,22 +355,30 @@ def get_friend_records(session: requests.Session, user_id: str):
                     "difficulty": difficulty[diff],
                     "kind": kind,
                     "score": score,
-                    "dx-score": "0 / 1000",
-                    "score-icon": score_icon,
-                    "combo-icon": combo_icon,
-                    "dx-icon": dx_icon
+                    "dx_score": "0 / 1000",
+                    "score_icon": score_icon,
+                    "combo_icon": combo_icon,
+                    "sync_icon": sync_icon
                 })
 
             except Exception as e:
                 print(f"[get_friend_records_like_self] Error parsing block: {e}")
 
-    return music_record
+    url = f"{base}/friend/search/searchUser/?friendCode={user_id}"
+    dom = fetch_dom(session, url)
+    if dom is None:
+        return "Unknown", music_record
+    friend_name = dom.xpath('//div[contains(@class, "name_block")]/text()')
+    friend_name = friend_name[0].strip() if friend_name else "Unknown"
 
-def get_maimai_info(session: requests.Session):
+    return friend_name, music_record
+
+def get_maimai_info(session: requests.Session, ver="jp"):
+    base = "https://maimaidx-eng.com/maimai-mobile" if ver == "intl" else "https://maimaidx.jp/maimai-mobile"
     user_info = {}
 
     # 主信息
-    dom = fetch_dom(session, "https://maimaidx.jp/maimai-mobile/playerData/")
+    dom = fetch_dom(session, f"{base}/playerData/")
     if dom is None:
         return {}
 
@@ -323,19 +389,19 @@ def get_maimai_info(session: requests.Session):
     class_rank_url = dom.xpath('//img[contains(@class, "p_l_10") and contains(@class, "h_35") and contains(@class, "f_l")]/@src')
 
     # 头像
-    dom = fetch_dom(session, "https://maimaidx.jp/maimai-mobile/collection/")
+    dom = fetch_dom(session, f"{base}/collection/")
     if dom is None:
         return {}
     icon_url = dom.xpath('//img[contains(@class, "w_80") and contains(@class, "m_r_10") and contains(@class, "f_l")]/@src')
 
     # 姓名框
-    dom = fetch_dom(session, "https://maimaidx.jp/maimai-mobile/collection/nameplate/")
+    dom = fetch_dom(session, f"{base}/collection/nameplate/")
     if dom is None:
         return {}
     nameplate_url = dom.xpath('//img[contains(@class, "w_396") and contains(@class, "m_r_10")]/@src')
 
     # 称号
-    dom = fetch_dom(session, "https://maimaidx.jp/maimai-mobile/collection/trophy/")
+    dom = fetch_dom(session, f"{base}/collection/trophy/")
     if dom is None:
         return {}
     trophy_type = dom.xpath('//div[contains(@class, "block_info") and contains(@class, "f_11") and contains(@class, "orange")]/text()')
@@ -375,8 +441,9 @@ def extract_onclick_url_from_button(li, keyword):
                 return onclick.split("'")[1]
     return ""
 
-def get_nearby_maimai_stores(lat, lng):
-    url = f"https://location.am-all.net/alm/location?gm=96&lat={lat}&lng={lng}"
+def get_nearby_maimai_stores(lat, lng, ver="jp"):
+    version_num = "98" if ver == "intl" else "96"
+    url = f"https://location.am-all.net/alm/location?gm={version_num}&lat={lat}&lng={lng}"
     session = requests.Session()
     dom = fetch_dom(session, url)
     if dom is None:

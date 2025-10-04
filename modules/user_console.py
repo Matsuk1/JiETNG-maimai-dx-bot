@@ -6,12 +6,7 @@ def add_user(user_id):
     read_user()
     users[user_id] = {
         "status": {
-            "points": 0,
-            "checked": False,
-            "check_days": 0,
             "notice_read": False,
-            "free_times": 2,
-            "replying_status": False
         }
     }
     write_user()
@@ -25,10 +20,12 @@ def delete_user(user_id):
 
     delete_record(user_id, recent=True)
     delete_record(user_id, recent=False)
-    delete_record(f"fake_{user_id}")
 
 def edit_user_status(user_id, key, word, type=0):
     read_user()
+
+    if user_id not in users:
+        add_user(user_id)
 
     if type == 0:
         users[user_id]["status"][key] = word
@@ -50,6 +47,10 @@ def edit_user_status_of_all(key, word, type=0):
 
 def get_user_status(user_id, key=""):
     read_user()
+
+    if user_id not in users:
+        add_user(user_id)
+
     if key:
         return users[user_id]["status"].get(key, None)
 
@@ -66,9 +67,5 @@ def reset_clean_users():
             if not info["status"]["points"]:
                 delete_user(user_id)
                 continue
-
-        edit_user_status(user_id, "check_days", get_user_status(user_id, "check_days") if get_user_status(user_id, "checked") else 0)
-        edit_user_status(user_id, "checked", False)
-        edit_user_status(user_id, "free_times", 3)
 
     write_user()

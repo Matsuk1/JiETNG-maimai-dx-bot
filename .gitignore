@@ -1,8 +1,7 @@
 __pycache__/
 module/__pycache__/
 
-data/*
-
-assets/fonts/*
+data/user.json.enc
+data/notice.json
 
 config.json

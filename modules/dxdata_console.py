@@ -1,5 +1,6 @@
 import requests
 import json
+from config_loader import MAIMAI_VERSION
 
 def load_dxdata(url, save_to: str = None, split=True):
     try:
@@ -10,6 +11,14 @@ def load_dxdata(url, save_to: str = None, split=True):
 
         if split:
             data['songs'] = split_song_sheets_by_type(data['songs'])
+            for song in data['songs']:
+                for version in data['versions']:
+                    if version['version'] == song['version']:
+                        for sheet in song.get("sheets", []):
+                            if 'count' not in version:
+                                version['count'] = 0
+                            if sheet['regions']['jp']:
+                                version['count'] += 1
 
         if save_to:
             with open(save_to, "w", encoding="utf-8") as file:
@@ -45,7 +54,7 @@ def split_song_sheets_by_type(song_list):
         for sheet in song.get("sheets", []):
             sheet_type = sheet.get("type")
             if "multiverInternalLevelValue" in sheet:
-                sheet["internalLevelValue"] = sheet["multiverInternalLevelValue"].get("PRiSM PLUS", sheet["internalLevelValue"])
+                sheet["internalLevelValue"] = sheet["multiverInternalLevelValue"].get(MAIMAI_VERSION["jp"][-1], sheet["internalLevelValue"])
 
             if sheet_type in sheets_by_type:
                 new_sheet = sheet.copy()

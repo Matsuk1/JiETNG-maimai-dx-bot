@@ -69,9 +69,9 @@ def create_thumbnail(song, thumb_size=(300, 150), padding=15):
     # --- 基础分数 ---
     draw.text((text_x_offset, padding + line_spacing), song['score'], fill=text_color, font=font_large)
 
-    # --- score-icon 图标 ---
+    # --- score_icon 图标 ---
     paste_icon(
-        img, song, key='score-icon',
+        img, song, key='score_icon',
         size=(65, 30),
         position=(score_x_offset - 60, padding + line_spacing),
         save_dir='./assets/icon/score',
@@ -79,23 +79,23 @@ def create_thumbnail(song, thumb_size=(300, 150), padding=15):
         verify=False
     )
 
-    # --- 版本标题 + dx-score ---
+    # --- 版本标题 + dx_score ---
     draw.text((text_x_offset, padding + line_spacing * 2),
               song['version'].replace(" PLUS", "+").replace("でらっくす", "DX"),
               fill=text_color, font=font_small)
 
     draw.text((score_x_offset, padding + line_spacing * 2),
-              song['dx-score'], fill=text_color, font=font_small, anchor="ra")
+              song['dx_score'], fill=text_color, font=font_small, anchor="ra")
 
     # --- 最下面的横线 ---
     draw.line([(0, thumb_size[1]),
                (thumb_size[0], thumb_size[1])],
               fill=(255, 255, 255), width=90)
 
-    # --- dx-star 星星图标 ---
-    if 'dx-score' in song and song['dx-score']:
+    # --- dx_star 星星图标 ---
+    if 'dx_score' in song and song['dx_score']:
         try:
-            dx_score = eval(song['dx-score'].replace(",", ""))
+            dx_score = eval(song['dx_score'].replace(",", ""))
             if 0 <= dx_score < 0.85:
                 star_num = 0
             elif 0.85 <= dx_score < 0.9:
@@ -113,17 +113,17 @@ def create_thumbnail(song, thumb_size=(300, 150), padding=15):
                 img, {'star': str(star_num)}, key='star',
                 size=(80, 16),
                 position=(padding + 80, thumb_size[1] - 32),
-                save_dir='./assets/icon/dx-star',
+                save_dir='./assets/icon/dx_star',
                 url_func=lambda value: f"https://maimaidx.jp/maimai-mobile/img/music_icon_dxstar_detail_{value}.png",
                 verify=False
             )
 
         except Exception as e:
-            print(f"Error calculating dx-star: {e}")
+            print(f"Error calculating dx_star: {e}")
 
-    # --- combo-icon 图标 ---
+    # --- combo_icon 图标 ---
     paste_icon(
-        img, song, key='combo-icon',
+        img, song, key='combo_icon',
         size=(40, 45),
         position=(padding - 5, thumb_size[1] - 48),
         save_dir='./assets/icon/combo',
@@ -131,12 +131,12 @@ def create_thumbnail(song, thumb_size=(300, 150), padding=15):
         verify=False
     )
 
-    # --- dx-icon 图标 ---
+    # --- sync_icon 图标 ---
     paste_icon(
-        img, song, key='dx-icon',
+        img, song, key='sync_icon',
         size=(40, 45),
         position=(padding + 40, thumb_size[1] - 48),
-        save_dir='./assets/icon/dx',
+        save_dir='./assets/icon/sync',
         url_func=lambda value: f"https://maimaidx.jp/maimai-mobile/img/music_icon_{value}.png",
         verify=False
     )
@@ -177,7 +177,7 @@ def generate_records_picture(up_songs=[], down_songs=[], title="RECORD"):
         down_level += rcd['internalLevelValue']
         down_score += float(rcd['score'][:-1])
 
-    all_ra = up_ra + down_ra
+    all_ra = round(up_ra + down_ra, 2)
     all_level = up_level + down_level
     all_score = up_score + down_score
 
@@ -196,7 +196,7 @@ def generate_records_picture(up_songs=[], down_songs=[], title="RECORD"):
     draw = ImageDraw.Draw(combined)
 
     header_text = [
-        f"でらっくすレーティング:  {all_ra} = {up_ra} + {down_ra}",
+        f"でらっくすレーティング:  {all_ra} = {up_ra} + {down_ra}" if up_ra and down_ra else f"でらっくすレーティング:  {all_ra}",
         f"平均レーティング:  {round(float(all_ra)/num, 2):.2f}",
         f"平均レベル:  {round(float(all_level)/num, 2):.2f}",
         f"平均達成率:  {round(all_score/num, 4):.4f}%"
@@ -237,6 +237,105 @@ def generate_records_picture(up_songs=[], down_songs=[], title="RECORD"):
 
     logo_img = Image.open(LOGO_PATH).resize((130, 130))
     combined.paste(logo_img, (img_width - 180, img_height - 150))
+
+    return combined
+
+def generate_yang_records_picture(version_songs, title="YANG"):
+    if not version_songs:
+        return
+
+    thumb_size = (300, 150)   # 每个缩略图大小
+    cols = 10                 # 固定列
+    spacing = 10              # 缩略图间距
+    side_width = 30           # 左右边距
+    header_height = 150       # 顶部标题区域
+    footer_height = 150       # 底部区域
+    block_padding = 20        # 每个版本区块之间的留白
+    line_height = 50          # 分隔条厚度
+
+    # 计算整体平均 ra
+    all_songs = [song for block in version_songs for song in block["songs"]]
+    song_count = sum(block["count"] for block in version_songs)
+    if not all_songs:
+        return
+    avg_ra = round(sum(song["ra"] for song in all_songs) / song_count, 2)
+
+    # 先计算整体高度
+    total_height = header_height + footer_height
+    max_width = cols * (thumb_size[0] + spacing) - spacing + side_width * 2
+
+    for block in version_songs:
+        songs = block["songs"]
+        rows = math.ceil(len(songs) / cols)
+        block_height = rows * (thumb_size[1] + spacing)
+        total_height += block_height + block_padding + line_height + 50
+
+    combined = Image.new("RGB", (max_width, total_height), (255, 255, 255))
+    draw = ImageDraw.Draw(combined)
+
+    # 顶部 header_text
+    header_text = [
+        f"YANG レーティング: {avg_ra:.2f}"
+    ]
+    draw_aligned_colon_text(
+        draw,
+        lines=header_text,
+        top_left=(side_width + 20, side_width),
+        font=font_huge,
+        spacing=7,
+        fill=(0, 0, 0)
+    )
+
+    # 大标题
+    bbox = draw.textbbox((0, 0), title, font=font_huge_huge)
+    draw.text(((max_width - bbox[2]), -40), title, fill=(200, 200, 200), font=font_huge_huge)
+
+    # 绘制每个版本区块
+    current_y = header_height
+    for idx, block in enumerate(version_songs):
+        songs = block["songs"]
+        version_title = block["version_title"]
+        count = block["count"]
+
+        # 分隔条
+        draw.rectangle(
+            [(0, current_y), (max_width, current_y + line_height)],
+            fill=(200, 200, 200)
+        )
+        current_y += line_height + 10
+
+        # 版本平均 ra
+        if songs:
+            avg_ra_version = round(sum(s["ra"] for s in songs) / count, 2)
+        else:
+            avg_ra_version = 0.00
+
+        # 写版本标题 + ra
+        bbox = draw.textbbox((0, 0), version_title, font=font_huge)
+        title_x = 10
+        title_y = current_y - line_height - 7
+        draw.text((title_x, title_y), version_title, fill=(0, 0, 0), font=font_huge)
+
+        ra_text = f"{avg_ra_version:.2f}"
+        draw.text((title_x + 350, title_y), ra_text, fill=(0, 0, 0), font=font_huge)
+
+        # 画缩略图
+        for i, song in enumerate(songs):
+            thumb = create_thumbnail(song, thumb_size)
+            x_offset = (i % cols) * (thumb_size[0] + spacing) + side_width
+            y_offset = current_y + (i // cols) * (thumb_size[1] + spacing)
+            combined.paste(thumb, (x_offset, y_offset))
+
+        # 更新 current_y
+        current_y = current_y + math.ceil(len(songs) / cols) * (thumb_size[1] + spacing) + 40 + block_padding
+
+    # 底部版权信息
+    footer_text = ["Generated by JiETNG.", "© 2025 Matsuki.", "All rights reserved."]
+    for i, text in enumerate(footer_text):
+        draw.text((side_width, total_height - footer_height + i * 30), text, fill=(0, 0, 0), font=font_huge)
+
+    logo_img = Image.open(LOGO_PATH).resize((100, 100))
+    combined.paste(logo_img, (max_width - 150, total_height - footer_height))
 
     return combined
 
