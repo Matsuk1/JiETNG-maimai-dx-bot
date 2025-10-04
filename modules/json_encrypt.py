@@ -21,6 +21,11 @@ def read_encrypted_json(filename: str, key: bytes) -> dict:
 
 def encrypt_file(filepath):
     try:
+        if not os.path.exists(filepath):
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump({}, f, ensure_ascii=False, indent=4)
+            print(f"Created empty JSON file: {filepath}")
+
         with open(filepath, 'r', encoding='utf-8') as f:
             data = json.load(f)
         write_encrypted_json(data, filepath + '.enc', KEY)
@@ -30,6 +35,10 @@ def encrypt_file(filepath):
 
 def decrypt_file(filepath):
     try:
+        if not os.path.exists(filepath):
+            write_encrypted_json({}, filepath, KEY)
+            print(f"Created empty encrypted file: {filepath}")
+
         data = read_encrypted_json(filepath, KEY)
         print(json.dumps(data, indent=4, ensure_ascii=False))
     except Exception as e:
