@@ -196,9 +196,8 @@ sudo systemctl reload nginx
 ## ✅ 检查配置是否成功
 
 1. 服务启动后，终端或日志应输出运行端口和状态信息。
-2. 使用 LINE 添加你的 bot，测试是否能正常响应。
-3. 管理员可通过 `admin_id` 使用特定命令（如 `getme`）验证绑定是否生效。
-4. 在浏览器访问 `https://jietng.example.com/adding`，确认是否能跳转到添加 LINE 账号界面，若能则正确代理到服务。
+2. 使用 LINE 添加 bot，测试是否能正常响应。
+3. 在浏览器访问 `https://jietng.example.com/adding`，确认是否能跳转到添加 LINE 账号界面，若能则正确代理到服务。
 
 ---
 
