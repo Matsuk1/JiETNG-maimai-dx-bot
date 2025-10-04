@@ -10,7 +10,7 @@ JiETNG 是一个基于 Python 的 Maimai 查分器 服务端程序，本指南�
 然后进入项目目录，安装依赖：
 
 ```bash
-pip3 install -r requirements.txt
+pip3 install -r inits/requirements.txt
 ```
 
 ---
@@ -195,18 +195,18 @@ sudo systemctl reload nginx
 
 ## ✅ 检查配置是否成功
 
-1. 服务启动后，终端或日志应输出运行端口和状态信息。  
-2. 使用 LINE 添加你的 bot，测试是否能正常响应。  
-3. 管理员可通过 `admin_id` 使用特定命令（如 `getme`）验证绑定是否生效。  
+1. 服务启动后，终端或日志应输出运行端口和状态信息。
+2. 使用 LINE 添加你的 bot，测试是否能正常响应。
+3. 管理员可通过 `admin_id` 使用特定命令（如 `getme`）验证绑定是否生效。
 4. 在浏览器访问 `https://jietng.example.com/adding`，确认是否能跳转到添加 LINE 账号界面，若能则正确代理到服务。
 
 ---
 
 ## 📖 附注
 
-- 若数据库尚未建立，请先根据项目提供的 SQL 脚本或手动建表。  
-- 域名与端口需保证能被外部访问，必要时配置 **Nginx 反向代理 + HTTPS**。  
+- 若数据库尚未建立，请先根据项目提供的 SQL 脚本（inits/records_db.sql）建表。
+- 域名与端口需保证能被外部访问，必要时配置 **Nginx 反向代理 + HTTPS**。
 - `config.json` 中未提及的部分默认不用修改。
-- 项目默认使用 `/linebot/` 来接收 LINE 消息，故请在 **Webhook URL** 处填写 `https://jietng.example.com/linebot/`
+- 项目默认使用 `/linebot/` 来接收 LINE 消息，故请在 **Webhook URL** 处填写 `https://jietng.example.com/linebot/`。
 
 ---
