@@ -299,8 +299,8 @@ def maimai_update(user_id):
                 if rct_ra < th <= now_ra:
                     iwau_msg = msg
                     break
-
-        users[user_id]["recent_rating"] = users[user_id]['personal_info']["rating"]
+        if 'personal_info' in users[user_id]:
+            users[user_id]["recent_rating"] = users[user_id]['personal_info']["rating"]
 
         users[user_id]['personal_info'] = user_info
         write_user()
@@ -928,9 +928,6 @@ def handle_text_message_task(event):
 
     if user_message in ["check", "network"]:
         reply_message = TextSendMessage(text="Active")
-
-    elif user_message == "人数チェック":
-        reply_message = TextSendMessage(text=get_num_of_people())
 
     elif user_message.endswith("ってどんな曲") :
         reply_message = search_song(user_message[:-6].strip())
