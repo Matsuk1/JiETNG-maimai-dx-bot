@@ -6,7 +6,6 @@ import socket
 import requests
 import json
 import re
-import sys
 import subprocess
 import time
 import traceback
@@ -34,22 +33,21 @@ from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage, ImageSendMessage, LocationMessage, TemplateSendMessage, ButtonsTemplate, MessageAction, URIAction
 from linebot import __version__ as linebot_version
 
-sys.path.append(os.path.join(os.path.dirname(__file__), 'modules'))
-from admin_tools import *
-from song_info_generate import *
-from record_picture_generate import *
-from user_console import *
-from token_console import *
-from notice_console import *
-from maimai_console import *
-from dxdata_console import *
-from record_console import *
-from config_loader import *
-from create_button_list import *
-from reply_text import *
-from note_score import *
-from img_upload import smart_upload
-from img_console import combine_with_rounded_background, wrap_in_rounded_background
+from modules.admin_tools import *
+from modules.song_info_generate import *
+from modules.record_picture_generate import *
+from modules.user_console import *
+from modules.token_console import *
+from modules.notice_console import *
+from modules.maimai_console import *
+from modules.dxdata_console import *
+from modules.record_console import *
+from modules.config_loader import *
+from modules.create_button_list import *
+from modules.reply_text import *
+from modules.note_score import *
+from modules.img_upload import smart_upload
+from modules.img_console import combine_with_rounded_background, wrap_in_rounded_background
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 if linebot_version.startswith("3."):
@@ -243,15 +241,15 @@ def get_user(user_id):
 
     return result
 
-def async_maimai_update_task(user_id, reply_token):
-    reply_msg = maimai_update(user_id)
+def async_maimai_update_task(user_id, reply_token, ver="jp"):
+    reply_msg = maimai_update(user_id, ver)
     smart_reply(user_id, reply_token, reply_msg)
 
-def async_generate_friend_b50_task(user_id, reply_token, friend_id):
-    reply_msg = generate_friend_b50(user_id, friend_id)
+def async_generate_friend_b50_task(user_id, reply_token, friend_id, ver="jp"):
+    reply_msg = generate_friend_b50(user_id, friend_id, ver)
     smart_reply(user_id, reply_token, reply_msg)
 
-def maimai_update(user_id):
+def maimai_update(user_id, ver="jp"):
     messages = []
     func_status = {
         "User Info": True,
@@ -270,13 +268,13 @@ def maimai_update(user_id):
     sega_id = users[user_id]['sega_id']
     sega_pwd = users[user_id]['sega_pwd']
 
-    user_session = login_to_maimai(sega_id, sega_pwd, users[user_id]['version'])
+    user_session = login_to_maimai(sega_id, sega_pwd, ver)
     if user_session == None:
         return no_segaid
 
-    user_info = get_maimai_info(user_session, users[user_id]['version'])
-    maimai_records = get_maimai_records(user_session, users[user_id]['version'])
-    recent_records = get_recent_records(user_session, users[user_id]['version'])
+    user_info = get_maimai_info(user_session, ver)
+    maimai_records = get_maimai_records(user_session, ver)
+    recent_records = get_recent_records(user_session, ver)
 
     error = False
 
@@ -348,8 +346,8 @@ def get_rc(level):
 
     return result
 
-def search_song(acronym):
-    read_dxdata()
+def search_song(acronym, ver="jp"):
+    read_dxdata(ver)
 
     result = []
     result_num = 0
@@ -364,12 +362,12 @@ def search_song(acronym):
         result = result[:6]
 
     elif not result_num:
-        result = TextSendMessage(text="❓ 条件に合う楽曲がないかも...")
+        result = TextSendMessage(text="条件に合う楽曲がないかも...")
 
     return result
 
-def random_song(key=""):
-    read_dxdata()
+def random_song(key="", ver="jp"):
+    read_dxdata(ver)
     length = len(songs)
     is_exit = False
     result = [TextSendMessage(text="🥳 この曲必ずできるよ！")]
@@ -387,7 +385,7 @@ def random_song(key=""):
                     break
 
     if not valid_songs:
-        return [TextSendMessage(text="❓ 条件に合う楽曲がないかも...")]
+        return [TextSendMessage(text="条件に合う楽曲がないかも...")]
 
     song = random.choice(valid_songs)
 
@@ -397,7 +395,7 @@ def random_song(key=""):
 
     return result
 
-def get_friends_list_buttons(user_id):
+def get_friends_list_buttons(user_id, ver="jp"):
     read_user()
     if user_id not in users:
         return no_segaid
@@ -408,9 +406,9 @@ def get_friends_list_buttons(user_id):
     sega_id = users[user_id]['sega_id']
     sega_pwd = users[user_id]['sega_pwd']
 
-    user_session = login_to_maimai(sega_id, sega_pwd, users[user_id]['version'])
+    user_session = login_to_maimai(sega_id, sega_pwd, ver)
 
-    friends_list = get_friends_list(user_session, users[user_id]['version'])
+    friends_list = get_friends_list(user_session, ver)
 
     if user_id.startswith("U"):
         return generate_flex_carousel("フレンドリスト・Friends List", format_favorite_friends(friends_list))
@@ -425,8 +423,8 @@ def get_friends_list_buttons(user_id):
 
     return TextSendMessage(text=result)
 
-def get_song_record(user_id, acronym) :
-    read_dxdata()
+def get_song_record(user_id, acronym, ver="jp") :
+    read_dxdata(ver)
 
     song_record = read_record(user_id)
 
@@ -451,16 +449,16 @@ def get_song_record(user_id, acronym) :
             result.append(message)
 
     if len(result) == 0 or len(result) > 6:
-        result = [TextSendMessage(text="❓ 条件に合う楽曲がないかも...")]
+        result = [TextSendMessage(text="条件に合う楽曲がないかも...")]
 
     return result
 
-def generate_plate_rcd(user_id, title, generate_user_info=True):
+def generate_plate_rcd(user_id, title, ver="jp"):
     if not (len(title) == 2 or len(title) == 3):
         return TextSendMessage(text="Error")
 
     read_user()
-    read_dxdata()
+    read_dxdata(ver)
 
     song_record = read_record(user_id)
 
@@ -527,8 +525,7 @@ def generate_plate_rcd(user_id, title, generate_user_info=True):
 
     img = generate_plate_image(target_data, title, headers = target_num)
 
-    if generate_user_info :
-        img = combine_with_rounded_background(create_user_info_img(user_id), img)
+    img = combine_with_rounded_background(create_user_info_img(user_id), img)
 
     image_url = smart_upload(img)
     message = ImageSendMessage(original_content_url=image_url, preview_image_url=image_url)
@@ -607,7 +604,7 @@ def create_user_info_img(user_id, scale=1.5):
     info_img = info_img.resize((int(img_width * scale), int(img_height * scale)), Image.LANCZOS)
     return info_img
 
-def selgen_records(user_id, type="best50", command="", generate_user_info=True):
+def selgen_records(user_id, type="best50", command="", ver="jp"):
     read_user()
 
     if user_id not in users:
@@ -699,22 +696,14 @@ def selgen_records(user_id, type="best50", command="", generate_user_info=True):
             up_songs.append(sorted_data[count - 1])
         down_songs = []
 
-    else:
-        return selgen_records(user_id)
-
     img = generate_records_picture(up_songs, down_songs, type.upper())
-
-    if generate_user_info:
-        img = combine_with_rounded_background(create_user_info_img(user_id), img)
-
-    else:
-        img = wrap_in_rounded_background(img)
+    img = combine_with_rounded_background(create_user_info_img(user_id), img)
 
     image_url = smart_upload(img)
     message = ImageSendMessage(original_content_url=image_url, preview_image_url=image_url)
     return message
 
-def generate_yang_rating(user_id, generate_user_info=True):
+def generate_yang_rating(user_id, ver="jp"):
     song_record = read_record(user_id, yang=True)
     if not len(song_record):
         return no_record
@@ -724,7 +713,7 @@ def generate_yang_rating(user_id, generate_user_info=True):
 
     version_records = []
 
-    read_dxdata()
+    read_dxdata(ver)
     for version in versions:
         if version['version'] == now_version:
             break
@@ -738,18 +727,13 @@ def generate_yang_rating(user_id, generate_user_info=True):
         version_records.append(version_data)
 
     img = generate_yang_records_picture(version_records)
-
-    if generate_user_info:
-        img = combine_with_rounded_background(create_user_info_img(user_id), img)
-
-    else:
-        img = wrap_in_rounded_background(img)
+    img = combine_with_rounded_background(create_user_info_img(user_id), img)
 
     image_url = smart_upload(img)
     message = ImageSendMessage(original_content_url=image_url, preview_image_url=image_url)
     return message
 
-def generate_friend_b50(user_id, friend_id):
+def generate_friend_b50(user_id, friend_id, ver="jp"):
     read_user()
 
     if user_id not in users :
@@ -761,11 +745,11 @@ def generate_friend_b50(user_id, friend_id):
     sega_id = users[user_id]['sega_id']
     sega_pwd = users[user_id]['sega_pwd']
 
-    user_session = login_to_maimai(sega_id, sega_pwd, users[user_id]['version'])
+    user_session = login_to_maimai(sega_id, sega_pwd, ver)
     
-    friend_name, song_record = get_friend_records(user_session, friend_id, users[user_id]['version'])
+    friend_name, song_record = get_friend_records(user_session, friend_id, ver)
 
-    song_record = get_detailed_info(song_record, users[user_id]['version'])
+    song_record = get_detailed_info(song_record, ver)
 
     up_songs_data = list(filter(lambda x: x['new_song'] == False, song_record))
     down_songs_data = list(filter(lambda x: x['new_song'] == True, song_record))
@@ -783,10 +767,10 @@ def generate_friend_b50(user_id, friend_id):
     ]
     return message
 
-def generate_level_records(user_id, level, generate_user_info=True):
+def generate_level_records(user_id, level, page=1, ver="jp"):
     read_user()
 
-    song_record = read_record(user_id, ver=users[user_id]["version"])
+    song_record = read_record(user_id)
 
     if not len(song_record):
         return no_record
@@ -801,25 +785,34 @@ def generate_level_records(user_id, level, generate_user_info=True):
 
     up_level_list = sorted(up_level_list_data, key=lambda x: -x["ra"])
     down_level_list = sorted(down_level_list_data, key=lambda x: -x["ra"])
+    
+    page_size_up = 35
+    page_size_down = 15
+
+    start_up = (page - 1) * page_size_up
+    end_up = start_up + page_size_up
+
+    start_down = (page - 1) * page_size_down
+    end_down = start_down + page_size_down
+
+    up_level_list = up_level_list[start_up:end_up]
+    down_level_list = down_level_list[start_down:end_down]
 
     if not up_level_list and not down_level_list:
-        return TextSendMessage(text=f"❓ 指定されたレベル {level} の譜面記録は存在しないかも...")
+        return TextSendMessage(text=f"指定されたレベル {level} の譜面記録は存在しないかも...")
 
-    title = f"LV {level}"
+    title = f"LV{level} #{page}"
 
     img = generate_records_picture(up_level_list, down_level_list, title)
 
-    if generate_user_info :
-        img = combine_with_rounded_background(create_user_info_img(user_id), img)
-    else:
-        img = wrap_in_rounded_background(img)
+    img = combine_with_rounded_background(create_user_info_img(user_id), img)
 
     image_url = smart_upload(img)
     message = ImageSendMessage(original_content_url=image_url, preview_image_url=image_url)
     return message
 
-def generate_version_songs(version_title):
-    read_dxdata()
+def generate_version_songs(version_title, ver="jp"):
+    read_dxdata(ver)
 
     target_version = []
     target_icon = []
@@ -858,16 +851,16 @@ def smart_reply(user_id, reply_token, messages):
     if reply_token.startswith("proxy"):
         try:
             message_dicts = [msg.as_json_dict() for msg in messages]
-            debug_response = requests.post(
+            proxy_response = requests.post(
                 PROXY_URL,
                 json={
                     "token": reply_token,
                     "messages": message_dicts
                 }
             )
-            print(f"[Debug Reply] {debug_response.status_code}")
+            print(f"[Proxy Reply] {proxy_response.status_code}")
         except Exception as e:
-            print(f"[Debug Reply] {e}")
+            print(f"[Proxy Reply] {e}")
     else:
         line_bot_api.reply_message(reply_token, messages)
 
@@ -879,16 +872,16 @@ def smart_push(user_id, reply_token, messages):
 
             message_dicts = [msg.as_json_dict() for msg in messages]
 
-            debug_response = requests.post(
+            proxy_response = requests.post(
                 PROXY_URL,
                 json={
                     "token": reply_token,
                     "messages": message_dicts
                 }
             )
-            print(f"[Debug Push] {debug_response.status_code}")
+            print(f"[Proxy Push] {proxy_response.status_code}")
         except Exception as e:
-            print(f"[Debug Push] {e}")
+            print(f"[Proxy Push] {e}")
     else:
         line_bot_api.push_message(user_id, messages)
 
@@ -923,236 +916,176 @@ def handle_text_message_task(event):
     user_message = event.message.text.strip()
     user_id = event.source.user_id
     id_use = user_id
+    mai_ver = "jp"
+    read_user()
+    if user_id in users:
+        if 'version' in users[user_id]:
+            mai_ver = users[user_id]['version']
 
-    need_reply = True
+    # ====== 基础命令映射 ======
+    COMMAND_MAP = {
+        "check": lambda: TextSendMessage(text="Active"),
+        "network": lambda: TextSendMessage(text="Active"),
 
-    if user_message in ["check", "network"]:
-        reply_message = TextSendMessage(text="Active")
+        "unbind": lambda: (delete_user(user_id), TextSendMessage(text="SEGA ID 連携解消成功。"))[-1],
+        "連携解消": lambda: (delete_user(user_id), TextSendMessage(text="SEGA ID 連携解消成功。"))[-1],
 
-    elif user_message.endswith("ってどんな曲") :
-        reply_message = search_song(user_message[:-6].strip())
+        "get me": lambda: TextSendMessage(text=get_user(user_id)),
+        "getme": lambda: TextSendMessage(text=get_user(user_id)),
 
-    elif user_message.startswith("ランダム曲"):
-        reply_message = random_song(user_message[5:].strip())
+        "yang": lambda: generate_yang_rating(id_use, mai_ver),
+        "yrating": lambda: generate_yang_rating(id_use, mai_ver),
+        "yra": lambda: generate_yang_rating(id_use, mai_ver),
 
-    elif user_message.startswith("rc ") :
-        reply_message = TextSendMessage(text=get_rc(float(user_message[3:])))
+        "friend list": lambda: get_friends_list_buttons(user_id, mai_ver),
+        "friend-b50": lambda: get_friends_list_buttons(user_id, mai_ver),
+    }
 
-    elif user_message.lower() in ["segaid bind", "segaid バインド", "sega bind", "sega バインド"]:
+    if user_message in COMMAND_MAP:
+        reply_message = COMMAND_MAP[user_message]()
+        return smart_reply(user_id, event.reply_token, reply_message)
+
+    # ====== 模糊匹配规则 ======
+    SPECIAL_RULES = [
+        (lambda msg: msg.endswith("ってどんな曲"),
+         lambda msg: search_song(msg[:-6].strip(), mai_ver)),
+        (lambda msg: msg.startswith("ランダム曲"),
+         lambda msg: random_song(msg[5:].strip(), mai_ver)),
+        (lambda msg: msg.startswith("rc "),
+         lambda msg: TextSendMessage(text=get_rc(float(msg[3:])))),
+        (lambda msg: msg.endswith(("の達成状況", "の達成情報", "の達成表")),
+         lambda msg: generate_plate_rcd(id_use, re.sub("(の達成状況|の達成情報|の達成表)$", "", msg).strip(), mai_ver)),
+        (lambda msg: msg.endswith("のレコード"),
+         lambda msg: get_song_record(id_use, msg[:-5].strip(), mai_ver)),
+        (lambda msg: re.match(r".+のレコードリスト[ 　]*\d*$", msg),
+        lambda msg: (
+            generate_level_records(
+                id_use,
+                re.sub(r"のレコードリスト[ 　]*\d*$", "", msg).strip(),
+                int(re.search(r"(\d+)$", msg).group(1)) if re.search(r"(\d+)$", msg) else 1,
+                mai_ver
+            )
+        )),
+        (lambda msg: msg.endswith("のバージョンリスト"),
+         lambda msg: generate_version_songs(msg[:-9].replace("+", " plus").strip(), mai_ver)),
+    ]
+
+    for cond, func in SPECIAL_RULES:
+        if cond(user_message):
+            reply_message = func(user_message)
+            return smart_reply(user_id, event.reply_token, reply_message)
+
+    # ====== B 系列命令 ======
+    first_word = re.split(r"[ \n]", user_message.lower(), 1)[0]
+    rest_text = re.split(r"[ \n]", user_message.lower(), 1)[1] if re.search(r"[ \n]", user_message) else ""
+
+    RANK_COMMANDS = {
+        ("b50", "best 50", "ベスト50"): "best50",
+        ("b100", "best 100", "ベスト100"): "best100",
+        ("b35", "best 35", "ベスト35"): "best35",
+        ("b15", "best 15", "ベスト15"): "best15",
+        ("ab50", "all best 50", "オールベスト50"): "allb50",
+        ("ab35", "all best 35", "オールベスト35"): "allb35",
+        ("ap50", "apb50", "オールパーフェクト50", "all perfect 50", "apb50"): "apb50",
+        ("rct50", "r50", "recent 50"): "rct50",
+        ("idealb50", "idlb50", "理想的ベスト50", "ideal best 50"): "idealb50",
+        ("unknown", "unknown songs", "unknown data", "未発見"): "UNKNOWN",
+        ("yang2", "yrating2", "yra2"): "yang",
+    }
+
+    for aliases, mode in RANK_COMMANDS.items():
+        if first_word in aliases:
+            reply_message = selgen_records(id_use, mode, rest_text, mai_ver)
+            return smart_reply(user_id, event.reply_token, reply_message)
+
+    # ====== SEGA ID 绑定逻辑 ======
+    if user_message.lower() in ["segaid bind", "segaid バインド", "sega bind", "sega バインド"]:
         bind_url = f"https://{DOMAIN}/linebot/sega_bind?token={generate_token(user_id)}"
-
         if user_id.startswith("U"):
             buttons_template = ButtonsTemplate(
                 title='SEGA アカウント連携',
-                text=(
-                    'SEGA アカウントと連携されます\n'
-                    '有効期限は発行から2分間です'
-                ),
-                actions=[
-                    URIAction(label='押しで連携', uri=bind_url)
-                ]
+                text='SEGA アカウントと連携されます\n有効期限は発行から2分間です',
+                actions=[URIAction(label='押しで連携', uri=bind_url)]
             )
             reply_message = TemplateSendMessage(
                 alt_text='SEGA アカウント連携',
                 template=buttons_template
             )
-
         else:
             reply_message = TextSendMessage(text=f"こちらはバインド用リンクです↓\n{bind_url}\n発行から2分間有効。")
+        return smart_reply(user_id, event.reply_token, reply_message)
 
-    elif user_message.startswith(("segaid bind ", "pwd bind ")):
-        reply_message = TextSendMessage(text="SEGA IDの連携には「sega bind」コマンドをご利用ください。")
+    if user_message.startswith(("segaid bind ", "pwd bind ")):
+        return smart_reply(user_id, event.reply_token,
+                           TextSendMessage(text="SEGA IDの連携には「sega bind」コマンドをご利用ください。"))
 
-    elif user_message in ["unbind", "連携削除", "連携解消"]:
-        delete_user(user_id)
-        reply_message = TextSendMessage(text="SEGA ID 連携解消成功。")
-
-    elif user_message in ["get me", "getme", "個人情報", "个人信息"]:
-        reply_message = TextSendMessage(text=get_user(user_id))
-
-    elif user_message in ["マイマイアップデート", "maimai update", "レコードアップデート", "record update"]:
-        need_reply = False
+    # ====== maimai 更新任务 ======
+    if user_message in ["マイマイアップデート", "maimai update", "レコードアップデート", "record update"]:
         try:
-            webtask_queue.put_nowait((async_maimai_update_task, (user_id, event.reply_token)))
+            webtask_queue.put_nowait((async_maimai_update_task, (user_id, event.reply_token, mai_ver)))
         except queue.Full:
-            smart_reply(user_id, event.reply_token, TextSendMessage(text="🙇 現在アップデート処理が混雑しています。後ほどお試しください。"))
+            smart_reply(user_id, event.reply_token,
+                        TextSendMessage(text="🙇 現在アップデート処理が混雑しています。後ほどお試しください。"))
+        return
 
-    elif user_message.endswith(("の達成状況", "の達成情報", "の達成表")) :
-        reply_message = generate_plate_rcd(id_use, user_message.replace("の達成状況", "").replace("の達成情報", "").replace("の達成表", "").strip())
-
-    elif user_message.endswith("のレコード") :
-        reply_message = get_song_record(id_use, user_message.replace("のレコード", "").strip())
-
-    elif re.split(r"[ \n]", user_message.lower(), 1)[0] in ["ベスト50", "b50", "best 50"]:
-        reply_message = selgen_records(
-            id_use,
-            "best50",
-            re.split(r"[ \n]", user_message.lower(), 1)[1] if re.search(r"[ \n]", user_message) else ""
-        )
-
-    elif re.split(r"[ \n]", user_message.lower(), 1)[0] in ["ベスト100", "b100", "best 100"]:
-        reply_message = selgen_records(
-            id_use,
-            "best100",
-            re.split(r"[ \n]", user_message.lower(), 1)[1] if re.search(r"[ \n]", user_message) else ""
-        )
-
-    elif re.split(r"[ \n]", user_message.lower(), 1)[0] in ["ベスト35", "b35", "best 35"]:
-        reply_message = selgen_records(
-            id_use,
-            "best35",
-            re.split(r"[ \n]", user_message.lower(), 1)[1] if re.search(r"[ \n]", user_message) else ""
-        )
-
-    elif re.split(r"[ \n]", user_message.lower(), 1)[0] in ["ベスト15", "b15", "best 15"]:
-        reply_message = selgen_records(
-            id_use,
-            "best15",
-            re.split(r"[ \n]", user_message.lower(), 1)[1] if re.search(r"[ \n]", user_message) else ""
-        )
-
-    elif re.split(r"[ \n]", user_message.lower(), 1)[0] in ["オールベスト50", "ab50", "all best 50"]:
-        reply_message = selgen_records(
-            id_use,
-            "allb50",
-            re.split(r"[ \n]", user_message.lower(), 1)[1] if re.search(r"[ \n]", user_message) else ""
-        )
-
-    elif re.split(r"[ \n]", user_message.lower(), 1)[0] in ["オールベスト35", "ab35", "all best 35"]:
-        reply_message = selgen_records(
-            id_use,
-            "allb35",
-            re.split(r"[ \n]", user_message.lower(), 1)[1] if re.search(r"[ \n]", user_message) else ""
-        )
-
-    elif re.split(r"[ \n]", user_message.lower(), 1)[0] in ["オールパーフェクト50", "ap50", "all perfect 50", "apb50"]:
-        reply_message = selgen_records(
-            id_use,
-            "apb50",
-            re.split(r"[ \n]", user_message.lower(), 1)[1] if re.search(r"[ \n]", user_message) else ""
-        )
-
-    elif re.split(r"[ \n]", user_message.lower(), 1)[0] in ["未発見", "unknown songs", "unknown data"]:
-        reply_message = selgen_records(
-            id_use,
-            "UNKNOWN",
-            re.split(r"[ \n]", user_message.lower(), 1)[1] if re.search(r"[ \n]", user_message) else ""
-        )
-
-    elif re.split(r"[ \n]", user_message.lower(), 1)[0] in ["rct50", "r50", "recent 50"]:
-        reply_message = selgen_records(
-            id_use,
-            "rct50",
-            re.split(r"[ \n]", user_message.lower(), 1)[1] if re.search(r"[ \n]", user_message) else ""
-        )
-
-    elif re.split(r"[ \n]", user_message.lower(), 1)[0] in ["理想的ベスト50", "idealb50", "idlb50", "ideal best 50"]:
-        reply_message = selgen_records(
-            id_use,
-            "idealb50",
-            re.split(r"[ \n]", user_message.lower(), 1)[1] if re.search(r"[ \n]", user_message) else ""
-        )
-
-    elif re.split(r"[ \n]", user_message.lower(), 1)[0] in ["yang2", "yrating2", "yra2"]:
-        reply_message = selgen_records(
-            id_use,
-            "yang",
-            re.split(r"[ \n]", user_message.lower(), 1)[1] if re.search(r"[ \n]", user_message) else ""
-        )
-
-    elif user_message in ["yang", "yrating", "yra"]:
-        reply_message = generate_yang_rating(id_use)
-
-    elif user_message in ["friend list", "friends list", "friend-b50"]:
-        reply_message = get_friends_list_buttons(user_id)
-
-    elif user_message.startswith("friend-b50 "):
+    # ====== friend-b50 异步任务 ======
+    if user_message.startswith("friend-b50 "):
         friend_id = user_message.replace("friend-b50 ", "").strip()
-        need_reply = False
         try:
-            webtask_queue.put_nowait((
-                async_generate_friend_b50_task,
-                (user_id, event.reply_token, friend_id)
-            ))
+            webtask_queue.put_nowait((async_generate_friend_b50_task, (user_id, event.reply_token, friend_id, mai_ver)))
         except queue.Full:
-            smart_reply(
-                user_id,
-                event.reply_token,
-                TextSendMessage(text="🙇 現在処理が混雑しています。後ほどお試しください。")
-            )
-    elif user_message.endswith("のレコードリスト") :
-        reply_message = generate_level_records(id_use, user_message[:-8].strip())
+            smart_reply(user_id, event.reply_token,
+                        TextSendMessage(text="🙇 現在処理が混雑しています。後ほどお試しください。"))
+        return
 
-    elif user_message.endswith("のバージョンリスト"):
-        reply_message = generate_version_songs(user_message[:-9].replace("+", " plus").strip())
-
-    elif user_message.startswith("calc "):
-        num= list(map(int, user_message[5:].split()))
-        if len(num) == 5 or len(num) == 4:
+    # ====== calc 命令 ======
+    if user_message.startswith("calc "):
+        try:
+            num = list(map(int, user_message[5:].split()))
             if len(num) == 4:
-                num[4] = num[3]
-                num[3] = 0
-
-            notes = {
-                'tap': num[0],
-                'hold': num[1],
-                'slide': num[2],
-                'touch': num[3],
-                'break': num[4]
-            }
-
+                num = [num[0], num[1], num[2], 0, num[3]]
+            if len(num) != 5:
+                raise ValueError
+            notes = dict(zip(['tap', 'hold', 'slide', 'touch', 'break'], num))
             scores = get_note_score(notes)
-            result = f"TAP: \t {num[0]}\nHOLD: \t {num[1]}\nSLIDE: \t {num[2]}\nTOUCH: \t {num[3]}\nBREAK: \t {num[4]}\n{divider}\n"
+            result = (
+                f"TAP: \t {num[0]}\nHOLD: \t {num[1]}\nSLIDE: \t {num[2]}\n"
+                f"TOUCH: \t {num[3]}\nBREAK: \t {num[4]}\n{divider}\n"
+            )
             for k, v in scores.items():
                 result += f"{k.ljust(20)} -{v:.5f}%\n"
-
-            print(result)
-
             reply_message = TextSendMessage(text=result)
-
-        else:
+        except Exception:
             reply_message = TextSendMessage(text="❗️エラー")
+        return smart_reply(user_id, event.reply_token, reply_message)
 
-    elif user_id in admin_id:
-        if user_message == "dxdata update":
-            load_dxdata(DXDATA_URL, dxdata_list)
-            read_dxdata()
-            reply_message = TextSendMessage(text="✅ Dxdata Updated")
-
-        elif user_message.startswith("upload notice"):
-            new_noticement = user_message.replace("upload notice", "").strip()
-            upload_notice(new_noticement)
-            edit_user_status_of_all("notice_read", False)
-            reply_message = TextSendMessage(text="uploaded")
-
-        elif user_message == "service info":
-            service_info = get_service_info()
-            result = textwrap.dedent(f"""
+    # ====== 管理员命令 ======
+    if user_id in admin_id:
+        admin_cmds = {
+            "dxdata update": lambda: (load_dxdata(DXDATA_URL, dxdata_list), read_dxdata(),
+                                      TextSendMessage(text="✅ Dxdata Updated!"))[-1],
+            "service info": lambda: TextSendMessage(text=textwrap.dedent(f"""
                 サービス情報
 
-                · 総ユーザー数 | {service_info['LINE']['num'] + service_info['proxy']['num']}
+                · 総ユーザー数 | {get_service_info()['LINE']['num'] + get_service_info()['proxy']['num']}
+                · LINE ユーザー数 | {get_service_info()['LINE']['num']}
+                · Proxy ユーザー数 | {get_service_info()['proxy']['num']}
+            """)),
+        }
 
-                · LINE ユーザー数 | {service_info['LINE']['num']}
-                  - 日本版 | {service_info['LINE']['jp']}
-                  - 海外版 | {service_info['LINE']['intl']}
+        if user_message.startswith("upload notice"):
+            new_notice = user_message.replace("upload notice", "").strip()
+            upload_notice(new_notice)
+            edit_user_status_of_all("notice_read", False)
+            reply_message = TextSendMessage(text="uploaded")
+            return smart_reply(user_id, event.reply_token, reply_message)
 
-                · Proxy ユーザー数 | {service_info['proxy']['num']}
-                  - 日本版 | {service_info['proxy']['jp']}
-                  - 海外版 | {service_info['proxy']['intl']}
+        if user_message in admin_cmds:
+            reply_message = admin_cmds[user_message]()
+            return smart_reply(user_id, event.reply_token, reply_message)
 
-                · Unknown Users | {service_info['unknown']}
-            """)
-            reply_message = TextSendMessage(text=result)
-
-    else:
-        need_reply = False
-
-    if need_reply :
-        smart_reply(
-            user_id,
-            event.reply_token,
-            reply_message
-        )
+    # ====== 默认：不匹配任何命令 ======
+    return
 
 #位置信息处理
 @handler.add(MessageEvent, message=LocationMessage)
@@ -1188,4 +1121,4 @@ def handle_location_message_task(event):
     )
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=PORT, threaded=True)
+    app.run(host="0.0.0.0", port=PORT)
