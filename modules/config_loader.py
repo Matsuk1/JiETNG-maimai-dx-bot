@@ -2,10 +2,10 @@ import copy
 import json
 import os
 import secrets
+import csv
 
 from cryptography.fernet import Fernet
-
-from json_encrypt import *
+from modules.json_encrypt import *
 
 CONFIG_PATH = "./config.json"
 
@@ -20,6 +20,7 @@ default_config = {
     "port": 5000,
     "file_path": {
         "dxdata_list": "./data/dxdata.json",
+        "re_dxdata_list": "./data/re_dxdata.json",
         "user_list": "./data/user.json.enc",
         "notice_file": "./data/notice.json",
         "font": "./assets/fonts/mplus-1p-regular.ttf",
@@ -51,9 +52,7 @@ config_dir = os.path.dirname(CONFIG_PATH)
 if config_dir:
     os.makedirs(config_dir, exist_ok=True)
 
-
 def _ensure_fernet_key(value: str) -> str:
-    """确保提供的字符串可以作为 Fernet key 使用，若不合法则重新生成。"""
 
     if not isinstance(value, str):
         value = ""
@@ -65,10 +64,7 @@ def _ensure_fernet_key(value: str) -> str:
 
     return value
 
-
 def _ensure_bind_token(value: str) -> str:
-    """bind_token 允许为空，但为空时自动生成一个随机字符串，避免运行时报错。"""
-
     if not isinstance(value, str) or not value:
         value = secrets.token_urlsafe(16)
 
@@ -111,6 +107,7 @@ PORT = _config["port"]
 # 文件路径字段
 file_path = _config["file_path"]
 dxdata_list = file_path["dxdata_list"]
+re_dxdata_list = file_path["re_dxdata_list"]
 user_list = file_path["user_list"]
 NOTICE_FILE = file_path["notice_file"]
 font_path = file_path["font"]
@@ -144,10 +141,46 @@ songs = []
 versions = []
 users = {}
 
-def read_dxdata():
+def read_dxdata(ver="jp"):
     global songs, versions
     dxdata_file = json.load(open(dxdata_list, 'r', encoding='utf-8'))
     songs.clear()
+    
+    def is_int(s):
+        return s.isdigit()
+
+    if ver == "intl":
+        csv_map = {}
+        with open(re_dxdata_list, 'r', encoding='utf-8') as f:
+            for row in csv.reader(f):
+                if row:
+                    csv_map[row[0]] = row[1:]
+
+        for song in dxdata_file['songs']:
+            if song['title'] not in csv_map:
+                continue
+            if song['type'] != csv_map[song['title']][0]:
+                continue
+            row = csv_map[song['title']][1:]
+            *keys, value = row
+            cur = song
+            for k in keys[:-1]:
+                if is_int(k):
+                    k = int(k)
+                    while len(cur) <= k:
+                        cur.append({})
+                    cur = cur[k]
+                else:
+                    cur = cur.setdefault(k, {})
+            last = keys[-1]
+            if is_int(last):
+                last = int(last)
+                while len(cur) <= last:
+                    cur.append(None)
+                cur[last] = value
+            else:
+                cur[last] = value
+    
     songs.extend(dxdata_file['songs'])
     versions.clear()
     versions.extend(dxdata_file['versions'])
