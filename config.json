@@ -15,6 +15,7 @@
     "port": 5000,
     "file_path": {
         "dxdata_list": "./data/dxdata.json",
+        "re_dxdata_list": "./data/re_dxdata.csv",
         "user_list": "./data/user.json.enc",
         "notice_file": "./data/notice.json",
         "font": "./assets/fonts/mplus-1p-regular.ttf",
