@@ -1,29 +1,27 @@
 import requests
 import json
-from config_loader import MAIMAI_VERSION
+from modules.config_loader import MAIMAI_VERSION
 
-def load_dxdata(url, save_to: str = None, split=True):
+def load_dxdata(url, save_to: str = None):
     try:
         response = requests.get(url)
         response.raise_for_status()
 
         data = response.json()
 
-        if split:
-            data['songs'] = split_song_sheets_by_type(data['songs'])
-            for song in data['songs']:
-                for version in data['versions']:
-                    if version['version'] == song['version']:
-                        for sheet in song.get("sheets", []):
-                            if 'count' not in version:
-                                version['count'] = 0
-                            if sheet['regions']['jp']:
-                                version['count'] += 1
+        data['songs'] = split_song_sheets_by_type(data['songs'])
+        for song in data['songs']:
+            for version in data['versions']:
+                if version['version'] == song['version']:
+                    for sheet in song.get("sheets", []):
+                        if 'count' not in version:
+                            version['count'] = 0
+                        if sheet['regions']['jp']:
+                            version['count'] += 1
 
         if save_to:
             with open(save_to, "w", encoding="utf-8") as file:
                 json.dump(data, file, ensure_ascii=False, indent=2)
-            print(f"文件已成功保存为 {save_to}")
 
         return data
 
