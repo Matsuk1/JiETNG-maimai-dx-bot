@@ -1,6 +1,6 @@
 import json
-from record_console import delete_record
-from config_loader import read_user, write_user, users
+from modules.record_console import delete_record
+from modules.config_loader import read_user, write_user, users
 
 def add_user(user_id):
     read_user()
@@ -56,16 +56,3 @@ def get_user_status(user_id, key=""):
 
     else:
         return users[user_id]["status"]
-
-def reset_clean_users():
-    read_user()
-
-    for user_id in list(users.keys()):
-        info = users[user_id]
-
-        if list(info.keys()) == ["status"]:
-            if not info["status"]["points"]:
-                delete_user(user_id)
-                continue
-
-    write_user()
