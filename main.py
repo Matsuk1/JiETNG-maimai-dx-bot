@@ -10,7 +10,6 @@ import subprocess
 import time
 import traceback
 import os
-import urllib.parse
 import urllib3
 import math
 import difflib
@@ -24,13 +23,16 @@ import textwrap
 from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
 
+from pyzbar.pyzbar import decode
+from urllib.parse import urlparse
+
 from datetime import timedelta
 
 from flask import Flask, request, abort, render_template, redirect
 
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
-from linebot.models import MessageEvent, TextMessage, TextSendMessage, ImageSendMessage, LocationMessage, TemplateSendMessage, ButtonsTemplate, MessageAction, URIAction
+from linebot.models import MessageEvent, TextMessage, TextSendMessage, ImageMessage, ImageSendMessage, LocationMessage, TemplateSendMessage, ButtonsTemplate, MessageAction, URIAction
 from linebot import __version__ as linebot_version
 
 from modules.admin_tools import *
@@ -47,7 +49,7 @@ from modules.create_button_list import *
 from modules.reply_text import *
 from modules.note_score import *
 from modules.img_upload import smart_upload
-from modules.img_console import combine_with_rounded_background, wrap_in_rounded_background
+from modules.img_console import combine_with_rounded_background, wrap_in_rounded_background, generate_qr_with_title
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 if linebot_version.startswith("3."):
@@ -152,6 +154,11 @@ def linebot_reply():
 def line_add_page():
     return redirect(LINE_ADDING_URL)
 
+@app.route("/linebot/add_friend", methods=["GET"])
+def maimai_add_friend_page():
+    friend_code = request.args.get("code")
+    return redirect(f"line://oaMessage/@299bylay/?add-friend%20{friend_code}")
+
 @app.route("/linebot/sega_bind", methods=["GET", "POST"])
 def website_segaid_bind():
     token = request.args.get("token")
@@ -245,9 +252,26 @@ def async_maimai_update_task(user_id, reply_token, ver="jp"):
     reply_msg = maimai_update(user_id, ver)
     smart_reply(user_id, reply_token, reply_msg)
 
-def async_generate_friend_b50_task(user_id, reply_token, friend_id, ver="jp"):
-    reply_msg = generate_friend_b50(user_id, friend_id, ver)
+def async_generate_friend_b50_task(user_id, reply_token, friend_code, ver="jp"):
+    reply_msg = generate_friend_b50(user_id, friend_code, ver)
     smart_reply(user_id, reply_token, reply_msg)
+
+def async_add_friend_task(user_id, reply_token, friend_code, ver="jp"):
+    read_user()
+
+    sega_id = users[user_id]['sega_id']
+    sega_pwd = users[user_id]['sega_pwd']
+
+    user_session = login_to_maimai(sega_id, sega_pwd, ver)
+    if user_session == None:
+        return no_segaid
+
+    reply_msg_data = add_friend(user_session, friend_code, ver)
+
+    reply_msg = TextSendMessage(text=reply_msg_data)
+    smart_reply(user_id, reply_token, reply_msg)
+
+    return None
 
 def maimai_update(user_id, ver="jp"):
     messages = []
@@ -419,7 +443,7 @@ def get_friends_list_buttons(user_id, ver="jp"):
             continue
         result += f"\n{frd['name']} - {frd['rating']}\n - [{frd['user_id']}]"
 
-    result += f"\n{divider}\nCommand: friend-b50 [friend_id]\nExample: friend-b50 100818313"
+    result += f"\n{divider}\nCommand: friend-b50 [friend_code]\nExample: friend-b50 100818313"
 
     return TextSendMessage(text=result)
 
@@ -533,7 +557,6 @@ def generate_plate_rcd(user_id, title, ver="jp"):
     return message
 
 def create_user_info_img(user_id, scale=1.5):
-    global users
     read_user()
 
     user_info = users[user_id]['personal_info']
@@ -603,6 +626,35 @@ def create_user_info_img(user_id, scale=1.5):
 
     info_img = info_img.resize((int(img_width * scale), int(img_height * scale)), Image.LANCZOS)
     return info_img
+
+def generate_maid_card(user_id):
+    read_user()
+    if user_id not in users:
+        return no_segaid
+
+    user_info = users[user_id]["personal_info"]
+    if "friend_code" not in user_info:
+        return TextSendMessage(text="もう一回「maimai update」してみてね！")
+
+    user_img = create_user_info_img(user_id)
+
+    title_list = [
+        "QRコードをスキャンして",
+        "画像を『JiETNG』に送っても",
+        "maimai フレンドになれるよ！",
+        "\n",
+        "Scan the QR code,",
+        "or send the image to 'JiETNG',",
+        "and we'll become maimai friends!"
+    ]
+
+    qr_img = generate_qr_with_title(f"https://jietng.matsuki.top/linebot/add_friend?code={user_info['friend_code']}", title_list)
+
+    img = combine_with_rounded_background(user_img, qr_img)
+
+    image_url = smart_upload(img)
+    message = ImageSendMessage(original_content_url=image_url, preview_image_url=image_url)
+    return message
 
 def selgen_records(user_id, type="best50", command="", ver="jp"):
     read_user()
@@ -733,7 +785,7 @@ def generate_yang_rating(user_id, ver="jp"):
     message = ImageSendMessage(original_content_url=image_url, preview_image_url=image_url)
     return message
 
-def generate_friend_b50(user_id, friend_id, ver="jp"):
+def generate_friend_b50(user_id, friend_code, ver="jp"):
     read_user()
 
     if user_id not in users :
@@ -747,7 +799,7 @@ def generate_friend_b50(user_id, friend_id, ver="jp"):
 
     user_session = login_to_maimai(sega_id, sega_pwd, ver)
     
-    friend_name, song_record = get_friend_records(user_session, friend_id, ver)
+    friend_name, song_record = get_friend_records(user_session, friend_code, ver)
 
     song_record = get_detailed_info(song_record, ver)
 
@@ -762,12 +814,12 @@ def generate_friend_b50(user_id, friend_id, ver="jp"):
 
     image_url = smart_upload(img)
     message = [
-        TextSendMessage(text=f"「{friend_name}」のBest Top 50"),
+        TextSendMessage(text=f"「{friend_name}」さんの Best 50"),
         ImageSendMessage(original_content_url=image_url, preview_image_url=image_url)
     ]
     return message
 
-def generate_level_records(user_id, level, page=1, ver="jp"):
+def generate_level_records(user_id, level, ver="jp", page=1):
     read_user()
 
     song_record = read_record(user_id)
@@ -900,7 +952,7 @@ def should_respond(event):
 
 #消息处理
 @handler.add(MessageEvent, message=TextMessage)
-def handle_message(event):
+def handle_text_message(event):
     try:
         task_queue.put_nowait((handle_text_message_task, (event,)))
 
@@ -910,7 +962,6 @@ def handle_message(event):
             event.reply_token,
             TextSendMessage(text="🙇 今はアクセスが集中しています。後ほどもう一度お試しください。")
         )
-
 
 def handle_text_message_task(event):
     user_message = event.message.text.strip()
@@ -939,6 +990,10 @@ def handle_text_message_task(event):
 
         "friend list": lambda: get_friends_list_buttons(user_id, mai_ver),
         "friend-b50": lambda: get_friends_list_buttons(user_id, mai_ver),
+        
+        "maid card": lambda: generate_maid_card(user_id),
+        "maid": lambda: generate_maid_card(user_id),
+        "mai pass": lambda: generate_maid_card(user_id)
     }
 
     if user_message in COMMAND_MAP:
@@ -947,27 +1002,50 @@ def handle_text_message_task(event):
 
     # ====== 模糊匹配规则 ======
     SPECIAL_RULES = [
-        (lambda msg: msg.endswith("ってどんな曲"),
-         lambda msg: search_song(msg[:-6].strip(), mai_ver)),
-        (lambda msg: msg.startswith("ランダム曲"),
-         lambda msg: random_song(msg[5:].strip(), mai_ver)),
-        (lambda msg: msg.startswith("rc "),
-         lambda msg: TextSendMessage(text=get_rc(float(msg[3:])))),
-        (lambda msg: msg.endswith(("の達成状況", "の達成情報", "の達成表")),
-         lambda msg: generate_plate_rcd(id_use, re.sub("(の達成状況|の達成情報|の達成表)$", "", msg).strip(), mai_ver)),
-        (lambda msg: msg.endswith("のレコード"),
-         lambda msg: get_song_record(id_use, msg[:-5].strip(), mai_ver)),
-        (lambda msg: re.match(r".+のレコードリスト[ 　]*\d*$", msg),
-        lambda msg: (
-            generate_level_records(
-                id_use,
-                re.sub(r"のレコードリスト[ 　]*\d*$", "", msg).strip(),
-                int(re.search(r"(\d+)$", msg).group(1)) if re.search(r"(\d+)$", msg) else 1,
-                mai_ver
-            )
+        (lambda msg: msg.endswith(("ってどんな曲", "song-info")),
+        lambda msg: search_song(
+            re.sub(r"(ってどんな曲|song-info)$", "", msg).strip(),
+            mai_ver
         )),
-        (lambda msg: msg.endswith("のバージョンリスト"),
-         lambda msg: generate_version_songs(msg[:-9].replace("+", " plus").strip(), mai_ver)),
+
+        (lambda msg: msg.startswith(("ランダム曲", "random-song")),
+        lambda msg: random_song(
+            re.sub(r"^(ランダム曲|random-song)", "", msg).strip(),
+            mai_ver
+        )),
+
+        (lambda msg: msg.startswith(("rc ", "RC ", "Rc ")),
+        lambda msg: TextSendMessage(
+            text=get_rc(float(re.sub(r"^rc\b[ 　]*", "", msg, flags=re.IGNORECASE)))
+        )),
+
+        (lambda msg: msg.endswith(("の達成状況", "の達成情報", "の達成表", "achievement-list")),
+        lambda msg: generate_plate_rcd(
+            id_use,
+            re.sub(r"(の達成状況|の達成情報|の達成表|achievement-list)$", "", msg).strip(),
+            mai_ver
+        )),
+
+        (lambda msg: msg.endswith(("のレコード", "song-record")),
+        lambda msg: get_song_record(
+            id_use,
+            re.sub(r"(のレコード|song-record)$", "", msg).strip(),
+            mai_ver
+        )),
+
+        (lambda msg: re.match(r".+(のレコードリスト|record-list)[ 　]*\d*$", msg),
+        lambda msg: generate_level_records(
+            id_use,
+            re.sub(r"(のレコードリスト|record-list)[ 　]*\d*$", "", msg).strip(),
+            mai_ver,
+            int(re.search(r"(\d+)$", msg).group(1)) if re.search(r"(\d+)$", msg) else 1
+        )),
+
+        (lambda msg: msg.endswith(("のバージョンリスト", "version-list")),
+        lambda msg: generate_version_songs(
+            re.sub(r"(のバージョンリスト|version-list)$", "", msg).replace("+", " plus").strip(),
+            mai_ver
+        ))
     ]
 
     for cond, func in SPECIAL_RULES:
@@ -1030,9 +1108,19 @@ def handle_text_message_task(event):
 
     # ====== friend-b50 异步任务 ======
     if user_message.startswith("friend-b50 "):
-        friend_id = user_message.replace("friend-b50 ", "").strip()
+        friend_code = user_message.replace("friend-b50 ", "").strip()
         try:
-            webtask_queue.put_nowait((async_generate_friend_b50_task, (user_id, event.reply_token, friend_id, mai_ver)))
+            webtask_queue.put_nowait((async_generate_friend_b50_task, (user_id, event.reply_token, friend_code, mai_ver)))
+        except queue.Full:
+            smart_reply(user_id, event.reply_token,
+                        TextSendMessage(text="🙇 現在処理が混雑しています。後ほどお試しください。"))
+        return
+
+    # ====== add-friend 异步任务 ======
+    if user_message.startswith("add-friend "):
+        friend_code = user_message.replace("add-friend ", "").strip()
+        try:
+            webtask_queue.put_nowait((async_add_friend_task, (user_id, event.reply_token, friend_code, mai_ver)))
         except queue.Full:
             smart_reply(user_id, event.reply_token,
                         TextSendMessage(text="🙇 現在処理が混雑しています。後ほどお試しください。"))
@@ -1087,6 +1175,80 @@ def handle_text_message_task(event):
     # ====== 默认：不匹配任何命令 ======
     return
 
+#图片信息处理
+@handler.add(MessageEvent, message=ImageMessage)
+def handle_image_message(event):
+    message_id = event.message.id
+    message_content = line_bot_api.get_message_content(message_id)
+
+    img_bytes = b''.join(chunk for chunk in message_content.iter_content())
+    image = Image.open(BytesIO(img_bytes))
+
+    qr_results = decode(image)
+
+    reply_msg = []
+
+    if qr_results:
+        for qr in qr_results:
+            data = qr.data.decode("utf-8")
+            new_reply_msg = handle_image_message_task(event.source.user_id, event.reply_token, data)
+            if new_reply_msg:
+                reply_msg.append(new_reply_msg)
+        if reply_msg:
+            smart_reply(
+                event.source.user_id,
+                event.reply_token,
+                reply_msg
+            )
+
+    else:
+        smart_reply(
+            event.source.user_id,
+            event.reply_token,
+            TextSendMessage(text="わかんないけどいい写真だね？")
+        )
+
+def handle_image_message_task(user_id, reply_token, data):
+    if DOMAIN in data:
+        return handle_internal_link(user_id, reply_token, data)
+
+    else:
+        return TextSendMessage(text=data)
+
+def handle_internal_link(user_id, reply_token, data):
+    mai_ver = "jp"
+    read_user()
+    if user_id in users:
+        if 'version' in users[user_id]:
+            mai_ver = users[user_id]['version']
+
+    URL_MAP = [
+        (
+            lambda content, domain: re.match(
+                rf"^(?:https?://)?{re.escape(domain)}/linebot/add_friend\?code=",
+                content
+            ),
+
+            lambda content, user_id, reply_token, domain, mai_ver: async_add_friend_task(
+                user_id,
+                reply_token,
+                re.sub(
+                    rf"^(?:https?://)?{re.escape(domain)}/linebot/add_friend\?code=",
+                    "",
+                    content
+                ).strip(),
+                mai_ver
+            )
+        ),
+    ]
+
+    for condition, action in URL_MAP:
+        if condition(data, DOMAIN):
+            return action(data, user_id, reply_token, DOMAIN, mai_ver)
+        else:
+            return TextSendMessage(text=data)
+
+
 #位置信息处理
 @handler.add(MessageEvent, message=LocationMessage)
 def handle_location_message(event):
@@ -1108,7 +1270,7 @@ def handle_location_message_task(event):
 
     stores = get_nearby_maimai_stores(lat, lng, users[user_id]['version'])
     if not stores:
-        reply_message = TextSendMessage(text="🥹 周辺の設置店舗がないね？")
+        reply_message = TextSendMessage(text="🥹 周辺の設置店舗がないね")
     else:
         reply_message = [TextSendMessage(text="🗺️ 最寄りの maimai 設置店舗")]
         for i, store in enumerate(stores[:4]):
