@@ -1,7 +1,9 @@
 import os
+import io
 import requests
+import qrcode
 from PIL import Image, ImageDraw, ImageFont
-from config_loader import font_path
+from modules.config_loader import font_path
 
 font_title = ImageFont.truetype(font_path, 34)
 font_info = ImageFont.truetype(font_path, 24)
@@ -128,3 +130,68 @@ def combine_with_rounded_background(img1, img2, spacing=40):
     final_img.paste(combined, (spacing, spacing), combined)
 
     return final_img
+
+def generate_qrcode(data: str, box_size: int = 10, border: int = 4) -> Image.Image:
+    qr = qrcode.QRCode(
+        version=None,
+        error_correction=qrcode.constants.ERROR_CORRECT_H,
+        box_size=box_size,
+        border=border,
+    )
+    qr.add_data(data)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white").convert("RGB")
+    return img
+
+def generate_qr_with_title(data: str, title_list: list[str]) -> Image.Image:
+    qr_img = generate_qrcode(data)
+    qr_w, qr_h = qr_img.size
+
+    padding = 40
+    line_spacing = 10
+
+    # 计算文字尺寸
+    dummy_img = Image.new("RGB", (1, 1), "white")
+    draw = ImageDraw.Draw(dummy_img)
+
+    line_sizes = []
+    max_line_w = 0
+    total_text_height = 0
+    for i, text in enumerate(title_list):
+        bbox = draw.textbbox((0, 0), text, font=font_title)
+        w = bbox[2] - bbox[0]
+        h = bbox[3] - bbox[1]
+        line_sizes.append((w, h))
+        max_line_w = max(max_line_w, w)
+        total_text_height += h
+        if i < len(title_list) - 1:
+            total_text_height += line_spacing
+
+    # 保证二维码与文本区高度一致
+    text_h = total_text_height
+    text_w = max_line_w
+    target_h = max(qr_h, text_h)
+    scale = target_h / qr_h
+    qr_img = qr_img.resize((int(qr_w * scale), int(qr_h * scale)), Image.LANCZOS)
+    qr_w, qr_h = qr_img.size
+
+    # 左右空余相等 → 左右各 padding，二维码-文字间距设为 padding
+    total_w = padding + qr_w + padding + text_w + padding
+    total_h = target_h + padding * 2
+
+    img = Image.new("RGB", (total_w, total_h), "white")
+    draw = ImageDraw.Draw(img)
+
+    # 绘制二维码（垂直居中）
+    qr_x = padding
+    qr_y = (total_h - qr_h) // 2
+    img.paste(qr_img, (qr_x, qr_y))
+
+    # 绘制文字区域（整体垂直居中）
+    text_start_x = qr_x + qr_w + padding
+    text_start_y = (total_h - text_h) // 2
+    for (text, (w, h)) in zip(title_list, line_sizes):
+        draw.text((text_start_x, text_start_y), text, font=font_title, fill=(0, 0, 0))
+        text_start_y += h + line_spacing
+
+    return img
