@@ -2,8 +2,8 @@ import json
 import requests
 from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont
-from record_picture_generate import create_thumbnail
-from img_console import *
+from modules.record_picture_generate import create_thumbnail
+from modules.img_console import *
 
 def song_info_generate(song_json, played_data = []):
     image_name = song_json["imageName"]
@@ -97,12 +97,6 @@ def render_basic_info_image(song_json, cover_img):
     line_y = text_y + 45
     draw.line([(text_x, line_y), (text_x + max(title_width+10, 600), line_y)], fill=(100, 100, 100), width=2)
 
-    # 其他信息
-#    draw.text((text_x, line_y + 15), artist, font=font_info, fill=(0, 0, 0))
-#    draw.text((text_x, line_y + 50), bpm, font=font_info, fill=(0, 0, 0))
-#    draw.text((text_x, line_y + 85), category, font=font_info, fill=(0, 0, 0))
-#    draw.text((text_x, line_y + 120), version, font=font_info, fill=(0, 0, 0))
-
     draw_aligned_colon_text(
         draw,
         lines=info_text,
@@ -114,13 +108,20 @@ def render_basic_info_image(song_json, cover_img):
 
     return img
 
-def generate_sheet_table_all_centered(draw, sheets, font, scale_width=1.5, scale_height=2.0):
+def generate_song_table_image(song_json, scale_width=1.5, scale_height=2.0):
+    font = ImageFont.truetype(font_path, 28)
+
     headers = ["Difficulty", "Level", "Total", "TAP", "HOLD", "SLIDE", "TOUCH", "BREAK", "JP", "CN", "INTL"]
     base_col_widths = [160, 90, 80, 80, 80, 80, 80, 80, 60, 60, 70]
     col_widths = [int(w * scale_width) for w in base_col_widths]
     row_height = int(48 * scale_height)
+    col_offsets = [sum(col_widths[:i]) for i in range(len(col_widths))]  # 缓存列起始坐标
 
-    x0, y0 = 0, 0
+    total_width = sum(col_widths)
+    total_height = (len(song_json["sheets"]) + 1) * row_height
+
+    image = Image.new("RGBA", (total_width, total_height), (255, 255, 255, 255))
+    draw = ImageDraw.Draw(image)
 
     block_colors = {
         "info": (220, 240, 255, 255),
@@ -134,20 +135,24 @@ def generate_sheet_table_all_centered(draw, sheets, font, scale_width=1.5, scale
         "regions": range(8, 11)
     }
 
+    # 绘制表头
     for i, header in enumerate(headers):
-        x = x0 + sum(col_widths[:i])
+        x = col_offsets[i]
         fill = (
             block_colors["info"] if i in block_ranges["info"] else
             block_colors["notes"] if i in block_ranges["notes"] else
             block_colors["regions"]
         )
-        draw.rectangle([x, y0, x + col_widths[i], y0 + row_height], fill=fill)
+        draw.rectangle([x, 0, x + col_widths[i], row_height], fill=fill)
         w = draw.textlength(header, font=font)
-        draw.text((x + (col_widths[i] - w) // 2, y0 + row_height // 4), header, font=font, fill=(0, 0, 0))
+        draw.text((x + (col_widths[i] - w) // 2, row_height // 4), header, font=font, fill=(0, 0, 0))
 
-    for row_idx, sheet in enumerate(sheets):
+    # 绘制每一行
+    for row_idx, sheet in enumerate(song_json["sheets"]):
+        y = (row_idx + 1) * row_height
         notes = sheet["noteCounts"]
         regions = sheet.get("regions", {})
+
         data = [
             sheet["difficulty"].capitalize(),
             f"{sheet['internalLevelValue']:.1f}",
@@ -161,9 +166,9 @@ def generate_sheet_table_all_centered(draw, sheets, font, scale_width=1.5, scale
             "✓" if regions.get("cn") else "✗",
             "✓" if regions.get("intl") else "✗",
         ]
-        y = y0 + (row_idx + 1) * row_height
+
         for col_idx, cell in enumerate(data):
-            x = x0 + sum(col_widths[:col_idx])
+            x = col_offsets[col_idx]
             if col_idx in block_ranges["info"]:
                 fill = (240, 250, 255, 240)
             elif col_idx in block_ranges["notes"]:
@@ -175,22 +180,6 @@ def generate_sheet_table_all_centered(draw, sheets, font, scale_width=1.5, scale
             text = str(cell)
             w = draw.textlength(text, font=font)
             draw.text((x + (col_widths[col_idx] - w) // 2, y + row_height // 4), text, font=font, fill=(0, 0, 0))
-
-    total_width = sum(col_widths)
-    total_height = (len(sheets) + 1) * row_height
-    return total_width, total_height
-
-def generate_song_table_image(song_json, scale_width=1.5, scale_height=2.0):
-    font = ImageFont.truetype(font_path, 28)
-
-    dummy_img = Image.new("RGBA", (1, 1))
-    dummy_draw = ImageDraw.Draw(dummy_img)
-    width, height = generate_sheet_table_all_centered(dummy_draw, song_json["sheets"], font, scale_width, scale_height)
-
-    image = Image.new("RGBA", (width, height), (255, 255, 255, 255))
-    draw = ImageDraw.Draw(image)
-
-    generate_sheet_table_all_centered(draw, song_json["sheets"], font, scale_width, scale_height)
 
     return image
 
@@ -265,17 +254,6 @@ def generate_version_list(songs_json):
     return wrap_in_rounded_background(concat_images_vertically_with_margin(song_imgs))
 
 def concat_images_vertically_with_margin(image_list, margin=10, bg_color=(255, 255, 255, 0)):
-    """
-    每 7 张图片为一组，横向拼接，多个组纵向拼接，每张图之间加入 margin 间距，背景为白色。
-
-    Args:
-        image_list (List[PIL.Image]): 图片对象列表
-        margin (int): 间距（像素）
-        bg_color (Tuple): 背景颜色
-
-    Returns:
-        PIL.Image: 拼接后的大图
-    """
     if not image_list:
         raise ValueError("图片列表不能为空")
 
