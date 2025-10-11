@@ -1,7 +1,7 @@
 import json
 import requests
 from lxml import etree
-from record_console import get_detailed_info
+from modules.record_console import get_detailed_info
 
 def fetch_dom(session: requests.Session, url: str) -> etree._Element:
     if url.startswith("https://maimaidx-eng.com"):
@@ -94,6 +94,7 @@ def login_to_maimai(sega_id: str, password: str, ver="jp"):
 
             aime_choose = session.get("https://maimaidx.jp/maimai-mobile/aimeList/submit/?idx=0")
             return session
+
 def get_maimai_records(session: requests.Session, ver="jp"):
     base = "https://maimaidx-eng.com/maimai-mobile" if ver == "intl" else "https://maimaidx.jp/maimai-mobile"
     difficulty = ['basic', 'advanced', 'expert', 'master', 'remaster']
@@ -199,6 +200,38 @@ def format_favorite_friends(friends):
         }
         for f in friends if f.get("is_favorite")
     ]
+
+def add_friend(session: requests.Session, friend_code, ver="jp"):
+    base = "https://maimaidx-eng.com/maimai-mobile" if ver == "intl" else "https://maimaidx.jp/maimai-mobile"
+    search_url = f"{base}/friend/search/searchUser/?friendCode={friend_code}"
+    invite_url = f"{base}/friend/search/invite/"
+
+    dom = fetch_dom(session, search_url)
+    token = dom.xpath('//input[@name="token"]/@value')
+    idx = dom.xpath('//input[@name="idx"]/@value')
+    friend_name = dom.xpath('//div[contains(@class, "name_block")]/text()')
+
+    if not friend_name:
+        return "これ誰だっけ？"
+
+    if not token or not idx:
+        return "フレンド申請はもう送ったじゃん！"
+
+    token = token[0]
+    idx = idx[0]
+    friend_name = friend_name[0].strip() if friend_name else "Unknown"
+
+    data = {
+        "idx": idx,
+        "token": token
+    }
+    headers={"Content-Type": "application/x-www-form-urlencoded"}
+
+    resp = session.post(invite_url, data=data, headers=headers)
+    if resp.status_code != 200:
+        return "やべー！エラー発生！"
+
+    return f"「{friend_name}」さんにフレンド申請送ったよ！"
 
 def parse_level_value(input_str):
     input_str = input_str.strip()
@@ -413,8 +446,15 @@ def get_maimai_info(session: requests.Session, ver="jp"):
     else:
         trophy_content = "N/A"
 
+    # 好友码
+    dom = fetch_dom(session, f"{base}/friend/userFriendCode/")
+    if dom is None:
+        return {}
+    friend_code = dom.xpath('//div[contains(@class, "see_through_block")]/text()')
+
     user_info = {
         "name": user_name[0].strip() if user_name else "N/A",
+        "friend_code": friend_code[0].strip() if friend_code else "N/A",
         "rating_block_url": rating_block_url[0] if rating_block_url else "N/A",
         "rating": rating[0].strip() if rating else "N/A",
         "cource_rank_url": cource_rank_url[0] if cource_rank_url else "N/A",
