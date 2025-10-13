@@ -157,7 +157,7 @@ def line_add_page():
 @app.route("/linebot/add_friend", methods=["GET"])
 def maimai_add_friend_page():
     friend_code = request.args.get("code")
-    return redirect(f"line://oaMessage/@299bylay/?add-friend%20{friend_code}")
+    return redirect(f"line://oaMessage/{LINE_ACCOUNT_ID}/?add-friend%20{friend_code}")
 
 @app.route("/linebot/sega_bind", methods=["GET", "POST"])
 def website_segaid_bind():
@@ -302,28 +302,7 @@ def maimai_update(user_id, ver="jp"):
 
     error = False
 
-    iwau_msg = ""
-
     if user_info:
-        if "recent_rating" in users[user_id]:
-            rct_ra = int(users[user_id]["recent_rating"])
-            now_ra = int(user_info["rating"])
-            thresholds = [
-                (16000, "🎉 レーティング16000 おめでとう！"),
-                (15000, "🥳 虹レー おめでとう！"),
-                (14500, "🥳 白金レー おめでとう！"),
-                (14000, "🥳 金レー おめでとう！"),
-                (13000, "🥳 青レー おめでとう！"),
-                (12000, "🥳 銅レー おめでとう！"),
-                (10000, "🥳 紫レー おめでとう！"),
-            ]
-            for th, msg in thresholds:
-                if rct_ra < th <= now_ra:
-                    iwau_msg = msg
-                    break
-        if 'personal_info' in users[user_id]:
-            users[user_id]["recent_rating"] = users[user_id]['personal_info']["rating"]
-
         users[user_id]['personal_info'] = user_info
         write_user()
     else:
@@ -351,9 +330,6 @@ def maimai_update(user_id, ver="jp"):
     else:
         messages.append(TextSendMessage(text=f"❗️アップデート中エラーが発生！"))
         messages.append(TextSendMessage(text=details))
-
-    if len(iwau_msg):
-        messages.append(TextSendMessage(text=iwau_msg))
 
     return messages
 
@@ -1043,7 +1019,7 @@ def handle_text_message_task(event):
 
         (lambda msg: msg.endswith(("のバージョンリスト", "version-list")),
         lambda msg: generate_version_songs(
-            re.sub(r"(のバージョンリスト|version-list)$", "", msg).replace("+", " plus").strip(),
+            re.sub(r"\s*\+\s*", " PLUS", re.sub(r"(のバージョンリスト|version-list)$", "", msg)).strip(),
             mai_ver
         ))
     ]
