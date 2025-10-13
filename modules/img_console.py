@@ -90,44 +90,77 @@ def resize_by_width(img, target_width):
     resized_img = img.resize((target_width, target_height), Image.Resampling.LANCZOS)
     return resized_img
 
-def create_rounded_background(size, radius=30, fill=(230, 230, 230, 255)):
-    """创建不透明度为80%的圆角白底图层"""
-    w, h = size
-    bg = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+def wrap_in_rounded_background(content_img, padding=20, radius=30,
+                               bg_color=(255, 255, 255), border_color=(220, 220, 220), border_width=5):
+    """
+    将图像放入圆角白底框中（支持灰色边框，去除透明通道）
+
+    参数：
+        content_img: 原始图像 (PIL.Image)
+        padding: 内容与圆角框的间距
+        radius: 圆角半径
+        bg_color: 内部背景颜色（默认白色）
+        border_color: 边框颜色（默认浅灰）
+        border_width: 边框线宽
+    """
+    # 计算背景尺寸
+    bg_size = (content_img.width + 2 * padding, content_img.height + 2 * padding)
+
+    # 创建白底画布
+    bg = Image.new("RGB", bg_size, bg_color)
     draw = ImageDraw.Draw(bg)
-    draw.rounded_rectangle([0, 0, w, h], radius=radius, fill=fill)
+
+    # 绘制圆角矩形边框
+    x0, y0 = 0, 0
+    x1, y1 = bg_size
+    draw.rounded_rectangle(
+        [x0, y0, x1, y1],
+        radius=radius,
+        outline=border_color,
+        width=border_width,
+        fill=bg_color
+    )
+
+    # 贴上内容图
+    content_img = content_img.convert("RGB")
+    bg.paste(content_img, (padding, padding))
+
     return bg
 
-def wrap_in_rounded_background(content_img, padding=20, radius=30):
-    """将图像放入圆角白底框中"""
-    bg_size = (content_img.width + 2 * padding, content_img.height + 2 * padding)
-    bg = create_rounded_background(bg_size, radius)
-    combined = Image.new("RGBA", bg_size, (0, 0, 0, 0))
-    content_img = content_img.convert("RGBA")
-    combined.paste(bg, (0, 0), bg)
-    combined.paste(content_img, (padding, padding), content_img)
-    return combined
-
-def combine_with_rounded_background(img1, img2, spacing=40):
+def combine_with_rounded_background(img1, img2, spacing=40, outer_margin=30, bg_color=(255, 255, 255), inner_bg=(255, 255, 255)):
+    """
+    将两个圆角图像上下拼接，外层为灰色背景，内部为白色背景。
+    
+    参数：
+        img1, img2: PIL.Image 对象
+        spacing: 两张图之间的间距
+        outer_margin: 最外层边距（灰边宽度）
+        bg_color: 灰色背景颜色（RGB）
+        inner_bg: 内部白色背景
+    """
+    # 先给每个图加上圆角背景
     img1_bg = wrap_in_rounded_background(img1)
     img2_bg = wrap_in_rounded_background(img2)
 
+    # 计算内部画布尺寸
     width = max(img1_bg.width, img2_bg.width)
     height = img1_bg.height + spacing + img2_bg.height
 
-    combined = Image.new("RGBA", (width, height), (255, 255, 255, 255))
+    # 创建白色背景（内部）
+    combined = Image.new("RGB", (width, height), inner_bg)
     x1 = (width - img1_bg.width) // 2
     x2 = (width - img2_bg.width) // 2
 
-    combined.paste(img1_bg, (x1, 0), img1_bg)
-    combined.paste(img2_bg, (x2, img1_bg.height + spacing), img2_bg)
+    # 粘贴两张图片
+    combined.paste(img1_bg.convert("RGB"), (x1, 0))
+    combined.paste(img2_bg.convert("RGB"), (x2, img1_bg.height + spacing))
 
-    new_width = combined.width + 2 * spacing
-    new_height = combined.height + 2 * spacing
+    # 再加上外层灰色背景
+    final_width = combined.width + 2 * outer_margin
+    final_height = combined.height + 2 * outer_margin
 
-    final_img = Image.new("RGBA", (new_width, new_height), (255, 255, 255, 255))
-
-    final_img.paste(combined, (spacing, spacing), combined)
+    final_img = Image.new("RGB", (final_width, final_height), bg_color)
+    final_img.paste(combined, (outer_margin, outer_margin))
 
     return final_img
 
