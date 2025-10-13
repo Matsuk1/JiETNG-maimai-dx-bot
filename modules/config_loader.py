@@ -38,6 +38,7 @@ default_config = {
         "proxy": ""
     },
     "line_channel": {
+        "account_id": "",
         "access_token": "",
         "secret": ""
     },
@@ -128,6 +129,7 @@ PROXY_URL = urls["proxy"]
 
 # LINE 配置字段
 line_channel = _config["line_channel"]
+LINE_ACCOUNT_ID = line_channel["account_id"]
 LINE_CHANNEL_ACCESS_TOKEN = line_channel["access_token"]
 LINE_CHANNEL_SECRET = line_channel["secret"]
 
