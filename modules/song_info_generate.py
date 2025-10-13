@@ -17,7 +17,7 @@ def song_info_generate(song_json, played_data = []):
         img2 = resize_by_width(generate_song_table_image(song_json), 1200)
 
     else:
-        img2 = resize_by_width(makeup_played_data(played_data).convert('RGBA'), 600)
+        img2 = resize_by_width(makeup_played_data(played_data), 600)
 
     song_img = combine_with_rounded_background(img1, img2)
 
@@ -54,7 +54,7 @@ def render_basic_info_image(song_json, cover_img):
     text_gap = 35
 
     # 创建画布
-    img = Image.new("RGBA", (canvas_width, canvas_height), (255, 255, 255, 0))
+    img = Image.new("RGBA", (canvas_width, canvas_height), (255, 255, 255, 255))
     draw = ImageDraw.Draw(img)
 
     # 封面图处理
@@ -111,8 +111,8 @@ def render_basic_info_image(song_json, cover_img):
 def generate_song_table_image(song_json, scale_width=1.5, scale_height=2.0):
     font = ImageFont.truetype(font_path, 28)
 
-    headers = ["Difficulty", "Level", "Total", "TAP", "HOLD", "SLIDE", "TOUCH", "BREAK", "JP", "CN", "INTL"]
-    base_col_widths = [160, 90, 80, 80, 80, 80, 80, 80, 60, 60, 70]
+    headers = ["Difficulty", "Level", "Total", "TAP", "HOLD", "SLIDE", "TOUCH", "BREAK", "JP", "INTL", "USA", "CN"]
+    base_col_widths = [160, 90, 80, 80, 80, 80, 80, 80, 60, 70, 60, 60]
     col_widths = [int(w * scale_width) for w in base_col_widths]
     row_height = int(48 * scale_height)
     col_offsets = [sum(col_widths[:i]) for i in range(len(col_widths))]  # 缓存列起始坐标
@@ -120,19 +120,19 @@ def generate_song_table_image(song_json, scale_width=1.5, scale_height=2.0):
     total_width = sum(col_widths)
     total_height = (len(song_json["sheets"]) + 1) * row_height
 
-    image = Image.new("RGBA", (total_width, total_height), (255, 255, 255, 255))
+    image = Image.new("RGB", (total_width, total_height), (255, 255, 255))
     draw = ImageDraw.Draw(image)
 
     block_colors = {
-        "info": (220, 240, 255, 255),
-        "notes": (240, 255, 240, 255),
-        "regions": (255, 240, 240, 255)
+        "info": (220, 240, 255),
+        "notes": (240, 255, 240),
+        "regions": (255, 240, 240)
     }
 
     block_ranges = {
         "info": range(0, 2),
         "notes": range(2, 8),
-        "regions": range(8, 11)
+        "regions": range(8, 12)
     }
 
     # 绘制表头
@@ -163,18 +163,19 @@ def generate_song_table_image(song_json, scale_width=1.5, scale_height=2.0):
             notes["touch"],
             notes["break"],
             "✓" if regions.get("jp") else "✗",
-            "✓" if regions.get("cn") else "✗",
             "✓" if regions.get("intl") else "✗",
+            "✓" if regions.get("usa") else "✗",
+            "✓" if regions.get("cn") else "✗"
         ]
 
         for col_idx, cell in enumerate(data):
             x = col_offsets[col_idx]
             if col_idx in block_ranges["info"]:
-                fill = (240, 250, 255, 240)
+                fill = (240, 250, 255)
             elif col_idx in block_ranges["notes"]:
-                fill = (250, 255, 250, 240)
+                fill = (250, 255, 250)
             else:
-                fill = (255, 250, 250, 240)
+                fill = (255, 250, 250)
             draw.rectangle([x, y, x + col_widths[col_idx], y + row_height], fill=fill)
 
             text = str(cell)
@@ -192,7 +193,7 @@ def render_song_info_small_img(song_json, cover_img):
     text_gap = 35
 
     # 创建画布
-    img = Image.new("RGBA", (canvas_width, canvas_height), (255, 255, 255, 0))
+    img = Image.new("RGB", (canvas_width, canvas_height), (255, 255, 255))
     draw = ImageDraw.Draw(img)
 
     # 封面图处理
@@ -251,37 +252,51 @@ def generate_version_list(songs_json):
 
         song_imgs.append(wrap_in_rounded_background(render_song_info_small_img(song, cover_img)))
 
-    return wrap_in_rounded_background(concat_images_vertically_with_margin(song_imgs))
+    return concat_images_grid(song_imgs)
 
-def concat_images_vertically_with_margin(image_list, margin=10, bg_color=(255, 255, 255, 0)):
+def concat_images_grid(image_list, cols=4, margin=20, inner_gap=10, bg_color=(255, 255, 255)):
+    """
+    将图像以网格形式拼接（默认每行4张），每块之间空出间距。
+    
+    参数:
+        image_list: 图像对象列表（PIL.Image）
+        cols: 每行图片数量
+        margin: 整体外边距
+        inner_gap: 图片之间的间距
+        bg_color: 背景颜色
+    """
     if not image_list:
         raise ValueError("图片列表不能为空")
 
-    # 分组，每 6 张为一组
-    groups = [image_list[i:i+6] for i in range(0, len(image_list), 6)]
-    row_images = []
+    # 计算总行数
+    rows = (len(image_list) + cols - 1) // cols
 
-    for group in groups:
-        # 每组横向拼接
-        max_height = max(img.height for img in group)
-        total_width = sum(img.width for img in group) + margin * (len(group) - 1)
-        row_img = Image.new("RGBA", (total_width, max_height), bg_color)
+    # 获取单个格子大小（按每行最大宽高对齐）
+    widths = []
+    heights = []
+    for r in range(rows):
+        group = image_list[r*cols:(r+1)*cols]
+        widths.append(sum(img.width for img in group) + inner_gap * (len(group)-1))
+        heights.append(max(img.height for img in group))
+    total_width = max(widths)
+    total_height = sum(heights) + inner_gap * (rows-1)
 
-        current_x = 0
+    # 加上外边距
+    final_image = Image.new(
+        "RGB",
+        (total_width + 2*margin, total_height + 2*margin),
+        bg_color
+    )
+
+    # 拼接
+    y_offset = margin
+    for r in range(rows):
+        group = image_list[r*cols:(r+1)*cols]
+        x_offset = margin
+        max_h = max(img.height for img in group)
         for img in group:
-            row_img.paste(img, (current_x, 0), img)
-            current_x += img.width + margin
-
-        row_images.append(row_img)
-
-    # 将横向拼接好的每一行纵向拼接
-    max_width = max(img.width for img in row_images)
-    total_height = sum(img.height for img in row_images) + margin * (len(row_images) - 1)
-    final_image = Image.new("RGBA", (max_width, total_height), bg_color)
-
-    current_y = 0
-    for img in row_images:
-        final_image.paste(img, (0, current_y), img)
-        current_y += img.height + margin
+            final_image.paste(img, (x_offset, y_offset + (max_h - img.height)//2))
+            x_offset += img.width + inner_gap
+        y_offset += max_h + inner_gap
 
     return final_image
