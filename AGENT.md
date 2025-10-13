@@ -36,6 +36,7 @@ pip3 install -r inits/requirements.txt
     "proxy": ""
   },
   "line_channel": {
+    "account_id": "",
     "access_token": "",
     "secret": ""
   },
@@ -74,8 +75,9 @@ pip3 install -r inits/requirements.txt
   - `proxy`: 其它服务端转发的链接（如无可不填）
 
 - **line_channel**  
-  填写你在 LINE Developers 平台申请的 channel 信息： 
-  - `access_token`: Channel access token   
+  填写你在 LINE Developers 平台申请的 channel 信息：
+  - `account_id`: 一串 `@` 开头的字符串
+  - `access_token`: Channel access token
   - `secret`: Channel secret  
 
 - **keys**  
