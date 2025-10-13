@@ -5,7 +5,6 @@ import sys
 import time
 import traceback
 import os
-import urllib.parse
 import math
 import difflib
 import base64
@@ -13,8 +12,8 @@ import base64
 from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
 
-from config_loader import LOGO_PATH
-from img_console import *
+from modules.config_loader import LOGO_PATH
+from modules.img_console import *
 
 def get_difficulty_color(difficulty):
     colors = {
@@ -35,9 +34,9 @@ def create_thumbnail(song, thumb_size=(300, 150), padding=15):
     text_color = (201, 123, 221) if song['difficulty'] == "remaster" else (255, 255, 255)
 
     # --- 封面 ---
-    if 'url' in song and song['url']:
+    if 'cover_url' in song and song['cover_url']:
         try:
-            response = requests.get(song['url'])
+            response = requests.get(song['cover_url'])
             cover_img = Image.open(BytesIO(response.content)).resize((80, 80))
             img.paste(cover_img, (padding, padding))
         except Exception as e:
@@ -148,7 +147,7 @@ def create_thumbnail(song, thumb_size=(300, 150), padding=15):
               fill=(0, 0, 0), font=font_large, anchor="ra")
 
     # --- 边框 ---
-    border_color = (128, 128, 128)
+    border_color = (200, 200, 200)
     draw.rectangle([(0, 0), (thumb_size[0] - 1, thumb_size[1] - 1)], outline=border_color, width=5)
 
     final_img = img.convert("RGB")
