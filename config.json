@@ -33,6 +33,7 @@
         "proxy": "https://xxproxy.example.com/"
     },
     "line_channel": {
+        "account_id": "@xxx",
         "access_token": "xxxxxxxxxxxxxxxxxxxxxxxxxx",
         "secret": "xxxxxxxxxxxxxxxxxxxxx"
     },
