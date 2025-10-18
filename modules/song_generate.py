@@ -2,7 +2,7 @@ import json
 import requests
 from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont
-from modules.record_picture_generate import create_thumbnail
+from modules.record_generate import create_thumbnail
 from modules.img_console import *
 
 def song_info_generate(song_json, played_data = []):
@@ -11,19 +11,19 @@ def song_info_generate(song_json, played_data = []):
     response = requests.get(cover_url)
     cover_img = Image.open(BytesIO(response.content)).convert("RGBA")
 
-    img1 = render_basic_info_image(song_json, cover_img)
+    img1 = _render_basic_info_image(song_json, cover_img)
 
     if not played_data:
-        img2 = resize_by_width(generate_song_table_image(song_json), 1200)
+        img2 = resize_by_width(_generate_song_table_image(song_json), 1200)
 
     else:
-        img2 = resize_by_width(makeup_played_data(played_data), 600)
+        img2 = resize_by_width(_makeup_played_data(played_data), 600)
 
     song_img = combine_with_rounded_background(img1, img2)
 
     return song_img
 
-def makeup_played_data(played_data, gap=20):
+def _makeup_played_data(played_data, gap=20):
     rcd_imgs = []
     for rcd in played_data:
         rcd_imgs.append(create_thumbnail(rcd))
@@ -45,7 +45,7 @@ def makeup_played_data(played_data, gap=20):
 
     return new_img
 
-def render_basic_info_image(song_json, cover_img):
+def _render_basic_info_image(song_json, cover_img):
     # 参数设定
     canvas_width = 1000
     canvas_height = 265
@@ -108,7 +108,7 @@ def render_basic_info_image(song_json, cover_img):
 
     return img
 
-def generate_song_table_image(song_json, scale_width=1.5, scale_height=2.0):
+def _generate_song_table_image(song_json, scale_width=1.5, scale_height=2.0):
     font = ImageFont.truetype(font_path, 28)
 
     headers = ["Difficulty", "Level", "Total", "TAP", "HOLD", "SLIDE", "TOUCH", "BREAK", "JP", "INTL", "USA", "CN"]
@@ -184,7 +184,7 @@ def generate_song_table_image(song_json, scale_width=1.5, scale_height=2.0):
 
     return image
 
-def render_song_info_small_img(song_json, cover_img):
+def _render_song_info_small_img(song_json, cover_img):
     # 参数设定
     canvas_width = 1000
     canvas_height = 265
@@ -250,11 +250,11 @@ def generate_version_list(songs_json):
         response = requests.get(cover_url)
         cover_img = Image.open(BytesIO(response.content)).convert("RGBA")
 
-        song_imgs.append(wrap_in_rounded_background(render_song_info_small_img(song, cover_img)))
+        song_imgs.append(wrap_in_rounded_background(_render_song_info_small_img(song, cover_img)))
 
-    return concat_images_grid(song_imgs)
+    return _concat_images_grid(song_imgs)
 
-def concat_images_grid(image_list, cols=4, margin=20, inner_gap=10, bg_color=(255, 255, 255)):
+def _concat_images_grid(image_list, cols=4, margin=20, inner_gap=10, bg_color=(255, 255, 255)):
     """
     将图像以网格形式拼接（默认每行4张），每块之间空出间距。
     
