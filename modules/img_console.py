@@ -164,7 +164,7 @@ def combine_with_rounded_background(img1, img2, spacing=40, outer_margin=30, bg_
 
     return final_img
 
-def generate_qrcode(data: str, box_size: int = 10, border: int = 4) -> Image.Image:
+def _generate_qrcode(data: str, box_size: int = 10, border: int = 4) -> Image.Image:
     qr = qrcode.QRCode(
         version=None,
         error_correction=qrcode.constants.ERROR_CORRECT_H,
@@ -177,7 +177,7 @@ def generate_qrcode(data: str, box_size: int = 10, border: int = 4) -> Image.Ima
     return img
 
 def generate_qr_with_title(data: str, title_list: list[str]) -> Image.Image:
-    qr_img = generate_qrcode(data)
+    qr_img = _generate_qrcode(data)
     qr_w, qr_h = qr_img.size
 
     padding = 40
