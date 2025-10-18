@@ -1,6 +1,7 @@
 from linebot.models import FlexSendMessage, TextSendMessage
+from modules.reply_text import friend_error
 
-def create_button_action(btn):
+def _create_button_action(btn):
     if btn["type"] == "text":
         return {
             "type": "message",
@@ -16,7 +17,7 @@ def create_button_action(btn):
     else:
         raise ValueError(f"Unsupported button type: {btn['type']}")
 
-def create_button_bubble(title, buttons):
+def _create_button_bubble(title, buttons):
     if not buttons:
         buttons = ["Error"]
 
@@ -40,20 +41,19 @@ def create_button_bubble(title, buttons):
                     "type": "button",
                     "style": "secondary",  # 更简约的样式
                     "height": "sm",
-                    "action": create_button_action(btn)
+                    "action": _create_button_action(btn)
                 } for btn in buttons
             ]
         }
     }
 
-def generate_flex_carousel(alt_text, button_list):
+def generate_friend_buttons(alt_text, button_list, group_size=10):
     if not button_list:
-        return TextSendMessage(text="お気に入りのフレンドいないね？")
+        return friend_error
     bubbles = []
-    group_size = 8  # 每页 8 个按钮
     for i in range(0, len(button_list), group_size):
         group = button_list[i:i + group_size]
-        bubble = create_button_bubble(alt_text, group)
+        bubble = _create_button_bubble(alt_text, group)
         bubbles.append(bubble)
 
     return FlexSendMessage(
