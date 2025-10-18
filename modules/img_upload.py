@@ -2,7 +2,7 @@ import requests
 from io import BytesIO
 from PIL import Image
 
-def upload_to_uguu(img):
+def _upload_to_uguu(img):
     url = "https://uguu.se/upload.php"
 
     img_io = BytesIO()
@@ -25,7 +25,7 @@ def upload_to_uguu(img):
 
     return None
 
-def upload_to_0x0(img):
+def _upload_to_0x0(img):
     url = "https://0x0.st"
 
     img_io = BytesIO()
@@ -47,12 +47,12 @@ def upload_to_0x0(img):
 # 智能图床上传
 def smart_upload(img):
     print("[smart_upload] 使用 uguu 上传")
-    url = upload_to_uguu(img)
+    url = _upload_to_uguu(img)
     if url:
         return url
 
     print("[smart_upload] 切换 0x0 上传")
-    url = upload_to_0x0(img)
+    url = _upload_to_0x0(img)
     if url:
         return url
 
