@@ -1,5 +1,15 @@
 import pymysql
-from config_loader import HOST, USER, PASSWORD, DATABASE, MAIMAI_VERSION, songs, read_dxdata, read_user, users
+from modules.config_loader import (
+    HOST,
+    USER,
+    PASSWORD,
+    DATABASE,
+    MAIMAI_VERSION,
+    songs,
+    read_dxdata,
+    read_user,
+    users
+)
 
 def get_single_ra(level, score, ap_clear=False) :
     if score >= 100.5000 :
@@ -199,7 +209,7 @@ def filter_highest_achievement(data: list) -> list:
     return list(result.values())
 
 def get_detailed_info(song_record, ver="jp", yang=False):
-    read_dxdata()
+    read_dxdata(ver)
 
     for record in song_record :
         found = False
@@ -214,7 +224,7 @@ def get_detailed_info(song_record, ver="jp", yang=False):
                         ap_clear = "ap" in record['combo_icon']
                         record['ra'] = get_single_ra(float(record['internalLevelValue']), float(record['score'][:-1]), (ap_clear and ver == "jp"))
                         record['id'] = sheet['internalId'] if 'internalId' in sheet else -1
-                        record['url'] = f"https://shama.dxrating.net/images/cover/v2/{song['imageName']}.jpg"
+                        record['cover_url'] = f"https://shama.dxrating.net/images/cover/v2/{song['imageName']}.jpg"
                         if yang:
                             record['ra'] = get_yang_single_ra(record)
 
@@ -224,6 +234,6 @@ def get_detailed_info(song_record, ver="jp", yang=False):
             record['version'] = "UNKNOWN"
             record['ra'] = 0
             record['id'] = -1
-            record['url'] = "https://maimaidx.jp/maimai-mobile/img/Icon/c22d52b387e3f829.png"
+            record['cover_url'] = None
 
     return song_record
