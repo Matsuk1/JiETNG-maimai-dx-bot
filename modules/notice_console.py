@@ -1,7 +1,7 @@
 import json
 import os
 from datetime import datetime
-from config_loader import NOTICE_FILE
+from modules.config_loader import NOTICE_FILE
 
 def _load_notices():
     if not os.path.exists(NOTICE_FILE):
