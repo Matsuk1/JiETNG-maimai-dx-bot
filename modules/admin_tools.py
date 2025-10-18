@@ -1,5 +1,5 @@
-from config_loader import users, read_user
-from record_console import read_record
+from modules.config_loader import users, read_user
+from modules.record_console import read_record
 import json
 
 def get_service_info():
