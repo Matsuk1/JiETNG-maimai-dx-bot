@@ -2,7 +2,7 @@ import base64
 import hmac
 import hashlib
 import time
-from config_loader import BIND_TOKEN_KEY
+from modules.config_loader import BIND_TOKEN_KEY
 
 def generate_token(user_id: str) -> str:
     timestamp = str(int(time.time()))
