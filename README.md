@@ -507,7 +507,7 @@ from modules.your_module import *
    - QQ 转发至 LINE
    - Telegram 转发至 LINE
    - Matrix 转发至 LINE
-   - 等服务代理
+   等服务代理
 
 ---
 
