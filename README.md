@@ -503,11 +503,10 @@ from modules.your_module import *
 
 #### 配置其它服务代理转发
 1. 请自行阅读 `proxy_forward.py`
-2. 该功能可提供
+2. 该功能可提供包括但不限于以下的多种代理形式
    - QQ 转发至 LINE
    - Telegram 转发至 LINE
    - Matrix 转发至 LINE
-等服务代理
 
 ---
 
