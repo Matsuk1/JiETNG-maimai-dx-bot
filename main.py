@@ -1,4 +1,9 @@
-import certifi
+"""
+JiETNG Maimai DX LINE Bot 主程序
+
+提供 Maimai DX 成绩追踪、好友系统、数据可视化等功能
+"""
+
 import gc
 import random
 import requests
@@ -11,6 +16,12 @@ import numpy
 import threading
 import queue
 import textwrap
+import logging
+import psutil
+import platform
+import socket
+from datetime import datetime, timedelta
+from typing import List, Optional, Any
 
 from PIL import Image, ImageDraw
 from io import BytesIO
@@ -41,7 +52,6 @@ from linebot.models import (
     URIAction,
 )
 
-from modules.admin_tools import *
 from modules.song_generate import *
 from modules.record_generate import *
 from modules.user_console import *
@@ -62,19 +72,87 @@ from modules.img_console import (
     generate_qr_with_title
 )
 
-divider = "-" * 33
+# ==================== 常量定义 ====================
+
+# 分隔线
+DIVIDER = "-" * 33
+
+# 队列配置
+MAX_QUEUE_SIZE = 10
+MAX_CONCURRENT_TASKS = 3
+WEB_MAX_CONCURRENT_TASKS = 1
+TASK_TIMEOUT_SECONDS = 120
+
+# 搜索结果限制
+MAX_SEARCH_RESULTS = 6
+
+# Rating计算范围
+RC_SCORE_MIN = 97.0000
+RC_SCORE_MAX = 100.5001
+RC_SCORE_STEP = 0.0001
+
+# 成绩列表分页
+B50_OLD_SONGS = 35
+B50_NEW_SONGS = 15
+B100_OLD_SONGS = 70
+B100_NEW_SONGS = 30
+
+# 请求超时
+HTTP_TIMEOUT = 30
+
+# 错误通知配置
+ERROR_MESSAGE_MAX_LENGTH = 1000  # LINE消息最大长度限制
+ERROR_NOTIFICATION_ENABLED = True  # 是否启用错误通知
+
+# ==================== 日志配置 ====================
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('jietng.log', encoding='utf-8'),
+        logging.StreamHandler()
+    ]
+)
+
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-# 主任务队列
-task_queue = queue.Queue(maxsize=10)
-concurrency_limit = threading.Semaphore(3)
+# 记录服务启动时间和统计
+SERVICE_START_TIME = datetime.now()
 
-# Web任务队列
-webtask_queue = queue.Queue(maxsize=10)
-webtask_concurrency_limit = threading.Semaphore(1)
+# 使用字典存储统计数据,避免global变量问题
+STATS = {
+    'tasks_processed': 0,
+    'response_time': 0.0
+}
+stats_lock = threading.Lock()  # 保护统计数据的线程锁
 
-def run_task_with_limit(func, args, sem, q):
+# ==================== 任务队列系统 ====================
+
+# 主任务队列 (处理文本/图片/位置消息)
+task_queue = queue.Queue(maxsize=MAX_QUEUE_SIZE)
+concurrency_limit = threading.Semaphore(MAX_CONCURRENT_TASKS)
+
+# Web任务队列 (处理耗时的网络请求)
+webtask_queue = queue.Queue(maxsize=MAX_QUEUE_SIZE)
+webtask_concurrency_limit = threading.Semaphore(WEB_MAX_CONCURRENT_TASKS)
+
+
+def run_task_with_limit(func: callable, args: tuple, sem: threading.Semaphore,
+                        q: queue.Queue) -> None:
+    """
+    在并发限制下运行任务
+
+    Args:
+        func: 要执行的函数
+        args: 函数参数元组
+        sem: 信号量,用于控制并发数
+        q: 任务队列
+    """
+    start_time = datetime.now()
+
     with sem:
         task_done = threading.Event()
 
@@ -82,77 +160,246 @@ def run_task_with_limit(func, args, sem, q):
             try:
                 func(*args)
             except Exception as e:
-                print(f"[Task Error] {e}")
-                traceback.print_exc()
+                logger.error(f"Task execution error: {e}", exc_info=True)
+                # 通知管理员
+                notify_admins_error(
+                    error_title=f"Task Execution Failed: {func.__name__}",
+                    error_details=f"{type(e).__name__}: {str(e)}\n\n{traceback.format_exc()}",
+                    context={
+                        "Task": func.__name__,
+                        "Error Type": type(e).__name__
+                    }
+                )
             finally:
                 task_done.set()
-                q.task_done()
 
         thread = threading.Thread(target=target)
         thread.start()
 
-        timer = threading.Timer(120, cancel_if_timeout, args=(task_done,))
+        timer = threading.Timer(TASK_TIMEOUT_SECONDS, cancel_if_timeout, args=(task_done,))
         timer.start()
 
         thread.join()
         timer.cancel()
 
-# 主任务 worker
-def task_worker():
+        # 任务完成后更新统计(在主流程中,不在子线程中)
+        end_time = datetime.now()
+        response_time = (end_time - start_time).total_seconds() * 1000
+
+        with stats_lock:
+            STATS['tasks_processed'] += 1
+            STATS['response_time'] += response_time
+            logger.info(f"Task completed: {func.__name__}, Total: {STATS['tasks_processed']}, Avg: {STATS['response_time']/STATS['tasks_processed']:.1f}ms")
+
+        q.task_done()
+
+
+def task_worker() -> None:
+    """主任务队列的工作线程"""
     while True:
         try:
             func, args = task_queue.get()
-            threading.Thread(
-                target=run_task_with_limit,
-                args=(func, args, concurrency_limit, task_queue)
-            ).start()
+            run_task_with_limit(func, args, concurrency_limit, task_queue)
         except Exception as e:
-            print(f"[Worker Error] {e}")
+            logger.error(f"Main task worker error: {e}", exc_info=True)
+            notify_admins_error(
+                error_title="Main Task Worker Error",
+                error_details=f"{type(e).__name__}: {str(e)}\n\n{traceback.format_exc()}",
+                context={"Worker": "task_worker"}
+            )
+            task_queue.task_done()
 
-# Web任务 worker
-def webtask_worker():
+
+def webtask_worker() -> None:
+    """Web任务队列的工作线程"""
     while True:
         try:
             func, args = webtask_queue.get()
-            threading.Thread(
-                target=run_task_with_limit,
-                args=(func, args, webtask_concurrency_limit, webtask_queue)
-            ).start()
+            run_task_with_limit(func, args, webtask_concurrency_limit, webtask_queue)
         except Exception as e:
-            print(f"[Web Worker Error] {e}")
+            logger.error(f"Web task worker error: {e}", exc_info=True)
+            notify_admins_error(
+                error_title="Web Task Worker Error",
+                error_details=f"{type(e).__name__}: {str(e)}\n\n{traceback.format_exc()}",
+                context={"Worker": "webtask_worker"}
+            )
+            webtask_queue.task_done()
 
-# 启动 worker
+
+# 启动 worker 线程
 threading.Thread(target=task_worker, daemon=True).start()
 threading.Thread(target=webtask_worker, daemon=True).start()
 
-# 超时处理函数
-def cancel_if_timeout(task_done):
+
+def cancel_if_timeout(task_done: threading.Event) -> None:
+    """
+    检查任务是否超时
+
+    Args:
+        task_done: 任务完成事件
+    """
     if not task_done.is_set():
-        print("[Timeout] 任务超时")
+        logger.warning("Task execution timeout")
+
+def notify_admins_error(error_title: str, error_details: str, context: dict = None):
+    """
+    通知管理员发生错误
+
+    Args:
+        error_title: 错误标题
+        error_details: 错误详情
+        context: 上下文信息（可选）
+    """
+    if not ERROR_NOTIFICATION_ENABLED:
+        return
+
+    try:
+        # 构建错误消息
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        message_parts = [
+            f"🚨 System Error Alert",
+            f"Time: {timestamp}",
+            f"",
+            f"Error: {error_title}",
+            f"",
+            f"Details:",
+            error_details[:500] if len(error_details) > 500 else error_details
+        ]
+
+        # 添加上下文信息
+        if context:
+            message_parts.append("")
+            message_parts.append("Context:")
+            for key, value in context.items():
+                message_parts.append(f"  {key}: {value}")
+
+        full_message = "\n".join(message_parts)
+
+        # 如果错误信息过长，使用文本文件
+        if len(full_message) > ERROR_MESSAGE_MAX_LENGTH:
+            # 截断消息
+            short_message = "\n".join([
+                f"🚨 System Error Alert",
+                f"Time: {timestamp}",
+                f"",
+                f"Error: {error_title}",
+                f"",
+                f"⚠️ Error details too long, sending as text file..."
+            ])
+
+            # 创建详细错误文件内容
+            file_content = "\n".join([
+                f"System Error Report",
+                f"=" * 50,
+                f"Time: {timestamp}",
+                f"",
+                f"Error: {error_title}",
+                f"",
+                f"Full Details:",
+                f"-" * 50,
+                error_details,
+                f"",
+            ])
+
+            if context:
+                file_content += "\nContext Information:\n"
+                file_content += "-" * 50 + "\n"
+                for key, value in context.items():
+                    file_content += f"{key}: {value}\n"
+
+            # 保存到临时文件
+            import tempfile
+            import os
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False, encoding='utf-8') as f:
+                f.write(file_content)
+                temp_file_path = f.name
+
+            # 发送给所有U开头的管理员
+            for admin_user_id in admin_id:
+                if admin_user_id.startswith("U"):
+                    try:
+                        # 先发送简短消息
+                        smart_push(admin_user_id, None, TextSendMessage(text=short_message))
+
+                        # 上传文件并发送
+                        # LINE不直接支持文件发送，我们发送详细错误到消息
+                        # 分段发送详细信息
+                        detail_chunks = [error_details[i:i+900] for i in range(0, len(error_details), 900)]
+                        for i, chunk in enumerate(detail_chunks[:3]):  # 最多发送3段
+                            chunk_msg = f"Details ({i+1}/{min(len(detail_chunks), 3)}):\n{chunk}"
+                            smart_push(admin_user_id, None, TextSendMessage(text=chunk_msg))
+                    except Exception as e:
+                        logger.error(f"Failed to notify admin {admin_user_id}: {e}")
+
+            # 清理临时文件
+            try:
+                os.unlink(temp_file_path)
+            except:
+                pass
+        else:
+            # 错误信息不长，直接发送
+            for admin_user_id in admin_id:
+                if admin_user_id.startswith("U"):
+                    try:
+                        smart_push(admin_user_id, None, TextSendMessage(text=full_message))
+                    except Exception as e:
+                        logger.error(f"Failed to notify admin {admin_user_id}: {e}")
+
+    except Exception as e:
+        # 通知系统本身出错，记录到日志
+        logger.error(f"Error notification system failed: {e}", exc_info=True)
 
 line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
+# ==================== Flask 路由 ====================
+
 @app.route("/linebot/webhook", methods=['POST'])
 def linebot_reply():
+    """
+    LINE Webhook 接收端点
+
+    接收并处理来自LINE平台的webhook事件
+
+    Returns:
+        tuple: ('OK', 200) 表示成功接收
+    """
     signature = request.headers.get('X-Line-Signature', '')
     body = request.get_data(as_text=True)
-    app.logger.info(f"Request body: {body}")
+    logger.info("Received webhook request")
 
     try:
         json_data = json.loads(body)
-        print(f"\n\n{json.dumps(json_data, indent=4, ensure_ascii=False)}\n\n")
         destination = json_data.get("destination")
         request.destination = destination
         handler.handle(body, signature)
 
-    except json.JSONDecodeError:
-        app.logger.error("JSON 解析失败")
+    except json.JSONDecodeError as e:
+        logger.error(f"JSON parse failed: {e}")
+        notify_admins_error(
+            error_title="Webhook JSON Parse Failed",
+            error_details=f"{type(e).__name__}: {str(e)}",
+            context={"Body": body[:200]}
+        )
         abort(400)
 
-    except InvalidSignatureError:
-        app.logger.error("InvalidSignatureError: 无效的 LINE 签名")
+    except InvalidSignatureError as e:
+        logger.error(f"LINE signature verification failed: {e}")
+        notify_admins_error(
+            error_title="LINE Signature Verification Failed",
+            error_details=f"{type(e).__name__}: {str(e)}",
+            context={"Signature": signature[:50]}
+        )
         abort(400)
+
+    except Exception as e:
+        logger.error(f"Webhook handling error: {e}", exc_info=True)
+        notify_admins_error(
+            error_title="Webhook Handling Error",
+            error_details=f"{type(e).__name__}: {str(e)}\n\n{traceback.format_exc()}",
+            context={"Event": "Webhook"}
+        )
+        abort(500)
 
     gc.collect()
     return 'OK', 200
@@ -160,15 +407,40 @@ def linebot_reply():
 @app.route("/linebot/adding", methods=["GET"])
 @app.route("/linebot/add", methods=["GET"])
 def line_add_page():
+    """重定向到LINE添加好友页面"""
     return redirect(LINE_ADDING_URL)
+
 
 @app.route("/linebot/add_friend", methods=["GET"])
 def maimai_add_friend_page():
+    """
+    好友添加页面
+
+    通过好友码生成LINE深链接
+
+    Query Args:
+        code: 好友码
+    """
     friend_code = request.args.get("code")
     return redirect(f"line://oaMessage/{LINE_ACCOUNT_ID}/?add-friend%20{friend_code}")
 
+
 @app.route("/linebot/sega_bind", methods=["GET", "POST"])
 def website_segaid_bind():
+    """
+    SEGA账户绑定页面
+
+    GET: 显示绑定表单
+    POST: 处理绑定请求
+
+    Query Args:
+        token: 绑定Token (GET/POST)
+
+    Form Data (POST):
+        segaid: SEGA ID
+        password: 密码
+        ver: 服务器版本 (jp/intl)
+    """
     token = request.args.get("token")
     if not token:
         return render_template("error.html", message="トークン未申請"), 400
@@ -176,12 +448,14 @@ def website_segaid_bind():
     try:
         user_id = get_user_id_from_token(token)
     except Exception as e:
+        logger.error(f"Token verification failed: {e}")
         return render_template("error.html", message="トークン無効"), 400
 
     if request.method == "POST":
         segaid = request.form.get("segaid")
         password = request.form.get("password")
         user_version = request.form.get("ver", "jp")
+
         if not segaid or not password:
             return render_template("error.html", message="すべての項目を入力してください"), 400
 
@@ -191,6 +465,134 @@ def website_segaid_bind():
             return render_template("error.html", message="SEGA ID と パスワード をもう一度確認してください"), 500
 
     return render_template("bind_form.html")
+
+
+@app.route("/linebot/stats", methods=["GET"])
+def bot_stats():
+    """
+    Bot状态页面
+
+    显示系统信息、用户统计、资源使用等
+    """
+    try:
+        # 计算运行时长
+        uptime = datetime.now() - SERVICE_START_TIME
+        days = uptime.days
+        hours, remainder = divmod(uptime.seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        uptime_str = f"{days}d {hours}h {minutes}m"
+
+        # 获取用户统计
+        read_user()
+        line_users = sum(1 for uid in users.keys() if uid.startswith("U"))
+        proxy_users = sum(1 for uid in users.keys() if not uid.startswith("U"))
+        total_users = len(users)
+
+        # 计算百分比
+        line_percent = round((line_users / total_users * 100) if total_users > 0 else 0, 1)
+        proxy_percent = round((proxy_users / total_users * 100) if total_users > 0 else 0, 1)
+
+        # 获取系统信息
+        cpu_percent = round(psutil.cpu_percent(interval=0.1), 1)
+        cpu_count = psutil.cpu_count()
+        cpu_count_used = round(cpu_percent / 100 * cpu_count, 1)
+
+        memory = psutil.virtual_memory()
+        memory_percent = round(memory.percent, 1)
+        total_memory = round(memory.total / (1024**3), 1)  # GB
+        memory_used_gb = round(memory.used / (1024**3), 1)  # GB
+
+        # 获取队列信息
+        task_queue_size = task_queue.qsize()
+        web_queue_size = webtask_queue.qsize()
+
+        # 获取线程信息
+        thread_count = threading.active_count()
+
+        # 线程安全地读取统计数据
+        with stats_lock:
+            total_tasks = STATS['tasks_processed']
+            total_time = STATS['response_time']
+
+        # 计算平均响应时间
+        avg_response = round(total_time / total_tasks if total_tasks > 0 else 0, 1)
+
+        # 读取最近的日志 (最后100行,过滤后取50行)
+        recent_logs = []
+        try:
+            if os.path.exists('jietng.log'):
+                with open('jietng.log', 'r', encoding='utf-8') as f:
+                    all_lines = f.readlines()
+
+                    # 过滤日志
+                    for line in all_lines[-100:]:
+                        # 移除ANSI转义序列 (颜色代码,如 [33m, [0m 等)
+                        line = re.sub(r'\x1b\[[0-9;]*m', '', line)
+
+                        # 跳过空行
+                        if not line.strip():
+                            continue
+
+                        # 屏蔽访问stats页面的werkzeug日志
+                        if '/linebot/stats' in line:
+                            continue
+
+                        # 屏蔽静态资源请求日志
+                        if 'werkzeug' in line and any(ext in line for ext in ['.css', '.js', '.ico', '.png', '.jpg']):
+                            continue
+
+                        # 提取日志消息部分 (移除时间戳、logger、级别前缀)
+                        # 格式: 2025-10-19 20:53:23,313 - werkzeug - INFO - 实际消息内容
+                        match = re.match(r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3} - .+? - (INFO|WARNING|ERROR|DEBUG) - (.+)$', line)
+                        if match:
+                            level = match.group(1)
+                            message = match.group(2)
+                            # 添加带级别标签的消息
+                            recent_logs.append(f"[{level}] {message}")
+                        else:
+                            # 如果不匹配标准格式,保留原始内容
+                            recent_logs.append(line.rstrip())
+
+                    # 只保留最后50条
+                    recent_logs = recent_logs[-50:]
+
+        except Exception as e:
+            recent_logs = [f"Error reading logs: {str(e)}"]
+
+        stats = {
+            'total_users': total_users,
+            'line_users': line_users,
+            'proxy_users': proxy_users,
+            'line_percent': line_percent,
+            'proxy_percent': proxy_percent,
+            'cpu_percent': cpu_percent,
+            'cpu_count_total': cpu_count,
+            'cpu_count_used': cpu_count_used,
+            'memory_percent': memory_percent,
+            'memory_used_gb': memory_used_gb,
+            'total_memory': total_memory,
+            'uptime': uptime_str,
+            'python_version': platform.python_version(),
+            'platform': f"{platform.system()} {platform.release()}",
+            'platform_short': platform.system(),
+            'hostname': socket.gethostname(),
+            'port': PORT,
+            'task_queue_size': task_queue_size,
+            'web_queue_size': web_queue_size,
+            'max_queue_size': MAX_QUEUE_SIZE,
+            'thread_count': thread_count,
+            'total_tasks_processed': total_tasks,
+            'avg_response_time': avg_response,
+            'recent_logs': recent_logs,
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        }
+
+        return render_template("stats.html", stats=stats)
+
+    except Exception as e:
+        logger.error(f"Stats page error: {e}", exc_info=True)
+        return f"Error loading stats: {str(e)}", 500
+
 
 def process_sega_credentials(user_id, segaid, password, ver="jp"):
     base = (
@@ -258,30 +660,75 @@ def get_user(user_id):
 
     return result
 
-def async_maimai_update_task(user_id, reply_token, ver="jp"):
+def async_maimai_update_task(event):
+    """异步maimai更新任务"""
+    user_id = event.source.user_id
+    reply_token = event.reply_token
+
+    # 获取用户版本
+    read_user()
+    ver = "jp"
+    if user_id in users and 'version' in users[user_id]:
+        ver = users[user_id]['version']
+
     reply_msg = maimai_update(user_id, ver)
     smart_reply(user_id, reply_token, reply_msg)
 
-def async_generate_friend_b50_task(user_id, reply_token, friend_code, ver="jp"):
+def async_generate_friend_b50_task(event):
+    """异步生成好友B50任务"""
+    user_message = event.message.text.strip()
+    user_id = event.source.user_id
+    reply_token = event.reply_token
+    friend_code = user_message.replace("friend-b50 ", "").strip()
+
+    # 获取用户版本
+    read_user()
+    ver = "jp"
+    if user_id in users and 'version' in users[user_id]:
+        ver = users[user_id]['version']
+
     reply_msg = generate_friend_b50(user_id, friend_code, ver)
     smart_reply(user_id, reply_token, reply_msg)
 
-def async_add_friend_task(user_id, reply_token, friend_code, ver="jp"):
+def async_add_friend_task(event):
+    """异步添加好友任务"""
+    user_message = event.message.text.strip()
+    user_id = event.source.user_id
+    reply_token = event.reply_token
+    friend_code = user_message.replace("add-friend ", "").strip()
+
+    # 获取用户版本
     read_user()
+    ver = "jp"
+    if user_id in users and 'version' in users[user_id]:
+        ver = users[user_id]['version']
 
     sega_id = users[user_id]['sega_id']
     sega_pwd = users[user_id]['sega_pwd']
 
     user_session = login_to_maimai(sega_id, sega_pwd, ver)
     if user_session == None:
-        return segaid_error
+        smart_reply(user_id, reply_token, segaid_error)
+        return
 
     reply_msg_data = add_friend(user_session, friend_code, ver)
 
     reply_msg = TextSendMessage(text=reply_msg_data)
     smart_reply(user_id, reply_token, reply_msg)
 
-    return None
+def async_friend_list_task(event):
+    """异步获取好友列表任务"""
+    user_id = event.source.user_id
+    reply_token = event.reply_token
+
+    # 获取用户版本
+    read_user()
+    ver = "jp"
+    if user_id in users and 'version' in users[user_id]:
+        ver = users[user_id]['version']
+
+    reply_msg = get_friends_list_buttons(user_id, ver)
+    smart_reply(user_id, reply_token, reply_msg)
 
 def maimai_update(user_id, ver="jp"):
     messages = []
@@ -343,14 +790,23 @@ def maimai_update(user_id, ver="jp"):
 
     return messages
 
-def get_rc(level):
+def get_rc(level: float) -> str:
+    """
+    生成指定难度的Rating对照表
+
+    Args:
+        level: 谱面定数 (如 14.5)
+
+    Returns:
+        格式化的Rating对照表字符串,显示不同达成率对应的Rating值
+    """
     result = f"LEVEL: {level}\n"
-    result += divider
+    result += DIVIDER
     last_ra = 0
 
-    for score in numpy.arange(97.0000, 100.5001, 0.0001) :
+    for score in numpy.arange(RC_SCORE_MIN, RC_SCORE_MAX, RC_SCORE_STEP):
         ra = get_single_ra(level, score)
-        if not ra == last_ra :
+        if ra != last_ra:
             result += f"\n{format(score, '.4f')}% \t-\t {ra}"
             last_ra = ra
 
@@ -421,13 +877,13 @@ def get_friends_list_buttons(user_id, ver="jp"):
     if user_id.startswith("U"):
         return generate_friend_buttons("フレンドリスト・Friends List", format_favorite_friends(friends_list))
 
-    result = f"フレンドリスト・Friends List\n{divider}"
+    result = f"フレンドリスト・Friends List\n{DIVIDER}"
     for frd in friends_list:
         if not frd['is_favorite']:
             continue
         result += f"\n{frd['name']} - {frd['rating']}\n - [{frd['user_id']}]"
 
-    result += f"\n{divider}\nCommand: friend-b50 [friend_code]\nExample: friend-b50 100818313"
+    result += f"\n{DIVIDER}\nCommand: friend-b50 [friend_code]\nExample: friend-b50 100818313"
 
     return TextSendMessage(text=result)
 
@@ -874,7 +1330,7 @@ def smart_reply(user_id, reply_token, messages):
     if not notice_read:
         notice_json = get_latest_notice()
         if notice_json:
-            notice = f"📢 お知らせ\n{divider}\n{notice_json['content']}\n{divider}\n{notice_json['date']}"
+            notice = f"📢 お知らせ\n{DIVIDER}\n{notice_json['content']}\n{DIVIDER}\n{notice_json['date']}"
             messages += [TextSendMessage(text=notice)]
             edit_user_status(user_id, "notice_read", True)
 
@@ -928,18 +1384,81 @@ def should_respond(event):
 
     return False
 
-#消息处理
+# ==================== 消息处理 ====================
+
+# Web任务路由规则 (需要网络请求的耗时任务)
+WEB_TASK_ROUTES = {
+    # 精确匹配规则
+    'exact': {
+        "マイマイアップデート": async_maimai_update_task,
+        "maimai update": async_maimai_update_task,
+        "レコードアップデート": async_maimai_update_task,
+        "record update": async_maimai_update_task,
+        "friend list": async_friend_list_task,
+        "friend-b50": async_friend_list_task,
+    },
+    # 前缀匹配规则
+    'prefix': {
+        "friend-b50 ": async_generate_friend_b50_task,
+        "add-friend ": async_add_friend_task,
+    }
+}
+
+def route_to_queue(event):
+    """
+    智能路由消息到对应队列
+
+    Args:
+        event: LINE消息事件
+
+    Returns:
+        bool: True表示已路由到web队列, False表示需要路由到主队列
+    """
+    user_message = event.message.text.strip()
+    user_id = event.source.user_id
+
+    # 检查精确匹配的web任务
+    if user_message in WEB_TASK_ROUTES['exact']:
+        task_func = WEB_TASK_ROUTES['exact'][user_message]
+        try:
+            webtask_queue.put_nowait((task_func, (event,)))
+            return True
+        except queue.Full:
+            smart_reply(user_id, event.reply_token, access_error)
+            return True
+
+    # 检查前缀匹配的web任务
+    for prefix, task_func in WEB_TASK_ROUTES['prefix'].items():
+        if user_message.startswith(prefix):
+            try:
+                webtask_queue.put_nowait((task_func, (event,)))
+                return True
+            except queue.Full:
+                smart_reply(user_id, event.reply_token, access_error)
+                return True
+
+    # 不是web任务,返回False
+    return False
+
 @handler.add(MessageEvent, message=TextMessage)
 def handle_text_message(event):
+    """
+    文本消息处理入口
+
+    根据消息类型智能路由到不同队列:
+    - Web任务 → webtask_queue (串行处理耗时网络请求)
+    - 普通任务 → task_queue (并行处理快速命令)
+    """
+    # 尝试路由到web队列
+    if route_to_queue(event):
+        return
+
+    # 路由到主队列处理普通任务
     try:
         task_queue.put_nowait((handle_text_message_task, (event,)))
-
     except queue.Full:
-        smart_reply(
-            event.source.user_id,
-            event.reply_token,
-            access_error
-        )
+        logger.warning("Task queue is full!")
+        smart_reply(event.source.user_id, event.reply_token, access_error)
 
 def handle_text_message_task(event):
     user_message = event.message.text.strip()
@@ -966,9 +1485,6 @@ def handle_text_message_task(event):
         "yrating": lambda: generate_yang_rating(id_use, mai_ver),
         "yra": lambda: generate_yang_rating(id_use, mai_ver),
 
-        "friend list": lambda: get_friends_list_buttons(user_id, mai_ver),
-        "friend-b50": lambda: get_friends_list_buttons(user_id, mai_ver),
-        
         "maid card": lambda: generate_maipass(user_id),
         "maid": lambda: generate_maipass(user_id),
         "mai pass": lambda: generate_maipass(user_id)
@@ -1059,7 +1575,7 @@ def handle_text_message_task(event):
         if user_id.startswith("U"):
             buttons_template = ButtonsTemplate(
                 title='SEGA アカウント連携',
-                text='SEGA アカウントと連携されます\n有効期限は発行から2分間です',
+                text='SEGA アカウントと連携されます\n有効期限は発行から3分間です',
                 actions=[URIAction(label='押しで連携', uri=bind_url)]
             )
             reply_message = TemplateSendMessage(
@@ -1067,34 +1583,8 @@ def handle_text_message_task(event):
                 template=buttons_template
             )
         else:
-            reply_message = TextSendMessage(text=f"こちらはバインド用リンクです↓\n{bind_url}\n発行から2分間有効。")
+            reply_message = TextSendMessage(text=f"こちらはバインド用リンクです↓\n{bind_url}\n発行から3分間有効。")
         return smart_reply(user_id, event.reply_token, reply_message)
-
-    # ====== maimai 更新任务 ======
-    if user_message in ["マイマイアップデート", "maimai update", "レコードアップデート", "record update"]:
-        try:
-            webtask_queue.put_nowait((async_maimai_update_task, (user_id, event.reply_token, mai_ver)))
-        except queue.Full:
-            smart_reply(user_id, event.reply_token, access_error)
-        return
-
-    # ====== friend-b50 异步任务 ======
-    if user_message.startswith("friend-b50 "):
-        friend_code = user_message.replace("friend-b50 ", "").strip()
-        try:
-            webtask_queue.put_nowait((async_generate_friend_b50_task, (user_id, event.reply_token, friend_code, mai_ver)))
-        except queue.Full:
-            smart_reply(user_id, event.reply_token, access_error)
-        return
-
-    # ====== add-friend 异步任务 ======
-    if user_message.startswith("add-friend "):
-        friend_code = user_message.replace("add-friend ", "").strip()
-        try:
-            webtask_queue.put_nowait((async_add_friend_task, (user_id, event.reply_token, friend_code, mai_ver)))
-        except queue.Full:
-            smart_reply(user_id, event.reply_token, access_error)
-        return
 
     # ====== calc 命令 ======
     if user_message.startswith("calc "):
@@ -1108,7 +1598,7 @@ def handle_text_message_task(event):
             scores = get_note_score(notes)
             result = (
                 f"TAP: \t {num[0]}\nHOLD: \t {num[1]}\nSLIDE: \t {num[2]}\n"
-                f"TOUCH: \t {num[3]}\nBREAK: \t {num[4]}\n{divider}\n"
+                f"TOUCH: \t {num[3]}\nBREAK: \t {num[4]}\n{DIVIDER}\n"
             )
             for k, v in scores.items():
                 result += f"{k.ljust(20)} -{v:.5f}%\n"
@@ -1121,13 +1611,6 @@ def handle_text_message_task(event):
     if user_id in admin_id:
         admin_cmds = {
             "dxdata update": lambda: (load_dxdata(DXDATA_URL, dxdata_list), read_dxdata(), dxdata_update)[-1],
-            "service info": lambda: TextSendMessage(text=textwrap.dedent(f"""
-                サービス情報
-
-                · 総ユーザー数 | {get_service_info()['LINE']['num'] + get_service_info()['proxy']['num']}
-                · LINE ユーザー数 | {get_service_info()['LINE']['num']}
-                · Proxy ユーザー数 | {get_service_info()['proxy']['num']}
-            """)),
         }
 
         if user_message.startswith("upload notice"):
