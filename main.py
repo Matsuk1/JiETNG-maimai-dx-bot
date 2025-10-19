@@ -1575,7 +1575,7 @@ def handle_text_message_task(event):
         if user_id.startswith("U"):
             buttons_template = ButtonsTemplate(
                 title='SEGA アカウント連携',
-                text='SEGA アカウントと連携されます\n有効期限は発行から3分間です',
+                text='SEGA アカウントと連携されます\n有効期限は発行から2分間です',
                 actions=[URIAction(label='押しで連携', uri=bind_url)]
             )
             reply_message = TemplateSendMessage(
@@ -1583,7 +1583,7 @@ def handle_text_message_task(event):
                 template=buttons_template
             )
         else:
-            reply_message = TextSendMessage(text=f"こちらはバインド用リンクです↓\n{bind_url}\n発行から3分間有効。")
+            reply_message = TextSendMessage(text=f"こちらはバインド用リンクです↓\n{bind_url}\n発行から2分間有効。")
         return smart_reply(user_id, event.reply_token, reply_message)
 
     # ====== calc 命令 ======
