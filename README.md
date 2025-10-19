@@ -550,7 +550,7 @@ from modules.your_module import *
     },
     "keys": {
         "user_data": "AUTO_GENERATED_KEY",    // 自动生成
-        "bind_token": "AUTO_GENERATED_TOKEN"  // 自动生成
+        "bind_token": "AUTO_GENERATED_TOKEN"  // 自行选择
     }
 }
 ```
