@@ -2,7 +2,7 @@
 
 <div align="center">
 
-<img src="./assets/pics/logo.png" alt="Logo" width="200" />
+<img src="./assets/pics/logo.png" alt="Logo" width="150" />
 
 **【日服/国际服】Maimai DX 音游成绩追踪与数据管理 LINE Bot**
 
@@ -19,7 +19,7 @@
 
 ## 📖 简介
 
-**JiETNG** 是一个功能强大的 Maimai DX LINE Bot 服务，为玩家提供成绩追踪、数据分析、好友对战等全方位功能。支持日服(JP)和国际服(INTL)双版本。
+**JiETNG** 是一个功能强大的 Maimai DX LINE Bot 服务，为玩家提供成绩追踪、数据分析等全方位功能。支持日服(JP)和国际服(INTL)双版本。
 
 ### 核心特色
 
@@ -41,7 +41,7 @@
 |------|------|------|
 | 绑定账户 | `segaid bind` | 绑定 SEGA 账户 |
 | 查看绑定 | `getme` | 查看当前绑定状态 |
-| 解除绑定 | `unbind` / `連携解消` | 解除账户绑定 |
+| 解除绑定 | `unbind` | 解除账户绑定 |
 
 ### 2. 成绩查询
 
@@ -81,12 +81,12 @@ b50 -dx 95           # 筛选 DX 分数 ≥95%
 
 | 命令 | 说明 |
 |------|------|
-| `[版本]極の達成状況` | FC/FC+/AP/AP+ 达成表 |
-| `[版本]将の達成状況` | SSS/SSS+ 达成表 |
-| `[版本]神の達成状況` | AP/AP+ 达成表 |
-| `[版本]舞舞の達成状況` | FDX/FDX+ 达成表 |
+| `[版本]極の達成状況` | 極牌 达成表 |
+| `[版本]将の達成状況` | 将牌 达成表 |
+| `[版本]神の達成状況` | 神牌 达成表 |
+| `[版本]舞舞の達成状況` | 舞舞牌 达成表 |
 
-版本缩写示例: `舞`, `舞+`, `祭`, `祭+`, `煌`, `煌+` 等
+版本缩写示例: `真`, `超`, `晓`, `祭`, `煌`, `镜` 等
 
 ### 5. 好友功能
 
@@ -104,7 +104,7 @@ b50 -dx 95           # 筛选 DX 分数 ≥95%
 | `maimai update` | 更新成绩数据 |
 | `rc [定数]` | 查看 Rating 对照表 |
 | `calc [tap] [hold] [slide] [touch] [break]` | 计算理论分数 |
-| `yang` / `yra` | 查看 Yang Rating (过去版本rating) |
+| `yang` / `yra` | 查看 Yang Rating |
 | `[版本]のバージョンリスト` | 查看版本歌曲列表 |
 
 ### 7. 位置服务
@@ -233,8 +233,8 @@ idealb50                # 查看理想分数下的 B50
 ### 版本达成
 
 ```
-舞極の達成状況          # 查看 舞 版本 FC+ 达成情况
-祭+将の達成状況         # 查看 祭PLUS 版本 SSS+ 达成情况
+宴極の達成状況          # 查看 宴极 达成情况
+祭将の達成状況          # 查看 祭将 达成情况
 ```
 
 ---
@@ -421,7 +421,7 @@ JiETNG/
         ├── combo/             # Combo 图标
         ├── score/             # 分数图标
         ├── sync/              # Sync 图标
-        ├── dx_star/           # 星级图标
+        ├── dx_star/           # DX 星图标
         └── kind/              # 类型图标
 ```
 
@@ -547,14 +547,6 @@ from modules.your_module import *
 }
 ```
 
-### 环境变量(可选)
-
-```bash
-export LINE_CHANNEL_ACCESS_TOKEN="your_token"
-export LINE_CHANNEL_SECRET="your_secret"
-export MYSQL_PASSWORD="your_password"
-```
-
 ---
 
 ## 🐛 故障排除
@@ -667,6 +659,6 @@ journalctl -u jietng -f
 
 **如果觉得这个项目有帮助,请给个 ⭐ Star!**
 
-Made with ❤️ by [JiETNG Team](https://github.com/Matsuk1)
+Made with ❤️ by [Matsuk1](https://github.com/Matsuk1)
 
 </div>
