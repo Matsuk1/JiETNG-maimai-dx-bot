@@ -650,7 +650,7 @@ def selgen_records(user_id, type="best50", command="", ver="jp"):
     if user_id not in users:
         return segaid_error
 
-    song_record = read_record(user_id, yang = (type == "yang"))
+    song_record = read_record(user_id)
     if not len(song_record):
         return record_error
 
