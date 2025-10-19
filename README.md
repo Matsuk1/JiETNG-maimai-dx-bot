@@ -2,7 +2,7 @@
 
 <div align="center">
 
-<img src="./assets/pics/logo.png" alt="Logo" width="150" />
+<img src="./assets/pics/logo.png" alt="Logo" width="100" />
 
 **【日服/国际服】Maimai DX 音游成绩追踪与数据管理 LINE Bot**
 
