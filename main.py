@@ -641,7 +641,7 @@ def generate_maipass(user_id):
 
     image_url = smart_upload(img)
     img_msg = ImageSendMessage(original_content_url=image_url, preview_image_url=image_url)
-    msg = [img_msg, share_msg]
+    message = [img_msg, share_msg]
     return message
 
 def selgen_records(user_id, type="best50", command="", ver="jp"):
