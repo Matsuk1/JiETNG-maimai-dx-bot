@@ -1,8 +1,15 @@
+"""
+配置加载模块
+
+负责加载和管理配置文件、歌曲数据、用户数据等全局配置
+"""
+
 import copy
 import json
 import os
 import secrets
 import csv
+from typing import Dict, List, Any
 
 from cryptography.fernet import Fernet
 from modules.json_encrypt import *
