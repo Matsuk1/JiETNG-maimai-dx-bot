@@ -9,7 +9,7 @@ def load_dxdata(url, save_to: str = None):
 
         data = response.json()
 
-        data['songs'] = split_song_sheets_by_type(data['songs'])
+        data['songs'] = _split_song_sheets_by_type(data['songs'])
         for song in data['songs']:
             for version in data['versions']:
                 if version['version'] == song['version']:
@@ -30,7 +30,7 @@ def load_dxdata(url, save_to: str = None):
     except json.JSONDecodeError as e:
         return None
 
-def split_song_sheets_by_type(song_list):
+def _split_song_sheets_by_type(song_list):
     result = []
 
     for song in song_list:
