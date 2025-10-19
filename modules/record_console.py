@@ -1,3 +1,10 @@
+"""
+成绩记录管理模块
+
+提供数据库操作、Rating计算、成绩数据处理等功能
+"""
+
+from typing import List, Dict, Any, Optional
 import pymysql
 from modules.config_loader import (
     HOST,
@@ -11,59 +18,76 @@ from modules.config_loader import (
     users
 )
 
-def get_single_ra(level, score, ap_clear=False) :
-    if score >= 100.5000 :
+
+def get_single_ra(level: float, score: float, ap_clear: bool = False) -> int:
+    """
+    计算单曲Rating值
+
+    根据谱面定数和达成率计算Rating值,日服AP有额外加成
+
+    Args:
+        level: 谱面定数 (如 14.5)
+        score: 达成率 (如 100.5000)
+        ap_clear: 是否为AP/APP (仅日服有加成)
+
+    Returns:
+        计算得到的Rating整数值
+    """
+    # Rating系数映射表
+    if score >= 100.5000:
         ra_kake = 0.224
-    elif score >= 100.4999 :
+    elif score >= 100.4999:
         ra_kake = 0.222
-    elif score >= 100.0000 :
+    elif score >= 100.0000:
         ra_kake = 0.216
-    elif score >= 99.9999 :
+    elif score >= 99.9999:
         ra_kake = 0.214
-    elif score >= 99.5000 :
+    elif score >= 99.5000:
         ra_kake = 0.211
-    elif score >= 99.0000 :
+    elif score >= 99.0000:
         ra_kake = 0.208
-    elif score >= 98.9999 :
+    elif score >= 98.9999:
         ra_kake = 0.206
-    elif score >= 98.0000 :
+    elif score >= 98.0000:
         ra_kake = 0.203
-    elif score >= 97.0000 :
+    elif score >= 97.0000:
         ra_kake = 0.200
-    elif score >= 96.9999 :
+    elif score >= 96.9999:
         ra_kake = 0.176
-    elif score >= 94.0000 :
+    elif score >= 94.0000:
         ra_kake = 0.168
-    elif score >= 90.0000 :
+    elif score >= 90.0000:
         ra_kake = 0.152
-    elif score >= 80.0000 :
+    elif score >= 80.0000:
         ra_kake = 0.136
-    elif score >= 79.9999 :
+    elif score >= 79.9999:
         ra_kake = 0.128
-    elif score >= 75.0000 :
+    elif score >= 75.0000:
         ra_kake = 0.120
-    elif score >= 70.0000 :
+    elif score >= 70.0000:
         ra_kake = 0.112
-    elif score >= 60.0000 :
+    elif score >= 60.0000:
         ra_kake = 0.096
-    elif score >= 50.0000 :
+    elif score >= 50.0000:
         ra_kake = 0.080
-    elif score >= 40.0000 :
+    elif score >= 40.0000:
         ra_kake = 0.064
-    elif score >= 30.0000 :
+    elif score >= 30.0000:
         ra_kake = 0.048
-    elif score >= 20.0000 :
+    elif score >= 20.0000:
         ra_kake = 0.032
-    elif score >= 10.0000 :
+    elif score >= 10.0000:
         ra_kake = 0.016
-    else :
+    else:
         ra_kake = 0
 
-    if score <= 100.5 :
+    # 计算基础Rating
+    if score <= 100.5:
         ra = int(level * score * ra_kake)
-    else :
+    else:
         ra = int(level * 100.5 * ra_kake)
 
+    # AP加成 (仅日服)
     if ap_clear:
         ra += 1
 
@@ -109,11 +133,24 @@ def get_ideal_score(score: float) -> float:
     else:
         return score
 
-def read_record(user_id, recent=False, yang=False):
+def read_record(user_id: str, recent: bool = False, yang: bool = False) -> List[Dict[str, Any]]:
+    """
+    从数据库读取用户成绩记录
+
+    Args:
+        user_id: 用户ID
+        recent: 是否读取最近记录 (False=Best记录, True=Recent记录)
+        yang: 是否计算Yang Rating (过去版本rating)
+
+    Returns:
+        成绩记录列表,每条记录为字典,包含详细信息
+    """
     read_user()
 
     table = "recent_records" if recent else "best_records"
-    print(f"[*] Reading from DB table `{table}` for user_id = {user_id}\n")
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"Reading records from table {table} for user {user_id}")
 
     conn = pymysql.connect(
         host=HOST,
