@@ -2,9 +2,9 @@
 
 <div align="center">
 
-<img src="./assets/pics/logo.jpg" alt="Logo" width="200" />
+<img src="./assets/pics/logo.png" alt="Logo" width="200" />
 
-**Maimai DX 音游成绩追踪与数据管理 LINE Bot**
+**【日服/国际服】Maimai DX 音游成绩追踪与数据管理 LINE Bot**
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-3.1.0-green.svg)](https://flask.palletsprojects.com/)
