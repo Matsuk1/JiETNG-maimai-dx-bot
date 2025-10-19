@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JiETNG Bot - System Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            letter-spacing: -0.5px;
+        }
+
+        .header p {
+            font-size: 1em;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .stats-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+        }
+
+        .stat-label {
+            font-size: 0.75em;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: 700;
+            color: #333;
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+
+        .stat-unit {
+            font-size: 0.4em;
+            color: #999;
+            font-weight: 400;
+            margin-left: 4px;
+        }
+
+        .stat-subtitle {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 8px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e8e8e8;
+            border-radius: 3px;
+            margin-top: 12px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
+        .progress-cpu {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+        .progress-memory {
+            background: linear-gradient(90deg, #f093fb, #f5576c);
+        }
+
+        .progress-queue {
+            background: linear-gradient(90deg, #4facfe, #00f2fe);
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .chart-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+
+        .chart-title {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-size: 0.9em;
+        }
+
+        .info-label {
+            color: #666;
+            font-weight: 500;
+        }
+
+        .info-value {
+            color: #333;
+            font-weight: 600;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: #e8f5e9;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+            color: #2e7d32;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4caf50;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+                box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+            }
+            50% {
+                opacity: 0.8;
+                box-shadow: 0 0 0 8px rgba(76, 175, 80, 0);
+            }
+        }
+
+        .metrics-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .metrics-label {
+            min-width: 100px;
+            font-size: 0.9em;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .metrics-progress {
+            flex: 1;
+            height: 8px;
+            background: #e8e8e8;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .metrics-value {
+            min-width: 60px;
+            text-align: right;
+            font-size: 0.9em;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .user-distribution {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .distribution-item {
+            flex: 1;
+            padding: 16px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            border-radius: 12px;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+        }
+
+        .distribution-label {
+            font-size: 0.8em;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .distribution-value {
+            font-size: 2em;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .distribution-percent {
+            font-size: 0.85em;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            margin-top: 40px;
+            opacity: 0.8;
+            font-size: 0.85em;
+        }
+
+        .refresh-indicator {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: white;
+            margin-left: 8px;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50%, 100% { opacity: 1; }
+            25%, 75% { opacity: 0.3; }
+        }
+
+        @media (max-width: 1024px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+            .stats-overview {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+            .user-distribution {
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-overview {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .log-window {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            max-height: 400px;
+            overflow: hidden;
+        }
+
+        .log-title {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .log-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .log-btn {
+            padding: 4px 12px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.8em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .log-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .log-content {
+            background: #1e1e1e;
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'Courier New', Consolas, monospace;
+            font-size: 0.85em;
+            line-height: 1.3;
+            color: #d4d4d4;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .log-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .log-content::-webkit-scrollbar-track {
+            background: #2d2d2d;
+            border-radius: 4px;
+        }
+
+        .log-content::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 4px;
+        }
+
+        .log-content::-webkit-scrollbar-thumb:hover {
+            background: #764ba2;
+        }
+
+        .log-line {
+            margin-bottom: 2px;
+        }
+
+        .log-level-INFO {
+            color: #4ec9b0;
+        }
+
+        .log-level-WARNING {
+            color: #dcdcaa;
+        }
+
+        .log-level-ERROR {
+            color: #f48771;
+        }
+
+        .log-level-DEBUG {
+            color: #9cdcfe;
+        }
+
+        .log-timestamp {
+            color: #858585;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>JiETNG Bot Dashboard</h1>
+            <p>Maimai DX Score Tracking Service</p>
+        </div>
+
+        <div class="stats-overview">
+            <div class="stat-card">
+                <div class="stat-label">Total Users</div>
+                <div class="stat-value">{{ stats.total_users }}</div>
+                <div class="stat-subtitle">Registered accounts</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-label">CPU Usage</div>
+                <div class="stat-value">
+                    {{ stats.cpu_percent }}
+                    <span class="stat-unit">%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill progress-cpu" style="width: {{ stats.cpu_percent }}%"></div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-label">Memory</div>
+                <div class="stat-value">
+                    {{ stats.memory_percent }}
+                    <span class="stat-unit">%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill progress-memory" style="width: {{ stats.memory_percent }}%"></div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-label">Uptime</div>
+                <div class="stat-value" style="font-size: 1.6em;">{{ stats.uptime }}</div>
+                <div class="stat-subtitle">Service running</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-label">Processed Tasks</div>
+                <div class="stat-value">{{ stats.total_tasks_processed }}</div>
+                <div class="stat-subtitle">Total completed</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-label">Threads</div>
+                <div class="stat-value">{{ stats.thread_count }}</div>
+                <div class="stat-subtitle">Active workers</div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-card">
+                <div class="chart-title">System Resources</div>
+
+                <div class="metrics-bar">
+                    <div class="metrics-label">CPU Cores</div>
+                    <div class="metrics-progress">
+                        <div class="progress-fill progress-cpu" style="width: {{ (stats.cpu_count_used / stats.cpu_count_total * 100) if stats.cpu_count_total > 0 else 0 }}%"></div>
+                    </div>
+                    <div class="metrics-value">{{ stats.cpu_count_used }} / {{ stats.cpu_count_total }}</div>
+                </div>
+
+                <div class="metrics-bar">
+                    <div class="metrics-label">Memory</div>
+                    <div class="metrics-progress">
+                        <div class="progress-fill progress-memory" style="width: {{ stats.memory_percent }}%"></div>
+                    </div>
+                    <div class="metrics-value">{{ stats.memory_used_gb }} / {{ stats.total_memory }} GB</div>
+                </div>
+
+                <div class="metrics-bar">
+                    <div class="metrics-label">Task Queue</div>
+                    <div class="metrics-progress">
+                        <div class="progress-fill progress-queue" style="width: {{ (stats.task_queue_size / stats.max_queue_size * 100) if stats.max_queue_size > 0 else 0 }}%"></div>
+                    </div>
+                    <div class="metrics-value">{{ stats.task_queue_size }} / {{ stats.max_queue_size }}</div>
+                </div>
+
+                <div class="metrics-bar">
+                    <div class="metrics-label">Web Queue</div>
+                    <div class="metrics-progress">
+                        <div class="progress-fill progress-queue" style="width: {{ (stats.web_queue_size / stats.max_queue_size * 100) if stats.max_queue_size > 0 else 0 }}%"></div>
+                    </div>
+                    <div class="metrics-value">{{ stats.web_queue_size }} / {{ stats.max_queue_size }}</div>
+                </div>
+
+                <div class="user-distribution">
+                    <div class="distribution-item">
+                        <div class="distribution-label">LINE Users</div>
+                        <div class="distribution-value">{{ stats.line_users }}</div>
+                        <div class="distribution-percent">{{ stats.line_percent }}% of total</div>
+                    </div>
+                    <div class="distribution-item">
+                        <div class="distribution-label">Proxy Users</div>
+                        <div class="distribution-value">{{ stats.proxy_users }}</div>
+                        <div class="distribution-percent">{{ stats.proxy_percent }}% of total</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <div class="chart-title">System Information</div>
+
+                <div style="margin-bottom: 20px;">
+                    <span class="status-indicator">
+                        <span class="status-dot"></span>
+                        Service Online
+                    </span>
+                </div>
+
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Python</span>
+                        <span class="info-value">{{ stats.python_version }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Platform</span>
+                        <span class="info-value">{{ stats.platform_short }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Hostname</span>
+                        <span class="info-value">{{ stats.hostname }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Port</span>
+                        <span class="info-value">{{ stats.port }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Total Tasks</span>
+                        <span class="info-value">{{ stats.total_tasks_processed }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Avg Response</span>
+                        <span class="info-value">{{ stats.avg_response_time }}ms</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="log-window">
+            <div class="log-title">
+                <span>System Logs</span>
+                <div class="log-controls">
+                    <button class="log-btn" onclick="clearLogs()">Clear</button>
+                    <button class="log-btn" onclick="toggleAutoScroll()" id="autoScrollBtn">Auto-scroll ON</button>
+                </div>
+            </div>
+            <div class="log-content" id="logContent">
+                {% for log in stats.recent_logs %}
+                <div class="log-line">{{ log }}</div>
+                {% endfor %}
+                {% if stats.recent_logs|length == 0 %}
+                <div class="log-line" style="color: #858585;">No logs available yet...</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Last updated: {{ stats.timestamp }} <span class="refresh-indicator"></span></p>
+            <p>Auto-refresh every 30 seconds</p>
+        </div>
+    </div>
+
+    <script>
+        let autoScroll = true;
+
+        function toggleAutoScroll() {
+            autoScroll = !autoScroll;
+            const btn = document.getElementById('autoScrollBtn');
+            btn.textContent = autoScroll ? 'Auto-scroll ON' : 'Auto-scroll OFF';
+        }
+
+        function clearLogs() {
+            document.getElementById('logContent').innerHTML = '<div class="log-line" style="color: #858585;">Logs cleared (will repopulate on next refresh)</div>';
+        }
+
+        function scrollToBottom() {
+            if (autoScroll) {
+                const logContent = document.getElementById('logContent');
+                logContent.scrollTop = logContent.scrollHeight;
+            }
+        }
+
+        // HTML转义函数
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 为日志添加语法高亮
+        function highlightLogs() {
+            const logLines = document.querySelectorAll('#logContent .log-line');
+            logLines.forEach(line => {
+                const text = line.textContent;
+
+                // 匹配新格式: [INFO] 消息内容
+                const match = text.match(/^\[(INFO|WARNING|ERROR|DEBUG)\] (.+)$/);
+                if (match) {
+                    const level = match[1];
+                    const message = escapeHtml(match[2]);
+
+                    let levelClass = '';
+                    if (level === 'INFO') levelClass = 'log-level-INFO';
+                    else if (level === 'WARNING') levelClass = 'log-level-WARNING';
+                    else if (level === 'ERROR') levelClass = 'log-level-ERROR';
+                    else if (level === 'DEBUG') levelClass = 'log-level-DEBUG';
+
+                    line.innerHTML = `<span class="${levelClass}">[${level}]</span> ${message}`;
+                }
+            });
+        }
+
+        // 页面加载时处理
+        window.addEventListener('load', function() {
+            highlightLogs();
+            scrollToBottom();
+        });
+
+        setTimeout(function() {
+            location.reload();
+        }, 30000);
+    </script>
+</body>
+</html>
