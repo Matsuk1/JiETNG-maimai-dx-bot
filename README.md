@@ -33,7 +33,7 @@
 
 ---
 
-## ✨ 功能特性
+## 功能特性
 
 ### 1. 账户管理
 
@@ -113,7 +113,7 @@ b50 -dx 95           # 筛选 DX 分数 ≥95%
 
 ---
 
-## 🚀 快速开始
+## 快速开始
 
 ### 系统要求
 
@@ -239,7 +239,7 @@ idealb50                # 查看理想分数下的 B50
 
 ---
 
-## 🛠️ 部署指南
+## 部署指南
 
 ### 使用 Docker (推荐)
 
@@ -372,7 +372,7 @@ sudo certbot --nginx -d your-domain.com
 
 ---
 
-## 👨‍💻 开发文档
+## 开发文档
 
 ### 项目结构
 
@@ -503,7 +503,7 @@ from modules.your_module import *
 
 ---
 
-## 🔧 配置说明
+## 配置说明
 
 ### config.json 完整配置
 
@@ -549,7 +549,7 @@ from modules.your_module import *
 
 ---
 
-## 🐛 故障排除
+## 故障排除
 
 ### 常见问题
 
@@ -611,7 +611,7 @@ journalctl -u jietng -f
 
 ---
 
-## 🤝 贡献指南
+## 贡献指南
 
 欢迎提交 Issue 和 Pull Request!
 
