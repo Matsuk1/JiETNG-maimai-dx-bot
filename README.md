@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Logo](./assets/pics/logo.jpg)
+<img src="./assets/pics/logo.jpg" alt="Logo" width="200" />
 
 **Maimai DX 音游成绩追踪与数据管理 LINE Bot**
 
