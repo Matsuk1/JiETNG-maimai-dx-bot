@@ -4,7 +4,7 @@
 
 <img src="./assets/pics/logo.png" alt="Logo" width="100" />
 
-**【日服/国际服】Maimai DX 音游成绩追踪与数据管理 LINE Bot**
+**【日服/国际服】Maimai DX 音游成绩追踪与数据管理 LINE Bot【包含代理转发】**
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-3.1.0-green.svg)](https://flask.palletsprojects.com/)
@@ -126,7 +126,7 @@ b50 -dx 95           # 筛选 DX 分数 ≥95%
 #### 1. 克隆项目
 
 ```bash
-git clone https://github.com/your-username/jietng.git
+git clone https://github.com/Matsuk1/jietng.git
 cd jietng
 ```
 
@@ -380,7 +380,6 @@ sudo certbot --nginx -d your-domain.com
 JiETNG/
 ├── main.py                    # Flask 应用入口
 ├── config.json                # 配置文件
-├── CODE_REPORT.md             # 代码分析报告
 ├── README.md                  # 本文档
 ├── inits/                     # 初始化文件
 │   ├── requirements.txt       # Python 依赖
@@ -402,9 +401,6 @@ JiETNG/
 │   ├── note_score.py          # 分数计算
 │   ├── json_encrypt.py        # 加密工具
 │   └── reply_text.py          # 消息模板
-├── proxy/                     # 代理服务
-│   ├── config.py              # 代理配置
-│   └── jietng_proxy.py        # 代理处理
 ├── templates/                 # HTML 模板
 │   ├── bind_form.html         # 绑定表单
 │   ├── success.html           # 成功页面
@@ -412,7 +408,7 @@ JiETNG/
 ├── data/                      # 数据文件
 │   ├── dxdata.json            # 歌曲数据
 │   ├── notice.json            # 通知数据
-│   ├── re_dxdata.csv          # 区域数据
+│   ├── re_dxdata.csv          # 差异数据
 │   └── user.json.enc          # 用户数据(加密)
 └── assets/                    # 静态资源
     ├── fonts/                 # 字体文件
