@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>エラー | JiETNG</title>
+  <style>
+    :root {
+      --bg-color: #ffffff;
+      --text-color: #222222;
+      --border-color: #cccccc;
+      --accent-color: #000000;
+      --card-bg: #f9f9f9;
+      --notice-bg: #f0f0f0;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-color: #000000;
+        --text-color: #eeeeee;
+        --border-color: #555555;
+        --accent-color: #ffffff;
+        --card-bg: #1a1a1a;
+        --notice-bg: #111111;
+      }
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: "Helvetica Neue", "Yu Gothic", "Meiryo", sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .error-box {
+      background-color: var(--card-bg);
+      border-radius: 16px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      padding: 40px 30px;
+      width: 100%;
+      max-width: 400px;
+      box-sizing: border-box;
+    }
+
+    h1 {
+      color: var(--accent-color);
+      font-size: 24px;
+      margin-bottom: 16px;
+      text-align: center;
+      letter-spacing: 1px;
+    }
+
+    p {
+      font-size: 16px;
+      color: var(--text-color);
+      margin-bottom: 20px;
+      line-height: 1.6;
+      text-align: center;
+    }
+
+    .notice {
+      background-color: var(--notice-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 16px;
+      font-size: 13px;
+      color: var(--text-color);
+      margin-top: 30px;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="error-box">
+    <h1>エラー・Error</h1>
+    <p>{{ message }}</p>
+
+    <div class="notice">
+      <strong>ご利用に関するご注意</strong><br>
+      ご入力いただいた情報はすべて暗号化された形式で安全に保存され、第三者に提供されることはありません。<br>
+      ウェブサイトの管理者であっても、保存された情報の内容を直接閲覧することはできません。<br><br>
+      ただし、本サービスは個人によって運営されており、公式な保証やサポートは提供されておりません。<br>
+      本サービスの性質上、セキュリティや運用方針に不安がある場合は、利用をお控えいただくようお願いいたします。<br>
+      情報提供はあくまでご自身の判断と責任にてお願いいたします。
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SEGA アカウント連携 | JiETNG</title>
+  <style>
+    :root {
+      --bg-color: #ffffff;
+      --text-color: #222222;
+      --border-color: #cccccc;
+      --accent-color: #000000;
+      --button-bg: #ffffff;
+      --button-text: #000000;
+      --button-hover-bg: #f0f0f0;
+      --card-bg: #f9f9f9;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-color: #000000;
+        --text-color: #eeeeee;
+        --border-color: #555555;
+        --accent-color: #ffffff;
+        --button-bg: #111111;
+        --button-text: #ffffff;
+        --button-hover-bg: #222222;
+        --card-bg: #1a1a1a;
+      }
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: "Helvetica Neue", "Yu Gothic", "Meiryo", sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .container {
+      background-color: var(--card-bg);
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      padding: 40px 30px;
+      width: 100%;
+      max-width: 400px;
+      box-sizing: border-box;
+      border: 1px solid var(--border-color);
+    }
+
+    h2 {
+      text-align: center;
+      color: var(--accent-color);
+      margin-bottom: 24px;
+      font-size: 24px;
+      letter-spacing: 1px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--text-color);
+      font-weight: 500;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 16px;
+      box-sizing: border-box;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      transition: border-color 0.3s, background-color 0.3s, color 0.3s;
+    }
+
+    input[type="text"]:focus,
+    input[type="password"]:focus,
+    select:focus {
+      outline: none;
+      border-color: var(--accent-color);
+    }
+
+    select {
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23aaa'><polygon points='0,0 12,0 6,7'/></svg>");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      background-size: 12px 12px;
+    }
+
+    input[type="submit"] {
+      width: 100%;
+      padding: 12px;
+      background-color: var(--button-bg);
+      color: var(--button-text);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    input[type="submit"]:hover {
+      background-color: var(--button-hover-bg);
+    }
+
+    .notice {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 16px;
+      font-size: 13px;
+      color: var(--text-color);
+      margin-top: 30px;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>SEGA アカウント連携</h2>
+    <form method="POST">
+      <label for="segaid">セガID・SEGA ID</label>
+      <input type="text" id="segaid" name="segaid" required />
+
+      <label for="password">パスワード・Password</label>
+      <input type="password" id="password" name="password" required />
+
+      <label for="ver">バージョン・Version</label>
+      <select id="ver" name="ver" required>
+        <option value="jp" selected>日本版「maimaidx.jp」</option>
+        <option value="intl">海外版「maimaidx-eng.com」</option>
+      </select>
+
+      <input type="submit" value="連携・Bind" />
+    </form>
+
+    <div class="notice">
+      <strong>ご利用に関するご注意</strong><br>
+      ご入力いただいた情報はすべて暗号化された形式で安全に保存され、第三者に提供されることはありません。<br>
+      ウェブサイトの管理者であっても、保存された情報の内容を直接閲覧することはできません。<br><br>
+      ただし、本サービスは個人によって運営されており、公式な保証やサポートは提供されておりません。<br>
+      本サービスの性質上、セキュリティや運用方針に不安がある場合は、利用をお控えいただくようお願いいたします。<br>
+      情報提供はあくまでご自身の判断と責任にてお願いいたします。
+    </div>
+  </div>
+</body>
+</html>

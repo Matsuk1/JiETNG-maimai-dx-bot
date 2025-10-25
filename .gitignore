@@ -1,0 +1,72 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+venv/
+env/
+ENV/
+
+# 敏感数据文件
+data/user.json.enc
+data/user.json
+config.json
+*.enc
+
+# 数据库
+*.db
+*.sqlite
+*.sqlite3
+
+# 日志文件
+*.log
+logs/
+
+# 临时文件
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# 测试
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# 环境变量
+.env
+.env.local
+
+# 上传的图片缓存
+uploads/
+temp/
+cache/
+
+# 编译的 Python 文件
+*.pyc

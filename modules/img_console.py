@@ -1,0 +1,211 @@
+import os
+import io
+import qrcode
+from PIL import Image, ImageDraw, ImageFont
+from modules.config_loader import font_path
+from modules.img_cache import paste_icon_optimized, get_cached_image
+
+# 全局字体对象（一次性加载）
+font_title = ImageFont.truetype(font_path, 34)
+font_info = ImageFont.truetype(font_path, 24)
+font_for_plate = ImageFont.truetype(font_path, 40)
+font_huge_huge = ImageFont.truetype(font_path, 170)
+font_huge  = ImageFont.truetype(font_path, 28)
+font_large = ImageFont.truetype(font_path, 19)
+font_small = ImageFont.truetype(font_path, 14)
+font_tiny = ImageFont.truetype(font_path, 6)
+
+# 兼容旧版本函数名
+def paste_icon(img, song, key, size, position, save_dir, url_func, verify=False):
+    """兼容旧版本的贴图标函数，verify参数已废弃"""
+    paste_icon_optimized(img, song, key, size, position, save_dir, url_func)
+
+def draw_aligned_colon_text(draw, lines, top_left, font, spacing=10, fill=(0, 0, 0)):
+    """
+    将每行的冒号 ":" 作为对齐点，冒号前后分别对齐显示
+    """
+    x, y = top_left
+
+    # 预处理：分离左边（冒号前）和右边（冒号后）
+    left_texts = []
+    right_texts = []
+    for line in lines:
+        if ":" in line:
+            left, right = line.split(":", 1)
+            left_texts.append(left + ":")
+            right_texts.append(right.strip())
+        else:
+            left_texts.append(line)
+            right_texts.append("")
+
+    # 计算左侧最大宽度
+    max_left_width = max(draw.textbbox((0, 0), text, font=font)[2] for text in left_texts) + 10
+
+    # 绘制
+    for left, right in zip(left_texts, right_texts):
+        draw.text((x, y), left, font=font, fill=fill)
+        draw.text((x + max_left_width, y), right, font=font, fill=fill)
+        y += draw.textbbox((0, 0), left, font=font)[3] + spacing
+
+def truncate_text(draw, text, font, max_width):
+    """
+    如果文本超出最大宽度，自动截断并加省略号
+    """
+    ellipsis = "..."
+    text_width = draw.textlength(text, font=font)
+    ellipsis_width = draw.textlength(ellipsis, font=font)
+
+    if text_width <= max_width:
+        return text
+
+    while text and draw.textlength(text + ellipsis, font=font) > max_width:
+        text = text[:-1]
+
+    return text + ellipsis
+
+def resize_by_width(img, target_width):
+    original_width, original_height = img.size
+    ratio = target_width / original_width
+    target_height = int(original_height * ratio)
+
+    resized_img = img.resize((target_width, target_height), Image.Resampling.LANCZOS)
+    return resized_img
+
+def wrap_in_rounded_background(content_img, padding=20, radius=30,
+                               bg_color=(255, 255, 255), border_color=(220, 220, 220), border_width=5):
+    """
+    将图像放入圆角白底框中（支持灰色边框，去除透明通道）
+
+    参数：
+        content_img: 原始图像 (PIL.Image)
+        padding: 内容与圆角框的间距
+        radius: 圆角半径
+        bg_color: 内部背景颜色（默认白色）
+        border_color: 边框颜色（默认浅灰）
+        border_width: 边框线宽
+    """
+    # 计算背景尺寸
+    bg_size = (content_img.width + 2 * padding, content_img.height + 2 * padding)
+
+    # 创建白底画布
+    bg = Image.new("RGB", bg_size, bg_color)
+    draw = ImageDraw.Draw(bg)
+
+    # 绘制圆角矩形边框
+    x0, y0 = 0, 0
+    x1, y1 = bg_size
+    draw.rounded_rectangle(
+        [x0, y0, x1, y1],
+        radius=radius,
+        outline=border_color,
+        width=border_width,
+        fill=bg_color
+    )
+
+    # 贴上内容图
+    content_img = content_img.convert("RGB")
+    bg.paste(content_img, (padding, padding))
+
+    return bg
+
+def combine_with_rounded_background(img1, img2, spacing=40, outer_margin=30, bg_color=(255, 255, 255), inner_bg=(255, 255, 255)):
+    """
+    将两个圆角图像上下拼接，外层为灰色背景，内部为白色背景。
+    
+    参数：
+        img1, img2: PIL.Image 对象
+        spacing: 两张图之间的间距
+        outer_margin: 最外层边距（灰边宽度）
+        bg_color: 灰色背景颜色（RGB）
+        inner_bg: 内部白色背景
+    """
+    # 先给每个图加上圆角背景
+    img1_bg = wrap_in_rounded_background(img1)
+    img2_bg = wrap_in_rounded_background(img2)
+
+    # 计算内部画布尺寸
+    width = max(img1_bg.width, img2_bg.width)
+    height = img1_bg.height + spacing + img2_bg.height
+
+    # 创建白色背景（内部）
+    combined = Image.new("RGB", (width, height), inner_bg)
+    x1 = (width - img1_bg.width) // 2
+    x2 = (width - img2_bg.width) // 2
+
+    # 粘贴两张图片
+    combined.paste(img1_bg.convert("RGB"), (x1, 0))
+    combined.paste(img2_bg.convert("RGB"), (x2, img1_bg.height + spacing))
+
+    # 再加上外层灰色背景
+    final_width = combined.width + 2 * outer_margin
+    final_height = combined.height + 2 * outer_margin
+
+    final_img = Image.new("RGB", (final_width, final_height), bg_color)
+    final_img.paste(combined, (outer_margin, outer_margin))
+
+    return final_img
+
+def _generate_qrcode(data: str, box_size: int = 10, border: int = 4) -> Image.Image:
+    qr = qrcode.QRCode(
+        version=None,
+        error_correction=qrcode.constants.ERROR_CORRECT_H,
+        box_size=box_size,
+        border=border,
+    )
+    qr.add_data(data)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white").convert("RGB")
+    return img
+
+def generate_qr_with_title(data: str, title_list: list[str]) -> Image.Image:
+    qr_img = _generate_qrcode(data)
+    qr_w, qr_h = qr_img.size
+
+    padding = 40
+    line_spacing = 10
+
+    # 计算文字尺寸
+    dummy_img = Image.new("RGB", (1, 1), "white")
+    draw = ImageDraw.Draw(dummy_img)
+
+    line_sizes = []
+    max_line_w = 0
+    total_text_height = 0
+    for i, text in enumerate(title_list):
+        bbox = draw.textbbox((0, 0), text, font=font_title)
+        w = bbox[2] - bbox[0]
+        h = bbox[3] - bbox[1]
+        line_sizes.append((w, h))
+        max_line_w = max(max_line_w, w)
+        total_text_height += h
+        if i < len(title_list) - 1:
+            total_text_height += line_spacing
+
+    # 保证二维码与文本区高度一致
+    text_h = total_text_height
+    text_w = max_line_w
+    target_h = max(qr_h, text_h)
+    scale = target_h / qr_h
+    qr_img = qr_img.resize((int(qr_w * scale), int(qr_h * scale)), Image.LANCZOS)
+    qr_w, qr_h = qr_img.size
+
+    # 左右空余相等 → 左右各 padding，二维码-文字间距设为 padding
+    total_w = padding + qr_w + padding + text_w + padding
+    total_h = target_h + padding * 2
+
+    img = Image.new("RGB", (total_w, total_h), "white")
+    draw = ImageDraw.Draw(img)
+
+    # 绘制二维码（垂直居中）
+    qr_x = padding
+    qr_y = (total_h - qr_h) // 2
+    img.paste(qr_img, (qr_x, qr_y))
+
+    # 绘制文字区域（整体垂直居中）
+    text_start_x = qr_x + qr_w + padding
+    text_start_y = (total_h - text_h) // 2
+    for (text, (w, h)) in zip(title_list, line_sizes):
+        draw.text((text_start_x, text_start_y), text, font=font_title, fill=(0, 0, 0))
+        text_start_y += h + line_spacing
+
+    return img
