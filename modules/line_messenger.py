@@ -88,7 +88,7 @@ def notify_admins_error(
     admin_id: list,
     configuration: Configuration,
     error_notification_enabled: bool = True,
-    max_length: int = 1000
+    max_length: int = 4000
 ):
     """
     通知管理员发生错误
@@ -115,7 +115,7 @@ def notify_admins_error(
             f"Error: {error_title}",
             f"",
             f"Details:",
-            error_details[:500] if len(error_details) > 500 else error_details
+            error_details[:2000] if len(error_details) > 2000 else error_details
         ]
 
         # 添加上下文信息
