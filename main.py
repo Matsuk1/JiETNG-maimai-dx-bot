@@ -1720,18 +1720,18 @@ def handle_sync_text_command(event):
 
     # ====== 管理员命令 ======
     if user_id in admin_id:
-        admin_cmds = {
-            "dxdata update": lambda: (load_dxdata(DXDATA_URL, dxdata_list), read_dxdata(), dxdata_update)[-1],
-        }
-
         if user_message.startswith("upload notice"):
             new_notice = user_message.replace("upload notice", "").strip()
             upload_notice(new_notice)
             edit_user_status_of_all("notice_read", False)
             return smart_reply(user_id, event.reply_token, notice_upload, configuration, DIVIDER)
 
-        if user_message in admin_cmds:
-            reply_message = admin_cmds[user_message]()
+        if user_message == "dxdata update":
+            # 使用新的对比更新函数
+            result = update_dxdata_with_comparison(DXDATA_URL, dxdata_list)
+            read_dxdata()  # 重新加载到内存
+
+            reply_message = TextMessage(text=result['message'])
             return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
 
     # ====== 默认：不匹配任何命令 ======

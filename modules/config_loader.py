@@ -28,6 +28,7 @@ default_config = {
     "port": 5000,
     "file_path": {
         "dxdata_list": "./data/dxdata.json",
+        "dxdata_version": "./data/dxdata_version.json",
         "re_dxdata_list": "./data/re_dxdata.json",
         "user_list": "./data/user.json.enc",
         "notice_file": "./data/notice.json",
@@ -116,6 +117,7 @@ PORT = _config["port"]
 # 文件路径字段
 file_path = _config["file_path"]
 dxdata_list = file_path["dxdata_list"]
+DXDATA_VERSION_FILE = file_path["dxdata_version"]
 re_dxdata_list = file_path["re_dxdata_list"]
 user_list = file_path["user_list"]
 NOTICE_FILE = file_path["notice_file"]
