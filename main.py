@@ -1732,7 +1732,20 @@ def handle_sync_text_command(event):
             read_dxdata()  # 重新加载到内存
 
             reply_message = TextMessage(text=result['message'])
-            return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
+
+            # 回复执行命令的管理员
+            smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
+
+            # 推送通知给所有其他管理员
+            notification_message = TextMessage(text=f"📢 Dxdata 更新通知\n\n{result['message']}")
+            for admin_user_id in admin_id:
+                if admin_user_id != user_id:  # 不重复发送给执行命令的管理员
+                    try:
+                        smart_push(admin_user_id, notification_message, configuration)
+                    except Exception as e:
+                        logger.error(f"Failed to notify admin {admin_user_id}: {e}")
+
+            return
 
     # ====== 默认：不匹配任何命令 ======
     return
