@@ -513,7 +513,7 @@ def process_sega_credentials(user_id, segaid, password, ver="jp"):
 def user_bind_sega_id(user_id, sega_id):
     read_user()
 
-    if user_id not in users :
+    if user_id not in USERS :
         add_user(user_id)
 
     USERS[user_id]['sega_id'] = sega_id
@@ -531,7 +531,7 @@ def user_bind_sega_pwd(user_id, sega_pwd):
 def user_set_version(user_id, version):
     read_user()
 
-    if user_id not in users :
+    if user_id not in USERS :
         add_user(user_id)
 
     USERS[user_id]['version'] = version
@@ -542,7 +542,7 @@ def get_user(user_id):
 
     result = f"USER_ID: {user_id}\n"
 
-    if user_id in users :
+    if user_id in USERS :
         if "sega_id" in USERS[user_id] :
             result += f"SEGA_ID: {USERS[user_id]['sega_id']}\n"
         else :
@@ -566,7 +566,7 @@ def async_maimai_update_task(event):
     # 获取用户版本
     read_user()
     ver = "jp"
-    if user_id in users and 'version' in USERS[user_id]:
+    if user_id in USERS and 'version' in USERS[user_id]:
         ver = USERS[user_id]['version']
 
     reply_msg = maimai_update(user_id, ver)
@@ -582,7 +582,7 @@ def async_generate_friend_b50_task(event):
     # 获取用户版本
     read_user()
     ver = "jp"
-    if user_id in users and 'version' in USERS[user_id]:
+    if user_id in USERS and 'version' in USERS[user_id]:
         ver = USERS[user_id]['version']
 
     reply_msg = generate_friend_b50(user_id, friend_code, ver)
@@ -598,7 +598,7 @@ def async_add_friend_task(event):
     # 获取用户版本
     read_user()
     ver = "jp"
-    if user_id in users and 'version' in USERS[user_id]:
+    if user_id in USERS and 'version' in USERS[user_id]:
         ver = USERS[user_id]['version']
 
     # 调用实际的添加好友逻辑并发送回复
@@ -619,7 +619,7 @@ def add_friend_with_params(user_id, friend_code, ver):
     """
     read_user()
 
-    if user_id not in users or 'sega_id' not in USERS[user_id] or 'sega_pwd' not in USERS[user_id]:
+    if user_id not in USERS or 'sega_id' not in USERS[user_id] or 'sega_pwd' not in USERS[user_id]:
         return segaid_error
 
     sega_id = USERS[user_id]['sega_id']
@@ -642,7 +642,7 @@ def async_friend_list_task(event):
     # 获取用户版本
     read_user()
     ver = "jp"
-    if user_id in users and 'version' in USERS[user_id]:
+    if user_id in USERS and 'version' in USERS[user_id]:
         ver = USERS[user_id]['version']
 
     reply_msg = get_friends_list_buttons(user_id, ver)
@@ -658,7 +658,7 @@ def maimai_update(user_id, ver="jp"):
 
     read_user()
 
-    if user_id not in users:
+    if user_id not in USERS:
         return segaid_error
 
     elif 'sega_id' not in USERS[user_id] or 'sega_pwd' not in USERS[user_id]:
@@ -794,7 +794,7 @@ def random_song(key="", ver="jp"):
 
 def get_friends_list_buttons(user_id, ver="jp"):
     read_user()
-    if user_id not in users:
+    if user_id not in USERS:
         return segaid_error
 
     elif 'sega_id' not in USERS[user_id] or 'sega_pwd' not in USERS[user_id]:
@@ -1024,7 +1024,7 @@ def create_user_info_img(user_id, scale=1.5):
 
 def generate_maipass(user_id):
     read_user()
-    if user_id not in users:
+    if user_id not in USERS:
         return segaid_error
 
     user_info = USERS[user_id]["personal_info"]
@@ -1052,7 +1052,7 @@ def generate_maipass(user_id):
 def selgen_records(user_id, type="best50", command="", ver="jp"):
     read_user()
 
-    if user_id not in users:
+    if user_id not in USERS:
         return segaid_error
 
     song_record = read_record(user_id)
@@ -1196,7 +1196,7 @@ def generate_yang_rating(user_id, ver="jp"):
 def generate_friend_b50(user_id, friend_code, ver="jp"):
     read_user()
 
-    if user_id not in users :
+    if user_id not in USERS :
         return segaid_error
 
     elif 'sega_id' not in USERS[user_id] or 'sega_pwd' not in USERS[user_id] :
@@ -1613,7 +1613,7 @@ def handle_sync_text_command(event):
     id_use = user_id
     mai_ver = "jp"
     read_user()
-    if user_id in users:
+    if user_id in USERS:
         if 'version' in USERS[user_id]:
             mai_ver = USERS[user_id]['version']
 
@@ -1851,7 +1851,7 @@ def handle_image_message_task(user_id, reply_token, data):
 def handle_internal_link(user_id, reply_token, data):
     mai_ver = "jp"
     read_user()
-    if user_id in users:
+    if user_id in USERS:
         if 'version' in USERS[user_id]:
             mai_ver = USERS[user_id]['version']
 
@@ -1961,7 +1961,7 @@ def admin_panel():
 
     # 准备用户数据 - 不获取昵称,使用懒加载
     users_data = {}
-    for user_id, user_info in users.items():
+    for user_id, user_info in USERS.items():
         users_data[user_id] = {
             'nickname': 'Loading...',  # 初始占位符
             'json_str': json.dumps(user_info, indent=2, ensure_ascii=False)
@@ -1979,9 +1979,9 @@ def admin_panel():
             task['nickname'] = 'Loading...'
 
     # 获取统计信息
-    total_users = len(users)
-    jp_users = sum(1 for user in users.values() if user.get("version") == "jp")
-    intl_users = sum(1 for user in users.values() if user.get("version") == "intl")
+    total_users = len(USERS)
+    jp_users = sum(1 for user in USERS.values() if user.get("version") == "jp")
+    intl_users = sum(1 for user in USERS.values() if user.get("version") == "intl")
 
     # 计算运行时长
     uptime = datetime.now() - SERVICE_START_TIME
@@ -2313,7 +2313,7 @@ def admin_edit_user():
     try:
         read_user()
 
-        if user_id not in users:
+        if user_id not in USERS:
             return jsonify({
                 'success': False,
                 'message': f'User {user_id} not found'
@@ -2358,7 +2358,7 @@ def admin_delete_user():
     try:
         read_user()
 
-        if user_id not in users:
+        if user_id not in USERS:
             return jsonify({
                 'success': False,
                 'message': f'User {user_id} not found'
@@ -2425,7 +2425,7 @@ def admin_get_user_data():
     try:
         read_user()
 
-        if user_id not in users:
+        if user_id not in USERS:
             return jsonify({
                 'success': False,
                 'message': f'User {user_id} not found'
@@ -2465,7 +2465,7 @@ def admin_load_nicknames():
 
         # 获取所有用户的昵称
         nicknames = {}
-        for user_id in users.keys():
+        for user_id in USERS.keys():
             nickname = get_user_nickname_wrapper(user_id, use_cache=True)
             nicknames[user_id] = nickname
 
@@ -2489,7 +2489,7 @@ def async_admin_maimai_update_task(event):
     # 获取用户版本
     read_user()
     ver = "jp"
-    if user_id in users and 'version' in USERS[user_id]:
+    if user_id in USERS and 'version' in USERS[user_id]:
         ver = USERS[user_id]['version']
 
     # 执行更新

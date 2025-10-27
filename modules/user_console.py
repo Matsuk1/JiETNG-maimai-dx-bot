@@ -46,7 +46,7 @@ def delete_user(user_id: str) -> None:
     """
     read_user()
 
-    if user_id in users:
+    if user_id in USERS:
         del USERS[user_id]
         mark_user_dirty()
         write_user()
@@ -72,7 +72,7 @@ def edit_user_status(user_id: str, key: str, word: Any, operation: int = 0) -> N
     """
     read_user()
 
-    if user_id not in users:
+    if user_id not in USERS:
         add_user(user_id)
         return  # add_user 已经写入
 
@@ -101,7 +101,7 @@ def edit_user_status_of_all(key: str, word: Any, operation: int = 0) -> None:
         word: 要设置/增加/减少的值
         operation: 操作类型 (同 edit_user_status)
     """
-    for user_id in list(users.keys()):
+    for user_id in list(USERS.keys()):
         edit_user_status(user_id, key, word, operation)
 
 
@@ -118,7 +118,7 @@ def get_user_status(user_id: str, key: str = "") -> Optional[Any]:
     """
     read_user()
 
-    if user_id not in users:
+    if user_id not in USERS:
         add_user(user_id)
 
     if key:

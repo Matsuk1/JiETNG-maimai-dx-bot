@@ -37,7 +37,7 @@ def smart_reply(user_id: str, reply_token: str, messages, configuration: Configu
     if not isinstance(messages, list):
         messages = [messages]
 
-    if user_id not in users:
+    if user_id not in USERS:
         notice_read = True
     else:
         notice_read = get_user_status(user_id, "notice_read")

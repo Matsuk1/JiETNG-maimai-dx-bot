@@ -113,7 +113,7 @@ def clean_user_status_fields() -> Dict[str, Any]:
     cleaned_count = 0
     removed_fields = []
 
-    for user_id, user_data in users.items():
+    for user_id, user_data in USERS.items():
         # 确保 status 字段存在
         if "status" not in user_data:
             user_data["status"] = {"notice_read": False}
@@ -168,7 +168,7 @@ def check_data_integrity() -> Dict[str, Any]:
     issues = []
 
     # 检查用户数据结构
-    for user_id, user_data in users.items():
+    for user_id, user_data in USERS.items():
         # 检查必要字段
         if "status" not in user_data:
             issues.append(f"User {user_id} missing 'status' field")
