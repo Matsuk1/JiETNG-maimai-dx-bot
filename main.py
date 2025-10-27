@@ -516,16 +516,16 @@ def user_bind_sega_id(user_id, sega_id):
     if user_id not in users :
         add_user(user_id)
 
-    users[user_id]['sega_id'] = sega_id
+    USERS[user_id]['sega_id'] = sega_id
     write_user()
 
 def user_bind_sega_pwd(user_id, sega_pwd):
     read_user()
 
-    if user_id not in users :
+    if user_id not in USERS :
         add_user(user_id)
 
-    users[user_id]['sega_pwd'] = sega_pwd
+    USERS[user_id]['sega_pwd'] = sega_pwd
     write_user()
 
 def user_set_version(user_id, version):
@@ -534,7 +534,7 @@ def user_set_version(user_id, version):
     if user_id not in users :
         add_user(user_id)
 
-    users[user_id]['version'] = version
+    USERS[user_id]['version'] = version
     write_user()
 
 def get_user(user_id):
@@ -543,12 +543,12 @@ def get_user(user_id):
     result = f"USER_ID: {user_id}\n"
 
     if user_id in users :
-        if "sega_id" in users[user_id] :
-            result += f"SEGA_ID: {users[user_id]['sega_id']}\n"
+        if "sega_id" in USERS[user_id] :
+            result += f"SEGA_ID: {USERS[user_id]['sega_id']}\n"
         else :
             result += "SEGA_ID: 未連携\n"
 
-        if "sega_pwd" in users[user_id] :
+        if "sega_pwd" in USERS[user_id] :
             result += f"PASSWORD: 連携完了"
         else :
             result += "PASSWORD: 未連携"
@@ -566,8 +566,8 @@ def async_maimai_update_task(event):
     # 获取用户版本
     read_user()
     ver = "jp"
-    if user_id in users and 'version' in users[user_id]:
-        ver = users[user_id]['version']
+    if user_id in users and 'version' in USERS[user_id]:
+        ver = USERS[user_id]['version']
 
     reply_msg = maimai_update(user_id, ver)
     smart_reply(user_id, reply_token, reply_msg, configuration, DIVIDER)
@@ -582,8 +582,8 @@ def async_generate_friend_b50_task(event):
     # 获取用户版本
     read_user()
     ver = "jp"
-    if user_id in users and 'version' in users[user_id]:
-        ver = users[user_id]['version']
+    if user_id in users and 'version' in USERS[user_id]:
+        ver = USERS[user_id]['version']
 
     reply_msg = generate_friend_b50(user_id, friend_code, ver)
     smart_reply(user_id, reply_token, reply_msg, configuration, DIVIDER)
@@ -598,8 +598,8 @@ def async_add_friend_task(event):
     # 获取用户版本
     read_user()
     ver = "jp"
-    if user_id in users and 'version' in users[user_id]:
-        ver = users[user_id]['version']
+    if user_id in users and 'version' in USERS[user_id]:
+        ver = USERS[user_id]['version']
 
     # 调用实际的添加好友逻辑并发送回复
     reply_msg = add_friend_with_params(user_id, friend_code, ver)
@@ -619,11 +619,11 @@ def add_friend_with_params(user_id, friend_code, ver):
     """
     read_user()
 
-    if user_id not in users or 'sega_id' not in users[user_id] or 'sega_pwd' not in users[user_id]:
+    if user_id not in users or 'sega_id' not in USERS[user_id] or 'sega_pwd' not in USERS[user_id]:
         return segaid_error
 
-    sega_id = users[user_id]['sega_id']
-    sega_pwd = users[user_id]['sega_pwd']
+    sega_id = USERS[user_id]['sega_id']
+    sega_pwd = USERS[user_id]['sega_pwd']
 
     user_session = login_to_maimai(sega_id, sega_pwd, ver)
     if user_session == None:
@@ -642,8 +642,8 @@ def async_friend_list_task(event):
     # 获取用户版本
     read_user()
     ver = "jp"
-    if user_id in users and 'version' in users[user_id]:
-        ver = users[user_id]['version']
+    if user_id in users and 'version' in USERS[user_id]:
+        ver = USERS[user_id]['version']
 
     reply_msg = get_friends_list_buttons(user_id, ver)
     smart_reply(user_id, reply_token, reply_msg, configuration, DIVIDER)
@@ -661,11 +661,11 @@ def maimai_update(user_id, ver="jp"):
     if user_id not in users:
         return segaid_error
 
-    elif 'sega_id' not in users[user_id] or 'sega_pwd' not in users[user_id]:
+    elif 'sega_id' not in USERS[user_id] or 'sega_pwd' not in USERS[user_id]:
         return segaid_error
 
-    sega_id = users[user_id]['sega_id']
-    sega_pwd = users[user_id]['sega_pwd']
+    sega_id = USERS[user_id]['sega_id']
+    sega_pwd = USERS[user_id]['sega_pwd']
 
     user_session = login_to_maimai(sega_id, sega_pwd, ver)
     if user_session == None:
@@ -684,7 +684,7 @@ def maimai_update(user_id, ver="jp"):
     error = False
 
     if user_info:
-        users[user_id]['personal_info'] = user_info
+        USERS[user_id]['personal_info'] = user_info
         write_user()
     else:
         func_status["User Info"] = False
@@ -797,11 +797,11 @@ def get_friends_list_buttons(user_id, ver="jp"):
     if user_id not in users:
         return segaid_error
 
-    elif 'sega_id' not in users[user_id] or 'sega_pwd' not in users[user_id]:
+    elif 'sega_id' not in USERS[user_id] or 'sega_pwd' not in USERS[user_id]:
         return segaid_error
 
-    sega_id = users[user_id]['sega_id']
-    sega_pwd = users[user_id]['sega_pwd']
+    sega_id = USERS[user_id]['sega_id']
+    sega_pwd = USERS[user_id]['sega_pwd']
 
     user_session = login_to_maimai(sega_id, sega_pwd, ver)
     if user_session == None:
@@ -954,7 +954,7 @@ def generate_plate_rcd(user_id, title, ver="jp"):
 def create_user_info_img(user_id, scale=1.5):
     read_user()
 
-    user_info = users[user_id]['personal_info']
+    user_info = USERS[user_id]['personal_info']
 
     img_width = 802
     img_height = 128
@@ -1027,7 +1027,7 @@ def generate_maipass(user_id):
     if user_id not in users:
         return segaid_error
 
-    user_info = users[user_id]["personal_info"]
+    user_info = USERS[user_id]["personal_info"]
     user_img = create_user_info_img(user_id)
 
     title_list = [
@@ -1169,7 +1169,7 @@ def generate_yang_rating(user_id, ver="jp"):
         return record_error
 
     read_user()
-    now_version = MAIMAI_VERSION[users[user_id]['version']][-1]
+    now_version = MAIMAI_VERSION[USERS[user_id]['version']][-1]
 
     version_records = []
 
@@ -1199,11 +1199,11 @@ def generate_friend_b50(user_id, friend_code, ver="jp"):
     if user_id not in users :
         return segaid_error
 
-    elif 'sega_id' not in users[user_id] or 'sega_pwd' not in users[user_id] :
+    elif 'sega_id' not in USERS[user_id] or 'sega_pwd' not in USERS[user_id] :
         return segaid_error
 
-    sega_id = users[user_id]['sega_id']
-    sega_pwd = users[user_id]['sega_pwd']
+    sega_id = USERS[user_id]['sega_id']
+    sega_pwd = USERS[user_id]['sega_pwd']
 
     user_session = login_to_maimai(sega_id, sega_pwd, ver)
     if user_session == None:
@@ -1614,8 +1614,8 @@ def handle_sync_text_command(event):
     mai_ver = "jp"
     read_user()
     if user_id in users:
-        if 'version' in users[user_id]:
-            mai_ver = users[user_id]['version']
+        if 'version' in USERS[user_id]:
+            mai_ver = USERS[user_id]['version']
 
     # ====== 基础命令映射 ======
     COMMAND_MAP = {
@@ -1852,8 +1852,8 @@ def handle_internal_link(user_id, reply_token, data):
     mai_ver = "jp"
     read_user()
     if user_id in users:
-        if 'version' in users[user_id]:
-            mai_ver = users[user_id]['version']
+        if 'version' in USERS[user_id]:
+            mai_ver = USERS[user_id]['version']
 
     URL_MAP = [
         (
@@ -1893,7 +1893,7 @@ def handle_location_message(event):
     lng = event.message.longitude
     user_id = event.source.user_id
 
-    stores = get_nearby_maimai_stores(lat, lng, users[user_id]['version'])
+    stores = get_nearby_maimai_stores(lat, lng, USERS[user_id]['version'])
     if not stores:
         reply_message = TextMessage(text="🥹 周辺の設置店舗がないね")
     else:
@@ -2320,7 +2320,7 @@ def admin_edit_user():
             }), 404
 
         # 更新用户数据
-        users[user_id] = user_data
+        USERS[user_id] = user_data
         mark_user_dirty()
         write_user()
 
@@ -2432,7 +2432,7 @@ def admin_get_user_data():
             }), 404
 
         # 获取用户数据
-        user_info = users[user_id]
+        user_info = USERS[user_id]
 
         # 获取昵称(不使用缓存,强制刷新)
         nickname = get_user_nickname_wrapper(user_id, use_cache=False)
@@ -2489,8 +2489,8 @@ def async_admin_maimai_update_task(event):
     # 获取用户版本
     read_user()
     ver = "jp"
-    if user_id in users and 'version' in users[user_id]:
-        ver = users[user_id]['version']
+    if user_id in users and 'version' in USERS[user_id]:
+        ver = USERS[user_id]['version']
 
     # 执行更新
     messages = maimai_update(user_id, ver)

@@ -28,7 +28,7 @@ def add_user(user_id: str) -> None:
         user_id: LINE用户ID或代理用户ID
     """
     read_user()
-    users[user_id] = {
+    USERS[user_id] = {
         "status": {
             "notice_read": False,
         }
@@ -47,7 +47,7 @@ def delete_user(user_id: str) -> None:
     read_user()
 
     if user_id in users:
-        del users[user_id]
+        del USERS[user_id]
         mark_user_dirty()
         write_user()
 
@@ -77,16 +77,16 @@ def edit_user_status(user_id: str, key: str, word: Any, operation: int = 0) -> N
         return  # add_user 已经写入
 
     if operation == 0:
-        users[user_id]["status"][key] = word
+        USERS[user_id]["status"][key] = word
 
     elif operation == 1:
-        users[user_id]["status"][key] += word
+        USERS[user_id]["status"][key] += word
 
     elif operation == 2:
-        users[user_id]["status"][key] -= word
+        USERS[user_id]["status"][key] -= word
 
     elif operation == 4:
-        del users[user_id]["status"][key]
+        del USERS[user_id]["status"][key]
 
     mark_user_dirty()
     write_user()
@@ -122,9 +122,9 @@ def get_user_status(user_id: str, key: str = "") -> Optional[Any]:
         add_user(user_id)
 
     if key:
-        return users[user_id]["status"].get(key, None)
+        return USERS[user_id]["status"].get(key, None)
     else:
-        return users[user_id]["status"]
+        return USERS[user_id]["status"]
 
 
 def get_user_nickname(user_id: str, line_bot_api, use_cache: bool = True) -> str:
