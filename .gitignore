@@ -27,6 +27,8 @@ ENV/
 # 敏感数据文件
 data/user.json.enc
 data/user.json
+data/dxdata.json
+data/dxdata_version.json
 config.json
 *.enc
 

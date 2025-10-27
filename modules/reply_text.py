@@ -23,6 +23,9 @@ update_over = TextMessage(
     quick_reply=QuickReply(
         items=[
             QuickReplyItem(action=MessageAction(label="Best 50", text="b50")),
+            QuickReplyItem(action=MessageAction(label="Best 100", text="b100")),
+            QuickReplyItem(action=MessageAction(label="All Best 50", text="ab50")),
+            QuickReplyItem(action=MessageAction(label="All Best 35", text="ab35")),
             QuickReplyItem(action=MessageAction(label="All Perfect Best 50", text="apb50")),
             QuickReplyItem(action=MessageAction(label="Ideal Best 50", text="idlb50")),
             QuickReplyItem(action=URIAction(label="サポート", uri=f"https://{DOMAIN}/")),
@@ -54,6 +57,15 @@ record_error = TextMessage(
     quick_reply=QuickReply(
         items=[
             QuickReplyItem(action=MessageAction(label="maimai update", text="maimai update")),
+            QuickReplyItem(action=URIAction(label="サポート", uri=f"https://{DOMAIN}/")),
+        ]
+    )
+)
+
+picture_error = TextMessage(
+    text="画像処理しっぱい〜〜",
+    quick_reply=QuickReply(
+        items=[
             QuickReplyItem(action=URIAction(label="サポート", uri=f"https://{DOMAIN}/")),
         ]
     )

@@ -1,10 +1,80 @@
 import requests
 import json
 import os
+import copy
 from datetime import datetime
 from modules.config_loader import MAIMAI_VERSION, DXDATA_VERSION_FILE
 
-def load_dxdata(url, save_to: str = None):
+def merge_json(source, target):
+    if isinstance(source, dict) and isinstance(target, dict):
+        for key, value in source.items():
+            if key not in target:
+                target[key] = copy.deepcopy(value)
+            else:
+                # 空字符串逻辑
+                if isinstance(value, str) and isinstance(target[key], str):
+                    if value and not target[key]:
+                        target[key] = value
+                    elif target[key] and not value:
+                        pass  # 保留 target 的非空值
+
+                # 空列表逻辑
+                elif isinstance(value, list) and isinstance(target[key], list):
+                    if value and not target[key]:
+                        target[key] = copy.deepcopy(value)
+                    elif target[key] and not value:
+                        pass  # 保留 target 的非空列表
+                    else:
+                        # 都有内容 -> 递归合并
+                        for i in range(min(len(value), len(target[key]))):
+                            merge_json(value[i], target[key][i])
+
+                else:
+                    # 其他类型递归
+                    merge_json(value, target[key])
+
+    elif isinstance(source, list) and isinstance(target, list):
+        # 顶层列表合并：先做互补，再递归
+        if source and not target:
+            target.extend(copy.deepcopy(source))
+        elif target and not source:
+            pass
+        else:
+            for i in range(min(len(source), len(target))):
+                merge_json(source[i], target[i])
+
+    return target
+
+def merge_json_by_key(source, target, key_field):
+    """
+    将 source 和 target 中指定 key_field（如 "title"）相同的对象合并。
+    假设 source/target 是结构一致的 JSON（顶层为 dict），且 key_field 对应的是 list[dict]
+    """
+    result = copy.deepcopy(target)
+
+    for k, v in source.items():
+        if isinstance(v, list) and all(isinstance(i, dict) for i in v):
+            # 是一个对象列表，准备按 key_field 匹配
+            target_list = result.get(k, [])
+            target_index = {item.get(key_field): item for item in target_list}
+
+            for item in v:
+                key = item.get(key_field)
+                if key in target_index:
+                    merge_json(item, target_index[key])
+                else:
+                    target_list.append(copy.deepcopy(item))
+            result[k] = target_list
+        else:
+            # 默认使用递归合并
+            if k in result:
+                merge_json(v, result[k])
+            else:
+                result[k] = copy.deepcopy(v)
+
+    return result
+
+def load_dxdata(url):
     try:
         response = requests.get(url)
         response.raise_for_status()
@@ -20,10 +90,6 @@ def load_dxdata(url, save_to: str = None):
                             version['count'] = 0
                         if sheet['regions']['jp']:
                             version['count'] += 1
-
-        if save_to:
-            with open(save_to, "w", encoding="utf-8") as file:
-                json.dump(data, file, ensure_ascii=False, indent=2)
 
         return data
 
@@ -41,8 +107,8 @@ def _split_song_sheets_by_type(song_list):
             "title": song["title"],
             "artist": song["artist"],
             "bpm": song["bpm"],
-            "cover_url": f"https://shama.dxrating.net/images/cover/v2/{song['imageName']}.jpg",
-            "search_acronyms": song["searchAcronyms"]
+            "cover_url": f"https://shama.dxrating.net/images/cover/v2/{song['imageName'].replace('.png', '')}.jpg",
+            "search_acronyms": song.get("searchAcronyms", [])
         }
 
         sheets_by_type = {"dx": [], "std": [], "utage": []}
@@ -122,7 +188,7 @@ def save_dxdata_version_history(stats):
         return False
 
 
-def update_dxdata_with_comparison(url, save_to: str = None):
+def update_dxdata_with_comparison(urls, save_to: str = None):
     """
     更新 dxdata 并返回与上次的对比信息
 
@@ -147,13 +213,25 @@ def update_dxdata_with_comparison(url, save_to: str = None):
     old_version = load_dxdata_version_history()
 
     # 加载新数据
-    new_data = load_dxdata(url, save_to)
+    new_datas = []
+    for url in urls:
+        new_datas.append(load_dxdata(url))
+    
+    for i in range(1, len(new_datas)):
+        new_datas[0] = merge_json_by_key(new_datas[i], new_datas[0], "title")
+
+    new_data = new_datas[0]
 
     if not new_data:
         return {
             'success': False,
             'message': '❌ データ取得失敗！'
         }
+
+
+    if save_to:
+        with open(save_to, "w", encoding="utf-8") as file:
+            json.dump(new_data, file, ensure_ascii=False, indent=2)
 
     # 获取新数据统计
     new_stats = get_dxdata_stats(new_data)

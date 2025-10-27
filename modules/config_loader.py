@@ -28,7 +28,6 @@ default_config = {
     "port": 5000,
     "file_path": {
         "dxdata_list": "./data/dxdata.json",
-        "dxdata_version": "./data/dxdata_version.json",
         "re_dxdata_list": "./data/re_dxdata.json",
         "user_list": "./data/user.json.enc",
         "notice_file": "./data/notice.json",
@@ -43,7 +42,10 @@ default_config = {
     },
     "urls": {
         "line_adding": "",
-        "dxdata": ""
+        "dxdata": [
+            "https://dp4p6x0xfi5o9.cloudfront.net/maimai/data.json",
+            "https://raw.githubusercontent.com/gekichumai/dxrating/refs/heads/main/packages/dxdata/dxdata.json"
+        ]
     },
     "line_channel": {
         "account_id": "",
