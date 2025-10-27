@@ -13,7 +13,7 @@ Supports Japanese and International servers
 [![LINE Bot SDK](https://img.shields.io/badge/LINE_Bot_SDK-3.14.5-00C300.svg)](https://github.com/line/line-bot-sdk-python)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-[简体中文](README.md) | English
+[简体中文](README.md) | English | [日本語](README_JP.md)
 
 [Features](#features) • [Command List](COMMANDS_EN.md) • [Quick Start](#quick-start) • [Admin Panel](#admin-panel) • [Deployment](#deployment) • [Documentation](#documentation)
 
@@ -414,6 +414,7 @@ JiETNG/
 ├── config.json                # Configuration file
 ├── README.md                  # Chinese documentation
 ├── README_EN.md               # English documentation (this file)
+├── README_JP.md               # Japanese documentation
 ├── COMMANDS.md                # Command list (Chinese)
 ├── COMMANDS_EN.md             # Command list (English)
 ├── COMMANDS_JP.md             # Command list (Japanese)

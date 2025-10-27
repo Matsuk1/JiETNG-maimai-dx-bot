@@ -13,7 +13,7 @@
 [![LINE Bot SDK](https://img.shields.io/badge/LINE_Bot_SDK-3.14.5-00C300.svg)](https://github.com/line/line-bot-sdk-python)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-简体中文 | [English](README_EN.md)
+简体中文 | [English](README_EN.md) | [日本語](README_JP.md)
 
 [功能特性](#功能特性) • [命令列表](COMMANDS.md) • [快速开始](#快速开始) • [管理后台](#管理后台) • [部署指南](#部署指南) • [开发文档](#开发文档)
 
@@ -353,6 +353,7 @@ JiETNG/
 ├── config.json                # 配置文件
 ├── README.md                  # 中文文档（本文件）
 ├── README_EN.md               # 英文文档
+├── README_JP.md               # 日文文档
 ├── COMMANDS.md                # 中文命令列表
 ├── COMMANDS_EN.md             # 英文命令列表
 ├── COMMANDS_JP.md             # 日文命令列表
