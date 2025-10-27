@@ -16,7 +16,7 @@ from linebot.v3.messaging import (
     PushMessageRequest,
     TextMessage
 )
-from modules.config_loader import users
+from modules.config_loader import USERS
 from modules.user_console import get_user_status, edit_user_status
 from modules.notice_console import get_latest_notice
 

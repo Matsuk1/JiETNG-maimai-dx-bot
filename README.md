@@ -4,152 +4,159 @@
 
 <img src="./assets/pics/logo.png" alt="Logo" width="100" />
 
-**【日服/国际服】Maimai DX 音游成绩追踪与数据管理 LINE Bot**
+**Maimai DX Score Tracking and Data Management System for LINE Platform**
+
+Supports Japanese and International servers
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-3.1.0-green.svg)](https://flask.palletsprojects.com/)
 [![LINE Bot SDK](https://img.shields.io/badge/LINE_Bot_SDK-3.14.5-00C300.svg)](https://github.com/line/line-bot-sdk-python)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-[功能特性](#功能特性) • [管理后台](#8-管理后台-) • [快速开始](#快速开始) • [使用指南](#使用指南) • [部署指南](#部署指南) • [开发文档](#开发文档)
+English | [简体中文](README_ZH.md)
+
+[Features](#features) • [Quick Start](#quick-start) • [Admin Panel](#admin-panel) • [Deployment](#deployment) • [Documentation](#documentation)
 
 </div>
 
 ---
 
-## 📖 简介
+## Overview
 
-**JiETNG** 是一个功能强大的 Maimai DX LINE Bot 服务，为玩家提供成绩追踪、数据分析等全方位功能。支持日服(JP)和国际服(INTL)双版本。
+**JiETNG** is a comprehensive LINE Bot service for Maimai DX players, providing score tracking, data analysis, and various gameplay utilities. It supports both Japanese (JP) and International (INTL) server versions.
 
-### 核心特色
+### Key Features
 
-- 🎯 **成绩追踪**: 自动同步并存储您的 Best/Recent 游戏记录
-- 📊 **数据可视化**: 生成精美的 B50/B100 成绩图表
-- 👥 **好友系统**: 查看好友成绩,发起好友申请
-- 🏆 **版本达成**: 查看各版本称号进度(极/将/神/舞舞)
-- 🎲 **随机推歌**: 按定数随机推荐歌曲
-- 🗺️ **附近店铺**: 基于位置查找附近的 Maimai 游戏厅
-- 🔒 **数据安全**: SEGA 账户信息采用 Fernet 加密存储
-- 🎛️ **管理后台**: 强大的 Web 管理界面,实时监控和管理用户
-- 🚀 **性能优化**: 双队列架构(图片队列/网络队列) + 频率限制
-- 💬 **友好交互**: 活泼可爱的女高中生语言风格
+- **Score Tracking**: Automatic synchronization and storage of Best/Recent game records
+- **Data Visualization**: Generate detailed B50/B100 score charts with customizable filters
+- **Friend System**: View friend scores and manage friend requests
+- **Version Progress**: Track completion status for version-specific achievements
+- **Song Recommendations**: Random song selection by difficulty rating
+- **Location Services**: Find nearby Maimai arcade locations
+- **Data Security**: SEGA account information encrypted using Fernet encryption
+- **Admin Dashboard**: Comprehensive web-based management interface
+- **Performance Optimization**: Dual-queue architecture (image/network queues) with rate limiting
+- **Multi-language Support**: Japanese interface with English documentation
 
 ---
 
-## 功能特性
+## Features
 
-### 1. 账户管理
+### Account Management
 
-| 功能 | 命令 | 说明 |
-|------|------|------|
-| 绑定账户 | `segaid bind` | 绑定 SEGA 账户 |
-| 查看绑定 | `getme` | 查看当前绑定状态 |
-| 解除绑定 | `unbind` | 解除账户绑定 |
+| Feature | Command | Description |
+|---------|---------|-------------|
+| Bind Account | `segaid bind` | Link SEGA account to LINE profile |
+| View Binding | `getme` | Display current account binding status |
+| Unbind Account | `unbind` | Remove account binding |
 
-### 2. 成绩查询
+### Score Queries
 
-#### 成绩图类型
+#### Score Chart Types
 
-| 命令 | 说明 |
-|------|------|
-| `b50` / `best 50` | 标准 B50 (旧谱35 + 新谱15) |
-| `b100` / `best 100` | B100 (旧谱70 + 新谱30) |
-| `b35` / `b15` | 单独查看旧谱/新谱 |
-| `ab50` / `all best 50` | 不分新旧谱的全部 B50 |
-| `apb50` | AP/APP 专属 B50 |
-| `idealb50` | 理想分数下的 B50 |
-| `rct50` / `r50` | 最近50次游玩记录 |
+| Command | Description |
+|---------|-------------|
+| `b50` / `best 50` | Standard B50 (35 old charts + 15 new charts) |
+| `b100` / `best 100` | B100 (70 old charts + 30 new charts) |
+| `b35` / `b15` | View old/new charts separately |
+| `ab50` / `all best 50` | Combined B50 without chart type separation |
+| `apb50` | B50 for AP/APP scores only |
+| `idealb50` | B50 with ideal theoretical scores |
+| `rct50` / `r50` | Recent 50 play records |
 
-#### 高级筛选
+#### Advanced Filters
 
-支持多条件组合筛选:
+Multiple filter conditions can be combined:
 
 ```
-b50 -lv 14.0 14.9    # 筛选定数 14.0~14.9
-b50 -ra 200 250      # 筛选 rating 200~250
-b50 -scr 99.5        # 筛选达成率 ≥99.5%
-b50 -dx 95           # 筛选 DX 分数 ≥95%
+b50 -lv 14.0 14.9    # Filter by difficulty rating 14.0-14.9
+b50 -ra 200 250      # Filter by rating value 200-250
+b50 -scr 99.5        # Filter by achievement rate >= 99.5%
+b50 -dx 95           # Filter by DX score percentage >= 95%
 ```
 
-### 3. 歌曲查询
+### Song Queries
 
-| 命令格式 | 示例 | 说明 |
-|---------|------|------|
-| `[曲名]ってどんな曲` | `オンゲキってどんな曲` | 搜索歌曲信息 |
-| `[曲名]のレコード` | `オンゲキのレコード` | 查看个人成绩 |
-| `ランダム曲 [定数]` | `ランダム曲 14+` | 随机推歌 |
-| `[定数]のレコードリスト` | `14+のレコードリスト` | 查看定数成绩列表 |
+| Command Format | Example | Description |
+|---------------|---------|-------------|
+| `[曲名]ってどんな曲` | `オンゲキってどんな曲` | Search for song information |
+| `[曲名]のレコード` | `オンゲキのレコード` | View personal score for a song |
+| `ランダム曲 [定数]` | `ランダム曲 14+` | Random song recommendation |
+| `[定数]のレコードリスト` | `14+のレコードリスト` | View score list by difficulty |
 
-### 4. 版本达成
+### Version Progress
 
-| 命令 | 说明 |
-|------|------|
-| `[版本]極の達成状況` | 極牌 达成表 |
-| `[版本]将の達成状況` | 将牌 达成表 |
-| `[版本]神の達成状況` | 神牌 达成表 |
-| `[版本]舞舞の達成状況` | 舞舞牌 达成表 |
+| Command | Description |
+|---------|-------------|
+| `[版本]極の達成状況` | View "Extreme" achievement progress |
+| `[版本]将の達成状況` | View "Master" achievement progress |
+| `[版本]神の達成状況` | View "God" achievement progress |
+| `[版本]舞舞の達成状況` | View "MaiMai" achievement progress |
 
-版本缩写示例: `真`, `超`, `晓`, `祭`, `煌`, `镜` 等
+Version abbreviations: `真`, `超`, `晓`, `祭`, `煌`, `镜`, etc.
 
-### 5. 好友功能
+### Friend Features
 
-| 命令 | 说明 |
-|------|------|
-| `friend list` | 查看好友列表 |
-| `friend-b50 [好友码]` | 查看好友 B50 |
-| `add-friend [好友码]` | 发送好友申请 |
-| `maid card` / `maid` | 生成个人名片(含 QR 码) |
+| Command | Description |
+|---------|-------------|
+| `friend list` | Display friend list |
+| `friend-b50 [friend_code]` | View friend's B50 chart |
+| `add-friend [friend_code]` | Send friend request |
+| `maid card` / `maid` | Generate profile card with QR code |
 
-### 6. 工具功能
+### Utility Functions
 
-| 命令 | 说明 |
-|------|------|
-| `maimai update` | 更新成绩数据 |
-| `rc [定数]` | 查看 Rating 对照表 |
-| `calc [tap] [hold] [slide] [touch] [break]` | 计算理论分数 |
-| `yang` / `yra` | 查看 Yang Rating |
-| `[版本]のバージョンリスト` | 查看版本歌曲列表 |
+| Command | Description |
+|---------|-------------|
+| `maimai update` | Update score data from server |
+| `rc [rating]` | View rating reference table |
+| `calc [tap] [hold] [slide] [touch] [break]` | Calculate theoretical score |
+| `yang` / `yra` | View Yang Rating |
+| `[版本]のバージョンリスト` | View version song list |
 
-### 7. 位置服务
+### Location Services
 
-发送位置信息给 Bot,自动查找附近的 Maimai 游戏厅(含地图链接)
+Send location information to the bot to automatically find nearby Maimai arcade locations with map links.
 
-### 8. 管理后台
+---
 
-强大的 Web 管理界面,提供完整的用户和系统管理功能:
+## Admin Panel
 
-#### 访问地址
+Web-based administration interface providing comprehensive user and system management.
+
+### Access
+
 ```
 https://your-domain.com/linebot/admin
 ```
 
-#### 主要功能
+### Features
 
-| 功能模块 | 说明 |
-|---------|------|
-| **用户管理** | 查看所有用户、编辑用户数据、删除用户、触发更新 |
-| **实时昵称** | 自动从 LINE SDK 获取并缓存用户昵称(5分钟缓存) |
-| **双队列监控** | 图片队列(3并发) + 网络队列(1并发),实时显示运行/排队/已完成任务 |
-| **任务追踪** | 显示最近20个已完成任务,含耗时统计 |
-| **频率限制** | 防止用户短时间内重复请求(30秒窗口,同类任务最多2个) |
-| **系统统计** | 总用户数、版本分布、CPU/内存使用、队列状态、运行时长 |
-| **实时日志** | 查看最近 100 行日志,支持 ANSI 颜色代码 |
-| **数据刷新** | 快速刷新单个用户数据和昵称 |
+| Module | Description |
+|--------|-------------|
+| **User Management** | View all users, edit user data, delete users, trigger updates |
+| **Real-time Nicknames** | Automatic nickname caching from LINE SDK (5-minute cache) |
+| **Dual Queue Monitoring** | Image queue (3 concurrent) + Network queue (1 concurrent) |
+| **Task Tracking** | Display recent 20 completed tasks with execution time statistics |
+| **Rate Limiting** | Prevent duplicate requests within 30-second window (max 2 per task type) |
+| **System Statistics** | User count, version distribution, CPU/memory usage, queue status, uptime |
+| **Real-time Logs** | View recent 100 log lines with ANSI color code support |
+| **Data Refresh** | Quick refresh for individual user data and nicknames |
 
-#### 特性亮点
+### Key Highlights
 
-- ✅ **懒加载设计**: 登录后立即显示页面,昵称异步加载
-- ✅ **响应式设计**: 完美支持桌面和移动端
-- ✅ **双队列架构**: 图片生成和网络任务分离,提高并发性能
-- ✅ **任务追踪**: 实时显示运行中/排队中/已完成任务,含耗时统计
-- ✅ **智能限流**: 防止用户短时间内重复请求,保护服务器资源
-- ✅ **彩色日志**: 支持 ANSI 颜色代码,错误/警告一目了然
-- ✅ **会话管理**: 基于 Cookie 的安全认证
-- ✅ **状态保持**: 刷新页面后保持当前标签
+- **Lazy Loading**: Immediate page display after login with asynchronous nickname loading
+- **Responsive Design**: Full support for desktop and mobile devices
+- **Dual Queue Architecture**: Separate image generation and network tasks for improved concurrency
+- **Task Tracking**: Real-time display of running/queued/completed tasks with timing statistics
+- **Smart Rate Limiting**: Protect server resources from rapid repeated requests
+- **Colored Logs**: ANSI color code support for easy error/warning identification
+- **Session Management**: Cookie-based secure authentication
+- **State Persistence**: Maintain current tab after page refresh
 
-#### 配置管理后台
+### Configuration
 
-在 `config.json` 中添加管理员密码:
+Add admin password in `config.json`:
 
 ```json
 {
@@ -157,76 +164,61 @@ https://your-domain.com/linebot/admin
 }
 ```
 
-#### 使用流程
+### Usage
 
-1. 访问 `https://your-domain.com/linebot/admin`
-2. 输入管理员密码登录
-3. 使用五个标签页管理不同功能:
-   - **Users**: 用户列表和数据管理
-   - **Task Queue**: 双队列监控(图片队列 + 网络队列)
-   - **Statistics**: 系统统计信息(整合了原stats页面)
-   - **Notices**: 公告管理(创建/编辑/删除公告)
-   - **Logs**: 实时日志查看
-
-#### 用户操作
-
-- **Update**: 触发用户数据更新(异步执行)
-- **Refresh**: 刷新用户 JSON 数据和昵称
-- **Edit**: 直接编辑用户数据(JSON 格式)
-- **Delete**: 删除用户(不可恢复,需二次确认)
-
-#### 任务管理
-
-- **双队列分离**: 图片队列(3并发) + 网络队列(1并发)
-- **实时监控**: 查看运行中/排队中/已完成任务(最近20个)
-- **任务信息**: 显示任务类型、用户ID、昵称、开始/结束时间、耗时
-- **任务控制**: 支持取消排队中的任务
-- **频率限制**: 30秒窗口内同类任务最多2个,防止恶意刷屏
+1. Access `https://your-domain.com/linebot/admin`
+2. Login with admin password
+3. Navigate through five main tabs:
+   - **Users**: User list and data management
+   - **Task Queue**: Dual queue monitoring (image + network queues)
+   - **Statistics**: System statistics and information
+   - **Notices**: Announcement management
+   - **Logs**: Real-time log viewer
 
 ---
 
-## 快速开始
+## Quick Start
 
-### 系统要求
+### System Requirements
 
-- **Python**: 3.8 或更高版本
+- **Python**: 3.8 or higher
 - **MySQL**: 5.7+ / MariaDB 10.2+
-- **操作系统**: Linux / macOS / Windows
+- **Operating System**: Linux / macOS / Windows
 
-### 安装步骤
+### Installation
 
-#### 1. 克隆项目
+#### 1. Clone Repository
 
 ```bash
-git clone https://github.com/your-username/jietng.git
-cd jietng
+git clone https://github.com/Matsuk1/JiETNG.git
+cd JiETNG
 ```
 
-#### 2. 安装依赖
+#### 2. Install Dependencies
 
 ```bash
 pip install -r inits/requirements.txt
 ```
 
-#### 3. 配置数据库
+#### 3. Configure Database
 
 ```bash
-# 登录 MySQL
+# Login to MySQL
 mysql -u root -p
 
-# 创建数据库和用户
+# Create database and user
 CREATE DATABASE records CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER 'jietng'@'localhost' IDENTIFIED BY 'jietng_2025';
 GRANT ALL PRIVILEGES ON records.* TO 'jietng'@'localhost';
 FLUSH PRIVILEGES;
 
-# 导入数据库结构
+# Import database structure
 mysql -u jietng -p records < inits/records_db.sql
 ```
 
-#### 4. 配置 config.json
+#### 4. Configure config.json
 
-编辑 `config.json` 文件,填入以下配置:
+Edit `config.json` with your settings:
 
 ```json
 {
@@ -247,28 +239,31 @@ mysql -u jietng -p records < inits/records_db.sql
     },
     "urls": {
         "line_adding": "https://line.me/R/ti/p/@yourlineid",
-        "dxdata": "https://raw.githubusercontent.com/gekichumai/dxrating/refs/heads/main/packages/dxdata/dxdata.json"
+        "dxdata": [
+            "https://raw.githubusercontent.com/gekichumai/dxrating/refs/heads/main/packages/dxdata/dxdata.json",
+            "https://dp4p6x0xfi5o9.cloudfront.net/maimai/data.json"
+        ]
     }
 }
 ```
 
-#### 5. 获取 LINE Channel 凭证
+#### 5. Obtain LINE Channel Credentials
 
-1. 访问 [LINE Developers Console](https://developers.line.biz/)
-2. 创建 Messaging API Channel
-3. 获取 **Channel Access Token** 和 **Channel Secret**
-4. 设置 Webhook URL: `https://your-domain.com/linebot/webhook`
-5. 启用 **Use webhook**
+1. Visit [LINE Developers Console](https://developers.line.biz/)
+2. Create a Messaging API Channel
+3. Obtain **Channel Access Token** and **Channel Secret**
+4. Set Webhook URL: `https://your-domain.com/linebot/webhook`
+5. Enable **Use webhook**
 
-#### 6. 启动服务
+#### 6. Start Service
 
 ```bash
 python main.py
 ```
 
-服务将在 `http://0.0.0.0:5100` 启动
+Service will start on `http://0.0.0.0:5100`
 
-### 使用 Gunicorn 部署(推荐)
+### Production Deployment (Recommended)
 
 ```bash
 gunicorn -w 4 -b 0.0.0.0:5100 --timeout 120 main:app
@@ -276,74 +271,39 @@ gunicorn -w 4 -b 0.0.0.0:5100 --timeout 120 main:app
 
 ---
 
-## 使用指南
+## Deployment
 
-### 绑定 SEGA 账户
+### Using Docker (Recommended)
 
-1. 添加 JiETNG 为 LINE 好友
-2. 发送 `segaid bind`
-3. 点击链接,输入 SEGA ID 和密码
-4. 选择服务器版本(日服/国际服)
-5. 绑定成功后,发送 `maimai update` 更新数据
-
-### 查看成绩
-
-```
-maimai update           # 更新数据
-b50                     # 查看 B50
-b50 -lv 14.0 14.9       # 查看定数 14.0~14.9 的 B50
-idealb50                # 查看理想分数下的 B50
-```
-
-### 好友功能
-
-1. 发送 `maid card` 生成个人名片
-2. 分享名片给好友
-3. 好友扫描二维码或发送图片给 Bot
-4. 自动发送好友申请
-
-### 版本达成
-
-```
-宴極の達成状況          # 查看 宴极 达成情况
-祭将の達成状況          # 查看 祭将 达成情况
-```
-
----
-
-## 部署指南
-
-### 使用 Docker (推荐)
-
-#### 创建 Dockerfile
+#### Create Dockerfile
 
 ```dockerfile
 FROM python:3.11-slim
 
 WORKDIR /app
 
-# 安装系统依赖
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     libzbar0 \
     libmysqlclient-dev \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# 复制依赖文件
+# Install Python dependencies
 COPY inits/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 复制项目文件
+# Copy project files
 COPY . .
 
-# 暴露端口
+# Expose port
 EXPOSE 5100
 
-# 启动命令
+# Start command
 CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5100", "--timeout", "120", "main:app"]
 ```
 
-#### 创建 docker-compose.yml
+#### Create docker-compose.yml
 
 ```yaml
 version: '3.8'
@@ -380,15 +340,15 @@ volumes:
   mysql_data:
 ```
 
-#### 启动容器
+#### Start Containers
 
 ```bash
 docker-compose up -d
 ```
 
-### 使用 Systemd (Linux)
+### Using Systemd (Linux)
 
-创建 `/etc/systemd/system/jietng.service`:
+Create `/etc/systemd/system/jietng.service`:
 
 ```ini
 [Unit]
@@ -407,7 +367,7 @@ RestartSec=10s
 WantedBy=multi-user.target
 ```
 
-启动服务:
+Enable and start service:
 
 ```bash
 sudo systemctl daemon-reload
@@ -415,7 +375,7 @@ sudo systemctl enable jietng
 sudo systemctl start jietng
 ```
 
-### 使用 Nginx 反向代理
+### Using Nginx Reverse Proxy
 
 ```nginx
 server {
@@ -429,14 +389,14 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
 
-        # LINE Webhook 需要的设置
+        # LINE Webhook settings
         proxy_read_timeout 120s;
         proxy_connect_timeout 10s;
     }
 }
 ```
 
-启用 HTTPS (推荐):
+Enable HTTPS (recommended):
 
 ```bash
 sudo certbot --nginx -d your-domain.com
@@ -444,68 +404,62 @@ sudo certbot --nginx -d your-domain.com
 
 ---
 
-## 开发文档
+## Documentation
 
-### 项目结构
+### Project Structure
 
 ```
 JiETNG/
-├── main.py                    # Flask 应用入口
-├── config.json                # 配置文件
-├── README.md                  # 本文档
-├── inits/                     # 初始化文件
-│   ├── requirements.txt       # Python 依赖
-│   └── records_db.sql         # 数据库结构
-├── modules/                   # 功能模块
-│   ├── __init__.py            # 模块配置
-│   ├── config_loader.py       # 配置加载
-│   ├── db_pool.py             # 数据库连接池
-│   ├── user_console.py        # 用户管理 + 昵称缓存
-│   ├── maimai_console.py      # Maimai API 接口
-│   ├── record_console.py      # 数据库操作
-│   ├── record_generate.py     # 成绩图生成
-│   ├── song_generate.py       # 歌曲图生成
-│   ├── img_console.py         # 图像处理
-│   ├── img_cache.py           # 图像缓存
-│   ├── img_upload.py          # 图床上传
-│   ├── token_console.py       # Token 管理
-│   ├── friend_list.py         # 好友界面
-│   ├── notice_console.py      # 通知系统
-│   ├── dxdata_console.py      # 歌曲数据
-│   ├── note_score.py          # 分数计算
-│   ├── json_encrypt.py        # 加密工具
-│   ├── rate_limiter.py        # 频率限制 + 用户请求追踪
-│   ├── line_messenger.py      # LINE 消息发送 (smart_reply/smart_push)
-│   ├── song_matcher.py        # 歌曲搜索匹配 (支持多语言/模糊匹配)
-│   ├── memory_manager.py      # 内存管理 (定期GC清理/缓存清理)
-│   ├── system_check.py        # 系统自检
-│   └── reply_text.py          # 消息模板
-├── templates/                 # HTML 模板
-│   ├── bind_form.html         # 绑定表单
-│   ├── success.html           # 成功页面
-│   ├── error.html             # 错误页面
-│   ├── admin_login.html       # 管理后台登录页
-│   ├── admin_panel.html       # 管理后台主界面
-│   └── stats.html             # 统计信息页面
-├── data/                      # 数据文件
-│   ├── dxdata.json            # 歌曲数据
-│   ├── notice.json            # 通知数据
-│   ├── re_dxdata.csv          # 区域数据
-│   └── user.json.enc          # 用户数据(加密)
-└── assets/                    # 静态资源
-    ├── fonts/                 # 字体文件
-    ├── pics/                  # 图片
-    └── icon/                  # 图标资源
-        ├── combo/             # Combo 图标
-        ├── score/             # 分数图标
-        ├── sync/              # Sync 图标
-        ├── dx_star/           # DX 星图标
-        └── kind/              # 类型图标
+├── main.py                    # Flask application entry point
+├── config.json                # Configuration file
+├── README.md                  # This document
+├── inits/                     # Initialization files
+│   ├── requirements.txt       # Python dependencies
+│   └── records_db.sql         # Database schema
+├── modules/                   # Functional modules
+│   ├── config_loader.py       # Configuration loader
+│   ├── db_pool.py             # Database connection pool
+│   ├── user_console.py        # User management + nickname cache
+│   ├── maimai_console.py      # Maimai API interface
+│   ├── record_console.py      # Database operations
+│   ├── record_generate.py     # Score chart generation
+│   ├── song_generate.py       # Song chart generation
+│   ├── img_console.py         # Image processing
+│   ├── img_cache.py           # Image caching
+│   ├── img_upload.py          # Image hosting upload
+│   ├── token_console.py       # Token management
+│   ├── friend_list.py         # Friend interface
+│   ├── notice_console.py      # Notification system
+│   ├── dxdata_console.py      # Song data management
+│   ├── note_score.py          # Score calculation
+│   ├── json_encrypt.py        # Encryption utilities
+│   ├── rate_limiter.py        # Rate limiting + request tracking
+│   ├── line_messenger.py      # LINE message sending
+│   ├── song_matcher.py        # Song search with fuzzy matching
+│   ├── memory_manager.py      # Memory management and cleanup
+│   ├── system_check.py        # System self-check
+│   └── reply_text.py          # Message templates
+├── templates/                 # HTML templates
+│   ├── bind_form.html         # Account binding form
+│   ├── success.html           # Success page
+│   ├── error.html             # Error page
+│   ├── admin_login.html       # Admin login page
+│   ├── admin_panel.html       # Admin dashboard
+│   └── stats.html             # Statistics page
+├── data/                      # Data files
+│   ├── dxdata.json            # Song database
+│   ├── notice.json            # Announcements
+│   ├── re_dxdata.csv          # Regional data
+│   └── user.json.enc          # User data (encrypted)
+└── assets/                    # Static resources
+    ├── fonts/                 # Font files
+    ├── pics/                  # Images
+    └── icon/                  # Icon resources
 ```
 
-### 数据库结构
+### Database Schema
 
-#### best_records 表
+#### best_records Table
 
 ```sql
 CREATE TABLE best_records (
@@ -523,13 +477,13 @@ CREATE TABLE best_records (
 );
 ```
 
-#### recent_records 表
+#### recent_records Table
 
-结构同 `best_records`,存储最近游玩记录。
+Same structure as `best_records`, stores recent play records.
 
-### API 接口
+### API Endpoints
 
-#### Webhook 接收
+#### Webhook Reception
 
 ```
 POST /linebot/webhook
@@ -538,112 +492,53 @@ Headers:
 Body: LINE webhook event JSON
 ```
 
-#### SEGA 账户绑定
+#### SEGA Account Binding
 
 ```
 GET/POST /linebot/sega_bind?token=<token>
 ```
 
-#### 好友添加
+#### Friend Addition
 
 ```
 GET /linebot/add_friend?code=<friend_code>
 ```
 
-#### 管理后台 API
+#### Admin Dashboard API
 
 ```
-GET/POST /linebot/admin                    # 管理后台登录/主页
-GET      /linebot/admin/logout             # 登出
-POST     /linebot/admin/trigger_update     # 触发用户更新
-POST     /linebot/admin/edit_user          # 编辑用户数据
-POST     /linebot/admin/delete_user        # 删除用户
-POST     /linebot/admin/get_user_data      # 获取用户数据
-POST     /linebot/admin/load_nicknames     # 批量加载昵称
-POST     /linebot/admin/clear_cache        # 清除昵称缓存
-POST     /linebot/admin/cancel_task        # 取消任务
-GET      /linebot/admin/task_status        # 获取任务状态
-GET      /linebot/admin/get_logs           # 获取日志
-GET      /linebot/admin/memory_stats       # 获取内存管理器状态
-POST     /linebot/admin/trigger_cleanup    # 手动触发内存清理
+GET/POST /linebot/admin                    # Admin login/dashboard
+GET      /linebot/admin/logout             # Logout
+POST     /linebot/admin/trigger_update     # Trigger user update
+POST     /linebot/admin/edit_user          # Edit user data
+POST     /linebot/admin/delete_user        # Delete user
+POST     /linebot/admin/get_user_data      # Get user data
+POST     /linebot/admin/load_nicknames     # Batch load nicknames
+POST     /linebot/admin/clear_cache        # Clear nickname cache
+POST     /linebot/admin/cancel_task        # Cancel task
+GET      /linebot/admin/task_status        # Get task status
+GET      /linebot/admin/get_logs           # Get logs
+GET      /linebot/admin/memory_stats       # Get memory stats
+POST     /linebot/admin/trigger_cleanup    # Manual memory cleanup
 ```
 
-### 扩展开发
+### Configuration Reference
 
-#### 添加新命令
-
-编辑 `main.py` 的 `handle_sync_text_command` 函数:
-
-```python
-# 添加到 COMMAND_MAP (同步命令)
-COMMAND_MAP = {
-    "your_command": lambda: your_function(),
-    ...
-}
-
-# 或添加到 SPECIAL_RULES (模糊匹配)
-SPECIAL_RULES = [
-    (lambda msg: msg.startswith("your_pattern"),
-     lambda msg: your_handler(msg)),
-    ...
-]
-```
-
-#### 添加新任务队列路由
-
-```python
-# 图片生成任务 (添加到 IMAGE_TASK_ROUTES)
-IMAGE_TASK_ROUTES = {
-    'exact': {
-        "your_image_command": async_your_image_task,
-        ...
-    }
-}
-
-# Web任务 (添加到 WEB_TASK_ROUTES)
-WEB_TASK_ROUTES = {
-    'exact': {
-        "your_web_command": async_your_web_task,
-        ...
-    }
-}
-```
-
-#### 添加新模块
-
-1. 在 `modules/` 创建 `your_module.py`
-2. 在 `main.py` 导入:
-```python
-from modules.your_module import *
-```
-
-#### 模块化最佳实践
-
-- **user_console.py**: 用户管理、昵称缓存相关功能
-- **rate_limiter.py**: 频率限制、请求追踪相关功能
-- **line_messenger.py**: LINE消息发送、公告推送相关功能
-- **song_matcher.py**: 歌曲搜索匹配(支持日语/英语,全角半角转换,生僻符号过滤,模糊匹配)
-- **memory_manager.py**: 内存管理器(定期垃圾回收,昵称缓存清理,频率限制追踪清理)
-- **reply_text.py**: 所有用户可见的消息文本
-
----
-
-## 配置说明
-
-### config.json 完整配置
+#### Complete config.json
 
 ```json
 {
-    "admin_id": ["U0123..."],         // LINE 管理员 ID 列表
-    "admin_password": "secure_pwd",   // 管理后台密码
+    "admin_id": ["U0123..."],              // LINE admin user IDs
+    "admin_password": "secure_pwd",        // Admin panel password
     "maimai_version": {
-        "jp": ["PRiSM PLUS", "CiRCLE"],     // 日服新版本
-        "intl": ["PRiSM PLUS"]              // 国际服新版本
+        "jp": ["PRiSM PLUS", "CiRCLE"],    // JP server versions
+        "intl": ["PRiSM PLUS"]             // International versions
     },
-    "domain": "jietng.example.com",   // 服务域名
-    "port": 5100,                     // 服务端口
+    "domain": "jietng.example.com",        // Service domain
+    "port": 5100,                          // Service port
     "file_path": {
         "dxdata_list": "./data/dxdata.json",
+        "dxdata_version": "./data/dxdata_version.json",
         "re_dxdata_list": "./data/re_dxdata.csv",
         "user_list": "./data/user.json.enc",
         "notice_file": "./data/notice.json",
@@ -658,7 +553,10 @@ from modules.your_module import *
     },
     "urls": {
         "line_adding": "https://line.me/R/ti/p/@yourlineid",
-        "dxdata": "https://raw.githubusercontent.com/.../dxdata.json"
+        "dxdata": [
+            "https://raw.githubusercontent.com/gekichumai/dxrating/refs/heads/main/packages/dxdata/dxdata.json",
+            "https://dp4p6x0xfi5o9.cloudfront.net/maimai/data.json"
+        ]
     },
     "line_channel": {
         "account_id": "@yourlineid",
@@ -666,153 +564,132 @@ from modules.your_module import *
         "secret": "YOUR_SECRET"
     },
     "keys": {
-        "user_data": "AUTO_GENERATED_KEY",    // 自动生成
-        "bind_token": "AUTO_GENERATED_TOKEN"  // 自行选择
+        "user_data": "AUTO_GENERATED_KEY",     // Auto-generated Fernet key
+        "bind_token": "AUTO_GENERATED_TOKEN"   // Auto-generated bind token
     }
 }
 ```
 
 ---
 
-## 故障排除
+## Troubleshooting
 
-### 常见问题
+### Common Issues
 
-#### 1. SSL 证书错误
+#### SSL Certificate Error
 
-**问题**: `SSL: CERTIFICATE_VERIFY_FAILED`
+**Problem**: `SSL: CERTIFICATE_VERIFY_FAILED`
 
-**解决**:
+**Solution**:
 ```bash
 pip install --upgrade certifi
 ```
 
-#### 2. 数据库连接失败
+#### Database Connection Failed
 
-**问题**: `Can't connect to MySQL server`
+**Problem**: `Can't connect to MySQL server`
 
-**检查**:
+**Check**:
 ```bash
-# 检查 MySQL 是否运行
+# Check MySQL status
 sudo systemctl status mysql
 
-# 检查用户权限
+# Check user permissions
 mysql -u jietng -p
 SHOW GRANTS FOR 'jietng'@'localhost';
 ```
 
-#### 3. LINE Webhook 验证失败
+#### LINE Webhook Verification Failed
 
-**问题**: `InvalidSignatureError`
+**Problem**: `InvalidSignatureError`
 
-**检查**:
-- config.json 中的 `line_channel.secret` 是否正确
-- LINE Developers Console 中的 Webhook URL 是否正确
-- 是否启用了 HTTPS (LINE 要求)
+**Check**:
+- Verify `line_channel.secret` in config.json is correct
+- Confirm Webhook URL in LINE Developers Console
+- Ensure HTTPS is enabled (required by LINE)
 
-#### 4. 图像生成失败
+#### Image Generation Failed
 
-**问题**: 缺少字体或图标
+**Problem**: Missing fonts or icons
 
-**解决**:
+**Solution**:
 ```bash
-# 确保字体文件存在
+# Verify font file exists
 ls assets/fonts/mplus-jietng.ttf
 
-# 确保图标目录完整
+# Verify icon directories
 ls assets/icon/combo/
 ls assets/icon/score/
 ```
 
-#### 5. 管理后台无法登录
+#### Admin Panel Login Failed
 
-**问题**: 密码错误或未配置
+**Problem**: Password incorrect or not configured
 
-**检查**:
+**Solution**:
 ```json
-// config.json 中确认存在 admin_password
+// Confirm admin_password exists in config.json
 {
     "admin_password": "your_password"
 }
 ```
 
-**解决**:
 ```bash
-# 重启服务使配置生效
+# Restart service to apply configuration
 sudo systemctl restart jietng
 ```
 
-#### 6. 频率限制提示过于频繁
-
-**问题**: 用户收到 "ちょっと待ってー！今同じリクエスト処理中だから！" 提示
-
-**原因**: 30秒内重复请求同类任务超过2次
-
-**解决**:
-- 调整 `modules/rate_limiter.py` 中的 `REQUEST_LIMIT_WINDOW` (默认30秒)
-- 调整 `MAX_SAME_REQUESTS` (默认2个)
-- 或在特定命令中禁用频率限制
-
-#### 7. 管理后台日志无颜色
-
-**问题**: 浏览器不支持或 JavaScript 未执行
-
-**解决**:
-- 确保浏览器启用 JavaScript
-- 清除浏览器缓存后刷新
-- 使用现代浏览器(Chrome/Firefox/Safari)
-
-### 日志查看
+### Log Viewing
 
 ```bash
-# 查看实时日志
+# View real-time logs
 tail -f jietng.log
 
-# 使用 systemd
+# Using systemd
 journalctl -u jietng -f
 ```
 
 ---
 
-## 贡献指南
+## Contributing
 
-欢迎提交 Issue 和 Pull Request!
+Contributions are welcome! Please submit Issues and Pull Requests.
 
-### 开发流程
+### Development Workflow
 
-1. Fork 本项目
-2. 创建特性分支: `git checkout -b feature/your-feature`
-3. 提交更改: `git commit -am 'Add some feature'`
-4. 推送分支: `git push origin feature/your-feature`
-5. 提交 Pull Request
+1. Fork this repository
+2. Create feature branch: `git checkout -b feature/your-feature`
+3. Commit changes: `git commit -am 'Add some feature'`
+4. Push branch: `git push origin feature/your-feature`
+5. Submit Pull Request
 
-### 代码规范
+### Code Standards
 
-- 遵循 PEP 8 编码规范
-- 添加类型注解
-- 编写文档字符串
-- 提交前运行测试(如有)
-
----
-
-## 📄 许可证
-
-本项目采用 [MIT License](LICENSE) 许可证。
+- Follow PEP 8 coding standards
+- Add type annotations
+- Write docstrings
+- Run tests before submission (if available)
 
 ---
 
-## 🙏 致谢
+## License
 
-- [LINE Messaging API](https://developers.line.biz/)
-- [Maimai DX](https://maimai.sega.jp/)
-- [DXRating](https://github.com/gekichumai/dxrating) - 歌曲数据来源
-- 所有贡献者和用户
+This project is licensed under the [MIT License](LICENSE).
 
 ---
 
-## 📧 联系方式
+## Acknowledgments
 
-- **项目主页**: https://github.com/Matsuk1/JiETNG
+- [LINE Messaging API](https://developers.line.biz/) - Messaging platform
+- [Maimai DX](https://maimai.sega.jp/) - Original game by SEGA
+- [DXRating](https://github.com/gekichumai/dxrating) - Song data source
+- All contributors and users
+
+---
+
+## Contact
+
+- **Repository**: https://github.com/Matsuk1/JiETNG
 - **Issues**: https://github.com/Matsuk1/JiETNG/issues
 - **LINE Bot**: [@299bylay](https://line.me/R/ti/p/@299bylay)
 
@@ -820,8 +697,8 @@ journalctl -u jietng -f
 
 <div align="center">
 
-**如果觉得这个项目有帮助,请给个 ⭐ Star!**
+**If you find this project helpful, please give it a star!**
 
-Made with ❤️ by [Matsuk1](https://github.com/Matsuk1)
+Made by [Matsuk1](https://github.com/Matsuk1)
 
 </div>

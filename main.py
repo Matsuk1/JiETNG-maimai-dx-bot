@@ -1722,7 +1722,7 @@ def handle_sync_text_command(event):
         return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
 
     # ====== 管理员命令 ======
-    if user_id in admin_id:
+    if user_id in ADMIN_ID:
         if user_message.startswith("upload notice"):
             new_notice = user_message.replace("upload notice", "").strip()
             upload_notice(new_notice)
@@ -1731,7 +1731,7 @@ def handle_sync_text_command(event):
 
         if user_message == "dxdata update":
             # 使用新的对比更新函数
-            result = update_dxdata_with_comparison(DXDATA_URL, dxdata_list)
+            result = update_dxdata_with_comparison(DXDATA_URL, DXDATA_LIST)
             read_dxdata()  # 重新加载到内存
 
             reply_message = TextMessage(text=result['message'])
@@ -1741,7 +1741,7 @@ def handle_sync_text_command(event):
 
             # 推送通知给所有其他管理员
             notification_message = TextMessage(text=f"📢 Dxdata 更新通知\n\n{result['message']}")
-            for admin_user_id in admin_id:
+            for admin_user_id in ADMIN_ID:
                 if admin_user_id != user_id:  # 不重复发送给执行命令的管理员
                     try:
                         smart_push(admin_user_id, notification_message, configuration)
@@ -2446,7 +2446,7 @@ def async_admin_maimai_update_task(event):
     messages = maimai_update(user_id, ver)
 
     # 推送通知给管理员
-    for admin_user_id in admin_id:
+    for admin_user_id in ADMIN_ID:
         try:
             smart_push(admin_user_id, TextMessage(
                 text=f"✅ Admin triggered update completed\nUser: {user_id}\nStatus: Success"

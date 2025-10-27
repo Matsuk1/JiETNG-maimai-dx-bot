@@ -106,7 +106,7 @@ with open(CONFIG_PATH, 'w', encoding='utf-8') as f:
     json.dump(_config, f, indent=4, ensure_ascii=False)
 
 # 顶层字段
-admin_id = _config["admin_id"]
+ADMIN_ID = _config["admin_id"]
 ADMIN_PASSWORD = _config["admin_password"]
 MAIMAI_VERSION = _config["maimai_version"]
 
@@ -117,57 +117,57 @@ DOMAIN = _config["domain"]
 PORT = _config["port"]
 
 # 文件路径字段
-file_path = _config["file_path"]
-dxdata_list = file_path["dxdata_list"]
-DXDATA_VERSION_FILE = file_path["dxdata_version"]
-re_dxdata_list = file_path["re_dxdata_list"]
-user_list = file_path["user_list"]
-NOTICE_FILE = file_path["notice_file"]
-font_path = file_path["font"]
-LOGO_PATH = file_path["logo"]
+FILE_PATH = _config["file_path"]
+DXDATA_LIST = FILE_PATH["dxdata_list"]
+DXDATA_VERSION_FILE = FILE_PATH["dxdata_version"]
+RE_DXDATA_LIST = FILE_PATH["re_dxdata_list"]
+USER_LIST = FILE_PATH["user_list"]
+NOTICE_FILE = FILE_PATH["notice_file"]
+FONT_PATH = FILE_PATH["font"]
+LOGO_PATH = FILE_PATH["logo"]
 
 # 数据库配置字段
-record_database = _config["record_database"]
-HOST = record_database["host"]
-USER = record_database["user"]
-PASSWORD = record_database["password"]
-DATABASE = record_database["database"]
+RECORD_DATABASE = _config["record_database"]
+DB_HOST = RECORD_DATABASE["host"]
+DB_USER = RECORD_DATABASE["user"]
+DB_PASSWORD = RECORD_DATABASE["password"]
+DB_NAME = RECORD_DATABASE["database"]
 
 # URL 配置字段
-urls = _config["urls"]
-LINE_ADDING_URL = urls["line_adding"]
-DXDATA_URL = urls["dxdata"]
+URLS = _config["urls"]
+LINE_ADDING_URL = URLS["line_adding"]
+DXDATA_URL = URLS["dxdata"]
 
 # LINE 配置字段
-line_channel = _config["line_channel"]
-LINE_ACCOUNT_ID = line_channel["account_id"]
-LINE_CHANNEL_ACCESS_TOKEN = line_channel["access_token"]
-LINE_CHANNEL_SECRET = line_channel["secret"]
+LINE_CHANNEL = _config["line_channel"]
+LINE_ACCOUNT_ID = LINE_CHANNEL["account_id"]
+LINE_CHANNEL_ACCESS_TOKEN = LINE_CHANNEL["access_token"]
+LINE_CHANNEL_SECRET = LINE_CHANNEL["secret"]
 
 # key 配置字段
-keys = _config["keys"]
-USER_DATA_KEY = keys["user_data"].encode()
-BIND_TOKEN_KEY = keys["bind_token"].encode()
+KEYS = _config["keys"]
+USER_DATA_KEY = KEYS["user_data"].encode()
+BIND_TOKEN_KEY = KEYS["bind_token"].encode()
 
 # 全局缓存数据
-songs = []
-versions = []
-users = {}
+SONGS = []
+VERSIONS = []
+USERS = {}
 
 # 用户数据脏标记（用于延迟写入）
 _user_data_dirty = False
 
 def read_dxdata(ver="jp"):
-    global songs, versions
-    dxdata_file = json.load(open(dxdata_list, 'r', encoding='utf-8'))
-    songs.clear()
-    
+    global SONGS, VERSIONS
+    dxdata_file = json.load(open(DXDATA_LIST, 'r', encoding='utf-8'))
+    SONGS.clear()
+
     def is_int(s):
         return s.isdigit()
 
     if ver == "intl":
         csv_map = {}
-        with open(re_dxdata_list, 'r', encoding='utf-8') as f:
+        with open(RE_DXDATA_LIST, 'r', encoding='utf-8') as f:
             for row in csv.reader(f):
                 if row:
                     csv_map[row[0]] = row[1:]
@@ -197,14 +197,14 @@ def read_dxdata(ver="jp"):
             else:
                 cur[last] = value
     
-    songs.extend(dxdata_file['songs'])
-    versions.clear()
-    versions.extend(dxdata_file['versions'])
+    SONGS.extend(dxdata_file['songs'])
+    VERSIONS.clear()
+    VERSIONS.extend(dxdata_file['versions'])
 
 def read_user():
-    global users, _user_data_dirty
-    if not users:  # 只在未加载时读取
-        users.update(read_encrypted_json(user_list, USER_DATA_KEY))
+    global USERS, _user_data_dirty
+    if not USERS:  # 只在未加载时读取
+        USERS.update(read_encrypted_json(USER_LIST, USER_DATA_KEY))
     _user_data_dirty = False
 
 def write_user(force=False):
@@ -216,7 +216,7 @@ def write_user(force=False):
     """
     global _user_data_dirty
     if force or _user_data_dirty:
-        write_encrypted_json(users, user_list, USER_DATA_KEY)
+        write_encrypted_json(USERS, USER_LIST, USER_DATA_KEY)
         _user_data_dirty = False
 
 def mark_user_dirty():

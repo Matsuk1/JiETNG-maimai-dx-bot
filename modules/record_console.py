@@ -7,10 +7,10 @@
 from typing import List, Dict, Any, Optional
 from modules.config_loader import (
     MAIMAI_VERSION,
-    songs,
+    SONGS,
     read_dxdata,
     read_user,
-    users
+    USERS
 )
 from modules.db_pool import get_connection
 

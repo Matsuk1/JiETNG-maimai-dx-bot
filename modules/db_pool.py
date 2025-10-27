@@ -4,7 +4,7 @@
 """
 import pymysql
 from dbutils.pooled_db import PooledDB
-from modules.config_loader import HOST, USER, PASSWORD, DATABASE
+from modules.config_loader import DB_HOST, DB_USER, DB_PASSWORD, DB_NAME
 
 # 创建连接池（全局单例）
 _pool = None
@@ -20,10 +20,10 @@ def get_pool():
             maxcached=5,            # 连接池中最多闲置的连接
             blocking=True,          # 连接池满时等待
             ping=0,                 # 检查连接有效性
-            host=HOST,
-            user=USER,
-            password=PASSWORD,
-            database=DATABASE,
+            host=DB_HOST,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            database=DB_NAME,
             charset="utf8mb4"
         )
     return _pool

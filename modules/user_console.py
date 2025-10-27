@@ -10,7 +10,7 @@ import logging
 import threading
 from datetime import datetime
 from modules.record_console import delete_record
-from modules.config_loader import read_user, write_user, mark_user_dirty, users
+from modules.config_loader import read_user, write_user, mark_user_dirty, USERS
 
 logger = logging.getLogger(__name__)
 

@@ -4,7 +4,7 @@
 """
 import logging
 from typing import List, Dict, Any
-from modules.config_loader import read_user, write_user, mark_user_dirty, users
+from modules.config_loader import read_user, write_user, mark_user_dirty, USERS
 from modules.user_console import delete_user
 
 logger = logging.getLogger(__name__)
@@ -15,7 +15,7 @@ def clean_unbound_users() -> Dict[str, Any]:
     deleted_users = []
 
     # 遍历所有用户
-    for user_id, value in users.items():
+    for user_id, value in USERS.items():
         if "version" not in value:
             logger.info(f"Deleting unbound user: {user_id}")
             delete_user(user_id)
