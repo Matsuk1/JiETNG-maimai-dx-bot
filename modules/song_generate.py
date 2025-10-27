@@ -111,7 +111,7 @@ def _render_basic_info_image(song_json, cover_img):
     return img
 
 def _generate_song_table_image(song_json, scale_width=1.5, scale_height=2.0):
-    font = ImageFont.truetype(font_path, 28)
+    font = ImageFont.truetype(FONT_PATH, 28)
 
     headers = ["Difficulty", "Level", "Total", "TAP", "HOLD", "SLIDE", "TOUCH", "BREAK", "JP", "INTL", "USA", "CN"]
     base_col_widths = [160, 90, 80, 80, 80, 80, 80, 80, 60, 70, 60, 60]
