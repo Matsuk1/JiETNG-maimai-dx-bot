@@ -1063,17 +1063,39 @@ def selgen_records(user_id, type="best50", command="", ver="jp"):
         cmds = re.findall(r"-(\w+)\s+([^ -][^-]*)", command)
         for cmd, cmd_num in cmds:
             if cmd == "lv":
-                lv_start, lv_stop = map(float, cmd_num.split())
-                song_record = list(filter(lambda x: lv_start <= x['internalLevelValue'] <= lv_stop, song_record))
+                parts = cmd_num.split()
+                if len(parts) == 1:
+                    lv_start = float(parts[0])
+                    song_record = list(filter(lambda x: x['internalLevelValue'] >= lv_start, song_record))
+                else:
+                    lv_start, lv_stop = map(float, parts[:2])
+                    song_record = list(filter(lambda x: lv_start <= x['internalLevelValue'] <= lv_stop, song_record))
             elif cmd == "ra":
-                ra_start, ra_stop = map(int, cmd_num.split())
-                song_record = list(filter(lambda x: ra_start <= x['ra'] <= ra_stop, song_record))
+                parts = cmd_num.split()
+                if len(parts) == 1:
+                    ra_start = int(parts[0])
+                    song_record = list(filter(lambda x: x['ra'] >= ra_start, song_record))
+                else:
+                    ra_start, ra_stop = map(int, parts[:2])
+                    song_record = list(filter(lambda x: ra_start <= x['ra'] <= ra_stop, song_record))
             elif cmd == "dx":
-                dx_score = int(re.sub(r"\D", "", cmd_num))
-                song_record = list(filter(lambda x: eval(x['dx_score'].replace(",", "")) * 100 >= dx_score, song_record))
+                parts = cmd_num.split()
+                if len(parts) == 1:
+                    dx_score = int(re.sub(r"\D", "", parts[0]))
+                    song_record = list(filter(lambda x: eval(x['dx_score'].replace(",", "")) * 100 >= dx_score, song_record))
+                else:
+                    dx_start = int(re.sub(r"\D", "", parts[0]))
+                    dx_stop = int(re.sub(r"\D", "", parts[1]))
+                    song_record = list(filter(lambda x: dx_start <= eval(x['dx_score'].replace(",", "")) * 100 <= dx_stop, song_record))
             elif cmd == "scr":
-                score = float(re.sub(r"[^0-9.]", "", cmd_num))
-                song_record = list(filter(lambda x: eval(x['score'].replace("%", "")) >= score, song_record))
+                parts = cmd_num.split()
+                if len(parts) == 1:
+                    score = float(re.sub(r"[^0-9.]", "", parts[0]))
+                    song_record = list(filter(lambda x: eval(x['score'].replace("%", "")) >= score, song_record))
+                else:
+                    scr_start = float(re.sub(r"[^0-9.]", "", parts[0]))
+                    scr_stop = float(re.sub(r"[^0-9.]", "", parts[1]))
+                    song_record = list(filter(lambda x: scr_start <= eval(x['score'].replace("%", "")) <= scr_stop, song_record))
 
     up_songs = down_songs = []
 
@@ -1287,12 +1309,21 @@ WEB_TASK_ROUTES = {
         "maimai update": async_maimai_update_task,
         "レコードアップデート": async_maimai_update_task,
         "record update": async_maimai_update_task,
-        "friend list": async_friend_list_task
+        "update": async_maimai_update_task,
+        "アップデート": async_maimai_update_task,
+        "friend list": async_friend_list_task,
+        "フレンドリスト": async_friend_list_task,
+        "friendlist": async_friend_list_task
     },
     # 前缀匹配规则
     'prefix': {
         "friend-b50 ": async_generate_friend_b50_task,
+        "friend b50 ": async_generate_friend_b50_task,
+        "フレンドb50 ": async_generate_friend_b50_task,
         "add-friend ": async_add_friend_task,
+        "add friend ": async_add_friend_task,
+        "addfriend ": async_add_friend_task,
+        "フレンド追加 ": async_add_friend_task,
     }
 }
 
@@ -1379,29 +1410,29 @@ def route_to_web_queue(event):
 IMAGE_TASK_ROUTES = {
     # 精确匹配规则 - 这些命令会生成图片
     'exact': {
-        "yang", "yrating", "yra",
-        "maid card", "maid", "mai pass"
+        "yang", "yrating", "yra", "ヤンレーティング",
+        "maid card", "maid", "mai pass", "maipass", "マイパス", "マイカード"
     },
     # 前缀匹配规则
     'prefix': [],
     # 后缀匹配规则
     'suffix': [
-        ("ってどんな曲", "song-info"),
-        ("の達成状況", "の達成情報", "の達成表", "achievement-list"),
-        ("のレコード", "song-record"),
-        ("のバージョンリスト", "version-list")
+        ("ってどんな曲", "info", "song-info"),
+        ("の達成状況", "の達成情報", "の達成表", "achievement-list", "achievement"),
+        ("のレコード", "song-record", "record"),
+        ("のバージョンリスト", "version-list", "version")
     ],
     # B系列命令 (生成图片)
     'b_commands': {
-        "b50", "best 50", "ベスト50",
-        "b100", "best 100", "ベスト100",
-        "b35", "best 35", "ベスト35",
-        "b15", "best 15", "ベスト15",
-        "ab50", "all best 50", "オールベスト50",
-        "ab35", "all best 35", "オールベスト35",
-        "ap50", "apb50", "オールパーフェクト50", "all perfect 50",
-        "rct50", "r50", "recent 50",
-        "idealb50", "idlb50", "理想的ベスト50", "ideal best 50",
+        "b50", "best50", "best 50", "ベスト50",
+        "b100", "best100", "best 100", "ベスト100",
+        "b35", "best35", "best 35", "ベスト35",
+        "b15", "best15", "best 15", "ベスト15",
+        "ab50", "allb50", "all best 50", "オールベスト50",
+        "ab35", "allb35", "all best 35", "オールベスト35",
+        "ap50", "apb50", "all perfect 50", "オールパーフェクト50",
+        "rct50", "r50", "recent50", "recent 50",
+        "idealb50", "idlb50", "ideal best 50", "理想的ベスト50",
         "unknown", "unknown songs", "unknown data", "未発見"
     }
 }
@@ -1588,21 +1619,32 @@ def handle_sync_text_command(event):
 
     # ====== 基础命令映射 ======
     COMMAND_MAP = {
+        # 系统检查
         "check": lambda: active_reply,
+        "チェック": lambda: active_reply,
         "network": lambda: active_reply,
+        "ネットワーク": lambda: active_reply,
 
+        # 账户管理
         "unbind": lambda: (delete_user(user_id), unbind_msg)[-1],
-
+        "アンバインド": lambda: (delete_user(user_id), unbind_msg)[-1],
         "get me": lambda: TextMessage(text=get_user(user_id)),
         "getme": lambda: TextMessage(text=get_user(user_id)),
+        "ゲットミー": lambda: TextMessage(text=get_user(user_id)),
 
+        # Yang Rating
         "yang": lambda: generate_yang_rating(id_use, mai_ver),
         "yrating": lambda: generate_yang_rating(id_use, mai_ver),
         "yra": lambda: generate_yang_rating(id_use, mai_ver),
+        "ヤンレーティング": lambda: generate_yang_rating(id_use, mai_ver),
 
+        # 名片生成
         "maid card": lambda: generate_maipass(user_id),
         "maid": lambda: generate_maipass(user_id),
-        "mai pass": lambda: generate_maipass(user_id)
+        "mai pass": lambda: generate_maipass(user_id),
+        "maipass": lambda: generate_maipass(user_id),
+        "マイパス": lambda: generate_maipass(user_id),
+        "マイカード": lambda: generate_maipass(user_id)
     }
 
     if user_message in COMMAND_MAP:
@@ -1611,48 +1653,55 @@ def handle_sync_text_command(event):
 
     # ====== 模糊匹配规则 ======
     SPECIAL_RULES = [
-        (lambda msg: msg.endswith(("ってどんな曲", "song-info")),
+        # 歌曲信息查询
+        (lambda msg: msg.endswith(("ってどんな曲", "info", "song-info")),
         lambda msg: search_song(
-            re.sub(r"(ってどんな曲|song-info)$", "", msg).strip(),
+            re.sub(r"(ってどんな曲|info|song-info)$", "", msg).strip(),
             mai_ver
         )),
 
-        (lambda msg: msg.startswith(("ランダム曲", "random-song")),
+        # 随机歌曲
+        (lambda msg: msg.startswith(("ランダム曲", "random-song", "random")),
         lambda msg: random_song(
-            re.sub(r"^(ランダム曲|random-song)", "", msg).strip(),
+            re.sub(r"^(ランダム曲|random-song|random)", "", msg).strip(),
             mai_ver
         )),
 
+        # Rating 对照表
         (lambda msg: msg.startswith(("rc ", "RC ", "Rc ")),
         lambda msg: TextMessage(
             text=get_rc(float(re.sub(r"^rc\b[ 　]*", "", msg, flags=re.IGNORECASE)))
         )),
 
-        (lambda msg: msg.endswith(("の達成状況", "の達成情報", "の達成表", "achievement-list")),
+        # 版本达成情况
+        (lambda msg: msg.endswith(("の達成状況", "の達成情報", "の達成表", "achievement-list", "achievement")),
         lambda msg: generate_plate_rcd(
             id_use,
-            re.sub(r"(の達成状況|の達成情報|の達成表|achievement-list)$", "", msg).strip(),
+            re.sub(r"(の達成状況|の達成情報|の達成表|achievement-list|achievement)$", "", msg).strip(),
             mai_ver
         )),
 
-        (lambda msg: msg.endswith(("のレコード", "song-record")),
+        # 歌曲成绩记录
+        (lambda msg: msg.endswith(("のレコード", "song-record", "record")),
         lambda msg: get_song_record(
             id_use,
-            re.sub(r"(のレコード|song-record)$", "", msg).strip(),
+            re.sub(r"(のレコード|song-record|record)$", "", msg).strip(),
             mai_ver
         )),
 
-        (lambda msg: re.match(r".+(のレコードリスト|record-list)[ 　]*\d*$", msg),
+        # 等级成绩列表
+        (lambda msg: re.match(r".+(のレコードリスト|record-list|records)[ 　]*\d*$", msg),
         lambda msg: generate_level_records(
             id_use,
-            re.sub(r"(のレコードリスト|record-list)[ 　]*\d*$", "", msg).strip(),
+            re.sub(r"(のレコードリスト|record-list|records)[ 　]*\d*$", "", msg).strip(),
             mai_ver,
             int(re.search(r"(\d+)$", msg).group(1)) if re.search(r"(\d+)$", msg) else 1
         )),
 
-        (lambda msg: msg.endswith(("のバージョンリスト", "version-list")),
+        # 版本歌曲列表
+        (lambda msg: msg.endswith(("のバージョンリスト", "version-list", "version")),
         lambda msg: generate_version_songs(
-            re.sub(r"\s*\+\s*", " PLUS", re.sub(r"(のバージョンリスト|version-list)$", "", msg)).strip(),
+            re.sub(r"\s*\+\s*", " PLUS", re.sub(r"(のバージョンリスト|version-list|version)$", "", msg)).strip(),
             mai_ver
         ))
     ]
@@ -1667,15 +1716,15 @@ def handle_sync_text_command(event):
     rest_text = re.split(r"[ \n]", user_message.lower(), 1)[1] if re.search(r"[ \n]", user_message) else ""
 
     RANK_COMMANDS = {
-        ("b50", "best 50", "ベスト50"): "best50",
-        ("b100", "best 100", "ベスト100"): "best100",
-        ("b35", "best 35", "ベスト35"): "best35",
-        ("b15", "best 15", "ベスト15"): "best15",
-        ("ab50", "all best 50", "オールベスト50"): "allb50",
-        ("ab35", "all best 35", "オールベスト35"): "allb35",
-        ("ap50", "apb50", "オールパーフェクト50", "all perfect 50", "apb50"): "apb50",
-        ("rct50", "r50", "recent 50"): "rct50",
-        ("idealb50", "idlb50", "理想的ベスト50", "ideal best 50"): "idealb50",
+        ("b50", "best50", "best 50", "ベスト50"): "best50",
+        ("b100", "best100", "best 100", "ベスト100"): "best100",
+        ("b35", "best35", "best 35", "ベスト35"): "best35",
+        ("b15", "best15", "best 15", "ベスト15"): "best15",
+        ("ab50", "allb50", "all best 50", "オールベスト50"): "allb50",
+        ("ab35", "allb35", "all best 35", "オールベスト35"): "allb35",
+        ("ap50", "apb50", "all perfect 50", "オールパーフェクト50"): "apb50",
+        ("rct50", "r50", "recent50", "recent 50"): "rct50",
+        ("idealb50", "idlb50", "ideal best 50", "理想的ベスト50"): "idealb50",
         ("unknown", "unknown songs", "unknown data", "未発見"): "UNKNOWN",
     }
 
@@ -1685,7 +1734,8 @@ def handle_sync_text_command(event):
             return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
 
     # ====== SEGA ID 绑定逻辑 ======
-    if user_message.lower() in ["segaid bind", "segaid バインド", "sega bind", "sega バインド"]:
+    BIND_COMMANDS = ["segaid bind", "segaid バインド", "sega bind", "sega バインド", "bind", "バインド"]
+    if user_message.lower() in BIND_COMMANDS:
         bind_url = f"https://{DOMAIN}/linebot/sega_bind?token={generate_token(user_id)}"
 
         buttons_template = ButtonsTemplate(

@@ -15,7 +15,7 @@ Supports Japanese and International servers
 
 [简体中文](README.md) | English
 
-[Features](#features) • [Quick Start](#quick-start) • [Admin Panel](#admin-panel) • [Deployment](#deployment) • [Documentation](#documentation)
+[Features](#features) • [Command List](COMMANDS_EN.md) • [Quick Start](#quick-start) • [Admin Panel](#admin-panel) • [Deployment](#deployment) • [Documentation](#documentation)
 
 </div>
 
@@ -414,6 +414,9 @@ JiETNG/
 ├── config.json                # Configuration file
 ├── README.md                  # Chinese documentation
 ├── README_EN.md               # English documentation (this file)
+├── COMMANDS.md                # Command list (Chinese)
+├── COMMANDS_EN.md             # Command list (English)
+├── COMMANDS_JP.md             # Command list (Japanese)
 ├── inits/                     # Initialization files
 │   ├── requirements.txt       # Python dependencies
 │   └── records_db.sql         # Database schema
