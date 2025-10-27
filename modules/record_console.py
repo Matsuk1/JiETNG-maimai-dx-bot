@@ -228,7 +228,7 @@ def get_detailed_info(song_record, ver="jp", yang=False):
 
     # 构建哈希表加速查找 O(1) 而不是 O(n)
     song_map = {}
-    for song in songs:
+    for song in SONGS:
         key = (song['title'], song['type'])
         if key not in song_map:
             song_map[key] = song

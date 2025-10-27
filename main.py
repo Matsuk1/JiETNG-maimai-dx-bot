@@ -750,7 +750,7 @@ def search_song(acronym, ver="jp"):
     read_dxdata(ver)
 
     # 使用优化的歌曲匹配函数
-    matching_songs = find_matching_songs(acronym, songs, max_results=6, threshold=0.85)
+    matching_songs = find_matching_songs(acronym, SONGS, max_results=6, threshold=0.85)
 
     # 没有匹配结果
     if not matching_songs:
@@ -767,7 +767,7 @@ def search_song(acronym, ver="jp"):
 
 def random_song(key="", ver="jp"):
     read_dxdata(ver)
-    length = len(songs)
+    length = len(SONGS)
     is_exit = False
     valid_songs = []
 
@@ -775,7 +775,7 @@ def random_song(key="", ver="jp"):
         level_values = parse_level_value(key)
 
 
-    for song in songs:
+    for song in SONGS:
         for sheet in song['sheets']:
             if sheet['regions']['jp']:
                 if not key or sheet['internalLevelValue'] in level_values:
@@ -834,7 +834,7 @@ def get_song_record(user_id, acronym, ver="jp"):
         return record_error
 
     # 使用优化的歌曲匹配函数
-    matching_songs = find_matching_songs(acronym, songs, max_results=6, threshold=0.85)
+    matching_songs = find_matching_songs(acronym, SONGS, max_results=6, threshold=0.85)
 
     if not matching_songs:
         return song_error
@@ -884,7 +884,7 @@ def generate_plate_rcd(user_id, title, ver="jp"):
     target_icon = []
     target_type = ""
 
-    for version in versions :
+    for version in VERSIONS :
         if version_name in version['abbr'] :
             target_version.append(version['version'])
 
@@ -922,7 +922,7 @@ def generate_plate_rcd(user_id, title, ver="jp"):
         'master': {'all': 0, 'clear': 0}
     }
 
-    for song in songs :
+    for song in SONGS :
         if song['version'] not in target_version or song['type'] == 'utage':
             continue
 
@@ -1174,7 +1174,7 @@ def generate_yang_rating(user_id, ver="jp"):
     version_records = []
 
     read_dxdata(ver)
-    for version in versions:
+    for version in VERSIONS:
         if version['version'] == now_version:
             break
 
@@ -1285,14 +1285,14 @@ def generate_version_songs(version_title, ver="jp"):
     target_icon = []
     target_type = ""
 
-    for version in versions :
+    for version in VERSIONS :
         if version_title.lower() == version['version'].lower() :
             target_version.append(version['version'])
 
     if not len(target_version) :
         return version_error
 
-    songs_data = list(filter(lambda x: x['version'] in target_version and x['type'] not in ['utage'], songs))
+    songs_data = list(filter(lambda x: x['version'] in target_version and x['type'] not in ['utage'], SONGS))
     img = generate_version_list(songs_data)
 
     image_url = smart_upload(img)

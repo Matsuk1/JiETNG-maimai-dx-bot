@@ -121,13 +121,13 @@ def is_song_match(query: str, song: dict, threshold: float = 0.85, min_query_len
     return False
 
 
-def find_matching_songs(query: str, songs: list, max_results: int = 6, threshold: float = 0.85) -> list:
+def find_matching_songs(query: str, SONGS: list, max_results: int = 6, threshold: float = 0.85) -> list:
     """
     查找匹配的歌曲列表
 
     Args:
         query: 搜索关键词
-        songs: 歌曲列表
+        SONGS: 歌曲列表
         max_results: 最大返回数量
         threshold: 相似度阈值
 
@@ -136,7 +136,7 @@ def find_matching_songs(query: str, songs: list, max_results: int = 6, threshold
     """
     matching_songs = []
 
-    for song in songs:
+    for song in SONGS:
         if is_song_match(query, song, threshold):
             matching_songs.append(song)
 
