@@ -219,7 +219,7 @@ def run_task_with_limit(func: callable, args: tuple, sem: threading.Semaphore,
                         "Task": func.__name__,
                         "Error Type": type(e).__name__
                     },
-                    admin_id=admin_id,
+                    admin_id=ADMIN_ID,
                     configuration=configuration,
                     error_notification_enabled=ERROR_NOTIFICATION_ENABLED
                 )
@@ -289,7 +289,7 @@ def image_worker() -> None:
                 error_title="Image Task Worker Error",
                 error_details=f"{type(e).__name__}: {str(e)}\n\n{traceback.format_exc()}",
                 context={"Worker": "image_worker"},
-                admin_id=admin_id,
+                admin_id=ADMIN_ID,
                 configuration=configuration,
                 error_notification_enabled=ERROR_NOTIFICATION_ENABLED
             )
@@ -313,7 +313,7 @@ def webtask_worker() -> None:
                 error_title="Web Task Worker Error",
                 error_details=f"{type(e).__name__}: {str(e)}\n\n{traceback.format_exc()}",
                 context={"Worker": "webtask_worker"},
-                admin_id=admin_id,
+                admin_id=ADMIN_ID,
                 configuration=configuration,
                 error_notification_enabled=ERROR_NOTIFICATION_ENABLED
             )
@@ -392,7 +392,7 @@ def linebot_reply():
             error_title="Webhook JSON Parse Failed",
             error_details=f"{type(e).__name__}: {str(e)}",
             context={"Body": body[:200]},
-            admin_id=admin_id,
+            admin_id=ADMIN_ID,
             configuration=configuration,
             error_notification_enabled=ERROR_NOTIFICATION_ENABLED
         )
@@ -404,7 +404,7 @@ def linebot_reply():
             error_title="LINE Signature Verification Failed",
             error_details=f"{type(e).__name__}: {str(e)}",
             context={"Signature": signature[:50]},
-            admin_id=admin_id,
+            admin_id=ADMIN_ID,
             configuration=configuration,
             error_notification_enabled=ERROR_NOTIFICATION_ENABLED
         )
@@ -416,7 +416,7 @@ def linebot_reply():
             error_title="Webhook Handling Error",
             error_details=f"{type(e).__name__}: {str(e)}\n\n{traceback.format_exc()}",
             context={"Event": "Webhook"},
-            admin_id=admin_id,
+            admin_id=ADMIN_ID,
             configuration=configuration,
             error_notification_enabled=ERROR_NOTIFICATION_ENABLED
         )
