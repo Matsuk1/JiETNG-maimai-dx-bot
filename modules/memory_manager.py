@@ -30,6 +30,7 @@ class MemoryManager:
         self.running = False
         self.thread = None
         self.last_cleanup_time = None
+        self.last_cleanup_stats = None  # 保存最后一次清理的详细统计
 
     def start(self):
         """启动内存管理器"""
@@ -68,8 +69,14 @@ class MemoryManager:
         """
         start_time = time.time()
 
-        # 执行垃圾回收
-        collected_counts = gc.collect()
+        # 获取清理前的 gc 计数（用于统计）
+        gc_counts_before = gc.get_count()
+
+        # 执行垃圾回收（分别收集每一代并统计）
+        collected_gen0 = gc.collect(0)  # 收集 generation 0
+        collected_gen1 = gc.collect(1)  # 收集 generation 1
+        collected_gen2 = gc.collect(2)  # 收集 generation 2
+        total_collected = collected_gen0 + collected_gen1 + collected_gen2
 
         # 记录清理时间
         self.last_cleanup_time = datetime.now()
@@ -77,14 +84,25 @@ class MemoryManager:
 
         stats = {
             'timestamp': self.last_cleanup_time.strftime('%Y-%m-%d %H:%M:%S'),
-            'collected_objects': collected_counts,
+            'collected_objects': total_collected,
+            'collected_by_generation': {
+                'gen0': collected_gen0,
+                'gen1': collected_gen1,
+                'gen2': collected_gen2
+            },
+            'gc_counts_before': gc_counts_before,
             'elapsed_ms': int(elapsed_time * 1000)
         }
 
         logger.info(
             f"Memory cleanup completed: "
-            f"collected {collected_counts} objects in {stats['elapsed_ms']}ms"
+            f"collected {total_collected} objects "
+            f"(gen0: {collected_gen0}, gen1: {collected_gen1}, gen2: {collected_gen2}) "
+            f"in {stats['elapsed_ms']}ms"
         )
+
+        # 保存清理统计信息
+        self.last_cleanup_stats = stats
 
         return stats
 
@@ -95,12 +113,23 @@ class MemoryManager:
         Returns:
             dict: 状态信息
         """
+        # 获取当前 gc 计数
+        current_gc_counts = gc.get_count()
+
+        # 如果有上次清理的统计，使用清理前的计数（更有意义）
+        # 否则使用当前计数
+        display_gc_counts = current_gc_counts
+        if self.last_cleanup_stats and 'gc_counts_before' in self.last_cleanup_stats:
+            display_gc_counts = self.last_cleanup_stats['gc_counts_before']
+
         return {
             'running': self.running,
             'interval_seconds': self.interval,
             'last_cleanup': self.last_cleanup_time.strftime('%Y-%m-%d %H:%M:%S') if self.last_cleanup_time else 'Never',
-            'gc_counts': gc.get_count(),  # (count0, count1, count2)
-            'gc_threshold': gc.get_threshold()  # (threshold0, threshold1, threshold2)
+            'gc_counts': display_gc_counts,  # 显示清理前的计数
+            'gc_counts_current': current_gc_counts,  # 当前实时计数
+            'gc_threshold': gc.get_threshold(),  # (threshold0, threshold1, threshold2)
+            'last_cleanup_stats': self.last_cleanup_stats  # 最后一次清理的详细信息
         }
 
 
