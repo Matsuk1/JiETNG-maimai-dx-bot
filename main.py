@@ -1153,7 +1153,7 @@ def selgen_records(user_id, type="best50", command="", ver="jp"):
         up_songs = sorted(up_songs_data, key=lambda x: -x["ra"])[:35]
         down_songs = sorted(down_songs_data, key=lambda x: -x["ra"])[:15]
 
-    if not up_songs or not down_songs:
+    if not up_songs and not down_songs:
         return picture_error
 
     img = generate_records_picture(up_songs, down_songs, type.upper())
