@@ -165,8 +165,8 @@ idealb50 -lv 13.5 14.0               # Ideal B50 with constant 13.5-14.0
 
 **English Alias Examples**:
 ```
-宴achievement-list            # Same as 宴極の達成状況
-双achievement                 # Same as 双将の達成状況
+宴極achievement-list            # Same as 宴極の達成状況
+双将achievement                 # Same as 双将の達成状況
 ```
 
 ### Version Song List
