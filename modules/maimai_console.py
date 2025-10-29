@@ -583,12 +583,26 @@ def get_nearby_maimai_stores(lat, lng, ver="jp"):
             map_url = map_url.split('@')[0] if '@' in map_url else map_url
             details_url = extract_onclick_url_from_button(li, "bt_details_en")
 
+            # 确保 map_url 是有效的 URL
+            if map_url:
+                if map_url.startswith("//"):
+                    map_url = "https:" + map_url
+                elif not map_url.startswith("http"):
+                    map_url = ""
+
+            # 确保 details_url 是有效的 URL
+            if details_url:
+                if details_url.startswith("shop"):
+                    details_url = "https://location.am-all.net/alm/" + details_url
+                elif not details_url.startswith("http"):
+                    details_url = ""
+
             stores.append({
                 "name": name[0].strip() if name else "",
                 "address": address[0].strip() if address else "",
                 "distance": distance[0].strip() if distance else "",
-                "map_url": "https:" + map_url if map_url.startswith("//") else map_url,
-                "details_url": "https://location.am-all.net/alm/" + details_url if details_url.startswith("shop") else details_url
+                "map_url": map_url,
+                "details_url": details_url
             })
 
         return stores

@@ -31,6 +31,10 @@ def generate_store_buttons(alt_text, store_list, group_size=6):
             distance = store.get("distance", "")
             map_url = store.get("map_url", "")
 
+            # 验证和修复 URL：确保是有效的 https URL
+            if not map_url or not map_url.startswith("http"):
+                map_url = "https://www.google.com/maps"
+
             # 创建单行（第一个不需要上边距）
             row = {
                 "type": "box",
@@ -79,7 +83,7 @@ def generate_store_buttons(alt_text, store_list, group_size=6):
                         "action": {
                             "type": "uri",
                             "label": "MAP",
-                            "uri": map_url if map_url else "https://www.google.com/maps"
+                            "uri": map_url
                         }
                     }
                 ]
