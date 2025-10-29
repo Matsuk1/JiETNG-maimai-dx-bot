@@ -1941,9 +1941,8 @@ def handle_location_message(event):
         # 使用 LINE SDK v3 对象构建的 Flex Message（已修复结构问题）
         from modules.store_list import generate_store_buttons
         reply_message = generate_store_buttons(
-            "🗺️ 最寄りの maimai 設置店舗",
-            stores[:6],
-            group_size=6
+            "最寄りの maimai 設置店舗",
+            stores
         )
 
     smart_reply(
