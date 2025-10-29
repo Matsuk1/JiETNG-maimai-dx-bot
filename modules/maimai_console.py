@@ -221,6 +221,8 @@ def get_friends_list(session: requests.Session, ver="jp"):
     dom = fetch_dom(session, url)
     if dom is None:
         return []
+    if dom == "MAINTENANCE":
+        return "MAINTENANCE"
 
     friends = []
     blocks = dom.xpath('//div[contains(@class, "see_through_block")]')
@@ -262,6 +264,11 @@ def add_friend(session: requests.Session, friend_code, ver="jp"):
     invite_url = f"{base}/friend/search/invite/"
 
     dom = fetch_dom(session, search_url)
+    if dom == "MAINTENANCE":
+        return "サーバーメンテナンス中です"
+    if dom is None:
+        return "接続エラー"
+
     token = dom.xpath('//input[@name="token"]/@value')
     idx = dom.xpath('//input[@name="idx"]/@value')
     friend_name = dom.xpath('//div[contains(@class, "name_block")]/text()')
@@ -319,6 +326,8 @@ def get_recent_records(session: requests.Session, ver="jp"):
     dom = fetch_dom(session, url)
     if dom is None:
         return []
+    if dom == "MAINTENANCE":
+        return "MAINTENANCE"
 
     music_blocks = dom.xpath('//div[contains(@class, "p_10") and contains(@class, "t_l")]')
 
@@ -396,6 +405,8 @@ def get_friend_records(session: requests.Session, user_id: str, ver="jp"):
         dom = fetch_dom(session, url)
         if dom is None:
             continue
+        if dom == "MAINTENANCE":
+            return "MAINTENANCE"
 
         blocks = dom.xpath(f'//div[contains(@class, "music_{difficulty[diff]}_score_back")]')
 
@@ -456,6 +467,8 @@ def get_friend_records(session: requests.Session, user_id: str, ver="jp"):
     dom = fetch_dom(session, url)
     if dom is None:
         return "Unknown", music_record
+    if dom == "MAINTENANCE":
+        return "MAINTENANCE", []
     friend_name = dom.xpath('//div[contains(@class, "name_block")]/text()')
     friend_name = friend_name[0].strip() if friend_name else "Unknown"
 
@@ -469,6 +482,8 @@ def get_maimai_info(session: requests.Session, ver="jp"):
     dom = fetch_dom(session, f"{base}/playerData/")
     if dom is None:
         return {}
+    if dom == "MAINTENANCE":
+        return {"error": "MAINTENANCE"}
 
     user_name = dom.xpath('//div[contains(@class, "name_block")]/text()')
     rating_block_url = dom.xpath('//img[contains(@class, "h_30") and contains(@class, "f_r")]/@src')
@@ -480,18 +495,24 @@ def get_maimai_info(session: requests.Session, ver="jp"):
     dom = fetch_dom(session, f"{base}/collection/")
     if dom is None:
         return {}
+    if dom == "MAINTENANCE":
+        return {"error": "MAINTENANCE"}
     icon_url = dom.xpath('//img[contains(@class, "w_80") and contains(@class, "m_r_10") and contains(@class, "f_l")]/@src')
 
     # 姓名框
     dom = fetch_dom(session, f"{base}/collection/nameplate/")
     if dom is None:
         return {}
+    if dom == "MAINTENANCE":
+        return {"error": "MAINTENANCE"}
     nameplate_url = dom.xpath('//img[contains(@class, "w_396") and contains(@class, "m_r_10")]/@src')
 
     # 称号
     dom = fetch_dom(session, f"{base}/collection/trophy/")
     if dom is None:
         return {}
+    if dom == "MAINTENANCE":
+        return {"error": "MAINTENANCE"}
     trophy_type = dom.xpath('//div[contains(@class, "block_info") and contains(@class, "f_11") and contains(@class, "orange")]/text()')
     trophy_blocks = dom.xpath('//div[contains(@class, "trophy_inner_block") and contains(@class, "f_13")]')
     if trophy_blocks:
@@ -505,6 +526,8 @@ def get_maimai_info(session: requests.Session, ver="jp"):
     dom = fetch_dom(session, f"{base}/friend/userFriendCode/")
     if dom is None:
         return {}
+    if dom == "MAINTENANCE":
+        return {"error": "MAINTENANCE"}
     friend_code = dom.xpath('//div[contains(@class, "see_through_block")]/text()')
 
     user_info = {
@@ -543,6 +566,8 @@ def get_nearby_maimai_stores(lat, lng, ver="jp"):
     dom = fetch_dom(session, url)
     if dom is None:
         return []
+    if dom == "MAINTENANCE":
+        return "MAINTENANCE"
 
     stores = []
     li_elements = dom.xpath('//ul[@class="store_list"]/li')

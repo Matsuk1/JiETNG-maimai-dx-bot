@@ -678,7 +678,9 @@ def maimai_update(user_id, ver="jp"):
     recent_records = get_recent_records(user_session, ver)
 
     # 检查记录是否处于维护状态
-    if maimai_records == "MAINTENANCE" or recent_records == "MAINTENANCE":
+    if (maimai_records == "MAINTENANCE" or
+        recent_records == "MAINTENANCE" or
+        (isinstance(user_info, dict) and user_info.get("error") == "MAINTENANCE")):
         return maintenance_error
 
     error = False
