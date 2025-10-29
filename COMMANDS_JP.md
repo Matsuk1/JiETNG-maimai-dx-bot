@@ -165,8 +165,8 @@ idealb50 -lv 13.5 14.0               # 譜面定数13.5〜14.0の理想スコア
 
 **英語エイリアス例**：
 ```
-宴achievement-list            # 宴極の達成状況と同じ
-双achievement                 # 双将の達成状況と同じ
+宴極achievement-list            # 宴極の達成状況と同じ
+双将achievement                 # 双将の達成状況と同じ
 ```
 
 ### バージョン楽曲リスト
