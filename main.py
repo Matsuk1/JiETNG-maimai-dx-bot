@@ -1922,7 +1922,7 @@ def handle_internal_link(user_id, reply_token, data):
 @handler.add(MessageEvent, message=LocationMessageContent)
 def handle_location_message(event):
     """
-    位置消息处理 - 同步处理
+    位置消息处理 - 同步处理，返回机厅按钮列表
     """
     read_user()
 
@@ -1931,12 +1931,20 @@ def handle_location_message(event):
     user_id = event.source.user_id
 
     stores = get_nearby_maimai_stores(lat, lng, USERS[user_id]['version'])
-    if not stores:
-        reply_message = TextMessage(text="🥹 周辺の設置店舗がないね")
+
+    # 检查维护状态
+    if stores == "MAINTENANCE":
+        reply_message = maintenance_error
+    elif not stores:
+        reply_message = store_error
     else:
-        reply_message = [TextMessage(text="🗺️ 最寄りの maimai 設置店舗")]
-        for i, store in enumerate(stores[:4]):
-            reply_message.append(TextMessage(text=f"📌 {store['name']}\n{store['address']}\n（{store['distance']}）\n地図: {store['map_url']}"))
+        # 生成机厅按钮列表，最多显示6个
+        from modules.store_list import generate_store_buttons
+        reply_message = generate_store_buttons(
+            "🗺️ 最寄りの maimai 設置店舗",
+            stores[:6],
+            group_size=6
+        )
 
     smart_reply(
         event.source.user_id,

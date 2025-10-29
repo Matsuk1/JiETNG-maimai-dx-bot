@@ -110,6 +110,8 @@ version_error = TextMessage(
 friend_error = TextMessage(text="お気に入りにフレンド登録してないみたいだよ？")
 friend_rcd_error = TextMessage(text="この人フレンドじゃないかも！")
 
+store_error = TextMessage(text="🥹 周辺の設置店舗がないね")
+
 qrcode_error = TextMessage(text="ん〜？よくわかんない写真だね")
 
 share_msg = TextMessage(text="この画像を友達にシェアしよ！")
