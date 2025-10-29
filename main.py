@@ -924,9 +924,22 @@ def generate_plate_rcd(user_id, title, ver="jp"):
         'master': {'all': 0, 'clear': 0}
     }
 
+    # 优化：构建用户记录的哈希表，避免嵌套循环 O(n*m*p) -> O(n*m)
+    # key = (name, difficulty, kind), value = record
+    rcd_map = {}
+    for rcd in version_rcd_data:
+        # 使用标准化的key来提高匹配准确率
+        from modules.song_matcher import normalize_text
+        normalized_name = normalize_text(rcd['name'])
+        key = (normalized_name, rcd['difficulty'], rcd['kind'])
+        rcd_map[key] = rcd
+
     for song in SONGS :
         if song['version'] not in target_version or song['type'] == 'utage':
             continue
+
+        # 预先标准化歌名，避免在内层循环中重复计算
+        normalized_song_title = normalize_text(song['title'])
 
         for sheet in song['sheets'] :
             if not sheet['regions']['jp'] or sheet["difficulty"] not in target_num:
@@ -934,12 +947,14 @@ def generate_plate_rcd(user_id, title, ver="jp"):
 
             icon = "back"
             target_num[sheet['difficulty']]['all'] += 1
-            for rcd in version_rcd_data:
-                # 使用优化的精确匹配函数
-                if is_exact_song_title_match(rcd['name'], song['title']) and sheet['difficulty'] == rcd['difficulty'] and rcd['kind'] == song['type']:
-                    icon = rcd[f'{target_type}_icon']
-                    if icon in target_icon:
-                        target_num[sheet['difficulty']]['clear'] += 1
+
+            # O(1) 哈希查找替代 O(p) 线性查找
+            key = (normalized_song_title, sheet['difficulty'], song['type'])
+            if key in rcd_map:
+                rcd = rcd_map[key]
+                icon = rcd[f'{target_type}_icon']
+                if icon in target_icon:
+                    target_num[sheet['difficulty']]['clear'] += 1
 
             if sheet['difficulty'] == "master" :
                 target_data.append({"img": create_small_record(song['cover_url'], icon, target_type), "level": sheet['level']})

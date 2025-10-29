@@ -185,8 +185,9 @@ def write_record(user_id, record_json, recent=False):
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
 
-            for song in record_json:
-                cursor.execute(sql, (
+            # 优化：批量插入数据，减少数据库往返次数
+            batch_data = [
+                (
                     user_id,
                     song.get("name"),
                     song.get("difficulty"),
@@ -196,7 +197,12 @@ def write_record(user_id, record_json, recent=False):
                     song.get("score_icon"),
                     song.get("combo_icon"),
                     song.get("sync_icon"),
-                ))
+                )
+                for song in record_json
+            ]
+
+            if batch_data:
+                cursor.executemany(sql, batch_data)
 
         conn.commit()
     finally:
