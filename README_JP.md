@@ -136,7 +136,7 @@ cd JiETNG
 #### 2. 依存関係をインストール
 
 ```bash
-pip install -r inits/requirements.txt
+pip install -r requirements.txt
 ```
 
 #### 3. データベースを設定
@@ -152,7 +152,7 @@ GRANT ALL PRIVILEGES ON records.* TO 'jietng'@'localhost';
 FLUSH PRIVILEGES;
 
 # データベース構造をインポート
-mysql -u jietng -p records < inits/records_db.sql
+mysql -u jietng -p records < records_db.sql
 ```
 
 #### 4. config.json を設定
@@ -229,7 +229,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Python 依存関係をインストール
-COPY inits/requirements.txt .
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # プロジェクトファイルをコピー
@@ -272,7 +272,7 @@ services:
       MYSQL_PASSWORD: jietng_2025
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./inits/records_db.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./records_db.sql:/docker-entrypoint-initdb.d/init.sql
     restart: unless-stopped
 
 volumes:
@@ -357,9 +357,8 @@ JiETNG/
 ├── COMMANDS.md                # コマンドリスト（中国語）
 ├── COMMANDS_EN.md             # コマンドリスト（英語）
 ├── COMMANDS_JP.md             # コマンドリスト（日本語）
-├── inits/                     # 初期化ファイル
-│   ├── requirements.txt       # Python 依存関係
-│   └── records_db.sql         # データベーススキーマ
+├── requirements.txt           # Python 依存関係
+├── records_db.sql             # データベーススキーマ
 ├── modules/                   # 機能モジュール
 │   ├── config_loader.py       # 設定ローダー
 │   ├── db_pool.py             # データベース接続プール

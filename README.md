@@ -136,7 +136,7 @@ cd JiETNG
 #### 2. 安装依赖
 
 ```bash
-pip install -r inits/requirements.txt
+pip install -r requirements.txt
 ```
 
 #### 3. 配置数据库
@@ -152,7 +152,7 @@ GRANT ALL PRIVILEGES ON records.* TO 'jietng'@'localhost';
 FLUSH PRIVILEGES;
 
 # 导入数据库结构
-mysql -u jietng -p records < inits/records_db.sql
+mysql -u jietng -p records < records_db.sql
 ```
 
 #### 4. 配置 config.json
@@ -229,7 +229,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # 安装 Python 依赖
-COPY inits/requirements.txt .
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # 复制项目文件
@@ -272,7 +272,7 @@ services:
       MYSQL_PASSWORD: jietng_2025
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./inits/records_db.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./records_db.sql:/docker-entrypoint-initdb.d/init.sql
     restart: unless-stopped
 
 volumes:
@@ -357,9 +357,8 @@ JiETNG/
 ├── COMMANDS.md                # 中文命令列表
 ├── COMMANDS_EN.md             # 英文命令列表
 ├── COMMANDS_JP.md             # 日文命令列表
-├── inits/                     # 初始化文件
-│   ├── requirements.txt       # Python 依赖
-│   └── records_db.sql         # 数据库结构
+├── requirements.txt           # Python 依赖
+├── records_db.sql             # 数据库结构
 ├── modules/                   # 功能模块
 │   ├── config_loader.py       # 配置加载器
 │   ├── db_pool.py             # 数据库连接池

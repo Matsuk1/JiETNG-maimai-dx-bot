@@ -197,7 +197,7 @@ cd JiETNG
 #### 2. Install Dependencies
 
 ```bash
-pip install -r inits/requirements.txt
+pip install -r requirements.txt
 ```
 
 #### 3. Configure Database
@@ -213,7 +213,7 @@ GRANT ALL PRIVILEGES ON records.* TO 'jietng'@'localhost';
 FLUSH PRIVILEGES;
 
 # Import database structure
-mysql -u jietng -p records < inits/records_db.sql
+mysql -u jietng -p records < records_db.sql
 ```
 
 #### 4. Configure config.json
@@ -290,7 +290,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
-COPY inits/requirements.txt .
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy project files
@@ -333,7 +333,7 @@ services:
       MYSQL_PASSWORD: jietng_2025
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./inits/records_db.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./records_db.sql:/docker-entrypoint-initdb.d/init.sql
     restart: unless-stopped
 
 volumes:
@@ -418,9 +418,8 @@ JiETNG/
 ├── COMMANDS.md                # Command list (Chinese)
 ├── COMMANDS_EN.md             # Command list (English)
 ├── COMMANDS_JP.md             # Command list (Japanese)
-├── inits/                     # Initialization files
-│   ├── requirements.txt       # Python dependencies
-│   └── records_db.sql         # Database schema
+├── requirements.txt           # Python dependencies
+├── records_db.sql             # Database schema
 ├── modules/                   # Functional modules
 │   ├── config_loader.py       # Configuration loader
 │   ├── db_pool.py             # Database connection pool
