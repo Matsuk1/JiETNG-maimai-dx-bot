@@ -443,7 +443,8 @@ JiETNG/
 │   ├── song_matcher.py        # Song search with fuzzy matching
 │   ├── memory_manager.py      # Memory management and cleanup
 │   ├── system_check.py        # System self-check
-│   └── reply_text.py          # Message templates
+│   ├── store_list.py          # Arcade store list generation (Flex Message)
+│   └── reply_text.py          # Message templates (with donation info)
 ├── templates/                 # HTML templates
 │   ├── bind_form.html         # Account binding form
 │   ├── success.html           # Success page

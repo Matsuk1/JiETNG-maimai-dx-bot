@@ -382,7 +382,8 @@ JiETNG/
 │   ├── song_matcher.py        # 楽曲検索（あいまい一致対応）
 │   ├── memory_manager.py      # メモリ管理とクリーンアップ
 │   ├── system_check.py        # システム自己診断
-│   └── reply_text.py          # メッセージテンプレート
+│   ├── store_list.py          # 設置店舗リスト生成（Flex Message）
+│   └── reply_text.py          # メッセージテンプレート（寄付情報含む）
 ├── templates/                 # HTML テンプレート
 │   ├── bind_form.html         # アカウント連携フォーム
 │   ├── success.html           # 成功ページ

@@ -21,12 +21,11 @@ This document lists all available commands for the JiETNG Maimai DX LINE Bot.
 
 ## Basic Commands
 
-### System Check
+### Support
 
 | Command | Aliases | Description |
 |---------|---------|-------------|
-| `check` | `チェック` | Check if Bot is online |
-| `network` | `ネットワーク` | Check network connection status |
+| `donate` | `ドネーション` | Display donation information to support JiETNG's development |
 
 ---
 
@@ -283,7 +282,7 @@ friend-b50 1234567890123456   # View friend's B50
 ### Common Commands
 
 ```
-check                      # Check online status
+donate                     # View donation support options
 bind                       # Bind SEGA account
 update                     # Update score data
 b50                        # View B50

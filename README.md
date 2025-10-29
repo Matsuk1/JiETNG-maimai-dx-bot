@@ -382,7 +382,8 @@ JiETNG/
 │   ├── song_matcher.py        # 歌曲搜索（支持模糊匹配）
 │   ├── memory_manager.py      # 内存管理和清理
 │   ├── system_check.py        # 系统自检
-│   └── reply_text.py          # 消息模板
+│   ├── store_list.py          # 机厅列表生成（Flex Message）
+│   └── reply_text.py          # 消息模板（含捐赠信息）
 ├── templates/                 # HTML 模板
 │   ├── bind_form.html         # 账户绑定表单
 │   ├── success.html           # 成功页面
