@@ -1170,11 +1170,7 @@ def selgen_records(user_id, type="best50", command="", ver="jp"):
         up_songs = list(filter(lambda x: x['version'] == "UNKNOWN", song_record))
 
     elif type == "rct50":
-        recent_song_record = read_record(user_id, recent=True)
-        if not len(recent_song_record):
-            return record_error
-
-        up_songs = recent_song_record
+        up_songs = read_record(user_id, recent=True)
 
     elif type == "idealb50":
         for rcd in up_songs_data:
@@ -1656,11 +1652,9 @@ def handle_sync_text_command(event):
 
     # ====== 基础命令映射 ======
     COMMAND_MAP = {
-        # 系统检查
-        "check": lambda: active_reply,
-        "チェック": lambda: active_reply,
-        "network": lambda: active_reply,
-        "ネットワーク": lambda: active_reply,
+        # 捐赠
+        "donate": lambda: donate_message,
+        "ドネーション": lambda: donate_message,
 
         # 账户管理
         "unbind": lambda: (delete_user(user_id), unbind_msg)[-1],
