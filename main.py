@@ -1938,22 +1938,21 @@ def handle_location_message(event):
     elif not stores:
         reply_message = store_error
     else:
-        # 清理和验证 stores 数据，确保所有 URL 有效
-        cleaned_stores = []
-        for store in stores[:6]:
-            # 确保 map_url 是有效的 URL
-            map_url = store.get("map_url", "")
-            if not map_url or not isinstance(map_url, str) or not map_url.startswith("http"):
-                store["map_url"] = "https://www.google.com/maps"
-            cleaned_stores.append(store)
+        # 暂时回退到文本消息形式，避免 Flex Message URI 问题
+        # TODO: 调试完 URI 问题后恢复按钮列表
+        reply_message = [TextMessage(text="🗺️ 最寄りの maimai 設置店舗")]
+        for i, store in enumerate(stores[:6]):
+            name = store.get('name', 'Unknown')
+            address = store.get('address', '')
+            distance = store.get('distance', '')
+            map_url = store.get('map_url', '')
 
-        # 生成机厅按钮列表，最多显示6个
-        from modules.store_list import generate_store_buttons
-        reply_message = generate_store_buttons(
-            "🗺️ 最寄りの maimai 設置店舗",
-            cleaned_stores,
-            group_size=6
-        )
+            # 确保 URL 有效
+            if not map_url or not map_url.startswith('http'):
+                map_url = 'https://www.google.com/maps'
+
+            msg_text = f"📌 {name}\n{address}\n{distance}\n地図: {map_url}"
+            reply_message.append(TextMessage(text=msg_text))
 
     smart_reply(
         event.source.user_id,
