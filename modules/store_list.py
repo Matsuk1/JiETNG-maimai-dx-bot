@@ -1,142 +1,182 @@
-from linebot.v3.messaging import (
-    FlexMessage,
-    TextMessage,
-    FlexBubble,
-    FlexBox,
-    FlexText,
-    FlexButton,
-    FlexSeparator,
-    FlexCarousel,
-    URIAction
-)
+from linebot.v3.messaging import FlexMessage, FlexContainer
 from modules.reply_text import store_error
+import urllib.parse
+import re
 
-def generate_store_buttons(alt_text, store_list, group_size=6):
+
+def generate_google_map_url(name: str, address: str = "", lat: float = None, lng: float = None):
+    """生成不会触发“是否在App中打开”的 Google 地图网页链接"""
+    if lat is not None and lng is not None:
+        query = f"{name} {lat},{lng}"
+    elif address:
+        query = f"{name} {address}"
+    else:
+        query = name
+
+    encoded_query = urllib.parse.quote_plus(query)
+    return f"https://www.google.com/maps/search/?api=1&query={encoded_query}&hl=ja&source=web"
+
+
+def parse_distance_km(distance_str: str) -> float:
+    """从 '12.3 km' 或 '870 m' 解析数值（统一为 km）"""
+    if not distance_str:
+        return 9999.0
+    distance_str = distance_str.strip().lower()
+    match = re.search(r"([\d\.]+)", distance_str)
+    if not match:
+        return 9999.0
+    value = float(match.group(1))
+    if "m" in distance_str and "km" not in distance_str:
+        return value / 1000.0
+    return value
+
+
+def generate_store_buttons(alt_text, store_list):
     """
-    生成机厅列表 Flex Message（极简黑白风格）
-    使用 LINE SDK v3 对象而非字典，确保类型正确
-
-    Args:
-        alt_text: 替代文本
-        store_list: 机厅列表 [{"name": "店名", "address": "地址", "distance": "距离", "map_url": "地图链接"}]
-        group_size: 每页显示的机厅数（默认6个）
-
-    Returns:
-        FlexMessage
+    生成机厅列表 Flex Message（黑白简约风）
+    - 仅显示 30km 内机厅
+    - 每页 5 个
+    - 右侧 📍 按钮（白底黑边，固定高度 + 增宽）
     """
     if not store_list:
         return store_error
 
-    bubbles = []
-    total_pages = (len(store_list) + group_size - 1) // group_size
+    # ✅ 过滤：只保留 ≤30 km 的机厅
+    filtered_stores = []
+    for store in store_list:
+        distance_str = store.get("distance", "")
+        distance_km = parse_distance_km(distance_str)
+        if distance_km <= 30:
+            filtered_stores.append(store)
 
-    for page_idx in range(0, len(store_list), group_size):
-        group = store_list[page_idx:page_idx + group_size]
+    if not filtered_stores:
+        return store_error
+
+    # ✅ 分页：每页 5 个
+    group_size = 5
+    total_pages = (len(filtered_stores) + group_size - 1) // group_size
+    bubbles = []
+
+    for page_idx in range(0, len(filtered_stores), group_size):
+        group = filtered_stores[page_idx:page_idx + group_size]
         page_num = page_idx // group_size + 1
 
-        # 创建机厅行
-        store_contents = []
+        store_rows = []
         for idx, store in enumerate(group):
             name = store.get("name", "Unknown")
             address = store.get("address", "")
             distance = store.get("distance", "")
-            map_url = store.get("map_url", "")
+            lat = store.get("lat")
+            lng = store.get("lng")
 
-            # 验证和修复 URL：确保是有效的 https URL
-            if not map_url or not isinstance(map_url, str) or not map_url.startswith("http") or len(map_url) < 10:
-                map_url = "https://www.google.com/maps"
+            map_url = generate_google_map_url(name, address, lat, lng)
 
-            # 创建单行（使用 SDK 对象）
-            store_row = FlexBox(
-                layout="horizontal",
-                spacing="md",
-                margin="md" if idx > 0 else "none",
-                contents=[
-                    # 左侧：店名、地址和距离
-                    FlexBox(
-                        layout="vertical",
-                        flex=3,
-                        contents=[
-                            FlexText(
-                                text=name,
-                                size="sm",
-                                weight="bold",
-                                wrap=True,
-                                max_lines=2
-                            ),
-                            FlexText(
-                                text=address,
-                                size="xs",
-                                color="#666666",
-                                margin="xs",
-                                wrap=True,
-                                max_lines=2
-                            ),
-                            FlexText(
-                                text=distance,
-                                size="xs",
-                                color="#999999",
-                                margin="xs"
-                            )
-                        ]
-                    ),
-                    # 右侧：地图按钮
-                    FlexButton(
-                        flex=0,
-                        style="primary",
-                        height="sm",
-                        action=URIAction(
-                            label="MAP",
-                            uri=map_url
-                        )
-                    )
+            # 左侧文字信息
+            left_box_contents = [
+                {"type": "text", "text": name, "size": "sm", "weight": "bold",
+                 "color": "#000000", "wrap": True, "maxLines": 2}
+            ]
+            if address:
+                left_box_contents.append({
+                    "type": "text", "text": address, "size": "xs",
+                    "color": "#666666", "margin": "xs", "wrap": True, "maxLines": 2
+                })
+            if distance:
+                left_box_contents.append({
+                    "type": "text", "text": distance, "size": "xs",
+                    "color": "#999999", "margin": "xs"
+                })
+
+            # 📍 按钮（固定高度 + 增宽）
+            black_white_button = {
+                "type": "box",
+                "layout": "vertical",
+                "flex": 0,
+                "width": "40px",               # ← 按钮宽度，可自行调节
+                "height": "40px",
+                "cornerRadius": "6px",
+                "borderColor": "#000000",
+                "borderWidth": "1px",
+                "backgroundColor": "#FFFFFF",
+                "justifyContent": "center",
+                "alignItems": "center",
+                "contents": [
+                    {
+                        "type": "text",
+                        "text": "📍",
+                        "weight": "bold",
+                        "color": "#000000",
+                        "align": "center",
+                        "gravity": "center",
+                        "size": "md",             # 字体略大
+                        "action": {
+                            "type": "uri",
+                            "label": "MAP",
+                            "uri": map_url
+                        }
+                    }
                 ]
-            )
+            }
 
-            store_contents.append(store_row)
+            row = {
+                "type": "box",
+                "layout": "horizontal",
+                "spacing": "md",
+                "margin": "md" if idx > 0 else "none",
+                "contents": [
+                    {"type": "box", "layout": "vertical",
+                     "flex": 3, "contents": left_box_contents},
+                    black_white_button
+                ]
+            }
 
-            # 添加分隔线（除了最后一个）
+            store_rows.append(row)
             if idx < len(group) - 1:
-                store_contents.append(FlexSeparator(margin="sm"))
+                store_rows.append({"type": "separator", "margin": "sm"})
 
-        # 创建 bubble（使用 SDK 对象）
-        bubble = FlexBubble(
-            size="mega",
-            header=FlexBox(
-                layout="vertical",
-                padding_all="16px",
-                contents=[
-                    FlexText(
-                        text=alt_text,
-                        weight="bold",
-                        size="lg"
-                    ),
-                    FlexText(
-                        text=f"Page {page_num}/{total_pages} • {len(group)} stores",
-                        size="xs",
-                        color="#999999",
-                        margin="sm"
-                    )
-                ]
-            ),
-            body=FlexBox(
-                layout="vertical",
-                padding_all="16px",
-                contents=store_contents
-            )
-        )
+        # Header（简洁黑白风）
+        header_box = {
+            "type": "box",
+            "layout": "vertical",
+            "paddingAll": "16px",
+            "contents": [
+                {
+                    "type": "text",
+                    "text": alt_text,
+                    "weight": "bold",
+                    "size": "lg",
+                    "color": "#000000"
+                },
+                {
+                    "type": "text",
+                    "text": f"Page {page_num}/{total_pages} • {len(filtered_stores)} stores (≤30 km)",
+                    "size": "xs",
+                    "color": "#666666",
+                    "margin": "sm"
+                },
+                {
+                    "type": "separator",
+                    "color": "#DDDDDD",
+                    "margin": "md"
+                }
+            ]
+        }
 
+        # Bubble
+        bubble = {
+            "type": "bubble",
+            "size": "mega",
+            "header": header_box,
+            "body": {
+                "type": "box",
+                "layout": "vertical",
+                "contents": store_rows,
+                "paddingAll": "16px",
+                "backgroundColor": "#FFFFFF"
+            },
+            "styles": {"body": {"backgroundColor": "#FFFFFF"}}
+        }
         bubbles.append(bubble)
 
-    # 创建最终消息
-    if len(bubbles) == 1:
-        # 只有一页，直接返回 bubble
-        contents = bubbles[0]
-    else:
-        # 多页，使用 carousel
-        contents = FlexCarousel(contents=bubbles)
-
-    return FlexMessage(
-        alt_text=alt_text,
-        contents=contents
-    )
+    flex_dict = bubbles[0] if len(bubbles) == 1 else {"type": "carousel", "contents": bubbles}
+    return FlexMessage(alt_text=alt_text, contents=FlexContainer.from_dict(flex_dict))
