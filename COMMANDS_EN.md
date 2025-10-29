@@ -234,8 +234,9 @@ friend-b50 1234567890123456   # View friend's B50
 | Command | Description | Example |
 |---------|-------------|---------|
 | `ランダム曲` | Randomly select a song | `ランダム曲` |
+| `ランダム` | Randomly select a song (short) | `ランダム` |
 | `random-song` | Randomly select a song (English) | `random-song` |
-| `random` | Randomly select a song (short) | `random` |
+| `random` | Randomly select a song (English short) | `random` |
 
 ### Card Generation
 

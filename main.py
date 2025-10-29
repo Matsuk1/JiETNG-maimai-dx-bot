@@ -1581,7 +1581,7 @@ def route_to_image_queue(event):
             return True
 
     # 检查 ランダム曲 / random-song
-    if user_message.startswith(("ランダム曲", "random-song")):
+    if user_message.startswith(("ランダム曲", "ランダム", "random-song", "random")):
         try:
             task_id = f"image_{user_id}_{datetime.now().timestamp()}"
             nickname = get_user_nickname_wrapper(user_id, use_cache=True)
@@ -1692,9 +1692,9 @@ def handle_sync_text_command(event):
         )),
 
         # 随机歌曲
-        (lambda msg: msg.startswith(("ランダム曲", "random-song", "random")),
+        (lambda msg: msg.startswith(("ランダム曲", "ランダム", "random-song", "random")),
         lambda msg: random_song(
-            re.sub(r"^(ランダム曲|random-song|random)", "", msg).strip(),
+            re.sub(r"^(ランダム曲|ランダム|random-song|random)", "", msg).strip(),
             mai_ver
         )),
 
