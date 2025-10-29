@@ -165,8 +165,8 @@ idealb50 -lv 13.5 14.0               # 定数 13.5-14.0 的理论分 B50
 
 **英文别名示例**：
 ```
-宴achievement-list            # 等同于 宴極の達成状況
-双achievement                 # 等同于 双将の達成状況
+宴極achievement-list            # 等同于 宴極の達成状況
+双将achievement                 # 等同于 双将の達成状況
 ```
 
 ### 版本歌曲列表
