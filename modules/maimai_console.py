@@ -563,30 +563,34 @@ def get_nearby_maimai_stores(lat, lng, ver="jp"):
     version_num = "98" if ver == "intl" else "96"
     url = f"https://location.am-all.net/alm/location?gm={version_num}&lat={lat}&lng={lng}"
     session = requests.Session()
-    dom = fetch_dom(session, url)
-    if dom is None:
-        return []
-    if dom == "MAINTENANCE":
-        return "MAINTENANCE"
 
-    stores = []
-    li_elements = dom.xpath('//ul[@class="store_list"]/li')
+    try:
+        dom = fetch_dom(session, url)
+        if dom is None:
+            return []
+        if dom == "MAINTENANCE":
+            return "MAINTENANCE"
 
-    for li in li_elements:
-        name = li.xpath('.//span[@class="store_name"]/text()')
-        address = li.xpath('.//span[@class="store_address"][1]/text()')
-        distance = li.xpath('.//span[@class="store_address"][2]/text()')
+        stores = []
+        li_elements = dom.xpath('//ul[@class="store_list"]/li')
 
-        map_url = extract_onclick_url_from_button(li, "store_bt_google_map_en")
-        map_url = map_url.split('@')[0] if '@' in map_url else map_url
-        details_url = extract_onclick_url_from_button(li, "bt_details_en")
+        for li in li_elements:
+            name = li.xpath('.//span[@class="store_name"]/text()')
+            address = li.xpath('.//span[@class="store_address"][1]/text()')
+            distance = li.xpath('.//span[@class="store_address"][2]/text()')
 
-        stores.append({
-            "name": name[0].strip() if name else "",
-            "address": address[0].strip() if address else "",
-            "distance": distance[0].strip() if distance else "",
-            "map_url": "https:" + map_url if map_url.startswith("//") else map_url,
-            "details_url": "https://location.am-all.net/alm/" + details_url if details_url.startswith("shop") else details_url
-        })
+            map_url = extract_onclick_url_from_button(li, "store_bt_google_map_en")
+            map_url = map_url.split('@')[0] if '@' in map_url else map_url
+            details_url = extract_onclick_url_from_button(li, "bt_details_en")
 
-    return stores
+            stores.append({
+                "name": name[0].strip() if name else "",
+                "address": address[0].strip() if address else "",
+                "distance": distance[0].strip() if distance else "",
+                "map_url": "https:" + map_url if map_url.startswith("//") else map_url,
+                "details_url": "https://location.am-all.net/alm/" + details_url if details_url.startswith("shop") else details_url
+            })
+
+        return stores
+    finally:
+        session.close()
