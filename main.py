@@ -1936,7 +1936,7 @@ def handle_location_message(event):
         from modules.store_list import generate_store_buttons
         reply_message = generate_store_buttons(
             "最寄りの maimai 設置店舗",
-            stores[:40]
+            stores[:35]
         )
 
     smart_reply(
