@@ -925,21 +925,27 @@ def generate_plate_rcd(user_id, title, ver="jp"):
     }
 
     # 优化：构建用户记录的哈希表，避免嵌套循环 O(n*m*p) -> O(n*m)
-    # key = (name, difficulty, kind), value = record
+    # 使用多个key策略保持与 is_exact_song_title_match 的兼容性
+    from modules.song_matcher import normalize_text
+
     rcd_map = {}
     for rcd in version_rcd_data:
-        # 使用标准化的key来提高匹配准确率
-        from modules.song_matcher import normalize_text
-        normalized_name = normalize_text(rcd['name'])
-        key = (normalized_name, rcd['difficulty'], rcd['kind'])
-        rcd_map[key] = rcd
+        name = rcd['name']
+        difficulty = rcd['difficulty']
+        kind = rcd['kind']
+
+        # 策略1: 精确匹配
+        key1 = (name, difficulty, kind)
+        rcd_map[key1] = rcd
+
+        # 策略2: 标准化匹配 (处理全角半角、特殊符号等)
+        normalized_name = normalize_text(name)
+        key2 = (normalized_name, difficulty, kind)
+        rcd_map[key2] = rcd
 
     for song in SONGS :
         if song['version'] not in target_version or song['type'] == 'utage':
             continue
-
-        # 预先标准化歌名，避免在内层循环中重复计算
-        normalized_song_title = normalize_text(song['title'])
 
         for sheet in song['sheets'] :
             if not sheet['regions']['jp'] or sheet["difficulty"] not in target_num:
@@ -948,13 +954,27 @@ def generate_plate_rcd(user_id, title, ver="jp"):
             icon = "back"
             target_num[sheet['difficulty']]['all'] += 1
 
-            # O(1) 哈希查找替代 O(p) 线性查找
-            key = (normalized_song_title, sheet['difficulty'], song['type'])
-            if key in rcd_map:
-                rcd = rcd_map[key]
+            # O(1) 哈希查找，尝试多种匹配策略
+            song_title = song['title']
+            difficulty = sheet['difficulty']
+            song_type = song['type']
+
+            # 尝试精确匹配
+            key1 = (song_title, difficulty, song_type)
+            if key1 in rcd_map:
+                rcd = rcd_map[key1]
                 icon = rcd[f'{target_type}_icon']
                 if icon in target_icon:
-                    target_num[sheet['difficulty']]['clear'] += 1
+                    target_num[difficulty]['clear'] += 1
+            else:
+                # 尝试标准化匹配
+                normalized_title = normalize_text(song_title)
+                key2 = (normalized_title, difficulty, song_type)
+                if key2 in rcd_map:
+                    rcd = rcd_map[key2]
+                    icon = rcd[f'{target_type}_icon']
+                    if icon in target_icon:
+                        target_num[difficulty]['clear'] += 1
 
             if sheet['difficulty'] == "master" :
                 target_data.append({"img": create_small_record(song['cover_url'], icon, target_type), "level": sheet['level']})
