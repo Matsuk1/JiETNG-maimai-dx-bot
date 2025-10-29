@@ -63,7 +63,7 @@ def generate_store_buttons(alt_text, store_list, group_size=6):
                             },
                             {
                                 "type": "text",
-                                "text": f"📍 {distance}",
+                                "text": distance,
                                 "size": "xs",
                                 "color": "#999999",
                                 "margin": "xs"
@@ -78,7 +78,7 @@ def generate_store_buttons(alt_text, store_list, group_size=6):
                         "height": "sm",
                         "action": {
                             "type": "uri",
-                            "label": "🗺️",
+                            "label": "MAP",
                             "uri": map_url if map_url else "https://www.google.com/maps"
                         }
                     }
