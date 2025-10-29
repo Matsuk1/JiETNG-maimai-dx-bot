@@ -1938,11 +1938,20 @@ def handle_location_message(event):
     elif not stores:
         reply_message = store_error
     else:
+        # 清理和验证 stores 数据，确保所有 URL 有效
+        cleaned_stores = []
+        for store in stores[:6]:
+            # 确保 map_url 是有效的 URL
+            map_url = store.get("map_url", "")
+            if not map_url or not isinstance(map_url, str) or not map_url.startswith("http"):
+                store["map_url"] = "https://www.google.com/maps"
+            cleaned_stores.append(store)
+
         # 生成机厅按钮列表，最多显示6个
         from modules.store_list import generate_store_buttons
         reply_message = generate_store_buttons(
             "🗺️ 最寄りの maimai 設置店舗",
-            stores[:6],
+            cleaned_stores,
             group_size=6
         )
 

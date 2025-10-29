@@ -32,7 +32,14 @@ def generate_store_buttons(alt_text, store_list, group_size=6):
             map_url = store.get("map_url", "")
 
             # 验证和修复 URL：确保是有效的 https URL
-            if not map_url or not map_url.startswith("http"):
+            # 多重验证确保 URL 绝对有效
+            if not map_url:
+                map_url = "https://www.google.com/maps"
+            elif not isinstance(map_url, str):
+                map_url = "https://www.google.com/maps"
+            elif not map_url.startswith("http"):
+                map_url = "https://www.google.com/maps"
+            elif len(map_url) < 10:  # URL 太短也可能无效
                 map_url = "https://www.google.com/maps"
 
             # 创建单行（第一个不需要上边距）
