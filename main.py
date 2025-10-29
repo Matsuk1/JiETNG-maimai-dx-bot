@@ -1938,21 +1938,13 @@ def handle_location_message(event):
     elif not stores:
         reply_message = store_error
     else:
-        # 暂时回退到文本消息形式，避免 Flex Message URI 问题
-        # TODO: 调试完 URI 问题后恢复按钮列表
-        reply_message = [TextMessage(text="🗺️ 最寄りの maimai 設置店舗")]
-        for i, store in enumerate(stores[:6]):
-            name = store.get('name', 'Unknown')
-            address = store.get('address', '')
-            distance = store.get('distance', '')
-            map_url = store.get('map_url', '')
-
-            # 确保 URL 有效
-            if not map_url or not map_url.startswith('http'):
-                map_url = 'https://www.google.com/maps'
-
-            msg_text = f"📌 {name}\n{address}\n{distance}\n地図: {map_url}"
-            reply_message.append(TextMessage(text=msg_text))
+        # 使用 LINE SDK v3 对象构建的 Flex Message（已修复结构问题）
+        from modules.store_list import generate_store_buttons
+        reply_message = generate_store_buttons(
+            "🗺️ 最寄りの maimai 設置店舗",
+            stores[:6],
+            group_size=6
+        )
 
     smart_reply(
         event.source.user_id,
