@@ -102,8 +102,8 @@ def check_required_files() -> Dict[str, bool]:
 
 def clean_user_status_fields() -> Dict[str, Any]:
     """
-    清理用户 status 字段中不需要的数据
-    只保留 notice_read 字段
+    清理用户 status 字段
+    保留 notice_read 字段
 
     Returns:
         清理结果
@@ -111,38 +111,14 @@ def clean_user_status_fields() -> Dict[str, Any]:
     read_user()
 
     cleaned_count = 0
-    removed_fields = []
 
     for user_id, user_data in USERS.items():
-        # 确保 status 字段存在
-        if "status" not in user_data:
-            user_data["status"] = {"notice_read": False}
-            mark_user_dirty()
+        # 删除 status 字段
+        if "status" in user_data:
             cleaned_count += 1
-            continue
-
-        # 获取当前 status
-        status = user_data["status"]
-
-        # 保存 notice_read 的值
-        notice_read = status.get("notice_read", False)
-
-        # 检查是否有其他字段需要删除
-        extra_fields = [k for k in status.keys() if k != "notice_read"]
-
-        if extra_fields:
-            # 只保留 notice_read
-            user_data["status"] = {"notice_read": notice_read}
-            mark_user_dirty()
-            cleaned_count += 1
-            removed_fields.extend([(user_id, field) for field in extra_fields])
-            logger.debug(f"Cleaned status fields for {user_id}: {extra_fields}")
-
-        # 删除 recent_rating 字段
-        if "recent_rating" in user_data:
-            del user_data["recent_rating"]
-            mark_user_dirty()
-            logger.debug(f"Removed recent_rating from {user_id}")
+            del user_data["status"]
+            user_data["notice_read"] = True
+            logger.debug(f"Removed status from {user_id}")
 
     if cleaned_count > 0:
         write_user()
@@ -151,43 +127,8 @@ def clean_user_status_fields() -> Dict[str, Any]:
         logger.info("✓ No status fields need cleaning")
 
     return {
-        "cleaned_count": cleaned_count,
-        "removed_fields_count": len(removed_fields)
+        "cleaned_count": cleaned_count
     }
-
-
-def check_data_integrity() -> Dict[str, Any]:
-    """
-    检查数据完整性
-
-    Returns:
-        数据完整性检查结果
-    """
-    read_user()
-
-    issues = []
-
-    # 检查用户数据结构
-    for user_id, user_data in USERS.items():
-        # 检查必要字段
-        if "status" not in user_data:
-            issues.append(f"User {user_id} missing 'status' field")
-            # 自动修复
-            user_data["status"] = {"notice_read": False}
-            mark_user_dirty()
-
-    if issues:
-        logger.warning(f"Found {len(issues)} data integrity issues (auto-fixed)")
-        write_user()
-    else:
-        logger.info("✓ Data integrity check passed")
-
-    return {
-        "issues_found": len(issues),
-        "issues": issues,
-        "auto_fixed": len(issues)
-    }
-
 
 def run_system_check() -> Dict[str, Any]:
     """
@@ -206,23 +147,19 @@ def run_system_check() -> Dict[str, Any]:
     }
 
     # 1. 数据库连接检查
-    logger.info("\n[1/5] Checking database connection...")
+    logger.info("\n[1/4] Checking database connection...")
     results["checks"]["database"] = check_database_connection()
 
     # 2. 必要文件检查
-    logger.info("\n[2/5] Checking required files...")
+    logger.info("\n[2/4] Checking required files...")
     results["checks"]["files"] = check_required_files()
 
-    # 3. 数据完整性检查
-    logger.info("\n[3/5] Checking data integrity...")
-    results["checks"]["data_integrity"] = check_data_integrity()
-
-    # 4. 清理用户 status 字段
-    logger.info("\n[4/5] Cleaning user status fields...")
+    # 3. 清理用户 status 字段
+    logger.info("\n[3/4] Cleaning user status fields...")
     results["checks"]["status_cleanup"] = clean_user_status_fields()
 
-    # 5. 清理未绑定的代理用户
-    logger.info("\n[5/5] Cleaning unbound users...")
+    # 4. 清理未绑定的代理用户
+    logger.info("\n[4/4] Cleaning unbound users...")
     results["checks"]["cleanup"] = clean_unbound_users()
 
     # 生成报告

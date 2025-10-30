@@ -101,7 +101,7 @@ Version abbreviations: `真`, `超`, `晓`, `祭`, `煌`, `镜`, etc.
 |---------|-------------|
 | `friend list` | Display friend list |
 | `friend-b50 [friend_code]` | View friend's B50 chart |
-| `add-friend [friend_code]` | Send friend request |
+| `add-friend [friend_id]` | Send friend request |
 | `maid card` / `maid` | Generate profile card with QR code |
 
 ### Utility Functions
@@ -506,7 +506,7 @@ GET/POST /linebot/sega_bind?token=<token>
 #### Friend Addition
 
 ```
-GET /linebot/add_friend?code=<friend_code>
+GET /linebot/add_friend?id=<friend_id>
 ```
 
 #### Admin Dashboard API

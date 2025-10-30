@@ -445,7 +445,7 @@ GET/POST /linebot/sega_bind?token=<token>
 #### 好友添加
 
 ```
-GET /linebot/add_friend?code=<friend_code>
+GET /linebot/add_friend?id=<friend_id>
 ```
 
 #### 管理后台 API

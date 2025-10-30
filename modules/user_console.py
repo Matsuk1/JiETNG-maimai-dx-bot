@@ -29,9 +29,7 @@ def add_user(user_id: str) -> None:
     """
     read_user()
     USERS[user_id] = {
-        "status": {
-            "notice_read": False,
-        }
+        "notice_read": False
     }
     mark_user_dirty()
     write_user()
@@ -56,7 +54,7 @@ def delete_user(user_id: str) -> None:
     delete_record(user_id, recent=False)
 
 
-def edit_user_status(user_id: str, key: str, word: Any, operation: int = 0) -> None:
+def edit_user_key(user_id: str, key: str, word: Any, operation: int = 0) -> None:
     """
     编辑用户状态
 
@@ -77,35 +75,35 @@ def edit_user_status(user_id: str, key: str, word: Any, operation: int = 0) -> N
         return  # add_user 已经写入
 
     if operation == 0:
-        USERS[user_id]["status"][key] = word
+        USERS[user_id][key] = word
 
     elif operation == 1:
-        USERS[user_id]["status"][key] += word
+        USERS[user_id][key] += word
 
     elif operation == 2:
-        USERS[user_id]["status"][key] -= word
+        USERS[user_id][key] -= word
 
     elif operation == 4:
-        del USERS[user_id]["status"][key]
+        del USERS[user_id][key]
 
     mark_user_dirty()
     write_user()
 
 
-def edit_user_status_of_all(key: str, word: Any, operation: int = 0) -> None:
+def clear_user_key(key: str, word: Any, operation: int = 0) -> None:
     """
     批量编辑所有用户的状态
 
     Args:
         key: 状态键名
         word: 要设置/增加/减少的值
-        operation: 操作类型 (同 edit_user_status)
+        operation: 操作类型 (同 edit_user_key)
     """
     for user_id in list(USERS.keys()):
-        edit_user_status(user_id, key, word, operation)
+        edit_user_key(user_id, key, word, operation)
 
 
-def get_user_status(user_id: str, key: str = "") -> Optional[Any]:
+def get_user_key(user_id: str, key: str = "") -> Optional[Any]:
     """
     获取用户状态
 
@@ -122,9 +120,9 @@ def get_user_status(user_id: str, key: str = "") -> Optional[Any]:
         add_user(user_id)
 
     if key:
-        return USERS[user_id]["status"].get(key, None)
+        return USERS[user_id].get(key, None)
     else:
-        return USERS[user_id]["status"]
+        return USERS[user_id]
 
 
 def get_user_nickname(user_id: str, line_bot_api, use_cache: bool = True) -> str:

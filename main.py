@@ -437,13 +437,13 @@ def maimai_add_friend_page():
     """
     好友添加页面
 
-    通过好友码生成LINE深链接
+    通过好友码生成 LINE 深链接
 
     Query Args:
-        code: 好友码
+        id: 好友 LINE ID
     """
-    friend_code = request.args.get("code")
-    return redirect(f"line://oaMessage/{LINE_ACCOUNT_ID}/?add-friend%20{friend_code}")
+    friend_id = request.args.get("id")
+    return redirect(f"line://oaMessage/{LINE_ACCOUNT_ID}/?add-friend%20{friend_id}")
 
 
 @app.route("/linebot/sega_bind", methods=["GET", "POST"])
@@ -558,6 +558,36 @@ def get_user(user_id):
 
     return result
 
+def add_friend(user_id, friend_id):
+    # 读取用户数据
+    read_user()
+
+    if user_id not in USERS:
+        return segaid_error
+
+    # 检查好友是否存在
+    if friend_id not in USERS:
+        return friendid_error
+
+    if friend_id == user_id:
+        return friendid_self_error
+
+    # 获取 friends 列表（如果不存在则返回空列表）
+    friends_list = USERS[user_id].get('friends', [])
+    if friend_id in friends_list:
+        return friend_added
+
+    # 添加好友
+    friends_list.append(friend_id)
+    edit_user_key(user_id, 'friends', friends_list)
+
+    # 获取好友昵称
+    friend_name = friend_id
+    if 'personal_info' in USERS[friend_id] and 'name' in USERS[friend_id]['personal_info']:
+        friend_name = USERS[friend_id]['personal_info']['name']
+
+    return TextMessage(text=f"「{friend_name}」さんとフレンドになった！")
+
 def async_maimai_update_task(event):
     """异步maimai更新任务 - 在webtask_queue中执行"""
     user_id = event.source.user_id
@@ -585,54 +615,17 @@ def async_generate_friend_b50_task(event):
     if user_id in USERS and 'version' in USERS[user_id]:
         ver = USERS[user_id]['version']
 
-    reply_msg = generate_friend_b50(user_id, friend_code, ver)
+    if friend_code.startswith("U"):
+        if friend_code in USERS and "personal_info" in USERS[friend_code]:
+            edit_user_key(user_id, "id_use", friend_code)
+            reply_msg =  TextMessage(text=f"これからは一回だけ「{USERS[friend_code]['personal_info']['name']}」さんとしてレコードをチェックしていきますよ！\n色んなコマンドを使ってみてね！")
+        else:
+            reply_msg = friendid_error
+
+    else:
+        reply_msg = generate_friend_b50(user_id, friend_code, ver)
+
     smart_reply(user_id, reply_token, reply_msg, configuration, DIVIDER)
-
-def async_add_friend_task(event):
-    """异步添加好友任务 - 在webtask_queue中执行（事件处理版本）"""
-    user_message = event.message.text.strip()
-    user_id = event.source.user_id
-    reply_token = event.reply_token
-    friend_code = user_message.replace("add-friend ", "").strip()
-
-    # 获取用户版本
-    read_user()
-    ver = "jp"
-    if user_id in USERS and 'version' in USERS[user_id]:
-        ver = USERS[user_id]['version']
-
-    # 调用实际的添加好友逻辑并发送回复
-    reply_msg = add_friend_with_params(user_id, friend_code, ver)
-    smart_reply(user_id, reply_token, reply_msg, configuration, DIVIDER)
-
-def add_friend_with_params(user_id, friend_code, ver):
-    """
-    添加好友的实际逻辑（参数版本）
-
-    Args:
-        user_id: 用户ID
-        friend_code: 好友代码
-        ver: 游戏版本 (jp/intl)
-
-    Returns:
-        TextMessage: 返回消息对象
-    """
-    read_user()
-
-    if user_id not in USERS or 'sega_id' not in USERS[user_id] or 'sega_pwd' not in USERS[user_id]:
-        return segaid_error
-
-    sega_id = USERS[user_id]['sega_id']
-    sega_pwd = USERS[user_id]['sega_pwd']
-
-    user_session = login_to_maimai(sega_id, sega_pwd, ver)
-    if user_session == None:
-        return segaid_error
-    if user_session == "MAINTENANCE":
-        return maintenance_error
-
-    reply_msg_data = add_friend(user_session, friend_code, ver)
-    return TextMessage(text=reply_msg_data)
 
 def async_friend_list_task(event):
     """异步获取好友列表任务 - 在webtask_queue中执行"""
@@ -811,7 +804,22 @@ def get_friends_list_buttons(user_id, ver="jp"):
     if user_session == "MAINTENANCE":
         return maintenance_error
 
+    # 获取原逻辑的好友列表
     friends_list = get_friends_list(user_session, ver)
+
+    # 获取 USERS[user_id]['friends'] 列表并添加到好友列表
+    if 'friends' in USERS[user_id] and USERS[user_id]['friends']:
+        for friend_id in USERS[user_id]['friends']:
+            if friend_id in USERS and 'personal_info' in USERS[friend_id]:
+                friend_info = USERS[friend_id]['personal_info']
+                # 构造与 maimai 好友列表相同格式的好友信息
+                friend_entry = {
+                    "name": friend_info.get('name', friend_id),
+                    "rating": friend_info.get('rating', 'N/A'),
+                    "user_id": friend_id,
+                    "is_favorite": True  # 标记为收藏好友以便显示
+                }
+                friends_list.append(friend_entry)
 
     return generate_friend_buttons("フレンドリスト・Friends List", format_favorite_friends(friends_list))
 
@@ -1064,7 +1072,6 @@ def generate_maipass(user_id):
     if user_id not in USERS:
         return segaid_error
 
-    user_info = USERS[user_id]["personal_info"]
     user_img = create_user_info_img(user_id)
 
     title_list = [
@@ -1077,7 +1084,7 @@ def generate_maipass(user_id):
         "and we'll become maimai friends!"
     ]
 
-    qr_img = generate_qr_with_title(f"https://jietng.matsuki.top/linebot/add_friend?code={user_info['friend_code']}", title_list)
+    qr_img = generate_qr_with_title(f"https://jietng.matsuki.top/linebot/add_friend?id={user_id}", title_list)
 
     img = combine_with_rounded_background(user_img, qr_img)
 
@@ -1299,7 +1306,7 @@ def generate_level_records(user_id, level, ver="jp", page=1):
     down_level_list = down_level_list[start_down:end_down]
 
     if not up_level_list and not down_level_list:
-        return TextMessage(text=f"指定されたレベル {level} の譜面記録は存在しないかも...")
+        return TextMessage(text=f"指定されたレベル「{level}」の{page}ページ目の譜面記録は存在しないかも...")
 
     title = f"LV{level} #{page}"
 
@@ -1308,7 +1315,10 @@ def generate_level_records(user_id, level, ver="jp", page=1):
     img = combine_with_rounded_background(create_user_info_img(user_id), img)
 
     image_url = smart_upload(img)
-    message = ImageMessage(original_content_url=image_url, preview_image_url=image_url)
+    message = [
+        ImageMessage(original_content_url=image_url, preview_image_url=image_url),
+        TextMessage(text=f"これは{page}ページ目のデータだよ！\nほかのもチェックしたいなら、コマンドの後ろにページの番号をつけてみ〜\n\n例えば: 13.9のレコードリスト 3") if page == 1
+    ]
     return message
 
 def generate_version_songs(version_title, ver="jp"):
@@ -1353,10 +1363,6 @@ WEB_TASK_ROUTES = {
         "friend-b50 ": async_generate_friend_b50_task,
         "friend b50 ": async_generate_friend_b50_task,
         "フレンドb50 ": async_generate_friend_b50_task,
-        "add-friend ": async_add_friend_task,
-        "add friend ": async_add_friend_task,
-        "addfriend ": async_add_friend_task,
-        "フレンド追加 ": async_add_friend_task,
     }
 }
 
@@ -1643,12 +1649,18 @@ def handle_sync_text_command(event):
     """
     user_message = event.message.text.strip()
     user_id = event.source.user_id
-    id_use = user_id
-    mai_ver = "jp"
+
     read_user()
     if user_id in USERS:
-        if 'version' in USERS[user_id]:
-            mai_ver = USERS[user_id]['version']
+        mai_ver = USERS[user_id].get("version", "jp")
+        id_use = USERS[user_id].get("id_use", user_id)
+        mai_ver_use = USERS[id_use].get("version", "jp")
+        edit_user_key(user_id, "id_use", user_id)
+    else:
+        id_use = user_id
+        mai_ver = "jp"
+        mai_ver_use = "jp"
+        
 
     # ====== 基础命令映射 ======
     COMMAND_MAP = {
@@ -1664,10 +1676,10 @@ def handle_sync_text_command(event):
         "ゲットミー": lambda: TextMessage(text=get_user(user_id)),
 
         # Yang Rating
-        "yang": lambda: generate_yang_rating(id_use, mai_ver),
-        "yrating": lambda: generate_yang_rating(id_use, mai_ver),
-        "yra": lambda: generate_yang_rating(id_use, mai_ver),
-        "ヤンレーティング": lambda: generate_yang_rating(id_use, mai_ver),
+        "yang": lambda: generate_yang_rating(id_use, mai_ver_use),
+        "yrating": lambda: generate_yang_rating(id_use, mai_ver_use),
+        "yra": lambda: generate_yang_rating(id_use, mai_ver_use),
+        "ヤンレーティング": lambda: generate_yang_rating(id_use, mai_ver_use),
 
         # 名片生成
         "maid card": lambda: generate_maipass(user_id),
@@ -1709,7 +1721,7 @@ def handle_sync_text_command(event):
         lambda msg: generate_plate_rcd(
             id_use,
             re.sub(r"(の達成状況|の達成情報|の達成表|achievement-list|achievement)$", "", msg).strip(),
-            mai_ver
+            mai_ver_use
         )),
 
         # 歌曲成绩记录
@@ -1717,7 +1729,7 @@ def handle_sync_text_command(event):
         lambda msg: get_song_record(
             id_use,
             re.sub(r"(のレコード|song-record|record)$", "", msg).strip(),
-            mai_ver
+            mai_ver_use
         )),
 
         # 等级成绩列表
@@ -1725,7 +1737,7 @@ def handle_sync_text_command(event):
         lambda msg: generate_level_records(
             id_use,
             re.sub(r"(のレコードリスト|record-list|records)[ 　]*\d*$", "", msg).strip(),
-            mai_ver,
+            mai_ver_use,
             int(re.search(r"(\d+)$", msg).group(1)) if re.search(r"(\d+)$", msg) else 1
         )),
 
@@ -1734,6 +1746,12 @@ def handle_sync_text_command(event):
         lambda msg: generate_version_songs(
             re.sub(r"\s*\+\s*", " PLUS", re.sub(r"(のバージョンリスト|version-list|version)$", "", msg)).strip(),
             mai_ver
+        )),
+
+        (lambda msg: msg.startswith(("add-friend", "add friend", "addfriend", "フレンド追加")),
+        lambda msg: add_friend(
+            user_id,
+            re.sub(r"^(add-friend|add friend|addfriend|フレンド追加)", "", msg).strip()
         ))
     ]
 
@@ -1761,7 +1779,7 @@ def handle_sync_text_command(event):
 
     for aliases, mode in RANK_COMMANDS.items():
         if first_word in aliases:
-            reply_message = selgen_records(id_use, mode, rest_text, mai_ver)
+            reply_message = selgen_records(id_use, mode, rest_text, mai_ver_use)
             return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
 
     # ====== SEGA ID 绑定逻辑 ======
@@ -1807,7 +1825,7 @@ def handle_sync_text_command(event):
         if user_message.startswith("upload notice"):
             new_notice = user_message.replace("upload notice", "").strip()
             upload_notice(new_notice)
-            edit_user_status_of_all("notice_read", False)
+            clear_user_key("notice_read", False)
             return smart_reply(user_id, event.reply_token, notice_upload, configuration, DIVIDER)
 
         if user_message == "dxdata update":
@@ -1889,18 +1907,17 @@ def handle_internal_link(user_id, reply_token, data):
     URL_MAP = [
         (
             lambda content, domain: re.match(
-                rf"^(?:https?://)?{re.escape(domain)}/linebot/add_friend\?code=",
+                rf"^(?:https?://)?{re.escape(domain)}/linebot/add_friend\?id=",
                 content
             ),
 
-            lambda content, user_id, reply_token, domain, mai_ver: add_friend_with_params(
+            lambda content, user_id, reply_token, domain, mai_ver: add_friend(
                 user_id,
                 re.sub(
-                    rf"^(?:https?://)?{re.escape(domain)}/linebot/add_friend\?code=",
+                    rf"^(?:https?://)?{re.escape(domain)}/linebot/add_friend\?id=",
                     "",
                     content
-                ).strip(),
-                mai_ver
+                ).strip()
             )
         ),
     ]

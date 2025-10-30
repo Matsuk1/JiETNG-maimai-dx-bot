@@ -52,6 +52,33 @@ update_error = TextMessage(
     )
 )
 
+friendid_error = TextMessage(
+    text="こういう人見つかってないね",
+    quick_reply=QuickReply(
+        items=[
+            QuickReplyItem(action=URIAction(label="サポート", uri=f"https://{DOMAIN}/")),
+        ]
+    )
+)
+
+friend_added = TextMessage(
+    text="もうフレンドになったじゃん！",
+    quick_reply=QuickReply(
+        items=[
+            QuickReplyItem(action=URIAction(label="サポート", uri=f"https://{DOMAIN}/")),
+        ]
+    )
+)
+
+friendid_self_error = TextMessage(
+    text="自分とはフレンドになれないよ！",
+    quick_reply=QuickReply(
+        items=[
+            QuickReplyItem(action=URIAction(label="サポート", uri=f"https://{DOMAIN}/")),
+        ]
+    )
+)
+
 segaid_error = TextMessage(
     text="SEGAアカウントまだ連携してないよね？",
     quick_reply=QuickReply(

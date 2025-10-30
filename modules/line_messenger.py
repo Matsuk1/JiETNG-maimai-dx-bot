@@ -17,7 +17,7 @@ from linebot.v3.messaging import (
     TextMessage
 )
 from modules.config_loader import USERS
-from modules.user_console import get_user_status, edit_user_status
+from modules.user_console import get_user_key, edit_user_key
 from modules.notice_console import get_latest_notice
 
 logger = logging.getLogger(__name__)
@@ -40,14 +40,14 @@ def smart_reply(user_id: str, reply_token: str, messages, configuration: Configu
     if user_id not in USERS:
         notice_read = True
     else:
-        notice_read = get_user_status(user_id, "notice_read")
+        notice_read = get_user_key(user_id, "notice_read")
 
     if not notice_read:
         notice_json = get_latest_notice()
         if notice_json:
             notice = f"📢 お知らせ\n{divider}\n{notice_json['content']}\n{divider}\n{notice_json['date']}"
             messages += [TextMessage(text=notice)]
-            edit_user_status(user_id, "notice_read", True)
+            edit_user_key(user_id, "notice_read", True)
 
     with ApiClient(configuration) as api_client:
         line_bot_api = MessagingApi(api_client)
