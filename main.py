@@ -1319,6 +1319,7 @@ def generate_level_records(user_id, level, ver="jp", page=1):
         ImageMessage(original_content_url=image_url, preview_image_url=image_url),
         TextMessage(text=f"これは{page}ページ目のデータだよ！\nほかのもチェックしたいなら、コマンドの後ろにページの番号をつけてみ〜\n\n例えば: 13.9のレコードリスト 3") if page == 1 else None
     ]
+    message = [m for m in message if m]
     return message
 
 def generate_version_songs(version_title, ver="jp"):
