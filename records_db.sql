@@ -7,13 +7,13 @@ USE records;
 CREATE TABLE IF NOT EXISTS best_records (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id VARCHAR(64),
-    
-    `name` VARCHAR(100),
+
+    `name` VARCHAR(255),
     difficulty VARCHAR(20),
     kind VARCHAR(10),
     score VARCHAR(20),
     `dx_score` VARCHAR(20),
-    
+
     `score_icon` VARCHAR(10),
     `combo_icon` VARCHAR(10),
     `sync_icon` VARCHAR(10),

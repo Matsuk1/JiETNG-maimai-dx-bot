@@ -408,16 +408,16 @@ JiETNG/
 ```sql
 CREATE TABLE best_records (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id VARCHAR(255) NOT NULL,
+    user_id VARCHAR(64),
     name VARCHAR(255),
-    difficulty VARCHAR(50),
-    kind VARCHAR(50),
-    score VARCHAR(50),
-    dx_score VARCHAR(50),
-    score_icon VARCHAR(50),
-    combo_icon VARCHAR(50),
-    sync_icon VARCHAR(50),
-    INDEX idx_user_id (user_id)
+    difficulty VARCHAR(20),
+    kind VARCHAR(10),
+    score VARCHAR(20),
+    dx_score VARCHAR(20),
+    score_icon VARCHAR(10),
+    combo_icon VARCHAR(10),
+    sync_icon VARCHAR(10),
+    INDEX(user_id)
 );
 ```
 
