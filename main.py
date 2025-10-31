@@ -516,7 +516,7 @@ def user_bind_sega_id(user_id, sega_id):
     if user_id not in USERS :
         add_user(user_id)
 
-    user_console_module.edit_user_value(user_id, 'sega_id', segaid)
+    edit_user_value(user_id, 'sega_id', segaid)
 
 def user_bind_sega_pwd(user_id, sega_pwd):
     read_user()
@@ -524,7 +524,7 @@ def user_bind_sega_pwd(user_id, sega_pwd):
     if user_id not in USERS :
         add_user(user_id)
 
-    user_console_module.edit_user_value(user_id, 'sega_pwd', sega_pwd)
+    edit_user_value(user_id, 'sega_pwd', sega_pwd)
 
 def user_set_version(user_id, version):
     read_user()
@@ -532,7 +532,7 @@ def user_set_version(user_id, version):
     if user_id not in USERS :
         add_user(user_id)
 
-    user_console_module.edit_user_value(user_id, 'version', version)
+    edit_user_value(user_id, 'version', version)
 
 def get_user(user_id):
     read_user()
@@ -576,7 +576,7 @@ def add_friend(user_id, friend_id):
 
     # 添加好友
     friends_list.append(friend_id)
-    user_console_module.edit_user_value(user_id, 'friends', friends_list)
+    edit_user_value(user_id, 'friends', friends_list)
 
     # 获取好友昵称
     friend_name = friend_id
@@ -614,7 +614,7 @@ def async_generate_friend_b50_task(event):
 
     if friend_code.startswith("U"):
         if friend_code in USERS and "personal_info" in USERS[friend_code]:
-            user_console_module.edit_user_value(user_id, "id_use", friend_code)
+            edit_user_value(user_id, "id_use", friend_code)
             reply_msg =  TextMessage(text=f"これからは一回だけ「{USERS[friend_code]['personal_info']['name']}」さんとしてレコードをチェックしていきますよ！\n色んなコマンドを使ってみてね！")
         else:
             reply_msg = friendid_error
@@ -658,7 +658,7 @@ def maimai_update(user_id, ver="jp"):
     error = False
 
     if user_info:
-        user_console_module.edit_user_value(user_id, "personal_info", user_info)
+        edit_user_value(user_id, "personal_info", user_info)
     else:
         func_status["User Info"] = False
         error = True
@@ -676,7 +676,7 @@ def maimai_update(user_id, ver="jp"):
         error = True
 
     if friends_list:
-        user_console_module.edit_user_value(user_id, "mai_friends", friends_list)
+        edit_user_value(user_id, "mai_friends", friends_list)
 
     details = "詳しい情報："
     for func, status in func_status.items():
@@ -776,7 +776,7 @@ def get_friend_list(user_id):
     elif 'mai_friends' not in USERS[user_id]:
         return record_error
 
-    friends_list = user_console_module.get_user_value(user_id, "mai_friend")
+    friends_list = get_user_value(user_id, "mai_friend")
 
     # 获取 USERS[user_id]['friends'] 列表并添加到好友列表
     if 'friends' in USERS[user_id] and USERS[user_id]['friends']:
@@ -1623,7 +1623,7 @@ def handle_sync_text_command(event):
         mai_ver = USERS[user_id].get("version", "jp")
         id_use = USERS[user_id].get("id_use", user_id)
         mai_ver_use = USERS[id_use].get("version", "jp")
-        user_console_module.edit_user_value(user_id, "id_use", user_id)
+        edit_user_value(user_id, "id_use", user_id)
     else:
         id_use = user_id
         mai_ver = "jp"
@@ -1798,7 +1798,7 @@ def handle_sync_text_command(event):
         if user_message.startswith("upload notice"):
             new_notice = user_message.replace("upload notice", "").strip()
             upload_notice(new_notice)
-            user_console_module.clear_user_value("notice_read", False)
+            clear_user_value("notice_read", False)
             return smart_reply(user_id, event.reply_token, notice_upload, configuration, DIVIDER)
 
         if user_message == "dxdata update":
