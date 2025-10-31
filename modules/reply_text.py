@@ -182,6 +182,7 @@ friend_request_already_friend = lambda name: TextMessage(text=f"「{name}」さ�
 friend_request_accepted = lambda name: TextMessage(text=f"✅ 「{name}」さんとフレンドになった！")
 friend_request_rejected = lambda name: TextMessage(text=f"「{name}」さんからの申請を拒否したよ")
 friend_request_not_found = TextMessage(text="あれ？その申請もう処理しちゃったかも")
+friend_request_mutual_accepted = lambda name: TextMessage(text=f"✅ お互いに申請してたから自動で「{name}」さんとフレンドになった！")
 
 donate_message = FlexMessage(
     alt_text="JiETNGを支援 · Support JiETNG",

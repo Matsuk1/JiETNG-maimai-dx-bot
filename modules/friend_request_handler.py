@@ -18,7 +18,8 @@ from modules.reply_text import (
     friend_request_already_friend,
     friend_request_accepted,
     friend_request_rejected,
-    friend_request_not_found
+    friend_request_not_found,
+    friend_request_mutual_accepted
 )
 
 logger = logging.getLogger(__name__)
@@ -62,6 +63,38 @@ def send_friend_request(from_user_id: str, to_user_id: str) -> TextMessage:
     for req in to_requests:
         if req['from_user_id'] == from_user_id:
             return friend_request_already_sent
+
+    # 检查对方是否也给自己发送过申请（双向申请自动通过）
+    from_requests = USERS[from_user_id].get('friend_requests', [])
+    mutual_request = None
+    for req in from_requests:
+        if req['from_user_id'] == to_user_id:
+            mutual_request = req
+            break
+
+    if mutual_request:
+        # 双向申请，自动通过
+        # 双向添加好友
+        from_friends = USERS[from_user_id].get('line_friends', [])
+        if to_user_id not in from_friends:
+            from_friends.append(to_user_id)
+            edit_user_value(from_user_id, 'line_friends', from_friends)
+
+        to_friends = USERS[to_user_id].get('line_friends', [])
+        if from_user_id not in to_friends:
+            to_friends.append(from_user_id)
+            edit_user_value(to_user_id, 'line_friends', to_friends)
+
+        # 移除双方的申请记录
+        from_requests.remove(mutual_request)
+        edit_user_value(from_user_id, 'friend_requests', from_requests)
+
+        # 获取对方昵称
+        to_user_name = to_user_id
+        if 'personal_info' in USERS[to_user_id] and 'name' in USERS[to_user_id]['personal_info']:
+            to_user_name = USERS[to_user_id]['personal_info']['name']
+
+        return friend_request_mutual_accepted(to_user_name)
 
     # 生成申请ID和时间戳
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
