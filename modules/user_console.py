@@ -54,7 +54,7 @@ def delete_user(user_id: str) -> None:
     delete_record(user_id, recent=False)
 
 
-def edit_user_key(user_id: str, key: str, word: Any, operation: int = 0) -> None:
+def edit_user_value(user_id: str, key: str, word: Any, operation: int = 0) -> None:
     """
     编辑用户状态
 
@@ -90,20 +90,20 @@ def edit_user_key(user_id: str, key: str, word: Any, operation: int = 0) -> None
     write_user()
 
 
-def clear_user_key(key: str, word: Any, operation: int = 0) -> None:
+def clear_user_value(key: str, word: Any, operation: int = 0) -> None:
     """
     批量编辑所有用户的状态
 
     Args:
         key: 状态键名
         word: 要设置/增加/减少的值
-        operation: 操作类型 (同 edit_user_key)
+        operation: 操作类型 (同 edit_user_value)
     """
     for user_id in list(USERS.keys()):
-        edit_user_key(user_id, key, word, operation)
+        edit_user_value(user_id, key, word, operation)
 
 
-def get_user_key(user_id: str, key: str = "") -> Optional[Any]:
+def get_user_value(user_id: str, key: str = "") -> Optional[Any]:
     """
     获取用户状态
 
