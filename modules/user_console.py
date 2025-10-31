@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 # 用户昵称缓存 (避免频繁调用LINE API)
 nickname_cache = {}
 nickname_cache_lock = threading.Lock()
-NICKNAME_CACHE_TIMEOUT = 300  # 5分钟缓存
+NICKNAME_CACHE_TIMEOUT = 43200  # 12小时缓存
 
 
 def add_user(user_id: str) -> None:
