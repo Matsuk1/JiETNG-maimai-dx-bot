@@ -22,6 +22,7 @@ import platform
 import socket
 import secrets
 import hashlib
+import copy
 from datetime import datetime, timedelta
 from typing import List, Optional, Any
 
@@ -158,7 +159,7 @@ stats_lock = threading.Lock()  # 保护统计数据的线程锁
 image_queue = queue.Queue(maxsize=MAX_QUEUE_SIZE)
 image_concurrency_limit = threading.Semaphore(MAX_CONCURRENT_IMAGE_TASKS)
 
-# Web任务队列 (处理耗时的网络请求，如 maimai_update, friend_list 等)
+# Web任务队列 (处理耗时的网络请求，如 maimai_update 等)
 webtask_queue = queue.Queue(maxsize=MAX_QUEUE_SIZE)
 webtask_concurrency_limit = threading.Semaphore(WEB_MAX_CONCURRENT_TASKS)
 
@@ -520,7 +521,7 @@ def user_bind_sega_id(user_id, sega_id):
     if user_id not in USERS :
         add_user(user_id)
 
-    edit_user_value(user_id, 'sega_id', segaid)
+    edit_user_value(user_id, 'sega_id', sega_id)
 
 def user_bind_sega_pwd(user_id, sega_pwd):
     read_user()
@@ -574,13 +575,13 @@ def add_friend(user_id, friend_id):
         return friendid_self_error
 
     # 获取 friends 列表（如果不存在则返回空列表）
-    friends_list = USERS[user_id].get('friends', [])
+    friends_list = USERS[user_id].get('line_friends', [])
     if friend_id in friends_list:
         return friend_added
 
     # 添加好友
     friends_list.append(friend_id)
-    edit_user_value(user_id, 'friends', friends_list)
+    edit_user_value(user_id, 'line_friends', friends_list)
 
     # 获取好友昵称
     friend_name = friend_id
@@ -808,14 +809,14 @@ def get_friend_list(user_id):
     if user_id not in USERS:
         return segaid_error
 
-    elif 'mai_friends' not in USERS[user_id]:
-        return record_error
+    elif 'mai_friends' not in USERS[user_id] or 'line_friends' not in USERS[user_id]:
+        return friend_error
 
-    friends_list = get_user_value(user_id, "mai_friends")
+    friends_list = copy.deepcopy(get_user_value(user_id, "mai_friends"))
 
-    # 获取 USERS[user_id]['friends'] 列表并添加到好友列表
-    if 'friends' in USERS[user_id] and USERS[user_id]['friends']:
-        for friend_id in USERS[user_id]['friends']:
+    # 获取 USERS[user_id]['line_friends'] 列表并添加到好友列表
+    if 'line_friends' in USERS[user_id] and USERS[user_id]['line_friends']:
+        for friend_id in USERS[user_id]['line_friends']:
             if friend_id in USERS and 'personal_info' in USERS[friend_id]:
                 friend_info = USERS[friend_id]['personal_info']
                 # 构造与 maimai 好友列表相同格式的好友信息

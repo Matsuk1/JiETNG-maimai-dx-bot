@@ -6,74 +6,98 @@ from datetime import datetime
 from modules.config_loader import MAIMAI_VERSION, DXDATA_VERSION_FILE
 
 def merge_json(source, target):
+    """递归合并两个 JSON 结构（dict / list / 基础类型）"""
+    # dict 合并逻辑
     if isinstance(source, dict) and isinstance(target, dict):
         for key, value in source.items():
             if key not in target:
                 target[key] = copy.deepcopy(value)
             else:
-                # 空字符串逻辑
-                if isinstance(value, str) and isinstance(target[key], str):
-                    if value and not target[key]:
-                        target[key] = value
-                    elif target[key] and not value:
-                        pass  # 保留 target 的非空值
+                src_val, tgt_val = value, target[key]
 
-                # 空列表逻辑
-                elif isinstance(value, list) and isinstance(target[key], list):
-                    if value and not target[key]:
-                        target[key] = copy.deepcopy(value)
-                    elif target[key] and not value:
-                        pass  # 保留 target 的非空列表
+                # 字符串互补逻辑
+                if isinstance(src_val, str) and isinstance(tgt_val, str):
+                    if src_val and not tgt_val:
+                        target[key] = src_val
+                    # 若 target 非空则保留，不动
+                    continue
+
+                # 列表逻辑
+                elif isinstance(src_val, list) and isinstance(tgt_val, list):
+                    if not tgt_val and src_val:
+                        target[key] = copy.deepcopy(src_val)
+                    elif tgt_val and not src_val:
+                        continue
                     else:
-                        # 都有内容 -> 递归合并
-                        for i in range(min(len(value), len(target[key]))):
-                            merge_json(value[i], target[key][i])
+                        for i in range(min(len(src_val), len(tgt_val))):
+                            merge_json(src_val[i], tgt_val[i])
+                        # 如果 source 比 target 长，追加剩余部分
+                        if len(src_val) > len(tgt_val):
+                            target[key].extend(copy.deepcopy(src_val[len(tgt_val):]))
 
+                # 递归合并 dict
+                elif isinstance(src_val, dict) and isinstance(tgt_val, dict):
+                    merge_json(src_val, tgt_val)
+
+                # 类型不一致时以非空值为准
                 else:
-                    # 其他类型递归
-                    merge_json(value, target[key])
+                    if tgt_val in (None, '', [], {}):
+                        target[key] = copy.deepcopy(src_val)
 
+    # list 合并逻辑（顶层）
     elif isinstance(source, list) and isinstance(target, list):
-        # 顶层列表合并：先做互补，再递归
-        if source and not target:
+        if not target and source:
             target.extend(copy.deepcopy(source))
         elif target and not source:
-            pass
+            return target
         else:
             for i in range(min(len(source), len(target))):
                 merge_json(source[i], target[i])
+            if len(source) > len(target):
+                target.extend(copy.deepcopy(source[len(target):]))
+
+    # 其他类型互补
+    else:
+        if target in (None, '', [], {}):
+            target = copy.deepcopy(source)
 
     return target
 
+
 def merge_json_by_key(source, target, key_field):
     """
-    将 source 和 target 中指定 key_field（如 "title"）相同的对象合并。
-    假设 source/target 是结构一致的 JSON（顶层为 dict），且 key_field 对应的是 list[dict]
+    按 key_field 匹配并合并 source 与 target。
+    适用于顶层结构类似 {"songs": [ {...}, {...} ]}
     """
     result = copy.deepcopy(target)
 
     for k, v in source.items():
         if isinstance(v, list) and all(isinstance(i, dict) for i in v):
-            # 是一个对象列表，准备按 key_field 匹配
+            # 处理列表中的字典（带 key_field）
             target_list = result.get(k, [])
-            target_index = {item.get(key_field): item for item in target_list}
+            target_index = {item.get(key_field): item for item in target_list if key_field in item}
 
             for item in v:
-                key = item.get(key_field)
-                if key in target_index:
-                    merge_json(item, target_index[key])
+                key_val = item.get(key_field)
+                if key_val in target_index:
+                    merge_json(item, target_index[key_val])
                 else:
                     target_list.append(copy.deepcopy(item))
             result[k] = target_list
-        else:
-            # 默认使用递归合并
-            if k in result:
+
+        elif isinstance(v, dict):
+            # 递归合并 dict
+            if k in result and isinstance(result[k], dict):
                 merge_json(v, result[k])
             else:
                 result[k] = copy.deepcopy(v)
 
-    return result
+        else:
+            # 简单类型：仅在目标为空时更新
+            if k not in result or result[k] in (None, '', [], {}):
+                result[k] = copy.deepcopy(v)
 
+    return result
 def load_dxdata(url):
     try:
         response = requests.get(url)
@@ -107,7 +131,8 @@ def _split_song_sheets_by_type(song_list):
             "title": song["title"],
             "artist": song["artist"],
             "bpm": song["bpm"],
-            "cover_url": f"https://shama.dxrating.net/images/cover/v2/{song['imageName'].replace('.png', '')}.jpg",
+            "version": song.get("version", ""),
+            "cover_url": f"https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/cover/{song['imageName']}",
             "search_acronyms": song.get("searchAcronyms", [])
         }
 
@@ -121,7 +146,7 @@ def _split_song_sheets_by_type(song_list):
 
             if sheet_type in sheets_by_type:
                 new_sheet = sheet.copy()
-                version_by_type[sheet_type] = new_sheet.pop("version", "")
+                version_by_type[sheet_type] = new_sheet.pop("version", base_info["version"])
                 new_sheet.pop("type", None)
                 sheets_by_type[sheet_type].append(new_sheet)
 
@@ -129,7 +154,7 @@ def _split_song_sheets_by_type(song_list):
             if sheets:
                 entry = base_info.copy()
                 entry["type"] = sheet_type
-                entry["version"] = version_by_type.get(sheet_type, "")
+                entry["version"] = version_by_type.get(sheet_type, base_info["version"])
                 entry["sheets"] = sheets
                 result.append(entry)
 
