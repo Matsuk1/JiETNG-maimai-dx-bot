@@ -32,79 +32,70 @@ def generate_friend_request_message(requests: list) -> FlexMessage:
     # 创建请求列表
     request_rows = []
     for idx, req in enumerate(requests):
-        # 每个请求的布局（单行，左侧信息，右侧按钮）
-        row = {
+        # 用户信息box
+        info_box = {
             "type": "box",
-            "layout": "horizontal",
-            "spacing": "md",
+            "layout": "vertical",
+            "spacing": "xs",
             "margin": "md" if idx > 0 else "none",
             "contents": [
-                # 左侧：名字和时间
                 {
-                    "type": "box",
-                    "layout": "vertical",
-                    "flex": 3,
-                    "contents": [
-                        {
-                            "type": "text",
-                            "text": req.get("from_user_name", "Unknown User"),
-                            "size": "sm",
-                            "weight": "bold",
-                            "wrap": True,
-                            "maxLines": 2
-                        },
-                        {
-                            "type": "text",
-                            "text": req.get("timestamp", ""),
-                            "size": "xs",
-                            "color": "#999999",
-                            "margin": "xs"
-                        }
-                    ]
+                    "type": "text",
+                    "text": req.get("from_user_name", "Unknown User"),
+                    "size": "sm",
+                    "weight": "bold",
+                    "wrap": True,
+                    "maxLines": 2
                 },
-                # 右侧：按钮组
                 {
-                    "type": "box",
-                    "layout": "horizontal",
-                    "flex": 0,
-                    "spacing": "xs",
-                    "contents": [
-                        # 同意按钮
-                        {
-                            "type": "button",
-                            "style": "primary",
-                            "height": "sm",
-                            "action": {
-                                "type": "message",
-                                "label": "承認",
-                                "text": f"accept-request {req['request_id']}"
-                            }
-                        },
-                        # 拒绝按钮
-                        {
-                            "type": "button",
-                            "style": "secondary",
-                            "height": "sm",
-                            "action": {
-                                "type": "message",
-                                "label": "拒否",
-                                "text": f"reject-request {req['request_id']}"
-                            }
-                        }
-                    ]
+                    "type": "text",
+                    "text": req.get("timestamp", ""),
+                    "size": "xs",
+                    "color": "#999999",
+                    "margin": "xs"
                 }
             ]
         }
 
+        # 按钮行
+        button_row = {
+            "type": "box",
+            "layout": "horizontal",
+            "spacing": "sm",
+            "margin": "sm",
+            "contents": [
+                {
+                    "type": "button",
+                    "style": "primary",
+                    "height": "sm",
+                    "action": {
+                        "type": "message",
+                        "label": "承認",
+                        "text": f"accept-request {req['request_id']}"
+                    }
+                },
+                {
+                    "type": "button",
+                    "style": "secondary",
+                    "height": "sm",
+                    "action": {
+                        "type": "message",
+                        "label": "拒否",
+                        "text": f"reject-request {req['request_id']}"
+                    }
+                }
+            ]
+        }
+
+        request_rows.append(info_box)
+        request_rows.append(button_row)
+
         # 添加分隔线（除了最后一个）
         if idx < len(requests) - 1:
-            request_rows.append(row)
             request_rows.append({
                 "type": "separator",
-                "margin": "sm"
+                "margin": "md"
             })
-        else:
-            request_rows.append(row)
 
     # 创建bubble（极简黑白风格）
     bubble = {
@@ -118,7 +109,7 @@ def generate_friend_request_message(requests: list) -> FlexMessage:
                     "type": "text",
                     "text": "フレンド申請 • Friend Requests",
                     "weight": "bold",
-                    "size": "lg"
+                    "size": "md"
                 },
                 {
                     "type": "text",
