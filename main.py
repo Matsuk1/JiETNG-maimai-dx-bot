@@ -811,7 +811,7 @@ def get_friend_list(user_id):
     elif 'mai_friends' not in USERS[user_id]:
         return record_error
 
-    friends_list = get_user_value(user_id, "mai_friend")
+    friends_list = get_user_value(user_id, "mai_friends")
 
     # 获取 USERS[user_id]['friends'] 列表并添加到好友列表
     if 'friends' in USERS[user_id] and USERS[user_id]['friends']:
