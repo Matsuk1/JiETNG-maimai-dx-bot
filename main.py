@@ -90,6 +90,11 @@ from modules.rate_limiter import check_rate_limit
 from modules.line_messenger import smart_reply, smart_push, notify_admins_error
 from modules.song_matcher import find_matching_songs, is_exact_song_title_match
 from modules.memory_manager import memory_manager, cleanup_user_caches, cleanup_rate_limiter_tracking
+from modules.friend_request_handler import (
+    send_friend_request,
+    accept_friend_request,
+    reject_friend_request
+)
 import modules.user_console as user_console_module
 import modules.rate_limiter as rate_limiter_module
 
@@ -559,36 +564,6 @@ def get_user(user_id):
         result += "USER_INFO: 未連携"
 
     return result
-
-def add_friend(user_id, friend_id):
-    # 读取用户数据
-    read_user()
-
-    if user_id not in USERS:
-        return segaid_error
-
-    # 检查好友是否存在
-    if friend_id not in USERS:
-        return friendid_error
-
-    if friend_id == user_id:
-        return friendid_self_error
-
-    # 获取 friends 列表（如果不存在则返回空列表）
-    friends_list = USERS[user_id].get('line_friends', [])
-    if friend_id in friends_list:
-        return friend_added
-
-    # 添加好友
-    friends_list.append(friend_id)
-    edit_user_value(user_id, 'line_friends', friends_list)
-
-    # 获取好友昵称
-    friend_name = friend_id
-    if 'personal_info' in USERS[friend_id] and 'name' in USERS[friend_id]['personal_info']:
-        friend_name = USERS[friend_id]['personal_info']['name']
-
-    return TextMessage(text=f"「{friend_name}」さんとフレンドになった！")
 
 
 # ==================== 异步任务处理函数 ====================
@@ -1753,10 +1728,22 @@ def handle_sync_text_command(event):
             mai_ver
         )),
 
-        (lambda msg: msg.startswith(("add-friend", "add friend", "addfriend", "フレンド追加")),
-        lambda msg: add_friend(
+        (lambda msg: msg.startswith(("add-friend", "add friend", "addfriend", "フレンド追加", "フレンド申請", "friend request")),
+        lambda msg: send_friend_request(
             user_id,
-            re.sub(r"^(add-friend|add friend|addfriend|フレンド追加)", "", msg).strip()
+            re.sub(r"^(add-friend|add friend|addfriend|フレンド追加|フレンド申請|friend request)", "", msg).strip()
+        )),
+
+        (lambda msg: msg.startswith("accept-request "),
+        lambda msg: accept_friend_request(
+            user_id,
+            re.sub(r"^accept-request ", "", msg).strip()
+        )),
+
+        (lambda msg: msg.startswith("reject-request "),
+        lambda msg: reject_friend_request(
+            user_id,
+            re.sub(r"^reject-request ", "", msg).strip()
         ))
     ]
 
@@ -1916,7 +1903,7 @@ def handle_internal_link(user_id, reply_token, data):
                 content
             ),
 
-            lambda content, user_id, reply_token, domain, mai_ver: add_friend(
+            lambda content, user_id, reply_token, domain, mai_ver: send_friend_request(
                 user_id,
                 re.sub(
                     rf"^(?:https?://)?{re.escape(domain)}/linebot/add_friend\?id=",

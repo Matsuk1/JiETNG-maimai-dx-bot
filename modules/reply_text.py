@@ -175,6 +175,14 @@ maintenance_error = TextMessage(
 notice_upload = TextMessage(text="✅ Notice uploaded")
 dxdata_update = TextMessage(text="✅ Dxdata Updated!")
 
+# 好友申请相关提示
+friend_request_sent = lambda name: TextMessage(text=f"✅ 「{name}」さんにフレンド申請送ったよ！\n相手が何かコマンド使ったら通知届くよ〜")
+friend_request_already_sent = TextMessage(text="もう申請送ったよ〜！相手の承認を待っててね〜")
+friend_request_already_friend = lambda name: TextMessage(text=f"「{name}」さんとはもうフレンドになったじゃん！")
+friend_request_accepted = lambda name: TextMessage(text=f"✅ 「{name}」さんとフレンドになった！")
+friend_request_rejected = lambda name: TextMessage(text=f"「{name}」さんからの申請を拒否したよ")
+friend_request_not_found = TextMessage(text="あれ？その申請もう処理しちゃったかも")
+
 donate_message = FlexMessage(
     alt_text="JiETNGを支援 · Support JiETNG",
     contents=FlexBubble(

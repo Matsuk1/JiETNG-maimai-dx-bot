@@ -19,13 +19,15 @@ from linebot.v3.messaging import (
 from modules.config_loader import USERS
 from modules.user_console import get_user_value, edit_user_value
 from modules.notice_console import get_latest_notice
+from modules.friend_request_handler import get_pending_requests
+from modules.friend_request import generate_friend_request_message
 
 logger = logging.getLogger(__name__)
 
 
 def smart_reply(user_id: str, reply_token: str, messages, configuration: Configuration, divider: str = "-" * 33):
     """
-    智能回复函数 - 自动附加未读公告
+    智能回复函数 - 自动附加未读公告和好友申请
 
     Args:
         user_id: LINE用户ID
@@ -37,6 +39,7 @@ def smart_reply(user_id: str, reply_token: str, messages, configuration: Configu
     if not isinstance(messages, list):
         messages = [messages]
 
+    # 检查并附加未读公告
     if user_id not in USERS:
         notice_read = True
     else:
@@ -48,6 +51,14 @@ def smart_reply(user_id: str, reply_token: str, messages, configuration: Configu
             notice = f"📢 お知らせ\n{divider}\n{notice_json['content']}\n{divider}\n{notice_json['date']}"
             messages += [TextMessage(text=notice)]
             edit_user_value(user_id, "notice_read", True)
+
+    # 检查并附加好友申请
+    if user_id in USERS:
+        pending_requests = get_pending_requests(user_id)
+        if pending_requests:
+            friend_request_msg = generate_friend_request_message(pending_requests)
+            if friend_request_msg:
+                messages.append(friend_request_msg)
 
     with ApiClient(configuration) as api_client:
         line_bot_api = MessagingApi(api_client)
