@@ -510,6 +510,10 @@ def process_sega_credentials(user_id, segaid, password, ver="jp"):
     smart_push(user_id, bind_msg, configuration)
     return True
 
+
+
+# ==================== 用户管理函数 ====================
+
 def user_bind_sega_id(user_id, sega_id):
     read_user()
 
@@ -585,6 +589,9 @@ def add_friend(user_id, friend_id):
 
     return TextMessage(text=f"「{friend_name}」さんとフレンドになった！")
 
+
+# ==================== 异步任务处理函数 ====================
+
 def async_maimai_update_task(event):
     """异步maimai更新任务 - 在webtask_queue中执行"""
     user_id = event.source.user_id
@@ -623,6 +630,34 @@ def async_generate_friend_b50_task(event):
         reply_msg = generate_friend_b50(user_id, friend_code, ver)
 
     smart_reply(user_id, reply_token, reply_msg, configuration, DIVIDER)
+
+def async_generate_image_task(event):
+    """异步图片生成任务 - 在image_queue中执行"""
+    handle_sync_text_command(event)
+
+def async_admin_maimai_update_task(event):
+    """管理员触发的maimai更新任务 - 在webtask_queue中执行"""
+    user_id = event.source.user_id
+
+    # 获取用户版本
+    read_user()
+    ver = "jp"
+    if user_id in USERS and 'version' in USERS[user_id]:
+        ver = USERS[user_id]['version']
+
+    # 执行更新
+    messages = maimai_update(user_id, ver)
+
+    # 推送通知给管理员
+    for admin_user_id in ADMIN_ID:
+        try:
+            smart_push(admin_user_id, TextMessage(
+                text=f"✅ Admin triggered update completed\nUser: {user_id}\nStatus: Success"
+            ), configuration)
+        except Exception as e:
+            logger.error(f"Failed to notify admin: {e}")
+
+# ==================== 主程序入口 ====================
 
 def maimai_update(user_id, ver="jp"):
     messages = []
@@ -1601,10 +1636,6 @@ def handle_text_message(event):
 
 # ==================== 任务处理函数 ====================
 
-def async_generate_image_task(event):
-    """异步图片生成任务 - 在image_queue中执行"""
-    handle_sync_text_command(event)
-
 def handle_sync_text_command(event):
     """
     同步处理文本命令 - 直接在主线程执行
@@ -2509,30 +2540,6 @@ def admin_load_nicknames():
             'success': False,
             'message': str(e)
         }), 500
-
-def async_admin_maimai_update_task(event):
-    """管理员触发的maimai更新任务 - 在webtask_queue中执行"""
-    user_id = event.source.user_id
-
-    # 获取用户版本
-    read_user()
-    ver = "jp"
-    if user_id in USERS and 'version' in USERS[user_id]:
-        ver = USERS[user_id]['version']
-
-    # 执行更新
-    messages = maimai_update(user_id, ver)
-
-    # 推送通知给管理员
-    for admin_user_id in ADMIN_ID:
-        try:
-            smart_push(admin_user_id, TextMessage(
-                text=f"✅ Admin triggered update completed\nUser: {user_id}\nStatus: Success"
-            ), configuration)
-        except Exception as e:
-            logger.error(f"Failed to notify admin: {e}")
-
-# ==================== 主程序入口 ====================
 
 if __name__ == "__main__":
     # 启动内存管理器
