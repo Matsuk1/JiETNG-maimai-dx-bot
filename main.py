@@ -784,10 +784,12 @@ def get_friend_list(user_id):
     if user_id not in USERS:
         return segaid_error
 
-    elif 'mai_friends' not in USERS[user_id] or 'line_friends' not in USERS[user_id]:
+    elif 'mai_friends' not in USERS[user_id] and 'line_friends' not in USERS[user_id]:
         return friend_error
 
     friends_list = copy.deepcopy(get_user_value(user_id, "mai_friends"))
+    if not friends_list:
+        friends_list = []
 
     # 获取 USERS[user_id]['line_friends'] 列表并添加到好友列表
     if 'line_friends' in USERS[user_id] and USERS[user_id]['line_friends']:
