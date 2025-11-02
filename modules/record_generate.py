@@ -8,7 +8,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 from modules.config_loader import LOGO_PATH
 from modules.img_console import *
-from modules.img_cache import get_cached_image, download_and_cache_icon
+from modules.img_cache import paste_icon_optimized, get_cached_image, download_and_cache_icon
 
 def _get_difficulty_color(difficulty):
     colors = {
@@ -39,12 +39,13 @@ def create_thumbnail(song, thumb_size=(300, 150), padding=15):
             print(f"Error loading cover image: {e}")
 
     # --- kind 图标 ---
-    paste_icon(
+    paste_icon_optimized(
         img, song, key='kind',
         size=(40, 12),
         position=(padding + 80 - 40, padding + 80 - 12),
         save_dir='./assets/icon/kind',
-        url_func=lambda value: "https://maimaidx.jp/maimai-mobile/img/music_standard.png" if value == "std" else "https://maimaidx.jp/maimai-mobile/img/music_dx.png"    )
+        url_func=lambda value: "https://maimaidx.jp/maimai-mobile/img/music_standard.png" if value == "std" else "https://maimaidx.jp/maimai-mobile/img/music_dx.png"
+    )
 
     line_spacing = 28
     text_x_offset = padding + 90
@@ -63,12 +64,13 @@ def create_thumbnail(song, thumb_size=(300, 150), padding=15):
     draw.text((text_x_offset, padding + line_spacing), song['score'], fill=text_color, font=font_large)
 
     # --- score_icon 图标 ---
-    paste_icon(
+    paste_icon_optimized(
         img, song, key='score_icon',
         size=(65, 30),
         position=(score_x_offset - 60, padding + line_spacing),
         save_dir='./assets/icon/score',
-        url_func=lambda value: f"https://maimaidx.jp/maimai-mobile/img/music_icon_{value}.png"    )
+        url_func=lambda value: f"https://maimaidx.jp/maimai-mobile/img/music_icon_{value}.png"
+    )
 
     # --- 版本标题 + dx_score ---
     draw.text((text_x_offset, padding + line_spacing * 2),
@@ -100,33 +102,34 @@ def create_thumbnail(song, thumb_size=(300, 150), padding=15):
             elif 0.97 <= dx_score <= 1:
                 star_num = 5
 
-            paste_icon(
+            paste_icon_optimized(
                 img, {'star': str(star_num)}, key='star',
                 size=(80, 16),
                 position=(padding + 80, thumb_size[1] - 32),
                 save_dir='./assets/icon/dx_star',
-                url_func=lambda value: f"https://maimaidx.jp/maimai-mobile/img/music_icon_dxstar_detail_{value}.png",
-                verify=False
+                url_func=lambda value: f"https://maimaidx.jp/maimai-mobile/img/music_icon_dxstar_detail_{value}.png"
             )
 
         except Exception as e:
             print(f"Error calculating dx_star: {e}")
 
     # --- combo_icon 图标 ---
-    paste_icon(
+    paste_icon_optimized(
         img, song, key='combo_icon',
         size=(40, 45),
         position=(padding - 5, thumb_size[1] - 48),
         save_dir='./assets/icon/combo',
-        url_func=lambda value: f"https://maimaidx.jp/maimai-mobile/img/music_icon_{value}.png"    )
+        url_func=lambda value: f"https://maimaidx.jp/maimai-mobile/img/music_icon_{value}.png"
+    )
 
     # --- sync_icon 图标 ---
-    paste_icon(
+    paste_icon_optimized(
         img, song, key='sync_icon',
         size=(40, 45),
         position=(padding + 40, thumb_size[1] - 48),
         save_dir='./assets/icon/sync',
-        url_func=lambda value: f"https://maimaidx.jp/maimai-mobile/img/music_icon_{value}.png"    )
+        url_func=lambda value: f"https://maimaidx.jp/maimai-mobile/img/music_icon_{value}.png"
+    )
 
 
     # --- 名次和数值 ---

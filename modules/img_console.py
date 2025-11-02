@@ -3,7 +3,7 @@ import io
 import qrcode
 from PIL import Image, ImageDraw, ImageFont
 from modules.config_loader import FONT_PATH
-from modules.img_cache import paste_icon_optimized, get_cached_image
+from modules.img_cache import get_cached_image
 
 # 全局字体对象（一次性加载）
 font_title = ImageFont.truetype(FONT_PATH, 34)
@@ -14,11 +14,6 @@ font_huge  = ImageFont.truetype(FONT_PATH, 28)
 font_large = ImageFont.truetype(FONT_PATH, 19)
 font_small = ImageFont.truetype(FONT_PATH, 14)
 font_tiny = ImageFont.truetype(FONT_PATH, 6)
-
-# 兼容旧版本函数名
-def paste_icon(img, song, key, size, position, save_dir, url_func, verify=False):
-    """兼容旧版本的贴图标函数，verify参数已废弃"""
-    paste_icon_optimized(img, song, key, size, position, save_dir, url_func)
 
 def draw_aligned_colon_text(draw, lines, top_left, font, spacing=10, fill=(0, 0, 0)):
     """

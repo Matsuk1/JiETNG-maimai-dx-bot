@@ -2,7 +2,7 @@ import json
 from PIL import Image, ImageDraw, ImageFont
 from modules.record_generate import create_thumbnail
 from modules.img_console import *
-from modules.img_cache import get_cached_image
+from modules.img_cache import paste_icon_optimized, get_cached_image
 
 def song_info_generate(song_json, played_data = []):
     cover_url = song_json["cover_url"]
@@ -67,13 +67,13 @@ def _render_basic_info_image(song_json, cover_img):
     cover_y = margin
     img.paste(large_cover, (cover_x, cover_y), large_cover)
 
-    paste_icon(
+    paste_icon_optimized(
         img, song_json, key='type',
         size=(100, 30),
         position=(cover_x + cover_size - 100, cover_y + cover_size - 30),
         save_dir='./assets/icon/kind',
-        url_func=lambda value: "https://maimaidx.jp/maimai-mobile/img/music_standard.png" if value == "std" else "https://maimaidx.jp/maimai-mobile/img/music_dx.png",
-            )
+        url_func=lambda value: "https://maimaidx.jp/maimai-mobile/img/music_standard.png" if value == "std" else "https://maimaidx.jp/maimai-mobile/img/music_dx.png"
+    )
 
     # 文字区域
     text_x = cover_x + cover_size + text_gap
@@ -209,13 +209,13 @@ def _render_song_info_small_img(song_json, cover_img):
     for sheet in song_json['sheets']:
         levels.append(sheet['internalLevelValue'])
 
-    paste_icon(
+    paste_icon_optimized(
         img, song_json, key='type',
         size=(100, 30),
         position=(cover_x + cover_size - 100, cover_y + cover_size - 30),
         save_dir='./assets/icon/kind',
-        url_func=lambda value: "https://maimaidx.jp/maimai-mobile/img/music_standard.png" if value == "std" else "https://maimaidx.jp/maimai-mobile/img/music_dx.png",
-            )
+        url_func=lambda value: "https://maimaidx.jp/maimai-mobile/img/music_standard.png" if value == "std" else "https://maimaidx.jp/maimai-mobile/img/music_dx.png"
+    )
 
     # 文字区域
     text_x = cover_x + cover_size + text_gap
