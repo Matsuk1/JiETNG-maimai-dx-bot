@@ -87,7 +87,7 @@ def edit_user_value(user_id: str, key: str, word: Any, operation: int = 0) -> No
         del USERS[user_id][key]
 
     mark_user_dirty()
-    write_user()
+    write_user(force=True)
 
 
 def clear_user_value(key: str, word: Any, operation: int = 0) -> None:
