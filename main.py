@@ -870,6 +870,9 @@ def generate_plate_rcd(user_id, title, ver="jp"):
     if not len(song_record):
         return record_error
 
+    if "personal_info" not in USERS[user_id]:
+        return info_error
+
     version_name = title[0]
     plate_type = title[1:]
 
@@ -1055,6 +1058,9 @@ def generate_maipass(user_id):
     if user_id not in USERS:
         return segaid_error
 
+    if "personal_info" not in USERS[user_id]:
+        return info_error
+
     user_img = create_user_info_img(user_id)
 
     title_list = [
@@ -1085,6 +1091,9 @@ def selgen_records(user_id, type="best50", command="", ver="jp"):
     song_record = read_record(user_id)
     if not len(song_record):
         return record_error
+
+    if "personal_info" not in USERS[user_id]:
+        return info_error
 
     if not command == "":
         cmds = re.findall(r"-(\w+)\s+([^ -][^-]*)", command)
@@ -1192,6 +1201,9 @@ def generate_yang_rating(user_id, ver="jp"):
         return record_error
 
     read_user()
+    if "personal_info" not in USERS[user_id]:
+        return info_error
+
     now_version = MAIMAI_VERSION[USERS[user_id]['version']][-1]
 
     version_records = []
@@ -1259,6 +1271,9 @@ def generate_friend_b50(user_id, friend_code, ver="jp"):
 
 def generate_level_records(user_id, level, ver="jp", page=1):
     read_user()
+
+    if "personal_info" not in USERS[user_id]:
+        return info_error
 
     song_record = read_record(user_id)
 

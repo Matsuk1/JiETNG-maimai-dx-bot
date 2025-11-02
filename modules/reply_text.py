@@ -99,6 +99,16 @@ record_error = TextMessage(
     )
 )
 
+info_error = TextMessage(
+    text="ごめん！maimai個人情報まだ記録してないわ！",
+    quick_reply=QuickReply(
+        items=[
+            QuickReplyItem(action=MessageAction(label="maimai update", text="maimai update")),
+            QuickReplyItem(action=URIAction(label="サポート", uri=f"https://{DOMAIN}/")),
+        ]
+    )
+)
+
 picture_error = TextMessage(
     text="画像処理しっぱい〜〜",
     quick_reply=QuickReply(
