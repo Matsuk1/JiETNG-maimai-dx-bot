@@ -100,7 +100,7 @@ record_error = TextMessage(
 )
 
 info_error = TextMessage(
-    text="ごめん！maimai個人情報まだ記録してないわ！",
+    text="ごめん！maimai個人情報まだメモしてないわ！",
     quick_reply=QuickReply(
         items=[
             QuickReplyItem(action=MessageAction(label="maimai update", text="maimai update")),
