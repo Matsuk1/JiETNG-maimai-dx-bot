@@ -1745,10 +1745,10 @@ def handle_sync_text_command(event):
             mai_ver
         )),
 
-        (lambda msg: msg.startswith(("add-friend", "add friend", "addfriend", "フレンド追加", "フレンド申請", "friend request")),
+        (lambda msg: msg.startswith(("add-friend", "フレンド申請", "friend request")),
         lambda msg: send_friend_request(
             user_id,
-            re.sub(r"^(add-friend|add friend|addfriend|フレンド追加|フレンド申請|friend request)", "", msg).strip()
+            re.sub(r"^(add-friend|フレンド申請|friend request)", "", msg).strip()
         )),
 
         (lambda msg: msg.startswith("accept-request "),
@@ -1792,7 +1792,7 @@ def handle_sync_text_command(event):
             return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
 
     # ====== SEGA ID 绑定逻辑 ======
-    BIND_COMMANDS = ["segaid bind", "segaid バインド", "sega bind", "sega バインド", "bind", "バインド"]
+    BIND_COMMANDS = ["bind", "segaid bind", "バインド"]
     if user_message.lower() in BIND_COMMANDS:
         bind_url = f"https://{DOMAIN}/linebot/sega_bind?token={generate_token(user_id)}"
 

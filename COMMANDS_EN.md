@@ -35,7 +35,7 @@ This document lists all available commands for the JiETNG Maimai DX LINE Bot.
 
 | Command | Aliases | Description |
 |---------|---------|-------------|
-| `segaid bind` | `sega bind`, `bind`, `segaid バインド`, `sega バインド`, `バインド` | Bind SEGA account |
+| `bind` | `segaid bind`, `バインド` | Bind SEGA account |
 | `get me` | `getme`, `ゲットミー` | View current account binding info |
 | `unbind` | `アンバインド` | Unbind account |
 
@@ -191,19 +191,21 @@ UNiVERSEのバージョンリスト
 | Command | Aliases | Description |
 |---------|---------|-------------|
 | `friend list` | `friendlist`, `フレンドリスト` | View added friends list |
-| `add-friend [Code]` | `add friend [Code]`, `addfriend [Code]`, `フレンド追加 [Code]` | Add friend |
+| `add-friend [Code]` | `フレンド申請 [Code]`, `friend request [Code]` | Send friend request |
 | `friend-b50 [Code]` | `friend b50 [Code]`, `フレンドb50 [Code]` | View friend's B50 |
 
 **Examples**:
 ```
 friend list                   # View friends list
-add-friend 1234567890123456   # Add friend
+add-friend 1234567890123456   # Send friend request
 friend-b50 1234567890123456   # View friend's B50
 ```
 
 **Notes**:
 - Friend code is 16 digits
 - Requires SEGA account binding
+- Uses **friend request system**: After sending a request, the recipient receives a notification and can accept/reject
+- If both parties send requests to each other, the system automatically approves
 - Friend data is automatically cached
 
 ---
