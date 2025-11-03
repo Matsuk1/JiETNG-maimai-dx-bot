@@ -2294,6 +2294,7 @@ def admin_create_notice():
     try:
         from modules.notice_console import upload_notice
         notice_id = upload_notice(content)
+        clear_user_value("notice_read", False)
         logger.info(f"Admin created notice: {notice_id}")
 
         return jsonify({
@@ -2346,6 +2347,7 @@ def admin_delete_notice():
 
     try:
         from modules.notice_console import delete_notice
+        clear_user_value("notice_read", True)
         success = delete_notice(notice_id)
 
         if success:
