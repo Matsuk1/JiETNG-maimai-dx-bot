@@ -93,6 +93,7 @@ from modules.notice_manager import (
     delete_notice
 )
 from modules.maimai_manager import (
+    fetch_dom,
     login_to_maimai,
     get_maimai_records,
     get_friends_list,
