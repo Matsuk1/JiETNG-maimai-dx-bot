@@ -423,18 +423,18 @@ JiETNG/
 ├── modules/                   # Functional modules
 │   ├── config_loader.py       # Configuration loader
 │   ├── db_pool.py             # Database connection pool
-│   ├── user_console.py        # User management + nickname cache
-│   ├── maimai_console.py      # Maimai API interface
-│   ├── record_console.py      # Database operations
-│   ├── record_generate.py     # Score chart generation
-│   ├── song_generate.py       # Song chart generation
-│   ├── img_console.py         # Image processing
-│   ├── img_cache.py           # Image caching
-│   ├── img_upload.py          # Image hosting upload
-│   ├── token_console.py       # Token management
+│   ├── user_manager.py        # User management + nickname cache
+│   ├── maimai_manager.py      # Maimai API interface
+│   ├── record_manager.py      # Database operations
+│   ├── record_generator.py    # Score chart generation
+│   ├── song_generator.py      # Song chart generation
+│   ├── image_manager.py       # Image processing
+│   ├── image_cache.py         # Image caching
+│   ├── image_uploader.py      # Image hosting upload
+│   ├── token_manager.py       # Token management
 │   ├── friend_list.py         # Friend interface
-│   ├── notice_console.py      # Notification system
-│   ├── dxdata_console.py      # Song data management
+│   ├── notice_manager.py      # Notification system
+│   ├── dxdata_manager.py      # Song data management
 │   ├── note_score.py          # Score calculation
 │   ├── json_encrypt.py        # Encryption utilities
 │   ├── rate_limiter.py        # Rate limiting + request tracking
@@ -443,7 +443,9 @@ JiETNG/
 │   ├── memory_manager.py      # Memory management and cleanup
 │   ├── system_check.py        # System self-check
 │   ├── store_list.py          # Arcade store list generation (Flex Message)
-│   └── reply_text.py          # Message templates (with donation info)
+│   ├── friend_request.py      # Friend request generation
+│   ├── friend_request_handler.py  # Friend request handling
+│   └── reply_text.py          # Message templates (with donation info and tips)
 ├── templates/                 # HTML templates
 │   ├── bind_form.html         # Account binding form
 │   ├── success.html           # Success page

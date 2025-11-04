@@ -65,7 +65,7 @@ def download_and_cache_icon(url, save_path):
         return Image.open(save_path).convert("RGBA")
 
     except Exception as e:
-        print(f"[img_cache] Error downloading {url}: {e}")
+        print(f"[image_cache] Error downloading {url}: {e}")
         return None
 
 
@@ -97,7 +97,7 @@ def get_cached_image(url):
         response.raise_for_status()
         return Image.open(BytesIO(response.content))
     except Exception as e:
-        print(f"[img_cache] Error loading {url}: {e}")
+        print(f"[image_cache] Error loading {url}: {e}")
         return None
 
 

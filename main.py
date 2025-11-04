@@ -66,25 +66,110 @@ from linebot.v3.webhooks import (
     LocationMessageContent
 )
 
-from modules.song_generate import *
-from modules.record_generate import *
-from modules.user_console import *
-from modules.token_console import *
-from modules.notice_console import *
-from modules.maimai_console import *
-from modules.dxdata_console import *
-from modules.record_console import *
-from modules.config_loader import *
-from modules.friend_list import *
-from modules.reply_text import *
-from modules.note_score import *
-from modules.img_upload import *
+# Song and record generators
+from modules.song_generator import song_info_generate, generate_version_list
+from modules.record_generator import (
+    generate_records_picture,
+    generate_yang_records_picture,
+    create_small_record,
+    generate_plate_image
+)
 
-from modules.img_console import (
+# User and data managers
+from modules.user_manager import (
+    add_user,
+    delete_user,
+    edit_user_value,
+    get_user_value,
+    get_user_nickname,
+    clear_user_value
+)
+from modules.token_manager import generate_token, get_user_id_from_token
+from modules.notice_manager import (
+    upload_notice,
+    get_latest_notice,
+    get_all_notices,
+    update_notice,
+    delete_notice
+)
+from modules.maimai_manager import (
+    login_to_maimai,
+    get_maimai_records,
+    get_friends_list,
+    format_favorite_friends,
+    parse_level_value,
+    get_recent_records,
+    get_friend_records,
+    get_maimai_info,
+    get_nearby_maimai_stores
+)
+from modules.dxdata_manager import update_dxdata_with_comparison
+from modules.record_manager import (
+    get_single_ra,
+    get_ideal_score,
+    read_record,
+    write_record,
+    get_detailed_info
+)
+
+# Config loader
+from modules.config_loader import (
+    read_dxdata,
+    read_user,
+    write_user,
+    mark_user_dirty,
+    ADMIN_ID,
+    ADMIN_PASSWORD,
+    MAIMAI_VERSION,
+    DOMAIN,
+    PORT,
+    DXDATA_LIST,
+    LINE_ADDING_URL,
+    DXDATA_URL,
+    LINE_ACCOUNT_ID,
+    LINE_CHANNEL_ACCESS_TOKEN,
+    LINE_CHANNEL_SECRET,
+    SONGS,
+    VERSIONS,
+    USERS
+)
+
+# UI and message modules
+from modules.friend_list import generate_friend_buttons
+from modules.reply_text import (
+    bind_msg,
+    unbind_msg,
+    update_over,
+    update_error,
+    segaid_error,
+    record_error,
+    info_error,
+    picture_error,
+    song_error,
+    plate_error,
+    version_error,
+    store_error,
+    qrcode_error,
+    rate_limit_msg,
+    maintenance_error,
+    friendid_error,
+    friend_error,
+    friend_rcd_error,
+    notice_upload,
+    share_msg,
+    donate_message
+)
+from modules.note_score import get_note_score
+
+# Image processing
+from modules.image_uploader import smart_upload
+from modules.image_manager import (
     combine_with_rounded_background,
     wrap_in_rounded_background,
     generate_qr_with_title
 )
+
+# System utilities
 from modules.system_check import run_system_check
 from modules.rate_limiter import check_rate_limit
 from modules.line_messenger import smart_reply, smart_push, notify_admins_error
@@ -95,7 +180,9 @@ from modules.friend_request_handler import (
     accept_friend_request,
     reject_friend_request
 )
-import modules.user_console as user_console_module
+
+# Module aliases for specific use cases
+import modules.user_manager as user_manager_module
 import modules.rate_limiter as rate_limiter_module
 
 # ==================== 常量定义 ====================
@@ -1998,7 +2085,7 @@ def get_user_nickname_wrapper(user_id, use_cache=True):
     """
     with ApiClient(configuration) as api_client:
         line_bot_api = MessagingApi(api_client)
-        from modules.user_console import get_user_nickname
+        from modules.user_manager import get_user_nickname
         return get_user_nickname(user_id, line_bot_api, use_cache)
 
 @app.route("/linebot/admin", methods=["GET", "POST"])
@@ -2272,7 +2359,7 @@ def admin_get_notices():
         return jsonify({'error': 'Unauthorized'}), 401
 
     try:
-        from modules.notice_console import get_all_notices
+        from modules.notice_manager import get_all_notices
         notices = get_all_notices()
         return jsonify({'success': True, 'notices': notices})
     except Exception as e:
@@ -2292,7 +2379,7 @@ def admin_create_notice():
         return jsonify({'success': False, 'message': 'Content is required'}), 400
 
     try:
-        from modules.notice_console import upload_notice
+        from modules.notice_manager import upload_notice
         notice_id = upload_notice(content)
         clear_user_value("notice_read", False)
         logger.info(f"Admin created notice: {notice_id}")
@@ -2320,11 +2407,22 @@ def admin_update_notice():
         return jsonify({'success': False, 'message': 'Notice ID and content are required'}), 400
 
     try:
-        from modules.notice_console import update_notice
+        from modules.notice_manager import update_notice, get_latest_notice
+
+        # 检查是否为最新公告
+        latest_notice = get_latest_notice()
+        is_latest = latest_notice and latest_notice.get('id') == notice_id
+
         success = update_notice(notice_id, content)
 
         if success:
-            logger.info(f"Admin updated notice: {notice_id}")
+            # 如果修改的是最新公告，将全体用户状态修改为未阅读
+            if is_latest:
+                clear_user_value("notice_read", False)
+                logger.info(f"Admin updated latest notice: {notice_id}, cleared all users' read status")
+            else:
+                logger.info(f"Admin updated notice: {notice_id}")
+
             return jsonify({'success': True, 'message': 'Notice updated successfully'})
         else:
             return jsonify({'success': False, 'message': 'Notice not found'}), 404
@@ -2346,7 +2444,7 @@ def admin_delete_notice():
         return jsonify({'success': False, 'message': 'Notice ID is required'}), 400
 
     try:
-        from modules.notice_console import delete_notice
+        from modules.notice_manager import delete_notice
         clear_user_value("notice_read", True)
         success = delete_notice(notice_id)
 
@@ -2431,7 +2529,7 @@ def admin_delete_user():
             }), 404
 
         # 使用 delete_user 函数删除用户
-        from modules.user_console import delete_user
+        from modules.user_manager import delete_user
         delete_user(user_id)
 
         logger.info(f"Admin deleted user: {user_id}")
@@ -2558,7 +2656,7 @@ if __name__ == "__main__":
         """自定义清理函数"""
         try:
             # 清理用户昵称缓存
-            cleaned_nicknames = cleanup_user_caches(user_console_module)
+            cleaned_nicknames = cleanup_user_caches(user_manager_module)
 
             # 清理频率限制追踪数据
             cleaned_rate_limits = cleanup_rate_limiter_tracking(rate_limiter_module)

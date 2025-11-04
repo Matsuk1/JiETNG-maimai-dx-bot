@@ -3,7 +3,7 @@ import io
 import qrcode
 from PIL import Image, ImageDraw, ImageFont
 from modules.config_loader import FONT_PATH
-from modules.img_cache import get_cached_image
+from modules.image_cache import get_cached_image
 
 # 全局字体对象（一次性加载）
 font_title = ImageFont.truetype(FONT_PATH, 34)

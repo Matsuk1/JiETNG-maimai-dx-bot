@@ -362,18 +362,18 @@ JiETNG/
 ├── modules/                   # 功能模块
 │   ├── config_loader.py       # 配置加载器
 │   ├── db_pool.py             # 数据库连接池
-│   ├── user_console.py        # 用户管理 + 昵称缓存
-│   ├── maimai_console.py      # Maimai API 接口
-│   ├── record_console.py      # 数据库操作
-│   ├── record_generate.py     # 成绩图生成
-│   ├── song_generate.py       # 歌曲图生成
-│   ├── img_console.py         # 图像处理
-│   ├── img_cache.py           # 图像缓存
-│   ├── img_upload.py          # 图床上传
-│   ├── token_console.py       # Token 管理
+│   ├── user_manager.py        # 用户管理 + 昵称缓存
+│   ├── maimai_manager.py      # Maimai API 接口
+│   ├── record_manager.py      # 数据库操作
+│   ├── record_generator.py    # 成绩图生成
+│   ├── song_generator.py      # 歌曲图生成
+│   ├── image_manager.py       # 图像处理
+│   ├── image_cache.py         # 图像缓存
+│   ├── image_uploader.py      # 图床上传
+│   ├── token_manager.py       # Token 管理
 │   ├── friend_list.py         # 好友界面
-│   ├── notice_console.py      # 通知系统
-│   ├── dxdata_console.py      # 歌曲数据管理
+│   ├── notice_manager.py      # 公告系统
+│   ├── dxdata_manager.py      # 歌曲数据管理
 │   ├── note_score.py          # 分数计算
 │   ├── json_encrypt.py        # 加密工具
 │   ├── rate_limiter.py        # 频率限制 + 请求追踪
@@ -382,7 +382,9 @@ JiETNG/
 │   ├── memory_manager.py      # 内存管理和清理
 │   ├── system_check.py        # 系统自检
 │   ├── store_list.py          # 机厅列表生成（Flex Message）
-│   └── reply_text.py          # 消息模板（含捐赠信息）
+│   ├── friend_request.py      # 好友申请生成
+│   ├── friend_request_handler.py  # 好友申请处理
+│   └── reply_text.py          # 消息模板（含捐赠信息和 Tips）
 ├── templates/                 # HTML 模板
 │   ├── bind_form.html         # 账户绑定表单
 │   ├── success.html           # 成功页面

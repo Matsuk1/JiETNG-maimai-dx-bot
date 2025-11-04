@@ -17,6 +17,10 @@ from linebot.v3.messaging.models import (
     FlexSeparator
 )
 
+# ============================================================
+# アカウント連携関連 / Account Binding
+# ============================================================
+
 bind_msg = TextMessage(
     text="✅ SEGA IDの連携できたよ！",
     quick_reply=QuickReply(
@@ -26,7 +30,12 @@ bind_msg = TextMessage(
         ]
     )
 )
+
 unbind_msg = TextMessage(text="✅ SEGA IDの連携を解除したよ！")
+
+# ============================================================
+# データ更新関連 / Data Update
+# ============================================================
 
 update_over = TextMessage(
     text="✅ アップデート完了！",
@@ -42,6 +51,7 @@ update_over = TextMessage(
         ]
     )
 )
+
 update_error = TextMessage(
     text="❗️あれ？アップデート中にエラーが出ちゃった！",
     quick_reply=QuickReply(
@@ -52,32 +62,9 @@ update_error = TextMessage(
     )
 )
 
-friendid_error = TextMessage(
-    text="こういう人見つかってないね",
-    quick_reply=QuickReply(
-        items=[
-            QuickReplyItem(action=URIAction(label="サポート", uri=f"https://{DOMAIN}/")),
-        ]
-    )
-)
-
-friend_added = TextMessage(
-    text="もうフレンドになったじゃん！",
-    quick_reply=QuickReply(
-        items=[
-            QuickReplyItem(action=URIAction(label="サポート", uri=f"https://{DOMAIN}/")),
-        ]
-    )
-)
-
-friendid_self_error = TextMessage(
-    text="自分とはフレンドになれないよ！",
-    quick_reply=QuickReply(
-        items=[
-            QuickReplyItem(action=URIAction(label="サポート", uri=f"https://{DOMAIN}/")),
-        ]
-    )
-)
+# ============================================================
+# エラーメッセージ / Error Messages
+# ============================================================
 
 segaid_error = TextMessage(
     text="SEGAアカウントまだ連携してないよね？",
@@ -109,15 +96,6 @@ info_error = TextMessage(
     )
 )
 
-picture_error = TextMessage(
-    text="画像処理しっぱい〜〜",
-    quick_reply=QuickReply(
-        items=[
-            QuickReplyItem(action=URIAction(label="サポート", uri=f"https://{DOMAIN}/")),
-        ]
-    )
-)
-
 access_error = TextMessage(text="🙇 今めっちゃアクセス多いんだよね…ちょっと後でもう一回試してみて！")
 
 input_error = TextMessage(
@@ -128,6 +106,16 @@ input_error = TextMessage(
         ]
     )
 )
+
+picture_error = TextMessage(
+    text="画像処理しっぱい〜〜",
+    quick_reply=QuickReply(
+        items=[
+            QuickReplyItem(action=URIAction(label="サポート", uri=f"https://{DOMAIN}/")),
+        ]
+    )
+)
+
 song_error = TextMessage(
     text="条件に合う楽曲がないかも...",
     quick_reply=QuickReply(
@@ -136,6 +124,7 @@ song_error = TextMessage(
         ]
     )
 )
+
 plate_error = TextMessage(
     text="そのプレートがわからないね...",
     quick_reply=QuickReply(
@@ -144,6 +133,7 @@ plate_error = TextMessage(
         ]
     )
 )
+
 version_error = TextMessage(
     text="そのバージョンがわからないね...",
     quick_reply=QuickReply(
@@ -153,16 +143,10 @@ version_error = TextMessage(
     )
 )
 
-friend_error = TextMessage(text="お気に入りにフレンド登録してないみたいだよ？")
-friend_rcd_error = TextMessage(text="この人フレンドじゃないかも！")
-
 store_error = TextMessage(text="🥹 周辺の設置店舗がないね")
 
 qrcode_error = TextMessage(text="ん〜？よくわかんない写真だね")
 
-share_msg = TextMessage(text="この画像を友達にシェアしよ！")
-
-# 频率限制提示
 rate_limit_msg = TextMessage(
     text="⏳ ちょっと待ってー！今同じリクエスト処理中だから！\n終わるまでちょっと待っててね〜",
     quick_reply=QuickReply(
@@ -172,7 +156,6 @@ rate_limit_msg = TextMessage(
     )
 )
 
-# 服务器维护提示
 maintenance_error = TextMessage(
     text="🔧 あれ？公式サイトがメンテナンス中みたい！\n夜間とかメンテナンス時間はアクセスできないから、またあとで試してみてね〜",
     quick_reply=QuickReply(
@@ -182,10 +165,42 @@ maintenance_error = TextMessage(
     )
 )
 
-notice_upload = TextMessage(text="✅ Notice uploaded")
-dxdata_update = TextMessage(text="✅ Dxdata Updated!")
+# ============================================================
+# フレンド関連 / Friend Messages
+# ============================================================
 
-# 好友申请相关提示
+friendid_error = TextMessage(
+    text="こういう人見つかってないね",
+    quick_reply=QuickReply(
+        items=[
+            QuickReplyItem(action=URIAction(label="サポート", uri=f"https://{DOMAIN}/")),
+        ]
+    )
+)
+
+friend_added = TextMessage(
+    text="もうフレンドになったじゃん！",
+    quick_reply=QuickReply(
+        items=[
+            QuickReplyItem(action=URIAction(label="サポート", uri=f"https://{DOMAIN}/")),
+        ]
+    )
+)
+
+friendid_self_error = TextMessage(
+    text="自分とはフレンドになれないよ！",
+    quick_reply=QuickReply(
+        items=[
+            QuickReplyItem(action=URIAction(label="サポート", uri=f"https://{DOMAIN}/")),
+        ]
+    )
+)
+
+friend_error = TextMessage(text="お気に入りにフレンド登録してないみたいだよ？")
+
+friend_rcd_error = TextMessage(text="この人フレンドじゃないかも！")
+
+# フレンド申請関連
 friend_request_sent = lambda name: TextMessage(text=f"✅ 「{name}」さんにフレンド申請送ったよ！\n相手が何かコマンド使ったら通知届くよ〜")
 friend_request_already_sent = TextMessage(text="もう申請送ったよ〜！相手の承認を待っててね〜")
 friend_request_already_friend = lambda name: TextMessage(text=f"「{name}」さんとはもうフレンドになったじゃん！")
@@ -193,6 +208,36 @@ friend_request_accepted = lambda name: TextMessage(text=f"✅ 「{name}」さん
 friend_request_rejected = lambda name: TextMessage(text=f"「{name}」さんからの申請を拒否したよ")
 friend_request_not_found = TextMessage(text="あれ？その申請もう処理しちゃったかも")
 friend_request_mutual_accepted = lambda name: TextMessage(text=f"✅ お互いに申請してたから自動で「{name}」さんとフレンドになった！")
+
+# ============================================================
+# 管理者通知 / Admin Notifications
+# ============================================================
+
+notice_upload = TextMessage(text="✅ Notice uploaded")
+dxdata_update = TextMessage(text="✅ Dxdata Updated!")
+
+# ============================================================
+# その他 / Others
+# ============================================================
+
+share_msg = TextMessage(text="この画像を友達にシェアしよ！")
+
+# ============================================================
+# Tips メッセージリスト / Tips Messages
+# ============================================================
+
+tip_messages = [
+    "💡 定期的に「maimai update」でデータを更新すると、最新のスコアが反映されるよ！",
+    "💡 「b50」コマンドでBest 50を確認できるよ！自分の実力を把握しよう！",
+    "💡 フレンド機能を使えば、友達のスコアと比較できるよ！",
+    "💡 画像生成には少し時間がかかることがあるから、気長に待ってね〜",
+    "💡 困ったときは「help」コマンドで使い方を確認できるよ！",
+    "💡 定期的にレコードを更新して、進歩を記録しよう！",
+    "💡 「ab50」で全難易度のBest 50を見られるよ！",
+    "💡 プレイ後は早めに更新すると、リアルタイムで成長が見られるよ！",
+    "💡 フレンド申請は相手がコマンドを使用したときに通知されるよ！",
+    "💡 サポートページで詳しい使い方を確認できるよ！",
+]
 
 donate_message = FlexMessage(
     alt_text="JiETNGを支援 · Support JiETNG",

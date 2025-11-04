@@ -3,7 +3,7 @@ import requests
 import random
 import logging
 from lxml import etree
-from modules.record_console import get_detailed_info
+from modules.record_manager import get_detailed_info
 from modules.rate_limiter import maimai_limiter
 import urllib3
 

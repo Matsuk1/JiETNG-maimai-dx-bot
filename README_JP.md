@@ -362,18 +362,18 @@ JiETNG/
 ├── modules/                   # 機能モジュール
 │   ├── config_loader.py       # 設定ローダー
 │   ├── db_pool.py             # データベース接続プール
-│   ├── user_console.py        # ユーザー管理 + ニックネームキャッシュ
-│   ├── maimai_console.py      # Maimai API インターフェース
-│   ├── record_console.py      # データベース操作
-│   ├── record_generate.py     # スコアチャート生成
-│   ├── song_generate.py       # 楽曲チャート生成
-│   ├── img_console.py         # 画像処理
-│   ├── img_cache.py           # 画像キャッシュ
-│   ├── img_upload.py          # 画像アップロード
-│   ├── token_console.py       # トークン管理
+│   ├── user_manager.py        # ユーザー管理 + ニックネームキャッシュ
+│   ├── maimai_manager.py      # Maimai API インターフェース
+│   ├── record_manager.py      # データベース操作
+│   ├── record_generator.py    # スコアチャート生成
+│   ├── song_generator.py      # 楽曲チャート生成
+│   ├── image_manager.py       # 画像処理
+│   ├── image_cache.py         # 画像キャッシュ
+│   ├── image_uploader.py      # 画像アップロード
+│   ├── token_manager.py       # トークン管理
 │   ├── friend_list.py         # フレンドインターフェース
-│   ├── notice_console.py      # お知らせシステム
-│   ├── dxdata_console.py      # 楽曲データ管理
+│   ├── notice_manager.py      # お知らせシステム
+│   ├── dxdata_manager.py      # 楽曲データ管理
 │   ├── note_score.py          # スコア計算
 │   ├── json_encrypt.py        # 暗号化ツール
 │   ├── rate_limiter.py        # 頻度制限 + リクエスト追跡
@@ -382,7 +382,9 @@ JiETNG/
 │   ├── memory_manager.py      # メモリ管理とクリーンアップ
 │   ├── system_check.py        # システム自己診断
 │   ├── store_list.py          # 設置店舗リスト生成（Flex Message）
-│   └── reply_text.py          # メッセージテンプレート（寄付情報含む）
+│   ├── friend_request.py      # フレンド申請生成
+│   ├── friend_request_handler.py  # フレンド申請処理
+│   └── reply_text.py          # メッセージテンプレート（寄付情報と Tips 含む）
 ├── templates/                 # HTML テンプレート
 │   ├── bind_form.html         # アカウント連携フォーム
 │   ├── success.html           # 成功ページ

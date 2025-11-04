@@ -133,25 +133,25 @@ class MemoryManager:
         }
 
 
-def cleanup_user_caches(user_console_module=None):
+def cleanup_user_caches(user_manager_module=None):
     """
     清理用户相关的缓存
 
     Args:
-        user_console_module: user_console模块的引用（可选）
+        user_manager_module: user_manager 模块的引用（可选）
     """
     cleaned_items = 0
 
     # 清理用户昵称缓存（如果提供了模块引用）
-    if user_console_module and hasattr(user_console_module, 'nickname_cache'):
+    if user_manager_module and hasattr(user_manager_module, 'nickname_cache'):
         try:
             from datetime import datetime
             current_time = datetime.now()
 
             # 获取缓存和锁
-            cache = user_console_module.nickname_cache
-            lock = user_console_module.nickname_cache_lock
-            timeout = user_console_module.NICKNAME_CACHE_TIMEOUT
+            cache = user_manager_module.nickname_cache
+            lock = user_manager_module.nickname_cache_lock
+            timeout = user_manager_module.NICKNAME_CACHE_TIMEOUT
 
             with lock:
                 expired_keys = []

@@ -8,7 +8,7 @@ import logging
 from datetime import datetime
 from linebot.v3.messaging import TextMessage
 from modules.config_loader import USERS
-from modules.user_console import get_user_value, edit_user_value, read_user
+from modules.user_manager import get_user_value, edit_user_value, read_user
 from modules.reply_text import (
     segaid_error,
     friendid_error,

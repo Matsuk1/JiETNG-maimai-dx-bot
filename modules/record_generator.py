@@ -7,8 +7,7 @@ import math
 from PIL import Image, ImageDraw, ImageFont
 
 from modules.config_loader import LOGO_PATH
-from modules.img_console import *
-from modules.img_cache import paste_icon_optimized, get_cached_image, download_and_cache_icon
+from modules.image_cache import paste_icon_optimized, get_cached_image, download_and_cache_icon
 
 def _get_difficulty_color(difficulty):
     colors = {

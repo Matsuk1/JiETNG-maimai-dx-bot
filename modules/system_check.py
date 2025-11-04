@@ -5,7 +5,7 @@
 import logging
 from typing import List, Dict, Any
 from modules.config_loader import read_user, write_user, mark_user_dirty, USERS
-from modules.user_console import delete_user
+from modules.user_manager import delete_user
 
 logger = logging.getLogger(__name__)
 

@@ -7,6 +7,7 @@ LINE消息发送模块
 import logging
 import tempfile
 import os
+import random
 from datetime import datetime
 from linebot.v3.messaging import (
     Configuration,
@@ -17,17 +18,34 @@ from linebot.v3.messaging import (
     TextMessage
 )
 from modules.config_loader import USERS
-from modules.user_console import get_user_value, edit_user_value
-from modules.notice_console import get_latest_notice
+from modules.user_manager import get_user_value, edit_user_value
+from modules.notice_manager import get_latest_notice
 from modules.friend_request_handler import get_pending_requests
 from modules.friend_request import generate_friend_request_message
+from modules.reply_text import tip_messages
 
 logger = logging.getLogger(__name__)
 
 
+def get_random_tip():
+    """
+    从 tip_messages 列表中随机返回一条 tips
+
+    Returns:
+        TextMessage: 随机选择的 tips 消息
+    """
+    if tip_messages:
+        tip_text = random.choice(tip_messages)
+        return TextMessage(text=tip_text)
+    return None
+
+
 def smart_reply(user_id: str, reply_token: str, messages, configuration: Configuration, divider: str = "-" * 33):
     """
-    智能回复函数 - 自动附加未读公告和好友申请
+    智能回复函数 - 自动附加好友申请、未读公告和 tips
+
+    消息优先级：好友申请 > 公告 > Tips
+    仅当消息数量 < 5 时才添加附加消息
 
     Args:
         user_id: LINE用户ID
@@ -39,26 +57,35 @@ def smart_reply(user_id: str, reply_token: str, messages, configuration: Configu
     if not isinstance(messages, list):
         messages = [messages]
 
-    # 检查并附加未读公告
-    if user_id not in USERS:
-        notice_read = True
-    else:
-        notice_read = get_user_value(user_id, "notice_read")
+    # 只有当消息数量小于5时，才添加附加消息
+    if len(messages) < 5:
+        # 优先级1: 好友申请消息
+        if user_id in USERS:
+            pending_requests = get_pending_requests(user_id)
+            if pending_requests and len(messages) < 5:
+                friend_request_msg = generate_friend_request_message(pending_requests)
+                if friend_request_msg:
+                    messages.append(friend_request_msg)
 
-    if not notice_read:
-        notice_json = get_latest_notice()
-        if notice_json:
-            notice = f"📢 お知らせ\n{divider}\n{notice_json['content']}\n{divider}\n{notice_json['date']}"
-            messages += [TextMessage(text=notice)]
-            edit_user_value(user_id, "notice_read", True)
+        # 优先级2: 公告消息
+        if len(messages) < 5:
+            if user_id not in USERS:
+                notice_read = True
+            else:
+                notice_read = get_user_value(user_id, "notice_read")
 
-    # 检查并附加好友申请
-    if user_id in USERS:
-        pending_requests = get_pending_requests(user_id)
-        if pending_requests:
-            friend_request_msg = generate_friend_request_message(pending_requests)
-            if friend_request_msg:
-                messages.append(friend_request_msg)
+            if not notice_read:
+                notice_json = get_latest_notice()
+                if notice_json:
+                    notice = f"📢 お知らせ\n{divider}\n{notice_json['content']}\n{divider}\n{notice_json['date']}"
+                    messages.append(TextMessage(text=notice))
+                    edit_user_value(user_id, "notice_read", True)
+
+        # 优先级3: Tips 消息（只在还有空间时添加）
+        if len(messages) < 5:
+            tip_msg = get_random_tip()
+            if tip_msg:
+                messages.append(tip_msg)
 
     with ApiClient(configuration) as api_client:
         line_bot_api = MessagingApi(api_client)
