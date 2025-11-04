@@ -22,20 +22,40 @@ from modules.user_manager import get_user_value, edit_user_value
 from modules.notice_manager import get_latest_notice
 from modules.friend_request_handler import get_pending_requests
 from modules.friend_request import generate_friend_request_message
-from modules.reply_text import tip_messages
+from modules.reply_text import tip_messages, get_notice_header
 
 logger = logging.getLogger(__name__)
 
 
-def get_random_tip():
+def get_random_tip(user_id=None):
     """
-    从 tip_messages 列表中随机返回一条 tips
+    从 tip_messages 列表中随机返回一条 tips（支持多语言）
+
+    Args:
+        user_id: 用户ID，用于获取用户语言设置
 
     Returns:
         TextMessage: 随机选择的 tips 消息
     """
-    if tip_messages:
-        tip_text = random.choice(tip_messages)
+    if not tip_messages:
+        return None
+
+    # 获取用户语言设置，默认为日语
+    language = 'ja'
+    if user_id and user_id in USERS:
+        language = get_user_value(user_id, "language") or 'ja'
+
+    # 随机选择一条 tip
+    tip = random.choice(tip_messages)
+
+    # 获取对应语言的文本，如果不存在则使用日语
+    if isinstance(tip, dict):
+        tip_text = tip.get(language, tip.get('ja', ''))
+    else:
+        # 兼容旧格式（纯字符串）
+        tip_text = tip
+
+    if tip_text:
         return TextMessage(text=tip_text)
     return None
 
@@ -63,7 +83,7 @@ def smart_reply(user_id: str, reply_token: str, messages, configuration: Configu
         if user_id in USERS:
             pending_requests = get_pending_requests(user_id)
             if pending_requests and len(messages) < 5:
-                friend_request_msg = generate_friend_request_message(pending_requests)
+                friend_request_msg = generate_friend_request_message(pending_requests, user_id)
                 if friend_request_msg:
                     messages.append(friend_request_msg)
 
@@ -77,13 +97,14 @@ def smart_reply(user_id: str, reply_token: str, messages, configuration: Configu
             if not notice_read:
                 notice_json = get_latest_notice()
                 if notice_json:
-                    notice = f"📢 お知らせ\n{divider}\n{notice_json['content']}\n{divider}\n{notice_json['date']}"
+                    notice_header = get_notice_header(user_id)
+                    notice = f"{notice_header}\n{divider}\n{notice_json['content']}\n{divider}\n{notice_json['date']}"
                     messages.append(TextMessage(text=notice))
                     edit_user_value(user_id, "notice_read", True)
 
         # 优先级3: Tips 消息（只在还有空间时添加）
         if len(messages) < 5:
-            tip_msg = get_random_tip()
+            tip_msg = get_random_tip(user_id)
             if tip_msg:
                 messages.append(tip_msg)
 

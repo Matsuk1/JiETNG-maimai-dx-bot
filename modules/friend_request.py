@@ -6,9 +6,10 @@
 """
 
 from linebot.v3.messaging import FlexMessage, FlexContainer
+from modules.reply_text import get_friend_request_alt_text
 
 
-def generate_friend_request_message(requests: list) -> FlexMessage:
+def generate_friend_request_message(requests: list, user_id: str = None) -> FlexMessage:
     """
     生成好友申请Flex消息（极简黑白风格）
 
@@ -130,6 +131,6 @@ def generate_friend_request_message(requests: list) -> FlexMessage:
     }
 
     return FlexMessage(
-        alt_text=f"フレンド申請（{len(requests)}件）",
+        alt_text=get_friend_request_alt_text(len(requests), user_id),
         contents=FlexContainer.from_dict(bubble)
     )

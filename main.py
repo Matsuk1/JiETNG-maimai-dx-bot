@@ -157,7 +157,14 @@ from modules.reply_text import (
     friend_rcd_error,
     notice_upload,
     share_msg,
-    donate_message
+    donate_message,
+    friend_use_once,
+    friend_best50_title,
+    level_record_not_found,
+    level_record_page_hint,
+    dxdata_update_notification,
+    get_friend_list_alt_text,
+    get_nearby_stores_alt_text
 )
 from modules.note_score import get_note_score
 
@@ -569,11 +576,12 @@ def website_segaid_bind():
         segaid = request.form.get("segaid")
         password = request.form.get("password")
         user_version = request.form.get("ver", "jp")
+        user_language = request.form.get("language", "ja")
 
         if not segaid or not password:
             return render_template("error.html", message="すべての項目を入力してください"), 400
 
-        result = process_sega_credentials(user_id, segaid, password, user_version)
+        result = process_sega_credentials(user_id, segaid, password, user_version, user_language)
         if result == "MAINTENANCE":
             return render_template("error.html", message="公式サイトがメンテナンス中です。しばらくしてからもう一度お試しください。"), 503
         elif result:
@@ -584,7 +592,7 @@ def website_segaid_bind():
     return render_template("bind_form.html")
 
 
-def process_sega_credentials(user_id, segaid, password, ver="jp"):
+def process_sega_credentials(user_id, segaid, password, ver="jp", language="ja"):
     base = (
         "https://maimaidx-eng.com/maimai-mobile"
         if ver == "intl"
@@ -600,7 +608,8 @@ def process_sega_credentials(user_id, segaid, password, ver="jp"):
     user_bind_sega_id(user_id, segaid)
     user_bind_sega_pwd(user_id, password)
     user_set_version(user_id, ver)
-    smart_push(user_id, bind_msg, configuration)
+    user_set_language(user_id, language)
+    smart_push(user_id, bind_msg(user_id), configuration)
     return True
 
 
@@ -630,6 +639,14 @@ def user_set_version(user_id, version):
         add_user(user_id)
 
     edit_user_value(user_id, 'version', version)
+
+def user_set_language(user_id, language):
+    read_user()
+
+    if user_id not in USERS :
+        add_user(user_id)
+
+    edit_user_value(user_id, 'language', language)
 
 def get_user(user_id):
     read_user()
@@ -685,9 +702,9 @@ def async_generate_friend_b50_task(event):
     if friend_code.startswith("U"):
         if friend_code in USERS and "personal_info" in USERS[friend_code]:
             edit_user_value(user_id, "id_use", friend_code)
-            reply_msg =  TextMessage(text=f"これからは一回だけ「{USERS[friend_code]['personal_info']['name']}」さんとしてレコードをチェックしていきますよ！\n色んなコマンドを使ってみてね！")
+            reply_msg = friend_use_once(USERS[friend_code]['personal_info']['name'], user_id)
         else:
-            reply_msg = friendid_error
+            reply_msg = friendid_error(user_id)
 
     else:
         reply_msg = generate_friend_b50(user_id, friend_code, ver)
@@ -781,9 +798,9 @@ def maimai_update(user_id, ver="jp"):
         details += f"\n「{func}」Error" if not status else ""
 
     if not error:
-        messages.append(update_over)
+        messages.append(update_over(user_id))
     else:
-        messages.append(update_error)
+        messages.append(update_error(user_id))
         messages.append(TextMessage(text=details))
 
     return messages
@@ -892,7 +909,7 @@ def get_friend_list(user_id):
                 }
                 friends_list.append(friend_entry)
 
-    return generate_friend_buttons("フレンドリスト・Friends List", format_favorite_friends(friends_list))
+    return generate_friend_buttons(get_friend_list_alt_text(user_id), format_favorite_friends(friends_list))
 
 def get_song_record(user_id, acronym, ver="jp"):
     """
@@ -1351,7 +1368,7 @@ def generate_friend_b50(user_id, friend_code, ver="jp"):
 
     image_url = smart_upload(img)
     message = [
-        TextMessage(text=f"「{friend_name}」さんの Best 50"),
+        friend_best50_title(friend_name, user_id),
         ImageMessage(original_content_url=image_url, preview_image_url=image_url)
     ]
     return message
@@ -1391,7 +1408,7 @@ def generate_level_records(user_id, level, ver="jp", page=1):
     down_level_list = down_level_list[start_down:end_down]
 
     if not up_level_list and not down_level_list:
-        return TextMessage(text=f"指定されたレベル「{level}」の{page}ページ目の譜面記録は存在しないかも...")
+        return level_record_not_found(level, page, user_id)
 
     title = f"LV{level} #{page}"
 
@@ -1402,7 +1419,7 @@ def generate_level_records(user_id, level, ver="jp", page=1):
     image_url = smart_upload(img)
     message = [
         ImageMessage(original_content_url=image_url, preview_image_url=image_url),
-        TextMessage(text=f"これは{page}ページ目のデータだよ！\nほかのもチェックしたいなら、コマンドの後ろにページの番号をつけてみ〜\n\n例えば: 13.9のレコードリスト 3") if page == 1 else None
+        level_record_page_hint(page, user_id) if page == 1 else None
     ]
     message = [m for m in message if m]
     return message
@@ -1748,8 +1765,8 @@ def handle_sync_text_command(event):
         "ドネーション": lambda: donate_message,
 
         # 账户管理
-        "unbind": lambda: (delete_user(user_id), unbind_msg)[-1],
-        "アンバインド": lambda: (delete_user(user_id), unbind_msg)[-1],
+        "unbind": lambda: (delete_user(user_id), unbind_msg(user_id))[-1],
+        "アンバインド": lambda: (delete_user(user_id), unbind_msg(user_id))[-1],
         "get me": lambda: TextMessage(text=get_user(user_id)),
         "getme": lambda: TextMessage(text=get_user(user_id)),
         "ゲットミー": lambda: TextMessage(text=get_user(user_id)),
@@ -1935,10 +1952,10 @@ def handle_sync_text_command(event):
             smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
 
             # 推送通知给所有其他管理员
-            notification_message = TextMessage(text=f"📢 Dxdata 更新通知\n\n{result['message']}")
             for admin_user_id in ADMIN_ID:
                 if admin_user_id != user_id:  # 不重复发送给执行命令的管理员
                     try:
+                        notification_message = dxdata_update_notification(result['message'], admin_user_id)
                         smart_push(admin_user_id, notification_message, configuration)
                     except Exception as e:
                         logger.error(f"Failed to notify admin {admin_user_id}: {e}")
@@ -2047,8 +2064,9 @@ def handle_location_message(event):
     else:
         # 使用 LINE SDK v3 对象构建的 Flex Message（已修复结构问题）
         from modules.store_list import generate_store_buttons
+        user_id = event.source.user_id
         reply_message = generate_store_buttons(
-            "最寄りの maimai 設置店舗",
+            get_nearby_stores_alt_text(user_id),
             stores[:35]
         )
 
