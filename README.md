@@ -36,7 +36,7 @@
 - **数据安全**: SEGA 账户信息使用 Fernet 加密存储
 - **管理后台**: 功能完善的 Web 管理界面
 - **性能优化**: 双队列架构（图片队列/网络队列）配合频率限制
-- **多语言支持**: 日语交互界面，中英文文档
+- **多语言支持**: 日语/英语/中文交互界面，多语言文档
 
 ---
 
@@ -178,10 +178,16 @@ mysql -u jietng -p records < records_db.sql
     },
     "urls": {
         "line_adding": "https://line.me/R/ti/p/@yourlineid",
+        "support_page": "https://github.com/Matsuk1/JiETNG/blob/main/COMMANDS.md",
         "dxdata": [
             "https://raw.githubusercontent.com/gekichumai/dxrating/refs/heads/main/packages/dxdata/dxdata.json",
             "https://dp4p6x0xfi5o9.cloudfront.net/maimai/data.json"
         ]
+    },
+    "keys": {
+        "user_data": "",
+        "bind_token": "",
+        "imgur_client_id": ""
     }
 }
 ```
@@ -369,12 +375,11 @@ JiETNG/
 │   ├── song_generator.py      # 歌曲图生成
 │   ├── image_manager.py       # 图像处理
 │   ├── image_cache.py         # 图像缓存
-│   ├── image_uploader.py      # 图床上传
+│   ├── image_uploader.py      # 图床上传（Imgur/uguu/0x0）
 │   ├── token_manager.py       # Token 管理
 │   ├── friend_list.py         # 好友界面
 │   ├── notice_manager.py      # 公告系统
 │   ├── dxdata_manager.py      # 歌曲数据管理
-│   ├── note_score.py          # 分数计算
 │   ├── json_encrypt.py        # 加密工具
 │   ├── rate_limiter.py        # 频率限制 + 请求追踪
 │   ├── line_messenger.py      # LINE 消息发送
@@ -384,7 +389,7 @@ JiETNG/
 │   ├── store_list.py          # 机厅列表生成（Flex Message）
 │   ├── friend_request.py      # 好友申请生成
 │   ├── friend_request_handler.py  # 好友申请处理
-│   └── reply_text.py          # 消息模板（含捐赠信息和 Tips）
+│   └── message_manager.py     # 多语言消息管理（含公告、Tips）
 ├── templates/                 # HTML 模板
 │   ├── bind_form.html         # 账户绑定表单
 │   ├── success.html           # 成功页面
@@ -499,6 +504,7 @@ POST     /linebot/admin/trigger_cleanup    # 手动触发内存清理
     },
     "urls": {
         "line_adding": "https://line.me/R/ti/p/@yourlineid",
+        "support_page": "https://github.com/Matsuk1/JiETNG/blob/main/COMMANDS.md",
         "dxdata": [
             "https://raw.githubusercontent.com/gekichumai/dxrating/refs/heads/main/packages/dxdata/dxdata.json",
             "https://dp4p6x0xfi5o9.cloudfront.net/maimai/data.json"
@@ -511,7 +517,8 @@ POST     /linebot/admin/trigger_cleanup    # 手动触发内存清理
     },
     "keys": {
         "user_data": "AUTO_GENERATED_KEY",     // 自动生成的 Fernet 密钥
-        "bind_token": "AUTO_GENERATED_TOKEN"   // 自动生成的绑定令牌
+        "bind_token": "AUTO_GENERATED_TOKEN",  // 自动生成的绑定令牌
+        "imgur_client_id": "YOUR_IMGUR_CLIENT_ID"  // Imgur API Client ID（可选）
     }
 }
 ```
