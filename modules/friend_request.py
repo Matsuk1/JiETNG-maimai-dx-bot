@@ -6,7 +6,7 @@
 """
 
 from linebot.v3.messaging import FlexMessage, FlexContainer
-from modules.reply_text import get_friend_request_alt_text
+from modules.message_manager import get_friend_request_alt_text
 
 
 def generate_friend_request_message(requests: list, user_id: str = None) -> FlexMessage:

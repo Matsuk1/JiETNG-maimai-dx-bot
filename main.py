@@ -83,8 +83,7 @@ from modules.config_loader import *
 
 # UI and message modules
 from modules.friend_list import generate_friend_buttons
-from modules.reply_text import *
-from modules.note_score import get_note_score
+from modules.message_manager import *
 
 # Image processing
 from modules.image_uploader import smart_upload

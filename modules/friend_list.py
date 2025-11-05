@@ -1,5 +1,5 @@
 from linebot.v3.messaging import FlexMessage, FlexContainer
-from modules.reply_text import friend_error
+from modules.message_manager import friend_error
 
 def generate_friend_buttons(user_id, alt_text, button_list, group_size=6):
     """

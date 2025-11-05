@@ -22,7 +22,7 @@ from modules.user_manager import get_user_value, edit_user_value
 from modules.notice_manager import get_latest_notice
 from modules.friend_request_handler import get_pending_requests
 from modules.friend_request import generate_friend_request_message
-from modules.reply_text import tip_messages, get_notice_header
+from modules.message_manager import tip_messages, get_notice_header
 
 logger = logging.getLogger(__name__)
 
