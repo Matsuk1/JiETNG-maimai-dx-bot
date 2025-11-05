@@ -636,6 +636,7 @@ journalctl -u jietng -f
 - [LINE Messaging API](https://developers.line.biz/) - 消息平台
 - [Maimai DX](https://maimai.sega.jp/) - SEGA 原版游戏
 - [DXRating](https://github.com/gekichumai/dxrating) - 歌曲数据来源
+- [arcade-songs](https://arcade-songs.zetaraku.dev) - 音游歌曲数据库
 - 所有贡献者和用户
 
 ---

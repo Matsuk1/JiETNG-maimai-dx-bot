@@ -468,6 +468,7 @@ Issue と Pull Request の提出を歓迎します！
 - [LINE Messaging API](https://developers.line.biz/) - メッセージプラットフォーム
 - [Maimai DX](https://maimai.sega.jp/) - SEGA オリジナルゲーム
 - [DXRating](https://github.com/gekichumai/dxrating) - 楽曲データソース
+- [arcade-songs](https://arcade-songs.zetaraku.dev) - アーケードゲーム楽曲データベース
 - すべてのコントリビューターとユーザー
 
 ---

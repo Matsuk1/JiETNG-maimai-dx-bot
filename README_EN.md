@@ -690,6 +690,7 @@ This project is licensed under the [MIT License](LICENSE).
 - [LINE Messaging API](https://developers.line.biz/) - Messaging platform
 - [Maimai DX](https://maimai.sega.jp/) - Original game by SEGA
 - [DXRating](https://github.com/gekichumai/dxrating) - Song data source
+- [arcade-songs](https://arcade-songs.zetaraku.dev) - Arcade game song database
 - All contributors and users
 
 ---
