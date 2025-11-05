@@ -387,7 +387,7 @@ JiETNG/
 │   ├── memory_manager.py      # 内存管理和清理
 │   ├── system_check.py        # 系统自检
 │   ├── storelist_generator.py # 机厅列表生成（Flex Message）
-│   ├── friend_request.py      # 好友申请生成
+│   ├── friend_request_generator.py # 好友申请生成（Flex Message）
 │   ├── friend_request_handler.py  # 好友申请处理
 │   └── message_manager.py     # 多语言消息管理（含公告、Tips）
 ├── templates/                 # HTML 模板
