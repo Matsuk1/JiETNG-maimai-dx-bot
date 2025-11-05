@@ -12,7 +12,7 @@ from modules.config_loader import (
     read_user,
     USERS
 )
-from modules.db_pool import get_connection
+from modules.dbpool_manager import get_connection
 
 
 def get_single_ra(level: float, score: float, ap_clear: bool = False) -> int:

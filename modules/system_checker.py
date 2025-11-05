@@ -42,7 +42,7 @@ def check_database_connection() -> bool:
         True if connection is healthy, False otherwise
     """
     try:
-        from modules.db_pool import get_connection
+        from modules.dbpool_manager import get_connection
 
         conn = get_connection()
         cursor = conn.cursor()

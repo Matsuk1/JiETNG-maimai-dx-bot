@@ -367,7 +367,7 @@ JiETNG/
 ├── records_db.sql             # 数据库结构
 ├── modules/                   # 功能模块
 │   ├── config_loader.py       # 配置加载器
-│   ├── db_pool.py             # 数据库连接池
+│   ├── dbpool_manager.py      # 数据库连接池
 │   ├── user_manager.py        # 用户管理 + 昵称缓存
 │   ├── maimai_manager.py      # Maimai API 接口
 │   ├── record_manager.py      # 数据库操作
@@ -385,7 +385,7 @@ JiETNG/
 │   ├── line_messenger.py      # LINE 消息发送
 │   ├── song_matcher.py        # 歌曲搜索（支持模糊匹配）
 │   ├── memory_manager.py      # 内存管理和清理
-│   ├── system_check.py        # 系统自检
+│   ├── system_checker.py      # 系统自检
 │   ├── storelist_generator.py # 机厅列表生成（Flex Message）
 │   ├── friend_request_generator.py # 好友申请生成（Flex Message）
 │   ├── friend_request_handler.py  # 好友申请处理

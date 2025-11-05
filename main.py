@@ -90,7 +90,7 @@ from modules.image_uploader import smart_upload
 from modules.image_manager import *
 
 # System utilities
-from modules.system_check import run_system_check
+from modules.system_checker import run_system_check
 from modules.rate_limiter import check_rate_limit
 from modules.line_messenger import smart_reply, smart_push, notify_admins_error
 from modules.song_matcher import find_matching_songs, is_exact_song_title_match

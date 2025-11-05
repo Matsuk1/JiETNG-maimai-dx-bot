@@ -422,7 +422,7 @@ JiETNG/
 ├── records_db.sql             # Database schema
 ├── modules/                   # Functional modules
 │   ├── config_loader.py       # Configuration loader
-│   ├── db_pool.py             # Database connection pool
+│   ├── dbpool_manager.py      # Database connection pool
 │   ├── user_manager.py        # User management + nickname cache
 │   ├── maimai_manager.py      # Maimai API interface
 │   ├── record_manager.py      # Database operations
@@ -441,7 +441,7 @@ JiETNG/
 │   ├── line_messenger.py      # LINE message sending
 │   ├── song_matcher.py        # Song search with fuzzy matching
 │   ├── memory_manager.py      # Memory management and cleanup
-│   ├── system_check.py        # System self-check
+│   ├── system_checker.py      # System self-check
 │   ├── store_list.py          # Arcade store list generation (Flex Message)
 │   ├── friend_request.py      # Friend request generation
 │   ├── friend_request_handler.py  # Friend request handling

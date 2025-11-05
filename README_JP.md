@@ -361,7 +361,7 @@ JiETNG/
 ├── records_db.sql             # データベーススキーマ
 ├── modules/                   # 機能モジュール
 │   ├── config_loader.py       # 設定ローダー
-│   ├── db_pool.py             # データベース接続プール
+│   ├── dbpool_manager.py      # データベース接続プール
 │   ├── user_manager.py        # ユーザー管理 + ニックネームキャッシュ
 │   ├── maimai_manager.py      # Maimai API インターフェース
 │   ├── record_manager.py      # データベース操作
@@ -380,7 +380,7 @@ JiETNG/
 │   ├── line_messenger.py      # LINE メッセージ送信
 │   ├── song_matcher.py        # 楽曲検索（あいまい一致対応）
 │   ├── memory_manager.py      # メモリ管理とクリーンアップ
-│   ├── system_check.py        # システム自己診断
+│   ├── system_checker.py      # システム自己診断
 │   ├── store_list.py          # 設置店舗リスト生成（Flex Message）
 │   ├── friend_request.py      # フレンド申請生成
 │   ├── friend_request_handler.py  # フレンド申請処理
