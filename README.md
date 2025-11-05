@@ -377,7 +377,7 @@ JiETNG/
 │   ├── image_cache.py         # 图像缓存
 │   ├── image_uploader.py      # 图床上传（Imgur/uguu/0x0）
 │   ├── token_manager.py       # Token 管理
-│   ├── friend_list.py         # 好友界面
+│   ├── friendlist_generator.py # 好友列表生成（Flex Message）
 │   ├── notice_manager.py      # 公告系统
 │   ├── dxdata_manager.py      # 歌曲数据管理
 │   ├── json_encrypt.py        # 加密工具
@@ -386,7 +386,7 @@ JiETNG/
 │   ├── song_matcher.py        # 歌曲搜索（支持模糊匹配）
 │   ├── memory_manager.py      # 内存管理和清理
 │   ├── system_check.py        # 系统自检
-│   ├── store_list.py          # 机厅列表生成（Flex Message）
+│   ├── storelist_generator.py # 机厅列表生成（Flex Message）
 │   ├── friend_request.py      # 好友申请生成
 │   ├── friend_request_handler.py  # 好友申请处理
 │   └── message_manager.py     # 多语言消息管理（含公告、Tips）

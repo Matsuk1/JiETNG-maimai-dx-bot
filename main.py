@@ -82,7 +82,7 @@ from modules.record_manager import *
 from modules.config_loader import *
 
 # UI and message modules
-from modules.friend_list import generate_friend_buttons
+from modules.friendlist_generator import generate_friend_buttons
 from modules.message_manager import *
 
 # Image processing
@@ -1985,7 +1985,7 @@ def handle_location_message(event):
         reply_message = store_error(user_id)
     else:
         # 使用 LINE SDK v3 对象构建的 Flex Message（已修复结构问题）
-        from modules.store_list import generate_store_buttons
+        from modules.storelist_generator import generate_store_buttons
         user_id = event.source.user_id
         reply_message = generate_store_buttons(
             user_id,
