@@ -1,4 +1,4 @@
-from modules.config_loader import DOMAIN, USERS
+from modules.config_loader import SUPPORT_PAGE, USERS
 from linebot.v3.messaging import (
     TextMessage,
     QuickReply,
@@ -177,12 +177,6 @@ friendid_error_text = {
     "ja": "こういう人見つかってないね",
     "en": "Couldn't find anyone like that",
     "zh": "没有找到这样的人"
-}
-
-friend_added_text = {
-    "ja": "もうフレンドになったじゃん！",
-    "en": "You're already friends!",
-    "zh": "你们已经是好友了！"
 }
 
 friendid_self_error_text = {
@@ -366,9 +360,9 @@ tip_messages = [
         "zh": "💡 使用「maipass」生成名片，发给朋友就能添加好友！"
     },
     {
-        "ja": "💡 「calc [tap] [hold] [slide] ([touch])  [break]」でノーツ数を入力すると、各ミス数の達成率が計算できるよ！",
-        "en": "💡 Use 'calc [tap] [hold] [slide] ([touch]) [break]' to calculate achievement rates for each miss count!",
-        "zh": "💡 使用「calc [tap] [hold] [slide] ([touch]) [break]」输入 note 数量，可以计算各失误数对应的达成率！"
+        "ja": "💡 「calc [tap] [hold] [slide] ([touch])  [break]」でノーツ数を入力すると、各ノーツの達成率が計算できるよ！",
+        "en": "💡 Use 'calc [tap] [hold] [slide] ([touch]) [break]' to calculate achievement rates for each kind of notes!",
+        "zh": "💡 使用「calc [tap] [hold] [slide] ([touch]) [break]」输入 note 数量，可以计算各类note对应的达成率！"
     },
     {
         "ja": "💡 位置情報を送信すると、近くのmaimaiゲーセンを検索できるよ！",
@@ -550,7 +544,7 @@ def get_support_quick_reply(user_id=None):
         items=[
             QuickReplyItem(action=URIAction(
                 label=get_quick_reply_label("support", user_id),
-                uri=f"https://{DOMAIN}/"
+                uri=SUPPORT_PAGE
             ))
         ]
     )
@@ -565,7 +559,7 @@ def get_bind_quick_reply(user_id=None):
             )),
             QuickReplyItem(action=URIAction(
                 label=get_quick_reply_label("support", user_id),
-                uri=f"https://{DOMAIN}/"
+                uri=SUPPORT_PAGE
             ))
         ]
     )
@@ -600,7 +594,7 @@ def get_update_over_quick_reply(user_id=None):
             )),
             QuickReplyItem(action=URIAction(
                 label=get_quick_reply_label("support", user_id),
-                uri=f"https://{DOMAIN}/"
+                uri=SUPPORT_PAGE
             ))
         ]
     )
@@ -615,7 +609,7 @@ def get_update_error_quick_reply(user_id=None):
             )),
             QuickReplyItem(action=URIAction(
                 label=get_quick_reply_label("support", user_id),
-                uri=f"https://{DOMAIN}/"
+                uri=SUPPORT_PAGE
             ))
         ]
     )
@@ -630,7 +624,7 @@ def get_segaid_error_quick_reply(user_id=None):
             )),
             QuickReplyItem(action=URIAction(
                 label=get_quick_reply_label("support", user_id),
-                uri=f"https://{DOMAIN}/"
+                uri=SUPPORT_PAGE
             ))
         ]
     )
@@ -645,7 +639,7 @@ def get_record_error_quick_reply(user_id=None):
             )),
             QuickReplyItem(action=URIAction(
                 label=get_quick_reply_label("support", user_id),
-                uri=f"https://{DOMAIN}/"
+                uri=SUPPORT_PAGE
             ))
         ]
     )
@@ -726,10 +720,6 @@ def friendid_error(user_id=None):
     """生成好友 ID 错误消息"""
     return create_text_message(friendid_error_text, user_id, get_support_quick_reply(user_id))
 
-def friend_added(user_id=None):
-    """生成好友已添加消息"""
-    return create_text_message(friend_added_text, user_id, get_support_quick_reply(user_id))
-
 def friendid_self_error(user_id=None):
     """生成不能添加自己为好友的错误消息"""
     return create_text_message(friendid_self_error_text, user_id, get_support_quick_reply(user_id))
@@ -778,10 +768,6 @@ def friend_request_mutual_accepted(name, user_id=None):
 def notice_upload(user_id=None):
     """生成公告上传消息"""
     return create_text_message(notice_upload_text, user_id)
-
-def dxdata_update(user_id=None):
-    """生成 Dxdata 更新消息"""
-    return create_text_message(dxdata_update_text, user_id)
 
 def share_msg(user_id=None):
     """生成分享消息"""

@@ -1,7 +1,7 @@
 from linebot.v3.messaging import FlexMessage, FlexContainer
 from modules.reply_text import friend_error
 
-def generate_friend_buttons(alt_text, button_list, group_size=6):
+def generate_friend_buttons(user_id, alt_text, button_list, group_size=6):
     """
     生成好友列表 Flex Message（极简黑白风格）
 
@@ -14,7 +14,7 @@ def generate_friend_buttons(alt_text, button_list, group_size=6):
         FlexMessage
     """
     if not button_list:
-        return friend_error
+        return friend_error(user_id)
 
     bubbles = []
     total_pages = (len(button_list) + group_size - 1) // group_size

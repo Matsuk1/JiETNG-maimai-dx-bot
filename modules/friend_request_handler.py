@@ -40,15 +40,15 @@ def send_friend_request(from_user_id: str, to_user_id: str) -> TextMessage:
 
     # 验证发送者是否存在
     if from_user_id not in USERS:
-        return segaid_error
+        return segaid_error(from_user_id)
 
     # 验证接收者是否存在
     if to_user_id not in USERS:
-        return friendid_error
+        return friendid_error(from_user_id)
 
     # 不能给自己发送申请
     if from_user_id == to_user_id:
-        return friendid_self_error
+        return friendid_self_error(from_user_id)
 
     # 检查是否已经是好友
     from_friends_list = USERS[from_user_id].get('line_friends', [])
@@ -62,7 +62,7 @@ def send_friend_request(from_user_id: str, to_user_id: str) -> TextMessage:
     to_requests = USERS[to_user_id].get('friend_requests', [])
     for req in to_requests:
         if req['from_user_id'] == from_user_id:
-            return friend_request_already_sent
+            return friend_request_already_sent(from_user_id)
 
     # 检查对方是否也给自己发送过申请（双向申请自动通过）
     from_requests = USERS[from_user_id].get('friend_requests', [])
@@ -139,7 +139,7 @@ def accept_friend_request(user_id: str, request_id: str) -> TextMessage:
     read_user()
 
     if user_id not in USERS:
-        return segaid_error
+        return segaid_error(user_id)
 
     # 获取申请列表
     requests = USERS[user_id].get('friend_requests', [])
@@ -152,7 +152,7 @@ def accept_friend_request(user_id: str, request_id: str) -> TextMessage:
             break
 
     if not request_data:
-        return friend_request_not_found
+        return friend_request_not_found(user_id)
 
     from_user_id = request_data['from_user_id']
 
@@ -161,7 +161,7 @@ def accept_friend_request(user_id: str, request_id: str) -> TextMessage:
         # 移除无效申请
         requests.remove(request_data)
         edit_user_value(user_id, 'friend_requests', requests)
-        return friendid_error
+        return friendid_error(user_id)
 
     # 双向添加好友
     # 添加到当前用户的好友列表
@@ -200,7 +200,7 @@ def reject_friend_request(user_id: str, request_id: str) -> TextMessage:
     read_user()
 
     if user_id not in USERS:
-        return segaid_error
+        return segaid_error(user_id)
 
     # 获取申请列表
     requests = USERS[user_id].get('friend_requests', [])
@@ -213,7 +213,7 @@ def reject_friend_request(user_id: str, request_id: str) -> TextMessage:
             break
 
     if not request_data:
-        return friend_request_not_found
+        return friend_request_not_found(user_id)
 
     # 移除申请记录
     requests.remove(request_data)

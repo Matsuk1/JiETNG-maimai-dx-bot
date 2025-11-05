@@ -31,7 +31,7 @@ def parse_distance_km(distance_str: str) -> float:
     return value
 
 
-def generate_store_buttons(alt_text, store_list):
+def generate_store_buttons(user_id, alt_text, store_list):
     """
     生成机厅列表 Flex Message（黑白简约风）
     - 仅显示 30km 内机厅
@@ -39,7 +39,7 @@ def generate_store_buttons(alt_text, store_list):
     - 右侧 📍 按钮（白底黑边，固定高度 + 增宽）
     """
     if not store_list:
-        return store_error
+        return store_error(user_id)
 
     # ✅ 过滤：只保留 ≤30 km 的机厅
     filtered_stores = []
@@ -50,7 +50,7 @@ def generate_store_buttons(alt_text, store_list):
             filtered_stores.append(store)
 
     if not filtered_stores:
-        return store_error
+        return store_error(user_id)
 
     # ✅ 分页：每页 5 个
     group_size = 5

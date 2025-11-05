@@ -24,7 +24,7 @@ default_config = {
         "jp": [],
         "intl": []
     },
-    "domain": "jietng.example.com",
+    "domain": "",
     "port": 5000,
     "file_path": {
         "dxdata_list": "./data/dxdata.json",
@@ -42,6 +42,7 @@ default_config = {
     },
     "urls": {
         "line_adding": "",
+        "support_page": "https://github.com/Matsuk1/JiETNG/blob/main/COMMANDS.md",
         "dxdata": [
             "https://dp4p6x0xfi5o9.cloudfront.net/maimai/data.json",
             "https://raw.githubusercontent.com/gekichumai/dxrating/refs/heads/main/packages/dxdata/dxdata.json"
@@ -54,7 +55,8 @@ default_config = {
     },
     "keys": {
         "user_data": "",
-        "bind_token": ""
+        "bind_token": "",
+        "imgur_client_id": ""
     }
 }
 
@@ -136,6 +138,7 @@ DB_NAME = RECORD_DATABASE["database"]
 # URL 配置字段
 URLS = _config["urls"]
 LINE_ADDING_URL = URLS["line_adding"]
+SUPPORT_PAGE = URLS["support_page"]
 DXDATA_URL = URLS["dxdata"]
 
 # LINE 配置字段
@@ -148,6 +151,7 @@ LINE_CHANNEL_SECRET = LINE_CHANNEL["secret"]
 KEYS = _config["keys"]
 USER_DATA_KEY = KEYS["user_data"].encode()
 BIND_TOKEN_KEY = KEYS["bind_token"].encode()
+IMGUR_CLIENT_ID = KEYS.get("imgur_client_id", "")
 
 # 全局缓存数据
 SONGS = []

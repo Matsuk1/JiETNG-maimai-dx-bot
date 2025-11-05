@@ -68,114 +68,27 @@ from linebot.v3.webhooks import (
 
 # Song and record generators
 from modules.song_generator import song_info_generate, generate_version_list
-from modules.record_generator import (
-    generate_records_picture,
-    generate_yang_records_picture,
-    create_small_record,
-    generate_plate_image
-)
+from modules.record_generator import *
 
 # User and data managers
-from modules.user_manager import (
-    add_user,
-    delete_user,
-    edit_user_value,
-    get_user_value,
-    get_user_nickname,
-    clear_user_value
-)
+from modules.user_manager import *
 from modules.token_manager import generate_token, get_user_id_from_token
-from modules.notice_manager import (
-    upload_notice,
-    get_latest_notice,
-    get_all_notices,
-    update_notice,
-    delete_notice
-)
-from modules.maimai_manager import (
-    fetch_dom,
-    login_to_maimai,
-    get_maimai_records,
-    get_friends_list,
-    format_favorite_friends,
-    parse_level_value,
-    get_recent_records,
-    get_friend_records,
-    get_maimai_info,
-    get_nearby_maimai_stores
-)
+from modules.notice_manager import *
+from modules.maimai_manager import *
 from modules.dxdata_manager import update_dxdata_with_comparison
-from modules.record_manager import (
-    get_single_ra,
-    get_ideal_score,
-    read_record,
-    write_record,
-    get_detailed_info
-)
+from modules.record_manager import *
 
 # Config loader
-from modules.config_loader import (
-    read_dxdata,
-    read_user,
-    write_user,
-    mark_user_dirty,
-    ADMIN_ID,
-    ADMIN_PASSWORD,
-    MAIMAI_VERSION,
-    DOMAIN,
-    PORT,
-    DXDATA_LIST,
-    LINE_ADDING_URL,
-    DXDATA_URL,
-    LINE_ACCOUNT_ID,
-    LINE_CHANNEL_ACCESS_TOKEN,
-    LINE_CHANNEL_SECRET,
-    SONGS,
-    VERSIONS,
-    USERS
-)
+from modules.config_loader import *
 
 # UI and message modules
 from modules.friend_list import generate_friend_buttons
-from modules.reply_text import (
-    bind_msg,
-    unbind_msg,
-    update_over,
-    update_error,
-    segaid_error,
-    record_error,
-    info_error,
-    picture_error,
-    song_error,
-    plate_error,
-    version_error,
-    store_error,
-    qrcode_error,
-    rate_limit_msg,
-    maintenance_error,
-    friendid_error,
-    friend_error,
-    friend_rcd_error,
-    notice_upload,
-    share_msg,
-    donate_message,
-    friend_use_once,
-    friend_best50_title,
-    level_record_not_found,
-    level_record_page_hint,
-    dxdata_update_notification,
-    get_friend_list_alt_text,
-    get_nearby_stores_alt_text
-)
+from modules.reply_text import *
 from modules.note_score import get_note_score
 
 # Image processing
 from modules.image_uploader import smart_upload
-from modules.image_manager import (
-    combine_with_rounded_background,
-    wrap_in_rounded_background,
-    generate_qr_with_title
-)
+from modules.image_manager import *
 
 # System utilities
 from modules.system_check import run_system_check
@@ -752,24 +665,30 @@ def maimai_update(user_id, ver="jp"):
     read_user()
 
     if user_id not in USERS:
-        return segaid_error
+        return segaid_error(user_id)
 
     elif 'sega_id' not in USERS[user_id] or 'sega_pwd' not in USERS[user_id]:
-        return segaid_error
+        return segaid_error(user_id)
 
     sega_id = USERS[user_id]['sega_id']
     sega_pwd = USERS[user_id]['sega_pwd']
 
     user_session = login_to_maimai(sega_id, sega_pwd, ver)
     if user_session == None:
-        return segaid_error
+        return segaid_error(user_id)
     if user_session == "MAINTENANCE":
-        return maintenance_error
+        return maintenance_error(user_id)
 
     user_info = get_maimai_info(user_session, ver)
     maimai_records = get_maimai_records(user_session, ver)
     recent_records = get_recent_records(user_session, ver)
     friends_list = get_friends_list(user_session, ver)
+
+    if (user_info == "MAINTENANCE" or
+        maimai_records == "MAINTENANCE" or
+        recent_records == "MAINTENANCE" or
+        friends_list == "MAINTENANCE"):
+        return maintenance_error(user_id)
 
     error = False
 
@@ -828,7 +747,7 @@ def get_rc(level: float) -> str:
 
     return result
 
-def search_song(acronym, ver="jp"):
+def search_song(user_id, acronym, ver="jp"):
     """
     搜索歌曲并返回歌曲信息图片
 
@@ -846,18 +765,18 @@ def search_song(acronym, ver="jp"):
 
     # 没有匹配结果
     if not matching_songs:
-        return song_error
+        return song_error(user_id)
 
     # 生成消息列表
     result = []
     for song in matching_songs:
-        image_url = smart_upload(song_info_generate(song))
-        message = ImageMessage(original_content_url=image_url, preview_image_url=image_url)
+        original_url, preview_url = smart_upload(song_info_generate(song))
+        message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
         result.append(message)
 
     return result
 
-def random_song(key="", ver="jp"):
+def random_song(user_id, key="", ver="jp"):
     read_dxdata(ver)
     length = len(SONGS)
     is_exit = False
@@ -875,22 +794,22 @@ def random_song(key="", ver="jp"):
                     break
 
     if not valid_songs:
-        return song_error
+        return song_error(user_id)
 
     song = random.choice(valid_songs)
 
-    image_url = smart_upload(song_info_generate(song))
-    result = ImageMessage(original_content_url=image_url, preview_image_url=image_url)
+    original_url, preview_url = smart_upload(song_info_generate(song))
+    result = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
 
     return result
 
 def get_friend_list(user_id):
     read_user()
     if user_id not in USERS:
-        return segaid_error
+        return segaid_error(user_id)
 
     elif 'mai_friends' not in USERS[user_id] and 'line_friends' not in USERS[user_id]:
-        return friend_error
+        return friend_error(user_id)
 
     friends_list = copy.deepcopy(get_user_value(user_id, "mai_friends"))
     if not friends_list:
@@ -910,7 +829,7 @@ def get_friend_list(user_id):
                 }
                 friends_list.append(friend_entry)
 
-    return generate_friend_buttons(get_friend_list_alt_text(user_id), format_favorite_friends(friends_list))
+    return generate_friend_buttons(user_id, get_friend_list_alt_text(user_id), format_favorite_friends(friends_list))
 
 def get_song_record(user_id, acronym, ver="jp"):
     """
@@ -929,13 +848,13 @@ def get_song_record(user_id, acronym, ver="jp"):
     song_record = read_record(user_id)
 
     if not len(song_record):
-        return record_error
+        return record_error(user_id)
 
     # 使用优化的歌曲匹配函数
     matching_songs = find_matching_songs(acronym, SONGS, max_results=6, threshold=0.85)
 
     if not matching_songs:
-        return song_error
+        return song_error(user_id)
 
     result = []
 
@@ -953,19 +872,19 @@ def get_song_record(user_id, acronym, ver="jp"):
         if not played_data:
             continue
 
-        image_url = smart_upload(song_info_generate(song, played_data))
-        message = ImageMessage(original_content_url=image_url, preview_image_url=image_url)
+        original_url, preview_url = smart_upload(song_info_generate(song, played_data))
+        message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
         result.append(message)
 
     # 没有找到任何有记录的歌曲,或结果过多
     if len(result) == 0 or len(result) > 6:
-        result = song_error
+        result = song_error(user_id)
 
     return result
 
 def generate_plate_rcd(user_id, title, ver="jp"):
     if not (len(title) == 2 or len(title) == 3):
-        return plate_error
+        return plate_error(user_id)
 
     read_user()
     read_dxdata(ver)
@@ -973,10 +892,10 @@ def generate_plate_rcd(user_id, title, ver="jp"):
     song_record = read_record(user_id)
 
     if not len(song_record):
-        return record_error
+        return record_error(user_id)
 
     if "personal_info" not in USERS[user_id]:
-        return info_error
+        return info_error(user_id)
 
     version_name = title[0]
     plate_type = title[1:]
@@ -990,7 +909,7 @@ def generate_plate_rcd(user_id, title, ver="jp"):
             target_version.append(version['version'])
 
     if not len(target_version) :
-        return version_error
+        return version_error(user_id)
 
     if plate_type in ["極", "极"] :
         target_type = "combo"
@@ -1009,11 +928,11 @@ def generate_plate_rcd(user_id, title, ver="jp"):
         target_icon = ["fdx", "fdxp"]
 
     else:
-        return plate_error
+        return plate_error(user_id)
 
     version_rcd_data = list(filter(lambda x: x['version'] in target_version, song_record))
     if not version_rcd_data:
-        return version_error
+        return version_error(user_id)
 
     target_data = []
     target_num = {
@@ -1082,8 +1001,8 @@ def generate_plate_rcd(user_id, title, ver="jp"):
 
     img = combine_with_rounded_background(create_user_info_img(user_id), img)
 
-    image_url = smart_upload(img)
-    message = ImageMessage(original_content_url=image_url, preview_image_url=image_url)
+    original_url, preview_url = smart_upload(img)
+    message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
 
     return message
 
@@ -1161,10 +1080,10 @@ def create_user_info_img(user_id, scale=1.5):
 def generate_maipass(user_id):
     read_user()
     if user_id not in USERS:
-        return segaid_error
+        return segaid_error(user_id)
 
     if "personal_info" not in USERS[user_id]:
-        return info_error
+        return info_error(user_id)
 
     user_img = create_user_info_img(user_id)
 
@@ -1182,23 +1101,23 @@ def generate_maipass(user_id):
 
     img = combine_with_rounded_background(user_img, qr_img)
 
-    image_url = smart_upload(img)
-    img_msg = ImageMessage(original_content_url=image_url, preview_image_url=image_url)
-    message = [img_msg, share_msg]
+    original_url, preview_url = smart_upload(img)
+    img_msg = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
+    message = [img_msg, share_msg(user_id)]
     return message
 
 def selgen_records(user_id, type="best50", command="", ver="jp"):
     read_user()
 
     if user_id not in USERS:
-        return segaid_error
+        return segaid_error(user_id)
 
     song_record = read_record(user_id)
     if not len(song_record):
-        return record_error
+        return record_error(user_id)
 
     if "personal_info" not in USERS[user_id]:
-        return info_error
+        return info_error(user_id)
 
     if not command == "":
         cmds = re.findall(r"-(\w+)\s+([^ -][^-]*)", command)
@@ -1291,23 +1210,23 @@ def selgen_records(user_id, type="best50", command="", ver="jp"):
         down_songs = sorted(down_songs_data, key=lambda x: -x["ra"])[:15]
 
     if not up_songs and not down_songs:
-        return picture_error
+        return picture_error(user_id)
 
     img = generate_records_picture(up_songs, down_songs, type.upper())
     img = combine_with_rounded_background(create_user_info_img(user_id), img)
 
-    image_url = smart_upload(img)
-    message = ImageMessage(original_content_url=image_url, preview_image_url=image_url)
+    original_url, preview_url = smart_upload(img)
+    message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
     return message
 
 def generate_yang_rating(user_id, ver="jp"):
     song_record = read_record(user_id, yang=True)
     if not len(song_record):
-        return record_error
+        return record_error(user_id)
 
     read_user()
     if "personal_info" not in USERS[user_id]:
-        return info_error
+        return info_error(user_id)
 
     now_version = MAIMAI_VERSION[USERS[user_id]['version']][-1]
 
@@ -1329,32 +1248,32 @@ def generate_yang_rating(user_id, ver="jp"):
     img = generate_yang_records_picture(version_records)
     img = combine_with_rounded_background(create_user_info_img(user_id), img)
 
-    image_url = smart_upload(img)
-    message = ImageMessage(original_content_url=image_url, preview_image_url=image_url)
+    original_url, preview_url = smart_upload(img)
+    message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
     return message
 
 def generate_friend_b50(user_id, friend_code, ver="jp"):
     read_user()
 
     if user_id not in USERS :
-        return segaid_error
+        return segaid_error(user_id)
 
     elif 'sega_id' not in USERS[user_id] or 'sega_pwd' not in USERS[user_id] :
-        return segaid_error
+        return segaid_error(user_id)
 
     sega_id = USERS[user_id]['sega_id']
     sega_pwd = USERS[user_id]['sega_pwd']
 
     user_session = login_to_maimai(sega_id, sega_pwd, ver)
     if user_session == None:
-        return segaid_error
+        return segaid_error(user_id)
     if user_session == "MAINTENANCE":
-        return maintenance_error
+        return maintenance_error(user_id)
 
     friend_name, song_record = get_friend_records(user_session, friend_code, ver)
 
     if not friend_name or not song_record:
-        return friend_rcd_error
+        return friend_rcd_error(user_id)
 
     song_record = get_detailed_info(song_record, ver)
 
@@ -1367,10 +1286,10 @@ def generate_friend_b50(user_id, friend_code, ver="jp"):
     img = generate_records_picture(up_songs, down_songs, "FRD-B50")
     img = wrap_in_rounded_background(img)
 
-    image_url = smart_upload(img)
+    original_url, preview_url = smart_upload(img)
     message = [
         friend_best50_title(friend_name, user_id),
-        ImageMessage(original_content_url=image_url, preview_image_url=image_url)
+        ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
     ]
     return message
 
@@ -1378,12 +1297,12 @@ def generate_level_records(user_id, level, ver="jp", page=1):
     read_user()
 
     if "personal_info" not in USERS[user_id]:
-        return info_error
+        return info_error(user_id)
 
     song_record = read_record(user_id)
 
     if not len(song_record):
-        return record_error
+        return record_error(user_id)
 
     level_value = parse_level_value(level)
 
@@ -1417,15 +1336,15 @@ def generate_level_records(user_id, level, ver="jp", page=1):
 
     img = combine_with_rounded_background(create_user_info_img(user_id), img)
 
-    image_url = smart_upload(img)
+    original_url, preview_url = smart_upload(img)
     message = [
-        ImageMessage(original_content_url=image_url, preview_image_url=image_url),
+        ImageMessage(original_content_url=original_url, preview_image_url=preview_url),
         level_record_page_hint(page, user_id) if page == 1 else None
     ]
     message = [m for m in message if m]
     return message
 
-def generate_version_songs(version_title, ver="jp"):
+def generate_version_songs(user_id, version_title, ver="jp"):
     read_dxdata(ver)
 
     target_version = []
@@ -1437,13 +1356,13 @@ def generate_version_songs(version_title, ver="jp"):
             target_version.append(version['version'])
 
     if not len(target_version) :
-        return version_error
+        return version_error(user_id)
 
     songs_data = list(filter(lambda x: x['version'] in target_version and x['type'] not in ['utage'], SONGS))
     img = generate_version_list(songs_data)
 
-    image_url = smart_upload(img)
-    message = ImageMessage(original_content_url=image_url, preview_image_url=image_url)
+    original_url, preview_url = smart_upload(img)
+    message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
     return message
 
 # ==================== 消息处理 ====================
@@ -1486,7 +1405,7 @@ def route_to_web_queue(event):
 
         # 频率限制检查
         if check_rate_limit(user_id, task_func.__name__):
-            smart_reply(user_id, event.reply_token, rate_limit_msg, configuration, DIVIDER)
+            smart_reply(user_id, event.reply_token, rate_limit_msg(user_id), configuration, DIVIDER)
             return True
 
         try:
@@ -1509,7 +1428,7 @@ def route_to_web_queue(event):
             webtask_queue.put_nowait((task_func, (event,), task_id))
             return True
         except queue.Full:
-            smart_reply(user_id, event.reply_token, access_error, configuration, DIVIDER)
+            smart_reply(user_id, event.reply_token, access_error(user_id), configuration, DIVIDER)
             return True
 
     # 检查前缀匹配的web任务
@@ -1517,7 +1436,7 @@ def route_to_web_queue(event):
         if user_message.startswith(prefix):
             # 频率限制检查
             if check_rate_limit(user_id, task_func.__name__):
-                smart_reply(user_id, event.reply_token, rate_limit_msg, configuration, DIVIDER)
+                smart_reply(user_id, event.reply_token, rate_limit_msg(user_id), configuration, DIVIDER)
                 return True
 
             try:
@@ -1540,7 +1459,7 @@ def route_to_web_queue(event):
                 webtask_queue.put_nowait((task_func, (event,), task_id))
                 return True
             except queue.Full:
-                smart_reply(user_id, event.reply_token, access_error, configuration, DIVIDER)
+                smart_reply(user_id, event.reply_token, access_error(user_id), configuration, DIVIDER)
                 return True
 
     # 不是web任务,返回False
@@ -1594,7 +1513,7 @@ def route_to_image_queue(event):
     if user_message in IMAGE_TASK_ROUTES['exact']:
         # 频率限制检查 - 使用消息类型作为任务类型
         if check_rate_limit(user_id, f"image:{user_message}"):
-            smart_reply(user_id, event.reply_token, rate_limit_msg, configuration, DIVIDER)
+            smart_reply(user_id, event.reply_token, rate_limit_msg(user_id), configuration, DIVIDER)
             return True
 
         try:
@@ -1613,7 +1532,7 @@ def route_to_image_queue(event):
             image_queue.put_nowait((async_generate_image_task, (event,), task_id))
             return True
         except queue.Full:
-            smart_reply(user_id, event.reply_token, access_error, configuration, DIVIDER)
+            smart_reply(user_id, event.reply_token, access_error(user_id), configuration, DIVIDER)
             return True
 
     # 检查后缀匹配的图片生成任务
@@ -1636,7 +1555,7 @@ def route_to_image_queue(event):
                     image_queue.put_nowait((async_generate_image_task, (event,), task_id))
                     return True
                 except queue.Full:
-                    smart_reply(user_id, event.reply_token, access_error, configuration, DIVIDER)
+                    smart_reply(user_id, event.reply_token, access_error(user_id), configuration, DIVIDER)
                     return True
 
     # 检查レコードリスト (带数字的)
@@ -1657,7 +1576,7 @@ def route_to_image_queue(event):
             image_queue.put_nowait((async_generate_image_task, (event,), task_id))
             return True
         except queue.Full:
-            smart_reply(user_id, event.reply_token, access_error, configuration, DIVIDER)
+            smart_reply(user_id, event.reply_token, access_error(user_id), configuration, DIVIDER)
             return True
 
     # 检查 B 系列命令
@@ -1665,7 +1584,7 @@ def route_to_image_queue(event):
     if first_word in IMAGE_TASK_ROUTES['b_commands']:
         # 频率限制检查 - B系列命令使用统一的限制
         if check_rate_limit(user_id, "image:b_series"):
-            smart_reply(user_id, event.reply_token, rate_limit_msg, configuration, DIVIDER)
+            smart_reply(user_id, event.reply_token, rate_limit_msg(user_id), configuration, DIVIDER)
             return True
 
         try:
@@ -1684,7 +1603,7 @@ def route_to_image_queue(event):
             image_queue.put_nowait((async_generate_image_task, (event,), task_id))
             return True
         except queue.Full:
-            smart_reply(user_id, event.reply_token, access_error, configuration, DIVIDER)
+            smart_reply(user_id, event.reply_token, access_error(user_id), configuration, DIVIDER)
             return True
 
     # 检查 ランダム曲 / random-song
@@ -1705,7 +1624,7 @@ def route_to_image_queue(event):
             image_queue.put_nowait((async_generate_image_task, (event,), task_id))
             return True
         except queue.Full:
-            smart_reply(user_id, event.reply_token, access_error, configuration, DIVIDER)
+            smart_reply(user_id, event.reply_token, access_error(user_id), configuration, DIVIDER)
             return True
 
     # 不是图片生成任务
@@ -1801,6 +1720,7 @@ def handle_sync_text_command(event):
         # 歌曲信息查询
         (lambda msg: msg.endswith(("ってどんな曲", "info", "song-info")),
         lambda msg: search_song(
+            user_id,
             re.sub(r"(ってどんな曲|info|song-info)$", "", msg).strip(),
             mai_ver
         )),
@@ -1808,6 +1728,7 @@ def handle_sync_text_command(event):
         # 随机歌曲
         (lambda msg: msg.startswith(("ランダム曲", "ランダム", "random-song", "random")),
         lambda msg: random_song(
+            user_id,
             re.sub(r"^(ランダム曲|ランダム|random-song|random)", "", msg).strip(),
             mai_ver
         )),
@@ -1846,6 +1767,7 @@ def handle_sync_text_command(event):
         # 版本歌曲列表
         (lambda msg: msg.endswith(("のバージョンリスト", "version-list", "version")),
         lambda msg: generate_version_songs(
+            user_id,
             re.sub(r"\s*\+\s*", " PLUS", re.sub(r"(のバージョンリスト|version-list|version)$", "", msg)).strip(),
             mai_ver
         )),
@@ -1931,7 +1853,7 @@ def handle_sync_text_command(event):
                 result += f"{k.ljust(20)} -{v:.5f}%\n"
             reply_message = TextMessage(text=result)
         except Exception:
-            reply_message = input_error
+            reply_message = input_error(user_id)
         return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
 
     # ====== 管理员命令 ======
@@ -1940,7 +1862,7 @@ def handle_sync_text_command(event):
             new_notice = user_message.replace("upload notice", "").strip()
             upload_notice(new_notice)
             clear_user_value("notice_read", False)
-            return smart_reply(user_id, event.reply_token, notice_upload, configuration, DIVIDER)
+            return smart_reply(user_id, event.reply_token, notice_upload(user_id), configuration, DIVIDER)
 
         if user_message == "dxdata update":
             # 使用新的对比更新函数
@@ -1999,7 +1921,7 @@ def handle_image_message(event):
         smart_reply(
             event.source.user_id,
             event.reply_token,
-            qrcode_error,
+            qrcode_error(event.source.user_id),
             configuration,
             DIVIDER
         )
@@ -2059,14 +1981,15 @@ def handle_location_message(event):
 
     # 检查维护状态
     if stores == "MAINTENANCE":
-        reply_message = maintenance_error
+        reply_message = maintenance_error(user_id)
     elif not stores:
-        reply_message = store_error
+        reply_message = store_error(user_id)
     else:
         # 使用 LINE SDK v3 对象构建的 Flex Message（已修复结构问题）
         from modules.store_list import generate_store_buttons
         user_id = event.source.user_id
         reply_message = generate_store_buttons(
+            user_id,
             get_nearby_stores_alt_text(user_id),
             stores[:35]
         )

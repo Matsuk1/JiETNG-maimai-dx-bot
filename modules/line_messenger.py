@@ -77,6 +77,14 @@ def smart_reply(user_id: str, reply_token: str, messages, configuration: Configu
     if not isinstance(messages, list):
         messages = [messages]
 
+    # 保存原始消息中的 quick_reply（如果存在）
+    saved_quick_reply = None
+    for msg in messages:
+        if hasattr(msg, 'quick_reply') and msg.quick_reply is not None:
+            saved_quick_reply = msg.quick_reply
+            msg.quick_reply = None  # 移除原消息的 quick_reply
+            break
+
     # 只有当消息数量小于5时，才添加附加消息
     if len(messages) < 5:
         # 优先级1: 好友申请消息
@@ -103,10 +111,14 @@ def smart_reply(user_id: str, reply_token: str, messages, configuration: Configu
                     edit_user_value(user_id, "notice_read", True)
 
         # 优先级3: Tips 消息（只在还有空间时添加）
-        if len(messages) < 5:
+        if len(messages) < 5 and random.random() < 0.25:
             tip_msg = get_random_tip(user_id)
             if tip_msg:
                 messages.append(tip_msg)
+
+    # 如果有保存的 quick_reply，将其移动到最后一条消息上
+    if saved_quick_reply is not None and messages:
+        messages[-1].quick_reply = saved_quick_reply
 
     with ApiClient(configuration) as api_client:
         line_bot_api = MessagingApi(api_client)
