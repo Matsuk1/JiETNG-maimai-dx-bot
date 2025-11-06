@@ -1,12 +1,7 @@
 import json
 from PIL import Image, ImageDraw, ImageFont
 from modules.record_generator import create_thumbnail
-from modules.image_manager import (
-    resize_by_width,
-    combine_with_rounded_background,
-    wrap_in_rounded_background,
-    draw_aligned_colon_text
-)
+from modules.image_manager import *
 from modules.image_cache import paste_icon_optimized, get_cached_image
 
 def song_info_generate(song_json, played_data = []):

@@ -159,10 +159,12 @@ def notify_admins_error(
     admin_id: list,
     configuration: Configuration,
     error_notification_enabled: bool = True,
-    max_length: int = 4000
+    max_length: int = 4000,
+    user_id: str = None,
+    reply_token: str = None
 ):
     """
-    通知管理员发生错误
+    通知管理员发生错误，并可选择性地回复用户
 
     Args:
         error_title: 错误标题
@@ -172,7 +174,17 @@ def notify_admins_error(
         configuration: LINE API配置对象
         error_notification_enabled: 是否启用错误通知
         max_length: 错误消息最大长度
+        user_id: 用户ID（可选，用于回复用户）
+        reply_token: 回复令牌（可选，用于回复用户）
     """
+    # 先回复用户（如果提供了参数）
+    if user_id and reply_token:
+        try:
+            from modules.message_manager import system_error
+            smart_reply(user_id, reply_token, system_error(user_id), configuration)
+        except Exception as e:
+            logger.error(f"Failed to reply user error message: {e}")
+
     if not error_notification_enabled:
         return
 

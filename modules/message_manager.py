@@ -115,6 +115,12 @@ access_error_text = {
     "zh": "🙇 现在访问量很大…请稍后再试！"
 }
 
+system_error_text = {
+    "ja": "😵 システムエラーが発生しました…管理者に通知済みです。しばらくしてから再度お試しください。",
+    "en": "😵 A system error occurred... The administrator has been notified. Please try again later.",
+    "zh": "😵 发生系统错误…已通知管理员。请稍后再试。"
+}
+
 input_error_text = {
     "ja": "全然わかんないなー",
     "en": "I don't understand what you mean...",
@@ -679,6 +685,10 @@ def info_error(user_id=None):
 def access_error(user_id=None):
     """生成访问错误消息"""
     return create_text_message(access_error_text, user_id)
+
+def system_error(user_id=None):
+    """生成系统错误消息"""
+    return create_text_message(system_error_text, user_id, get_support_quick_reply(user_id))
 
 def input_error(user_id=None):
     """生成输入错误消息"""

@@ -224,17 +224,28 @@ def run_task_with_limit(func: callable, args: tuple, sem: threading.Semaphore,
                 func(*args)
             except Exception as e:
                 logger.error(f"Task execution error: {e}", exc_info=True)
-                # 通知管理员
+
+                # 尝试获取用户信息以便回复
+                user_id = None
+                reply_token = None
+                if args and hasattr(args[0], 'source') and hasattr(args[0], 'reply_token'):
+                    user_id = args[0].source.user_id
+                    reply_token = args[0].reply_token
+
+                # 通知管理员并回复用户
                 notify_admins_error(
                     error_title=f"Task Execution Failed: {func.__name__}",
                     error_details=f"{type(e).__name__}: {str(e)}\n\n{traceback.format_exc()}",
                     context={
                         "Task": func.__name__,
-                        "Error Type": type(e).__name__
+                        "Error Type": type(e).__name__,
+                        "User ID": user_id or "Unknown"
                     },
                     admin_id=ADMIN_ID,
                     configuration=configuration,
-                    error_notification_enabled=ERROR_NOTIFICATION_ENABLED
+                    error_notification_enabled=ERROR_NOTIFICATION_ENABLED,
+                    user_id=user_id,
+                    reply_token=reply_token
                 )
             finally:
                 task_done.set()
