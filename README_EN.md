@@ -11,7 +11,7 @@ Supports Japanese and International servers
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-3.1.0-green.svg)](https://flask.palletsprojects.com/)
 [![LINE Bot SDK](https://img.shields.io/badge/LINE_Bot_SDK-3.14.5-00C300.svg)](https://github.com/line/line-bot-sdk-python)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
 
 [简体中文](README.md) | English | [日本語](README_JP.md)
 
@@ -681,7 +681,11 @@ Contributions are welcome! Please submit Issues and Pull Requests.
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+**Copyright © 2025 Matsuki. All Rights Reserved.**
+
+This software is proprietary. Copying, modification, distribution, or use of this software is strictly prohibited without express written permission from the copyright holder.
+
+See [LICENSE](LICENSE) for details.
 
 ---
 

@@ -11,7 +11,7 @@
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-3.1.0-green.svg)](https://flask.palletsprojects.com/)
 [![LINE Bot SDK](https://img.shields.io/badge/LINE_Bot_SDK-3.14.5-00C300.svg)](https://github.com/line/line-bot-sdk-python)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
 
 简体中文 | [English](README_EN.md) | [日本語](README_JP.md)
 
@@ -627,7 +627,11 @@ journalctl -u jietng -f
 
 ## 许可证
 
-本项目采用 [MIT License](LICENSE) 许可证。
+**Copyright © 2025 Matsuki. All Rights Reserved.**
+
+本软件为专有软件，保留所有权利。未经版权所有者明确书面许可，严禁复制、修改、分发或使用本软件。
+
+详见 [LICENSE](LICENSE) 文件。
 
 ---
 

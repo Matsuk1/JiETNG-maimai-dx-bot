@@ -626,7 +626,7 @@ def get_segaid_error_quick_reply(user_id=None):
         items=[
             QuickReplyItem(action=MessageAction(
                 label=get_quick_reply_label("account_bind", user_id),
-                text="sega bind"
+                text="bind"
             )),
             QuickReplyItem(action=URIAction(
                 label=get_quick_reply_label("support", user_id),

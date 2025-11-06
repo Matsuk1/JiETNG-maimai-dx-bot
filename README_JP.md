@@ -11,7 +11,7 @@
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-3.1.0-green.svg)](https://flask.palletsprojects.com/)
 [![LINE Bot SDK](https://img.shields.io/badge/LINE_Bot_SDK-3.14.5-00C300.svg)](https://github.com/line/line-bot-sdk-python)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
 
 [简体中文](README.md) | [English](README_EN.md) | 日本語
 
@@ -459,7 +459,11 @@ Issue と Pull Request の提出を歓迎します！
 
 ## ライセンス
 
-このプロジェクトは [MIT License](LICENSE) の下でライセンスされています。
+**Copyright © 2025 Matsuki. All Rights Reserved.**
+
+本ソフトウェアはプロプライエタリソフトウェアです。著作権者の明示的な書面による許可なく、本ソフトウェアの複製、変更、配布、使用は固く禁じられています。
+
+詳細は [LICENSE](LICENSE) をご覧ください。
 
 ---
 
