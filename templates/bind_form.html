@@ -156,20 +156,36 @@
     </form>
 
     <div class="notice">
-      <strong>ご利用に関するご注意 / Notice / 使用须知</strong><br><br>
+      <strong id="notice-title">ご利用に関するご注意 / Notice / 使用须知</strong><br><br>
 
-      <strong>日本語：</strong><br>
-      ご入力いただいた情報はすべて暗号化された形式で安全に保存され、第三者に提供されることはありません。ウェブサイトの管理者であっても、保存された情報の内容を直接閲覧することはできません。<br>
-      ただし、本サービスは個人によって運営されており、公式な保証やサポートは提供されておりません。本サービスの性質上、セキュリティや運用方針に不安がある場合は、利用をお控えいただくようお願いいたします。情報提供はあくまでご自身の判断と責任にてお願いいたします。<br><br>
+      <div id="notice-ja" style="display: block;">
+        <strong>日本語：</strong><br>
+        ご入力いただいた情報はすべて暗号化された形式で安全に保存され、第三者に提供されることはありません。ウェブサイトの管理者であっても、保存された情報の内容を直接閲覧することはできません。<br>
+        ただし、本サービスは個人によって運営されており、公式な保証やサポートは提供されておりません。本サービスの性質上、セキュリティや運用方針に不安がある場合は、利用をお控えいただくようお願いいたします。情報提供はあくまでご自身の判断と責任にてお願いいたします。
+      </div>
 
-      <strong>English：</strong><br>
-      All information you provide will be securely stored in encrypted format and will not be shared with third parties. Even website administrators cannot directly view the stored information.<br>
-      However, this service is operated by an individual and does not provide official guarantees or support. Given the nature of this service, if you have concerns about security or operational policies, please refrain from using it. You provide information at your own judgment and responsibility.<br><br>
+      <div id="notice-en" style="display: none;">
+        <strong>English：</strong><br>
+        All information you provide will be securely stored in encrypted format and will not be shared with third parties. Even website administrators cannot directly view the stored information.<br>
+        However, this service is operated by an individual and does not provide official guarantees or support. Given the nature of this service, if you have concerns about security or operational policies, please refrain from using it. You provide information at your own judgment and responsibility.
+      </div>
 
-      <strong>中文：</strong><br>
-      您输入的所有信息都将以加密形式安全保存，不会提供给第三方。即使是网站管理员也无法直接查看保存的信息内容。<br>
-      但是，本服务由个人运营，不提供官方保证或支持。鉴于本服务的性质，如果您对安全性或运营政策有顾虑，请勿使用。信息提供完全基于您自己的判断和责任。
+      <div id="notice-zh" style="display: none;">
+        <strong>中文：</strong><br>
+        您输入的所有信息都将以加密形式安全保存，不会提供给第三方。即使是网站管理员也无法直接查看保存的信息内容。<br>
+        但是，本服务由个人运营，不提供官方保证或支持。鉴于本服务的性质，如果您对安全性或运营政策有顾虑，请勿使用。信息提供完全基于您自己的判断和责任。
+      </div>
     </div>
   </div>
+
+  <script>
+    // 根据语言选择切换隐私政策显示
+    document.getElementById('language').addEventListener('change', function() {
+      const lang = this.value;
+      document.getElementById('notice-ja').style.display = lang === 'ja' ? 'block' : 'none';
+      document.getElementById('notice-en').style.display = lang === 'en' ? 'block' : 'none';
+      document.getElementById('notice-zh').style.display = lang === 'zh' ? 'block' : 'none';
+    });
+  </script>
 </body>
 </html>

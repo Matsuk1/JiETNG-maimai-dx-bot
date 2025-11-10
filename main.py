@@ -488,13 +488,13 @@ def website_segaid_bind():
     """
     token = request.args.get("token")
     if not token:
-        return render_template("error.html", message="トークン未申請"), 400
+        return render_template("error.html", message="トークン未申請", language="ja"), 400
 
     try:
         user_id = get_user_id_from_token(token)
     except Exception as e:
         logger.error(f"Token verification failed: {e}")
-        return render_template("error.html", message="トークン無効"), 400
+        return render_template("error.html", message="トークン無効", language="ja"), 400
 
     if request.method == "POST":
         segaid = request.form.get("segaid")
@@ -503,15 +503,15 @@ def website_segaid_bind():
         user_language = request.form.get("language", "ja")
 
         if not segaid or not password:
-            return render_template("error.html", message="すべての項目を入力してください"), 400
+            return render_template("error.html", message="すべての項目を入力してください", language=user_language), 400
 
         result = process_sega_credentials(user_id, segaid, password, user_version, user_language)
         if result == "MAINTENANCE":
-            return render_template("error.html", message="公式サイトがメンテナンス中です。しばらくしてからもう一度お試しください。"), 503
+            return render_template("error.html", message="公式サイトがメンテナンス中です。しばらくしてからもう一度お試しください。", language=user_language), 503
         elif result:
-            return render_template("success.html")
+            return render_template("success.html", language=user_language)
         else:
-            return render_template("error.html", message="SEGA ID と パスワード をもう一度確認してください"), 500
+            return render_template("error.html", message="SEGA ID と パスワード をもう一度確認してください", language=user_language), 500
 
     return render_template("bind_form.html")
 

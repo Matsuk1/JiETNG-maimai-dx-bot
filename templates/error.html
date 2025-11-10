@@ -3,7 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>エラー | JiETNG</title>
+  <title>
+    {% if language == 'en' %}
+    Error | JiETNG
+    {% elif language == 'zh' %}
+    错误 | JiETNG
+    {% else %}
+    エラー | JiETNG
+    {% endif %}
+  </title>
   <style>
     :root {
       --bg-color: #ffffff;
@@ -77,16 +85,40 @@
 </head>
 <body>
   <div class="error-box">
-    <h1>エラー・Error</h1>
+    <h1>
+      {% if language == 'en' %}
+      Error
+      {% elif language == 'zh' %}
+      错误
+      {% else %}
+      エラー
+      {% endif %}
+    </h1>
     <p>{{ message }}</p>
 
     <div class="notice">
+      {% if language == 'en' %}
+      <strong>Notice</strong><br>
+      All information you provide will be securely stored in encrypted format and will not be shared with third parties.<br>
+      Even website administrators cannot directly view the stored information.<br><br>
+      However, this service is operated by an individual and does not provide official guarantees or support.<br>
+      Given the nature of this service, if you have concerns about security or operational policies, please refrain from using it.<br>
+      You provide information at your own judgment and responsibility.
+      {% elif language == 'zh' %}
+      <strong>使用须知</strong><br>
+      您输入的所有信息都将以加密形式安全保存，不会提供给第三方。<br>
+      即使是网站管理员也无法直接查看保存的信息内容。<br><br>
+      但是，本服务由个人运营，不提供官方保证或支持。<br>
+      鉴于本服务的性质，如果您对安全性或运营政策有顾虑，请勿使用。<br>
+      信息提供完全基于您自己的判断和责任。
+      {% else %}
       <strong>ご利用に関するご注意</strong><br>
       ご入力いただいた情報はすべて暗号化された形式で安全に保存され、第三者に提供されることはありません。<br>
       ウェブサイトの管理者であっても、保存された情報の内容を直接閲覧することはできません。<br><br>
       ただし、本サービスは個人によって運営されており、公式な保証やサポートは提供されておりません。<br>
       本サービスの性質上、セキュリティや運用方針に不安がある場合は、利用をお控えいただくようお願いいたします。<br>
       情報提供はあくまでご自身の判断と責任にてお願いいたします。
+      {% endif %}
     </div>
   </div>
 </body>
