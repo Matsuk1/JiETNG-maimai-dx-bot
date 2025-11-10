@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>SEGA アカウント連携 | JiETNG</title>
+  <title id="page-title">SEGA アカウント連携 | JiETNG</title>
   <style>
     :root {
       --bg-color: #ffffff;
@@ -131,47 +131,44 @@
 </head>
 <body>
   <div class="container">
-    <h2>SEGA アカウント連携<br>SEGA Account Binding<br>SEGA 账号绑定</h2>
+    <h2 id="page-heading">SEGA アカウント連携</h2>
     <form method="POST">
-      <label for="segaid">セガID・SEGA ID・世嘉ID</label>
+      <label for="segaid" id="label-segaid">セガID</label>
       <input type="text" id="segaid" name="segaid" required />
 
-      <label for="password">パスワード・Password・密码</label>
+      <label for="password" id="label-password">パスワード</label>
       <input type="password" id="password" name="password" required />
 
-      <label for="ver">バージョン・Version・版本</label>
+      <label for="ver" id="label-version">バージョン</label>
       <select id="ver" name="ver" required>
-        <option value="jp" selected>日本版「maimaidx.jp」</option>
-        <option value="intl">海外版「maimaidx-eng.com」</option>
+        <option value="jp" id="opt-jp" selected>日本版「maimaidx.jp」</option>
+        <option value="intl" id="opt-intl">海外版「maimaidx-eng.com」</option>
       </select>
 
-      <label for="language">言語・Language・语言</label>
+      <label for="language" id="label-language">言語</label>
       <select id="language" name="language" required>
         <option value="ja" selected>日本語</option>
         <option value="en">English</option>
         <option value="zh">中文</option>
       </select>
 
-      <input type="submit" value="連携・Bind・绑定" />
+      <input type="submit" id="submit-btn" value="連携" />
     </form>
 
     <div class="notice">
-      <strong id="notice-title">ご利用に関するご注意 / Notice / 使用须知</strong><br><br>
+      <strong id="notice-title">ご利用に関するご注意</strong><br><br>
 
       <div id="notice-ja" style="display: block;">
-        <strong>日本語：</strong><br>
         ご入力いただいた情報はすべて暗号化された形式で安全に保存され、第三者に提供されることはありません。ウェブサイトの管理者であっても、保存された情報の内容を直接閲覧することはできません。<br>
         ただし、本サービスは個人によって運営されており、公式な保証やサポートは提供されておりません。本サービスの性質上、セキュリティや運用方針に不安がある場合は、利用をお控えいただくようお願いいたします。情報提供はあくまでご自身の判断と責任にてお願いいたします。
       </div>
 
       <div id="notice-en" style="display: none;">
-        <strong>English：</strong><br>
         All information you provide will be securely stored in encrypted format and will not be shared with third parties. Even website administrators cannot directly view the stored information.<br>
         However, this service is operated by an individual and does not provide official guarantees or support. Given the nature of this service, if you have concerns about security or operational policies, please refrain from using it. You provide information at your own judgment and responsibility.
       </div>
 
       <div id="notice-zh" style="display: none;">
-        <strong>中文：</strong><br>
         您输入的所有信息都将以加密形式安全保存，不会提供给第三方。即使是网站管理员也无法直接查看保存的信息内容。<br>
         但是，本服务由个人运营，不提供官方保证或支持。鉴于本服务的性质，如果您对安全性或运营政策有顾虑，请勿使用。信息提供完全基于您自己的判断和责任。
       </div>
@@ -179,12 +176,79 @@
   </div>
 
   <script>
-    // 根据语言选择切换隐私政策显示
-    document.getElementById('language').addEventListener('change', function() {
-      const lang = this.value;
+    const translations = {
+      ja: {
+        pageTitle: 'SEGA アカウント連携 | JiETNG',
+        heading: 'SEGA アカウント連携',
+        labelSegaid: 'セガID',
+        labelPassword: 'パスワード',
+        labelVersion: 'バージョン',
+        labelLanguage: '言語',
+        optJp: '日本版「maimaidx.jp」',
+        optIntl: '海外版「maimaidx-eng.com」',
+        submitBtn: '連携',
+        noticeTitle: 'ご利用に関するご注意'
+      },
+      en: {
+        pageTitle: 'SEGA Account Binding | JiETNG',
+        heading: 'SEGA Account Binding',
+        labelSegaid: 'SEGA ID',
+        labelPassword: 'Password',
+        labelVersion: 'Version',
+        labelLanguage: 'Language',
+        optJp: 'JP Version「maimaidx.jp」',
+        optIntl: 'INTL Version「maimaidx-eng.com」',
+        submitBtn: 'Bind',
+        noticeTitle: 'Notice'
+      },
+      zh: {
+        pageTitle: 'SEGA 账号绑定 | JiETNG',
+        heading: 'SEGA 账号绑定',
+        labelSegaid: '世嘉ID',
+        labelPassword: '密码',
+        labelVersion: '版本',
+        labelLanguage: '语言',
+        optJp: '日本版「maimaidx.jp」',
+        optIntl: '国际版「maimaidx-eng.com」',
+        submitBtn: '绑定',
+        noticeTitle: '使用须知'
+      }
+    };
+
+    function updateLanguage(lang) {
+      const t = translations[lang];
+
+      // Update page title
+      document.getElementById('page-title').textContent = t.pageTitle;
+
+      // Update heading
+      document.getElementById('page-heading').textContent = t.heading;
+
+      // Update labels
+      document.getElementById('label-segaid').textContent = t.labelSegaid;
+      document.getElementById('label-password').textContent = t.labelPassword;
+      document.getElementById('label-version').textContent = t.labelVersion;
+      document.getElementById('label-language').textContent = t.labelLanguage;
+
+      // Update version options
+      document.getElementById('opt-jp').textContent = t.optJp;
+      document.getElementById('opt-intl').textContent = t.optIntl;
+
+      // Update submit button
+      document.getElementById('submit-btn').value = t.submitBtn;
+
+      // Update notice title
+      document.getElementById('notice-title').textContent = t.noticeTitle;
+
+      // Toggle notice content
       document.getElementById('notice-ja').style.display = lang === 'ja' ? 'block' : 'none';
       document.getElementById('notice-en').style.display = lang === 'en' ? 'block' : 'none';
       document.getElementById('notice-zh').style.display = lang === 'zh' ? 'block' : 'none';
+    }
+
+    // Listen for language changes
+    document.getElementById('language').addEventListener('change', function() {
+      updateLanguage(this.value);
     });
   </script>
 </body>
