@@ -634,15 +634,15 @@
     </div>
 
     <div class="tabs">
-      <button class="tab active" onclick="switchTab('users')">Users</button>
+      <button class="tab active" onclick="switchTab('stats')">Statistics</button>
+      <button class="tab" onclick="switchTab('users')">Users</button>
       <button class="tab" onclick="switchTab('tasks')">Task Queue</button>
-      <button class="tab" onclick="switchTab('stats')">Statistics</button>
       <button class="tab" onclick="switchTab('notices')">Notices</button>
       <button class="tab" onclick="switchTab('logs')">Logs</button>
     </div>
 
     <!-- Users Tab -->
-    <div id="users-tab" class="tab-content active">
+    <div id="users-tab" class="tab-content">
       <div class="section">
         <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
           <span>User Management ({{ total_users }} users)</span>
@@ -762,7 +762,7 @@
     </div>
 
     <!-- Stats Tab -->
-    <div id="stats-tab" class="tab-content">
+    <div id="stats-tab" class="tab-content active">
       <!-- Main Statistics Cards -->
       <div class="section">
         <div class="section-title">System Overview</div>
