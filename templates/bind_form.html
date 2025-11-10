@@ -133,6 +133,13 @@
   <div class="container">
     <h2 id="page-heading">SEGA アカウント連携</h2>
     <form method="POST">
+      <label for="language" id="label-language">言語</label>
+      <select id="language" name="language" required>
+        <option value="ja" selected>日本語</option>
+        <option value="en">English</option>
+        <option value="zh">中文</option>
+      </select>
+
       <label for="segaid" id="label-segaid">セガID</label>
       <input type="text" id="segaid" name="segaid" required />
 
@@ -143,13 +150,6 @@
       <select id="ver" name="ver" required>
         <option value="jp" id="opt-jp" selected>日本版「maimaidx.jp」</option>
         <option value="intl" id="opt-intl">海外版「maimaidx-eng.com」</option>
-      </select>
-
-      <label for="language" id="label-language">言語</label>
-      <select id="language" name="language" required>
-        <option value="ja" selected>日本語</option>
-        <option value="en">English</option>
-        <option value="zh">中文</option>
       </select>
 
       <input type="submit" id="submit-btn" value="連携" />
