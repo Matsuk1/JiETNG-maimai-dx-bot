@@ -144,17 +144,6 @@ No. Friend features only work between users who both:
 - Have bound their SEGA IDs
 - Have added each other as friends
 
-### How do plates work?
-
-Plates track version completion. Check progress with:
-```
-[version] achievement
-```
-
-Example: `FESTiVAL achievement`
-
-See [Plate Progress](/features/plates) for details.
-
 ### What are the advanced filters?
 
 Use `-lv`, `-ra`, `-dx`, `-scr` to filter songs:

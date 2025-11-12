@@ -358,7 +358,6 @@ random 14+
 ## Next Steps
 
 - [Level Records](/features/level-records) - Explore level-based filtering
-- [Plate Progress](/features/plates) - Track version achievements
 - [Command Reference](/commands/basic) - All available commands
 - [Advanced Filters](/commands/advanced) - Filter by rating, DX score, etc.
 

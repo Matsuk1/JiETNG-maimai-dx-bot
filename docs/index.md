@@ -42,8 +42,6 @@ features:
   - icon: 🏆
     title: Plate Progress Tracking
     details: Track your progress towards completing various plate challenges (極, 将, 神, 舞舞) with visual progress indicators.
-    link: /features/plates
-    linkText: Learn more
 
   - icon: 🌐
     title: Multi-Language Support

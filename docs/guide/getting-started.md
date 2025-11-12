@@ -102,7 +102,6 @@ Now that you're set up, explore these features:
 - 🏆 [Score System](/features/b50) - View your top scores
 - 🔍 [Score Search](/features/search) - Find specific songs
 - 👥 [Friend System](/features/friends) - Connect with other players
-- 🎯 [Plate Progress](/features/plates) - Track plate achievements
 
 ## Troubleshooting
 

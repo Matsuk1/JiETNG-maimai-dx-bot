@@ -39,7 +39,6 @@ export default defineConfig({
           { text: 'Score System', link: '/features/b50' },
           { text: 'Score Search', link: '/features/search' },
           { text: 'Friend System', link: '/features/friends' },
-          { text: 'Plate Progress', link: '/features/plates' }
         ]
       },
       {
@@ -124,7 +123,6 @@ export default defineConfig({
               { text: 'スコアシステム', link: '/ja/features/b50' },
               { text: '楽曲検索', link: '/ja/features/search' },
               { text: 'フレンド機能', link: '/ja/features/friends' },
-              { text: 'プレート進捗', link: '/ja/features/plates' },
               { text: 'レベル別記録', link: '/ja/features/level-records' }
             ]
           },
@@ -172,7 +170,6 @@ export default defineConfig({
               { text: '成绩系统', link: '/zh/features/b50' },
               { text: '成绩查询', link: '/zh/features/search' },
               { text: '好友系统', link: '/zh/features/friends' },
-              { text: '牌子进度', link: '/zh/features/plates' },
               { text: '等级记录', link: '/zh/features/level-records' }
             ]
           },

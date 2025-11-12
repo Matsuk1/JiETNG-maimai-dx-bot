@@ -44,18 +44,17 @@ These show all charts with internal values:
 - **12**: 12.0 - 12.4
 - **13**: 13.0 - 13.4
 - **14**: 14.0 - 14.4
-- **15**: 15.0 - 15.4
+- **15**: 15.0
 
 ### Plus Levels
 
-- `11+`, `12+`, `13+`, `14+`, `15+`
+- `11+`, `12+`, `13+`, `14+`
 
 These show all charts with internal values:
 - **11+**: 11.5 - 11.9
 - **12+**: 12.5 - 12.9
 - **13+**: 13.5 - 13.9
 - **14+**: 14.5 - 14.9
-- **15+**: 15.5 - 15.9 (if exist)
 
 :::tip Internal Levels
 maimai DX uses internal level values like 13.7, 14.3, etc. The displayed level (13+, 14) groups these into ranges.
@@ -111,7 +110,7 @@ For each song in the level, you'll see:
 
 ### Your Performance
 - 📈 **Achievement %**: Your score percentage
-- 🎵 **DX Score**: Your DX rating on this chart
+- 🎵 **DX Rating**: Your DX rating on this chart
 - 🏆 **Clear Lamp**: Clear status
   - CLEAR
   - FC (Full Combo)
@@ -130,7 +129,6 @@ For each song in the level, you'll see:
 Songs are typically sorted by:
 1. **Rating** (highest first)
 2. **Achievement %** (if rating is equal)
-3. **Alphabetical** (as tiebreaker)
 
 ## Use Cases
 
@@ -450,7 +448,6 @@ Check multiple levels to see skill distribution:
 
 - [Advanced Filters](/commands/advanced) - Filter by rating, score, DX score
 - [Best 50](/features/b50) - Your top-rated songs
-- [Plate Progress](/features/plates) - Version completion tracking
 
 ---
 
