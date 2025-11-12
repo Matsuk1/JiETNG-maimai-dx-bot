@@ -1,0 +1,207 @@
+import { defineConfig } from 'vitepress'
+
+// https://vitepress.dev/reference/site-config
+export default defineConfig({
+  title: "JiETNG",
+  description: "Maimai DX Score Management Bot",
+
+  // Base URL配置
+  // GitHub Pages (username.github.io/JiETNG/): 使用 '/JiETNG/'
+  // 自定义域名 (docs.jietng.com): 使用 '/'
+  base: '/JiETNG/',
+
+  // 主题配置
+  themeConfig: {
+    logo: '/logo.svg',
+
+    // 导航栏
+    nav: [
+      { text: 'Home', link: '/' },
+      { text: 'Guide', link: '/guide/getting-started' },
+      { text: 'Features', link: '/features/b50' },
+      { text: 'Commands', link: '/commands/basic' },
+      { text: 'GitHub', link: 'https://github.com/yourusername/JiETNG' }
+    ],
+
+    // 侧边栏
+    sidebar: [
+      {
+        text: 'Getting Started',
+        items: [
+          { text: 'Introduction', link: '/guide/introduction' },
+          { text: 'Quick Start', link: '/guide/getting-started' },
+          { text: 'Binding Account', link: '/guide/binding' }
+        ]
+      },
+      {
+        text: 'Features',
+        items: [
+          { text: 'Score System', link: '/features/b50' },
+          { text: 'Score Search', link: '/features/search' },
+          { text: 'Friend System', link: '/features/friends' },
+          { text: 'Plate Progress', link: '/features/plates' }
+        ]
+      },
+      {
+        text: 'Commands',
+        items: [
+          { text: 'Basic Commands', link: '/commands/basic' },
+          { text: 'Advanced', link: '/commands/advanced' },
+          { text: 'Admin', link: '/commands/admin' }
+        ]
+      },
+      {
+        text: 'More',
+        items: [
+          { text: 'FAQ', link: '/more/faq' },
+          { text: 'Privacy', link: '/more/privacy' },
+          { text: 'Support', link: '/more/support' }
+        ]
+      }
+    ],
+
+    // 社交链接
+    socialLinks: [
+      { icon: 'github', link: 'https://github.com/yourusername/JiETNG' }
+    ],
+
+    // 页脚
+    footer: {
+      message: 'Released under the Proprietary License.',
+      copyright: 'Copyright © 2025 Matsuki. All Rights Reserved.'
+    },
+
+    // 搜索
+    search: {
+      provider: 'local'
+    },
+
+    // 编辑链接
+    editLink: {
+      pattern: 'https://github.com/yourusername/JiETNG/edit/main/docs/:path',
+      text: 'Edit this page on GitHub'
+    },
+
+    // 最后更新时间
+    lastUpdated: {
+      text: 'Updated at',
+      formatOptions: {
+        dateStyle: 'short',
+        timeStyle: 'short'
+      }
+    }
+  },
+
+  // 多语言支持
+  locales: {
+    root: {
+      label: 'English',
+      lang: 'en'
+    },
+    ja: {
+      label: '日本語',
+      lang: 'ja',
+      link: '/ja/',
+      themeConfig: {
+        nav: [
+          { text: 'ホーム', link: '/ja/' },
+          { text: 'ガイド', link: '/ja/guide/getting-started' },
+          { text: '機能', link: '/ja/features/b50' },
+          { text: 'コマンド', link: '/ja/commands/basic' }
+        ],
+        sidebar: [
+          {
+            text: '始めに',
+            items: [
+              { text: '紹介', link: '/ja/guide/introduction' },
+              { text: 'クイックスタート', link: '/ja/guide/getting-started' },
+              { text: 'アカウント連携', link: '/ja/guide/binding' }
+            ]
+          },
+          {
+            text: '機能',
+            items: [
+              { text: 'スコアシステム', link: '/ja/features/b50' },
+              { text: '楽曲検索', link: '/ja/features/search' },
+              { text: 'フレンド機能', link: '/ja/features/friends' },
+              { text: 'プレート進捗', link: '/ja/features/plates' },
+              { text: 'レベル別記録', link: '/ja/features/level-records' }
+            ]
+          },
+          {
+            text: 'コマンド',
+            items: [
+              { text: '基本コマンド', link: '/ja/commands/basic' },
+              { text: '高度なフィルター', link: '/ja/commands/advanced' }
+            ]
+          },
+          {
+            text: 'その他',
+            items: [
+              { text: 'よくある質問', link: '/ja/more/faq' },
+              { text: 'サポート', link: '/ja/more/support' },
+              { text: 'ライセンス', link: '/ja/more/license' }
+            ]
+          }
+        ]
+      }
+    },
+    zh: {
+      label: '简体中文',
+      lang: 'zh-CN',
+      link: '/zh/',
+      themeConfig: {
+        nav: [
+          { text: '首页', link: '/zh/' },
+          { text: '指南', link: '/zh/guide/getting-started' },
+          { text: '功能', link: '/zh/features/b50' },
+          { text: '命令', link: '/zh/commands/basic' }
+        ],
+        sidebar: [
+          {
+            text: '开始使用',
+            items: [
+              { text: '介绍', link: '/zh/guide/introduction' },
+              { text: '快速开始', link: '/zh/guide/getting-started' },
+              { text: '绑定账号', link: '/zh/guide/binding' }
+            ]
+          },
+          {
+            text: '功能特性',
+            items: [
+              { text: '成绩系统', link: '/zh/features/b50' },
+              { text: '成绩查询', link: '/zh/features/search' },
+              { text: '好友系统', link: '/zh/features/friends' },
+              { text: '牌子进度', link: '/zh/features/plates' },
+              { text: '等级记录', link: '/zh/features/level-records' }
+            ]
+          },
+          {
+            text: '命令参考',
+            items: [
+              { text: '基础命令', link: '/zh/commands/basic' },
+              { text: '高级过滤', link: '/zh/commands/advanced' }
+            ]
+          },
+          {
+            text: '更多',
+            items: [
+              { text: '常见问题', link: '/zh/more/faq' },
+              { text: '支持', link: '/zh/more/support' },
+              { text: '许可证', link: '/zh/more/license' }
+            ]
+          }
+        ]
+      }
+    }
+  },
+
+  // 头部meta标签
+  head: [
+    ['link', { rel: 'icon', href: '/favicon.ico' }],
+    ['meta', { name: 'theme-color', content: '#ff1744' }],
+    ['meta', { name: 'og:type', content: 'website' }],
+    ['meta', { name: 'og:title', content: 'JiETNG - Maimai DX Bot' }],
+    ['meta', { name: 'og:description', content: 'Professional Maimai DX score management bot' }]
+  ]
+})
