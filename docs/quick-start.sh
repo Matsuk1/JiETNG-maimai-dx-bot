@@ -117,7 +117,6 @@ preview_mode() {
 
     echo ""
     print_success "预览服务器即将启动"
-    echo "  访问: http://localhost:4173"
     echo "  按 Ctrl+C 停止服务器"
     echo ""
     npm run docs:preview

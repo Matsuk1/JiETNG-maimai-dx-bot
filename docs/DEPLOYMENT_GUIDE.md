@@ -173,7 +173,6 @@ npm run docs:build
 npm run docs:preview
 ```
 
-**访问：** http://localhost:4173
 
 ### 方式 3: 部署到自己的服务器
 
@@ -422,7 +421,6 @@ npm run docs:build
 
 # 预览构建结果
 npm run docs:preview
-# 访问 http://localhost:4173
 
 # 提交到GitHub（自动部署）
 git add .
