@@ -5,6 +5,8 @@ export default defineConfig({
   title: "JiETNG",
   description: "Maimai DX Score Management Bot",
 
+  cleanUrls: true,
+
   // Base URL配置
   // GitHub Pages (username.github.io/JiETNG/): 使用 '/JiETNG/'
   // 自定义域名 (docs.jietng.com): 使用 '/'
@@ -19,8 +21,7 @@ export default defineConfig({
       { text: '首页', link: '/' },
       { text: '指南', link: '/guide/getting-started' },
       { text: '功能', link: '/features/search' },
-      { text: '命令', link: '/commands/basic' },
-      { text: 'GitHub', link: 'https://github.com/Matsuk1/JiETNG' }
+      { text: '命令', link: '/commands/basic' }
     ],
 
     // 侧边栏

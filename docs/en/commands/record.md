@@ -1,4 +1,4 @@
-# Score System
+# Record Commands
 
 Best 50 (b50) and Best 100 (b100) charts are fundamental features of JiETNG, displaying your highest-rated scores with beautifully designed visualizations.
 
@@ -163,7 +163,8 @@ Make sure you've played these songs recently. Older scores may not appear if:
 
 ## Related Features
 
-- = [Score Search](/en/features/search) - Search for specific songs
+- =
+ [Score Search](/en/features/search) - Search for specific songs
 
 ---
 
