@@ -18,7 +18,7 @@ export default defineConfig({
     nav: [
       { text: '首页', link: '/' },
       { text: '指南', link: '/guide/getting-started' },
-      { text: '功能', link: '/features/b50' },
+      { text: '功能', link: '/features/search' },
       { text: '命令', link: '/commands/basic' },
       { text: 'GitHub', link: 'https://github.com/Matsuk1/JiETNG' }
     ],
@@ -36,19 +36,15 @@ export default defineConfig({
       {
         text: '功能特性',
         items: [
-          { text: '成绩系统', link: '/features/b50' },
           { text: '成绩查询', link: '/features/search' },
-          { text: '好友系统', link: '/features/friends' },
-          { text: '牌子进度', link: '/features/plates' },
-          { text: '等级记录', link: '/features/level-records' }
+          { text: '好友系统', link: '/features/friends' }
         ]
       },
       {
         text: '命令参考',
         items: [
           { text: '基础命令', link: '/commands/basic' },
-          { text: '成绩命令', link: '/commands/record' },
-          { text: '高级过滤', link: '/commands/advanced' }
+          { text: '成绩命令', link: '/commands/record' }
         ]
       },
       {
@@ -108,7 +104,7 @@ export default defineConfig({
         nav: [
           { text: 'Home', link: '/en/' },
           { text: 'Guide', link: '/en/guide/getting-started' },
-          { text: 'Features', link: '/en/features/b50' },
+          { text: 'Features', link: '/en/features/search' },
           { text: 'Commands', link: '/en/commands/basic' }
         ],
         sidebar: [
@@ -123,19 +119,15 @@ export default defineConfig({
           {
             text: 'Features',
             items: [
-              { text: 'Score System', link: '/en/features/b50' },
               { text: 'Score Search', link: '/en/features/search' },
-              { text: 'Friend System', link: '/en/features/friends' },
-              { text: 'Plate Progress', link: '/en/features/plates' },
-              { text: 'Level Records', link: '/en/features/level-records' }
+              { text: 'Friend System', link: '/en/features/friends' }
             ]
           },
           {
             text: 'Commands',
             items: [
               { text: 'Basic Commands', link: '/en/commands/basic' },
-              { text: 'Record Commands', link: '/en/commands/record' },
-              { text: 'Advanced Filters', link: '/en/commands/advanced' }
+              { text: 'Record Commands', link: '/en/commands/record' }
             ]
           },
           {
@@ -169,7 +161,7 @@ export default defineConfig({
         nav: [
           { text: 'ホーム', link: '/ja/' },
           { text: 'ガイド', link: '/ja/guide/getting-started' },
-          { text: '機能', link: '/ja/features/b50' },
+          { text: '機能', link: '/ja/features/search' },
           { text: 'コマンド', link: '/ja/commands/basic' }
         ],
         sidebar: [
@@ -184,7 +176,6 @@ export default defineConfig({
           {
             text: '機能',
             items: [
-              { text: 'スコアシステム', link: '/ja/features/b50' },
               { text: '楽曲検索', link: '/ja/features/search' },
               { text: 'フレンド機能', link: '/ja/features/friends' }
             ]
