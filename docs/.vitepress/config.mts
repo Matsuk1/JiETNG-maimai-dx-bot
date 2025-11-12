@@ -8,7 +8,7 @@ export default defineConfig({
   // Base URL配置
   // GitHub Pages (username.github.io/JiETNG/): 使用 '/JiETNG/'
   // 自定义域名 (docs.jietng.com): 使用 '/'
-  base: '/JiETNG/',
+  base: '/',
 
   // 主题配置
   themeConfig: {
