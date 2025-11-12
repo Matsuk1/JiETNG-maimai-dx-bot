@@ -1,143 +1,211 @@
 # Getting Started
 
-Welcome to JiETNG! This guide will help you set up the bot and start tracking your Maimai DX scores.
+Get started with JiETNG and begin tracking your maimai DX scores in just three simple steps.
 
 ## Prerequisites
 
 Before you begin, make sure you have:
 
-- A LINE account
-- A SEGA ID (used to login to the official Maimai DX website)
-- Your SEGA ID password
-
-:::warning Security Notice
-JiETNG requires your SEGA ID credentials to fetch your scores from the official website. Your credentials are encrypted and stored securely, and are never shared with third parties.
-:::
+- ✅ LINE account
+- ✅ SEGA ID account (for maimai NET)
+- ✅ Access to maimai NET
+- ✅ Smartphone or computer
 
 ## Step 1: Add the Bot
 
-1. Click this link or scan the QR code: [Add JiETNG on LINE](https://line.me/R/ti/p/@your-bot-id)
-2. Click "Add Friend"
-3. Start chatting with JiETNG
+1. Search for **@299bylay** in LINE
+2. Or scan the QR code: [LINE Bot QR Code]
+3. Click "Add Friend"
+4. Start a conversation
 
-## Step 2: Bind Your SEGA Account
+## Step 2: Bind Your SEGA ID
 
-After adding the bot, you need to link your SEGA ID:
+This is the most important step - connecting your SEGA account to the bot.
 
-1. Send `bind` to the bot
-2. Click the binding link provided
-3. Enter your SEGA ID and password
-4. Choose your game version (JP or INTL)
-5. Click "Bind"
+### Start Binding
 
-:::tip Language Selection
-During binding, you can choose your preferred language (Japanese, English, or Chinese). The bot will remember your preference for all future interactions.
+Send this to the bot:
+
+```
+bind
+```
+
+### Complete the Binding Process
+
+1. The bot will send a button with a **Binding URL**
+2. **Click the button** to open the binding webpage
+3. **Enter your credentials**:
+   - SEGA ID (username)
+   - Password
+   - Select version (JP or International)
+   - Select language
+4. **Submit the form**
+5. Wait for confirmation message
+
+:::warning ⚠️ Important Security Note
+- **Do not enter your password in the chat**
+- Only use the official link provided by the bot
+- Token expires in 2 minutes
+- Your password is stored encrypted
 :::
+
+### Verify Binding
+
+Check if binding was successful:
+
+```
+get me
+```
+
+You should see your SEGA ID, version, and language information.
+
+[Need help with binding? See the detailed binding guide →](/en/guide/binding)
 
 ## Step 3: Update Your Scores
 
-After binding, sync your scores from the official website:
+Now sync your scores from maimai NET!
+
+### First Sync
 
 ```
 maimai update
 ```
 
-or in Japanese:
+### Wait for Processing
 
-```
-マイマイアップデート
-```
+- ⏱️ Update time: 20-30 seconds
+- 📊 Fetches all your songs and scores
 
-This process takes about 20-30 seconds. The bot will:
-
-1. Login to your SEGA account
-2. Fetch all your play records
-3. Calculate ratings and achievements
-4. Store the data securely
-
-:::warning Rate Limiting
-To prevent server overload, you can only update your scores once every 5 minutes.
+:::tip 🎯 When to Update
+- After playing at the arcade
+- Before you want to view your latest scores
 :::
 
-## Step 4: View Your Scores
+## Step 4: Generate Your Best 50
 
-Now you're ready to use JiETNG! Try these commands:
+Now for the fun part - view your best scores!
 
-### Check Your Best 50
+### Basic Command
 
 ```
 b50
 ```
 
-This generates a beautiful chart showing your top 35 old version songs and top 15 current version songs.
+### What You'll Get
 
-### Search for a Song
+A beautiful chart showing:
+- 📊 Your top 35 old songs (songs from previous versions)
+- 🎵 Your top 15 new songs (songs from current version)
+- 📈 Total rating
+- 🎯 Detailed information for each song
 
-```
-search <song name>
-```
-
-Example:
-```
-search 檄・GEKI
-```
-
-### Check a Specific Score
+### Other Variants
 
 ```
-<song abbreviation>
+b100      # Best 100 (top 70 old + top 30 new)
+b35       # Only top 35 old songs
+b15       # Only top 15 new songs
 ```
 
-Example:
+[Learn more about Best 50 →](/en/commands/record)
+
+## What to Do Next
+
+### Explore Features
+
+Now that you're set up, try these commands:
+
+**Search for songs**:
 ```
-geki
+[song name] info
 ```
 
-[View all available commands →](/commands/basic)
+**Random song**:
+```
+random
+random 14
+```
 
-## What's Next?
+**Friend list**:
+```
+friend list
+```
 
-Now that you're set up, explore these features:
+**View version achievements**:
+```
+FESTiVAL achievement
+```
 
-- 🏆 [Score System](/features/b50) - View your top scores
-- 🔍 [Score Search](/features/search) - Find specific songs
-- 👥 [Friend System](/features/friends) - Connect with other players
+### Learn More
+
+- 🎮 [Basic Commands List](/en/commands/basic)
+- ❓ [FAQ](/en/more/faq)
+
+## Quick Command Reference
+
+| Command | Purpose |
+|----------|---------|
+| `maimai update` | Sync scores from maimai NET |
+| `b50` | Generate Best 50 chart |
+| `[song name] song-info` | Search for song information |
+| `[song name] record` | View your score for that song |
+| `14 record-list` | View all level 14 scores |
+| `friend list` | View your friends |
+| `get me` | View account information |
+| `unbind` | Unbind SEGA ID |
 
 ## Troubleshooting
 
-### "SEGA ID not bound" error
+### "You haven't bound your SEGA ID yet"
 
-Make sure you've completed Step 2 correctly. Try sending `bind` again.
+**Solution**: Complete Step 2 - use the `bind` command
 
-### "Login failed" error
+### "Update failed"
 
-This usually means your SEGA ID or password is incorrect. Double-check your credentials.
+**Possible causes**:
+- maimai NET is under maintenance
+- Network connection issues
+- Incorrect SEGA credentials
 
-### "Maintenance" error
+**Solutions**:
+- Wait a few minutes and try again
+- Check if maimai NET is directly accessible
+- Use `unbind` then `bind` again
 
-The official Maimai DX website is under maintenance (usually late night JST). Try again later.
+### "Command doesn't work"
 
-### Scores not updating
+**Checklist**:
+- ✅ Have you bound your account? (`get me`)
+- ✅ Have you updated your scores? (`maimai update`)
+- ✅ Is the spelling correct?
+- ✅ Are you using the right command?
 
-Make sure you've waited at least 5 minutes since your last update. If the problem persists, try:
+[View full troubleshooting guide →](/en/more/faq)
 
-```
-unbind
-bind
-maimai update
-```
+## Tips & Tricks
 
-Still having issues? Check our [FAQ](/more/faq) or [contact support](/more/support).
+### 💡 Pro Tips
 
-## Privacy & Security
+1. **Update regularly**: `maimai update` immediately after playing
+2. **Use filters**: `b50 -lv 14 -scr 97 98` to find improvement opportunities
+3. **Add friends**: Compare scores with other players
+4. **Track plates**: Use `[version] achievement` to track progress
+5. **Set goals**: Use `idealb50` to see potential rating
 
-Your data security is our top priority:
+### 🎯 Getting the Most from JiETNG
 
-- 🔒 Credentials are encrypted using industry-standard encryption
-- 🛡️ No third-party access to your data
-- 🗑️ You can delete your data anytime with `unbind`
-- 📜 Read our full [Privacy Policy](/more/privacy)
+- 🤝 Join the community Discord
+- 📊 Check your progress regularly
+- 💬 Share your achievements in the community
+
+## Need Help?
+
+- 📖 [Read full documentation](/en/guide/introduction)
+- ❓ [View FAQ](/en/more/faq)
+- 💬 [Join Discord](https://discord.gg/your-server)
+- 🐛 [Report issues](https://github.com/Matsuk1/JiETNG/issues)
+- 📧 [Contact support](/en/more/support)
 
 ---
 
-Ready to dive deeper? Check out our [Feature Guide](/features/b50) or explore [Advanced Commands](/commands/advanced).
+**Have fun and improve your rating!** 🎊

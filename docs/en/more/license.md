@@ -31,7 +31,7 @@ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMA
 
 ### ✅ You CAN:
 
-- **Use the bot** as an end user through LINE or Telegram
+- **Use the bot** as an end user through LINE
 - **Read the documentation** and learn how to use the features
 - **Report bugs and suggest features** via GitHub Issues
 - **Share your experience** with other users
@@ -45,7 +45,7 @@ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMA
 - **Use this commercially** without permission
 - **Remove or modify** copyright notices
 
-## Why Proprietary?
+## Why Proprietary License?
 
 JiETNG is the result of extensive development work and represents significant intellectual property. The proprietary license ensures:
 
@@ -63,14 +63,14 @@ While the source code is proprietary, the **bot service itself is free to use**:
 - ✅ Track your Maimai DX scores
 - ✅ Use all features for free
 
-[Get Started →](/guide/getting-started)
+[Get Started →](/en/guide/getting-started)
 
 ## Contact for Licensing
 
 If you wish to discuss licensing options for commercial use, integration, or other purposes, please contact:
 
 - **GitHub**: [https://github.com/Matsuk1/JiETNG/issues](https://github.com/Matsuk1/JiETNG/issues)
-- **Email**: Contact through GitHub
+- **Email**: matsuk1@proton.me
 
 ---
 
@@ -107,6 +107,6 @@ Special thanks to:
 
 ---
 
-**Last Updated**: January 2025
+**Last Updated**: November 2025
 
 For the latest version of this license, see the [LICENSE file](https://github.com/Matsuk1/JiETNG/blob/main/LICENSE) in the repository.

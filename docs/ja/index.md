@@ -14,7 +14,7 @@ hero:
       link: /ja/guide/getting-started
     - theme: alt
       text: 機能を見る
-      link: /ja/features/b50
+      link: /ja/commands/record
     - theme: alt
       text: GitHub
       link: https://github.com/Matsuk1/JiETNG
@@ -22,8 +22,8 @@ hero:
 features:
   - icon: 📊
     title: スコアシステム
-    details: 美しいBest 50とBest 100のスコア表を自動生成。詳細な達成率追跡とレーティング計算に対応。
-    link: /ja/features/b50
+    details: スコアチャートを自動生成し、詳細な達成率追跡とレーティング計算に対応。
+    link: /ja/commands/record
     linkText: 詳細
 
   - icon: 🔍

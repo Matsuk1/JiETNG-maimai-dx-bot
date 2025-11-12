@@ -1,10 +1,10 @@
-# Song Search
+# Song Search and Record Query
 
-Find information about maimai DX songs, get random songs, and explore the song database.
+Find maimai DX song information, get random songs, and explore the complete song database.
 
 ## Song Information Search
 
-Search for songs by name, acronym, or keywords to get detailed information.
+Search by song name, abbreviation, or keywords to get detailed information.
 
 ### Basic Search
 
@@ -26,53 +26,37 @@ AMAZING MIGHTYYYY song-info
 
 ### Search Behavior
 
-- **Fuzzy matching**: The bot uses intelligent matching (85% similarity threshold)
-- **Multiple results**: Returns up to 6 matching songs
-- **Acronyms supported**: Try "bm" for "Blew Moon", "gls" for "グリーンライツ・セレナーデ"
-- **Partial names**: "amazing might" will find "AMAZING MIGHTYYYY!!!!!"
+- **Fuzzy Matching**: Adopts intelligent matching (85% similarity threshold)
+- **Multiple Results**: Displays up to 6 matching songs
+- **Partial Name Matching**: For example, "amazing might" can match "AMAZING MIGHTYYYY!!!!!"
 
 :::tip Search Tips
-- Use English or Japanese names
-- Both full names and abbreviations work
-- The bot is case-insensitive
-- Special characters are usually optional
+- Can use English or Japanese names
+- Supports full names and abbreviations
+- Case-insensitive
+- Special symbols can usually be omitted
 :::
 
-### What Information is Shown?
+### Display Content
 
-Each result displays:
+Each result includes:
 
-- 📝 **Song title** (English and Japanese)
-- 🎨 **Jacket image**
-- 🎵 **Artist name**
-- 📅 **Version** (when the song was added)
-- 🎮 **Available difficulties** (Basic, Advanced, Expert, Master, Re:MASTER)
-- 📊 **Chart constants** (internal level values)
-- 🎯 **Chart type** (Standard/DX)
-- 🎬 **Genre/Category**
+- 📝 **Song Title** (English & Japanese)
+- 🎨 **Cover Art**
+- 🎵 **Artist**
+- 📅 **Version Information**
+- 🎮 **Available Difficulties** (Basic / Advanced / Expert / Master / Re:MASTER)
+- 📊 **Chart Constant**
+- 🎯 **Chart Type** (Standard / DX)
+- 🎬 **Category (Genre)**
 
-### No Results?
-
-If your search returns no results:
-
-1. **Try different keywords**:
-   - Use official song name
-   - Try the Japanese name if English doesn't work
-   - Use common abbreviations
-
-2. **Check spelling**:
-   - Verify character accuracy (especially for special symbols)
-   - Try removing special characters
-
-3. **Song might not exist**:
-   - Make sure the song is in maimai DX (not other SEGA rhythm games)
-   - Check if it's available in your version (jp/intl)
+---
 
 ## Random Song
 
-Get a random song suggestion, optionally filtered by difficulty level.
+Randomly get a song, with optional level specification.
 
-### Basic Random Song
+### Basic Random
 
 **Command Format:**
 
@@ -89,9 +73,9 @@ random-song
 random
 ```
 
-Returns a random song from the entire maimai DX library.
+Randomly selects a song from the entire maimai DX song library.
 
-### Random Song with Level Filter
+### Random by Level
 
 **Command Format:**
 
@@ -111,49 +95,31 @@ random-song 15
 
 ### Level Filter Syntax
 
-You can specify:
-
-- **Single level**: `14` (exactly 14.0-14.4)
-- **Plus level**: `13+` (exactly 13.5-13.9)
-- **Specific internal level**: `14.6` (only 14.6 charts)
-
-The bot will randomly select from songs with ANY chart matching the specified level.
+- `14` represents 14.0~14.4
+- `13+` represents 13.5~13.9
+- `14.6` represents only charts with a constant of 14.6
 
 :::tip Random Challenge
-Use random songs for:
+You can use the random feature to:
 - Practice challenges
-- Discovery of new songs
-- Breaking out of comfort zones
-- Daily song goals
+- Discover new songs
+- Break out of your usual music style
+- Use as daily task goals
 :::
 
-## Version-Specific Songs
+---
 
-View all songs from a specific maimai DX version.
+## View Songs by Version
 
-### Command Format
+View all songs added in a specific maimai DX version.
+
+**Command Format:**
 
 ```
 [version name] + version
 [version name] + version-list
 [version name] + のバージョンリスト
 ```
-
-### Available Versions
-
-Major versions:
-- `maimai`, `maimai PLUS`
-- `GreeN`, `GreeN PLUS`
-- `ORANGE`, `ORANGE PLUS`
-- `PiNK`, `PiNK PLUS`
-- `MURASAKi`, `MURASAKi PLUS`
-- `MiLK`, `MiLK PLUS`
-- `FiNALE`
-- `でらっくす` (Deluxe), `でらっくす PLUS`
-- `Splash`, `Splash PLUS`
-- `UNiVERSE`, `UNiVERSE PLUS`
-- `FESTiVAL`, `FESTiVAL PLUS`
-- `BUDDiES`, `BUDDiES PLUS`
 
 **Examples:**
 
@@ -164,26 +130,20 @@ Splash version-list
 でらっくす PLUS version
 ```
 
-:::tip Version Names
-- For PLUS versions, use a space: `FESTiVAL PLUS` ✅
-- The bot will automatically handle `+` in input: `FESTiVAL+` → `FESTiVAL PLUS`
-- Both English and Japanese names work
+:::tip Tips
+- `FESTiVAL+` will be automatically recognized as `FESTiVAL PLUS`
 :::
 
-### What You Get
+**Display Content:**
+- Song list
 
-The version list shows:
-- All songs added in that version
-- Song jackets
-- Standard vs DX designation
-- Difficulty levels available
-- Artist names
+---
 
-## Song Records
+## Score Query
 
-Check your personal record on a specific song.
+View your play records for a specific song.
 
-### Command Format
+**Command Format:**
 
 ```
 [song name] + record
@@ -199,32 +159,29 @@ blew moon record
 AMAZING MIGHTYYYY song-record
 ```
 
-:::warning Binding Required
-Song records require you to bind your SEGA ID. See [Account Binding](/guide/binding).
+:::warning Account Binding Required
+Score features require binding your SEGA ID first. See [Account Binding](/en/guide/binding)
 :::
 
-### What's Shown
-
-For each difficulty you've played:
-- 📊 Achievement percentage
+**Display Content:**
+- 📊 Achievement Rate
 - 🎵 DX Score
-- 🏆 Clear lamp (Clear, FC, FC+, AP, AP+)
-- 💎 Sync status (FS, FS+, FDX, FDX+)
-- 📈 Rating contribution
-- 🎯 Accuracy breakdown (if available)
+- 🏆 Completion Status (FC / FC+ / AP / AP+)
+- 💎 Sync Status (FS / FS+ / FDX / FDX+)
+- 📈 Rating Contribution Value
 
-### No Record?
+If "Record Not Found" is displayed:
+- May not have played this song
+- Score not updated (try `maimai update`)
+- Name matching error (try using info search first)
 
-If you see "No record found":
-- You haven't played this song yet
-- Your scores haven't been updated (try `maimai update`)
-- The song name might not match exactly (try using info search first)
+---
 
-## Level-Based Records
+## View Scores by Level
 
-View all your records for songs of a specific level.
+View all scores for a specified level.
 
-### Command Format
+**Command Format:**
 
 ```
 [level] + record-list
@@ -240,142 +197,122 @@ View all your records for songs of a specific level.
 15 records
 ```
 
-### Pagination
-
-Records are split into pages (default: 50 per page).
-
-Add a page number to see more:
-
+Pagination:
 ```
 14 record-list 2
 13+ のレコードリスト 3
 ```
 
-:::tip Finding Your Target Songs
+:::tip Tips
 Use level records to:
-- Track progress on high-level charts
-- Find songs to improve rating
-- Identify weak spots in your gameplay
-- Plan your grinding targets
+- Track high difficulty progress
+- Find improvement opportunities
+- Analyze weaknesses
+- Set practice goals
 :::
 
-## Advanced Search Use Cases
+---
 
-### Finding Similar Songs
+## Advanced Usage
+
+### Find Similar Songs
 
 1. Search for a song you like:
    ```
    blew moon info
    ```
+2. Check the category or artist
+3. View the song list from the same version to find similar works
 
-2. Note the genre/artist
+### Discover New Songs
 
-3. Search version list to find similar songs from same update
-
-### Discovering New Songs
-
-1. Use random with your skill level:
+1. Random by level:
    ```
    random 13+
    ```
-
-2. Check the song info if interested
-
-3. Look up your record if you've played it
+2. View song information
+3. If already played, can directly check scores
 
 ### Practice Planning
 
-1. Find songs in a level range:
+1. Check songs by level:
    ```
    14 record-list
    ```
+2. Find songs to improve
+3. View chart details to assist practice
 
-2. Identify songs with room for improvement
+---
 
-3. Look up specific song info for practice
+## Comparison: Search vs Score Query
 
-## Comparison: Search vs Records
-
-| Feature | Song Info Search | Song Records |
-|---------|-----------------|-------------|
-| **Purpose** | Get song data | Get YOUR scores |
-| **Requires Binding** | ❌ No | ✅ Yes |
-| **Shows** | Chart info | Your achievements |
-| **Use Case** | Discovery | Progress tracking |
-| **Speed** | Fast | Fast (cached) |
-
-## Search Performance
-
-- **Fuzzy matching**: Uses optimized algorithm (85% threshold)
-- **Max results**: 6 songs per search
-- **Response time**: Usually < 1 second
-- **Cache**: Song database is cached in memory
+| Feature | Song Info Search | Score Query |
+|------|---------------|-----------|
+| **Purpose** | Get song data | View personal scores |
+| **Binding Required** | ❌ No | ✅ Yes |
+| **Display Content** | Song information | Personal data |
+| **Use Case** | Explore/learn about songs | Progress tracking |
+| **Response Speed** | Fast | Fast (cached) |
 
 :::tip Pro Tip
-If you know the exact song name, use records instead of info to save time:
+If you're sure about the song name, you can use the record command directly:
 ```
 blew moon record
 ```
-This shows both song info AND your scores in one command!
+This will display both song information and scores at once!
 :::
+
+---
 
 ## Troubleshooting
 
-### "Song not found"
+### "Song Not Found"
 
-**Possible causes:**
-- Typo in song name
-- Song doesn't exist in maimai DX
-- Wrong version (jp vs intl)
+**Possible Causes:**
+- Spelling error
+- Song is not part of maimai DX
+- Version error (JP / International)
 
 **Solutions:**
 - Try different keywords
-- Search on [maimai wiki](https://maimai.fandom.com/)
-- Use English name instead of Japanese (or vice versa)
+- Check [maimai wiki](https://maimai.fandom.com/)
+- Try English or Japanese name
 
-### Random Song Keeps Repeating
+### Random Song Repetition
 
-**Explanation:**
-Random selection is truly random - repetition is normal probability.
-
-**Workaround:**
-Narrow down with level filters:
+This is normal random probability. You can reduce repetition by filtering by level:
 ```
 random 14+
 ```
 
-### Version List is Incomplete
+### Version List Incomplete
 
-**Possible causes:**
-- Version name typo
-- Bot's song database needs updating
+**Possible Causes:**
+- Incorrect name
+- Database needs updating
 
 **Solutions:**
-- Check spelling (e.g., `FESTiVAL` not `FESTIVAL`)
-- Try alternative version names
-- Report missing songs on [GitHub Issues](https://github.com/Matsuk1/JiETNG/issues)
-
-## Next Steps
-
-- [Command Reference](/commands/basic) - All available commands
+- Check spelling
+- Try alternative spelling
+- Can report at [GitHub Issues](https://github.com/Matsuk1/JiETNG/issues)
 
 ---
 
-**Quick Reference:**
+## Quick Reference
 
 ```bash
 # Search
-[song] info                    # Find song info
-[song] record                  # Your score on this song
+[song] info          # Check song information
+[song] record        # Check personal score
 
 # Random
-random                         # Any song
-random 14                      # Random lv14 song
+random               # Random song
+random 14            # Random Lv14
 
 # Version
-FESTiVAL version              # All FESTiVAL songs
+FESTiVAL version     # View FESTiVAL songs
 
-# Level Records
-14 record-list                # All your lv14 records
-13+ records 2                 # Page 2 of lv13+ records
+# Level Scores
+14 record-list       # Lv14 song scores
+13+ records 2        # Page 2 of Lv13+ scores
 ```

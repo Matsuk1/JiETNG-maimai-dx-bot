@@ -11,10 +11,10 @@ hero:
   actions:
     - theme: brand
       text: 开始使用
-      link: /zh/guide/getting-started
+      link: /guide/getting-started
     - theme: alt
       text: 查看功能
-      link: /zh/features/b50
+      link: /commands/record
     - theme: alt
       text: GitHub
       link: https://github.com/Matsuk1/JiETNG
@@ -22,20 +22,20 @@ hero:
 features:
   - icon: 📊
     title: 成绩系统
-    details: 自动生成精美的 Best 50 和 Best 100 成绩图表，支持详细的达成率追踪和 Rating 计算。
-    link: /zh/features/b50
+    details: 自动生成成绩图表，支持详细的达成率追踪和 Rating 计算。
+    link: /commands/record
     linkText: 了解更多
 
   - icon: 🔍
     title: 高级成绩搜索
     details: 使用强大的查询功能搜索和过滤您的成绩。支持按等级、rating、DX分数和达成率过滤。
-    link: /zh/features/search
+    link: /features/search
     linkText: 了解更多
 
   - icon: 👥
     title: 好友系统
     details: 与其他玩家建立联系，对比成绩，查看好友排名，通过二维码发送好友申请。
-    link: /zh/features/friends
+    link: /features/friends
     linkText: 了解更多
 
   - icon: 🏆
@@ -45,7 +45,7 @@ features:
   - icon: 🌐
     title: 多语言支持
     details: 完全支持日语、英语和中文，可以无缝切换语言。
-    link: /zh/guide/getting-started
+    link: /guide/getting-started
     linkText: 了解更多
 
   - icon: 🎨
@@ -55,7 +55,7 @@ features:
   - icon: 🔒
     title: 隐私与安全
     details: 您的数据经过加密并安全存储。我们绝不会与第三方分享您的信息。
-    link: /zh/more/privacy
+    link: /more/privacy
     linkText: 隐私政策
 
   - icon: 📱
@@ -107,16 +107,16 @@ JiETNG 是最全面的 maimai DX 成绩管理机器人，为休闲玩家和硬�
 2. **绑定账号** - 安全地关联您的 SEGA ID
 3. **开始追踪** - 使用 `maimai update` 同步您的成绩
 
-[立即开始 →](/zh/guide/getting-started)
+[立即开始 →](/guide/getting-started)
 
 ## 社区与支持
 
 需要帮助或想要贡献？
 
-- 📖 [阅读文档](/zh/guide/introduction)
+- 📖 [阅读文档](/guide/introduction)
 - 💬 [加入 Discord](https://discord.gg/your-server)
 - 🐛 [报告问题](https://github.com/Matsuk1/JiETNG/issues)
-- 💝 [支持开发](/zh/more/support)
+- 💝 [支持开发](/more/support)
 
 ---
 

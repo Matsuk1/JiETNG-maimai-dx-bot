@@ -160,7 +160,7 @@ AMAZING MIGHTYYYY song-record
 ```
 
 :::warning 需绑定账号
-成绩功能需要先绑定 SEGA ID。详见 [账户绑定](/zh/guide/binding)
+成绩功能需要先绑定 SEGA ID。详见 [账户绑定](/guide/binding)
 :::
 
 **显示内容：**

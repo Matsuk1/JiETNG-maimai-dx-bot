@@ -200,13 +200,12 @@ update
 
 ## 需要帮助？
 
-- 查看 [FAQ](/zh/more/faq) 了解常见问题
+- 查看 [FAQ](/more/faq) 了解常见问题
 - 在 [GitHub](https://github.com/Matsuk1/JiETNG/issues) 报告问题
-- 通过 [支持页面](/zh/more/support) 联系支持
+- 通过 [支持页面](/more/support) 联系支持
 
 ---
 
 **下一步:**
-- [入门指南](/zh/guide/getting-started) - 基本用法
-- [命令参考](/zh/commands/basic) - 可用命令
-- [Best 50 功能](/zh/features/b50) - 生成排名图表
+- [入门指南](/guide/getting-started) - 基本用法
+- [命令参考](/commands/basic) - 可用命令

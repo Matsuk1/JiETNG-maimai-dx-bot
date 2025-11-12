@@ -1,10 +1,9 @@
 ---
-# https://vitepress.dev/reference/default-theme-home-page
 layout: home
 
 hero:
   name: "JiETNG"
-  text: "Maimai DX Bot"
+  text: "maimai DX Bot"
   tagline: Professional score management bot for LINE. Track your progress, analyze your performance, compete with friends.
   image:
     src: /hero-image.svg
@@ -12,10 +11,10 @@ hero:
   actions:
     - theme: brand
       text: Get Started
-      link: /guide/getting-started
+      link: /en/guide/getting-started
     - theme: alt
       text: View Features
-      link: /features/b50
+      link: /en/commands/record
     - theme: alt
       text: GitHub
       link: https://github.com/Matsuk1/JiETNG
@@ -23,20 +22,20 @@ hero:
 features:
   - icon: 📊
     title: Score System
-    details: Automatically generate beautiful Best 50 and Best 100 score charts with detailed achievement tracking and rating calculations.
-    link: /features/b50
+    details: Automatically generate score charts with detailed achievement tracking and rating calculations.
+    link: /en/commands/record
     linkText: Learn more
 
   - icon: 🔍
     title: Advanced Score Search
     details: Search and filter your scores with powerful queries. Support for level, rating, DX score, and achievement rate filters.
-    link: /features/search
+    link: /en/features/search
     linkText: Learn more
 
   - icon: 👥
     title: Friend System
     details: Connect with other players, compare scores, view friend rankings, and send friend requests through QR codes.
-    link: /features/friends
+    link: /en/features/friends
     linkText: Learn more
 
   - icon: 🏆
@@ -46,7 +45,7 @@ features:
   - icon: 🌐
     title: Multi-Language Support
     details: Full support for Japanese, English, and Chinese languages with seamless switching between them.
-    link: /guide/getting-started
+    link: /en/guide/getting-started
     linkText: Learn more
 
   - icon: 🎨
@@ -56,7 +55,7 @@ features:
   - icon: 🔒
     title: Privacy & Security
     details: Your data is encrypted and stored securely. We never share your information with third parties.
-    link: /more/privacy
+    link: /en/more/privacy
     linkText: Privacy Policy
 
   - icon: 📱
@@ -92,9 +91,9 @@ features:
 }
 </style>
 
-## Why JiETNG?
+## Why Choose JiETNG?
 
-JiETNG is the most comprehensive Maimai DX score management bot available, offering powerful features for both casual players and hardcore competitors.
+JiETNG is the most comprehensive Maimai DX score management bot, offering powerful features for both casual players and hardcore competitors.
 
 :::tip 🌟 Trusted by Players
 Used by thousands of Maimai DX players worldwide for daily score tracking and analysis.
@@ -108,16 +107,16 @@ Get started with JiETNG in three simple steps:
 2. **Bind Your Account** - Link your SEGA ID securely
 3. **Start Tracking** - Use `maimai update` to sync your scores
 
-[Get Started Now →](/guide/getting-started)
+[Get Started Now →](/en/guide/getting-started)
 
 ## Community & Support
 
 Need help or want to contribute?
 
-- 📖 [Read the Documentation](/guide/introduction)
+- 📖 [Read the Documentation](/en/guide/introduction)
 - 💬 [Join our Discord](https://discord.gg/your-server)
 - 🐛 [Report Issues](https://github.com/Matsuk1/JiETNG/issues)
-- 💝 [Support Development](/more/support)
+- 💝 [Support Development](/en/more/support)
 
 ---
 

@@ -91,7 +91,7 @@ graph LR
 - ✅ **透明**: 公开的开发过程
 - ✅ **用户控制**: 随时删除您的数据
 
-[阅读我们的隐私政策 →](/zh/more/privacy)
+[阅读我们的隐私政策 →](/more/privacy)
 
 ## 技术栈
 
@@ -125,14 +125,14 @@ JiETNG 使用现代、可靠的技术构建：
 
 准备好开始追踪您的成绩了吗？
 
-[快速开始指南 →](/zh/guide/getting-started)
+[快速开始指南 →](/guide/getting-started)
 
 ## 支持项目
 
 JiETNG 免费使用，由单个开发者维护。如果您觉得它有用，请考虑支持其开发：
 
-[了解如何支持 →](/zh/more/support)
+[了解如何支持 →](/more/support)
 
 ---
 
-有问题？查看我们的 [FAQ](/zh/more/faq) 或[联系我们](/zh/more/support)。
+有问题？查看我们的 [FAQ](/more/faq) 或[联系我们](/more/support)。

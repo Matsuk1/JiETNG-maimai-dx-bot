@@ -118,8 +118,8 @@ b50              # 不需要空格
 
 ## 下一步
 
-- 📖 [成绩命令](/zh/commands/record) - 成绩查看命令
+- 📖 [成绩命令](/commands/record) - 成绩查看命令
 
 ---
 
-需要帮助？查看 [FAQ](/zh/more/faq) 或[联系支持](/zh/more/support)。
+需要帮助？查看 [FAQ](/more/faq) 或[联系支持](/more/support)。

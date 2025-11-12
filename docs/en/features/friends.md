@@ -1,22 +1,21 @@
-# Friend System
+# Friend System (Friend System)
 
-Connect with other maimai DX players, compare scores, and compete in rankings through JiETNG's friend system.
+Through JiETNG's friend system, you can connect with other maimai DX players, compare scores, and compete in rankings.
 
 ## Overview
 
 The friend system allows you to:
-- 👥 Add friends who use JiETNG
-- 📊 Compare Best 50 rankings
-- 🏆 View friend scores
+- 👥 Add other JiETNG users as friends
+- 🏆 View friends' scores
 - 🤝 Build your maimai community
 
 :::warning Binding Required
-You must [bind your SEGA ID](/guide/binding) to use friend features.
+You must [bind your SEGA ID](/en/guide/binding) before using friend features.
 :::
 
 ## Friend List
 
-### View Your Friends
+### View Friend List
 
 **Command:**
 
@@ -26,20 +25,18 @@ friendlist
 フレンドリスト
 ```
 
-**What You See:**
-- List of all your friends
-- Their usernames/nicknames
-- SEGA IDs
-- Current rating (if available)
-- Friend code for sharing
+**Display Content:**
+- List of all friends
+- Their username or nickname
+- Current Rating
 
 :::tip Empty List?
-If your friend list is empty, you haven't added any friends yet! See the "Adding Friends" section below.
+If your friend list is empty, it means you haven't added any friends yet! Please refer to the "Adding Friends" section below.
 :::
 
 ## Adding Friends
 
-There are multiple ways to add friends in JiETNG.
+In JiETNG, there are multiple ways to add friends.
 
 ### Method 1: Direct Friend Request
 
@@ -51,7 +48,7 @@ friend request [user_id]
 フレンド申請 [user_id]
 ```
 
-**Example:**
+**Examples:**
 
 ```
 add-friend U1234567890abcdef
@@ -60,59 +57,46 @@ friend request U9876543210fedcba
 
 The recipient will receive a friend request notification.
 
-:::tip Finding User IDs
-User IDs are unique identifiers for LINE accounts. You can find them:
-- From friend list exports
-- By asking your friend directly
-- From QR code sharing (Method 2)
+:::tip How to Find User ID
+User ID is the unique identifier for a LINE account and can be obtained by:
+- Asking your friend directly
+- Scanning your friend's QR code (see Method 2)
 :::
 
 ### Method 2: QR Code Sharing
 
-JiETNG can generate QR codes that contain friend request links.
+JiETNG can generate QR codes that contain friend invitation links.
 
-**How it works:**
+**Process Description:**
 
-1. User A generates a friend QR code (via special command or web interface)
+1. User A generates a friend QR code (via command or web interface)
 2. User B scans the QR code with their phone camera or LINE
 3. The QR code contains a link like:
    ```
    https://[domain]/linebot/add_friend?id=[user_id]
    ```
-4. User B sends this link/QR image to the bot
-5. Friend request is automatically sent!
+4. User B sends this link or QR image to the bot
+5. Friend request is sent automatically!
 
-:::tip QR Code Benefits
-- No need to manually type user IDs
-- Shareable in person (at arcades!)
-- Can be posted in communities
-- More convenient than copying IDs
+:::tip Benefits of QR Codes
+- No need to manually enter ID
+- Can add friends offline (e.g., at arcades)
+- Can share in communities
+- More convenient than copying ID
 :::
-
-### Method 3: Friend Code
-
-If implemented in your version, you can use short friend codes instead of full user IDs.
-
-**Example:**
-
-```
-add-friend ABC-1234
-```
-
-Check with the bot documentation for your specific instance.
 
 ## Managing Friend Requests
 
 ### View Pending Requests
 
-When you receive friend requests, you'll get notifications. Check them with:
+When you receive a friend request, you'll get a notification. You can view them with:
 
 ```
 friend requests
 pending requests
 ```
 
-### Accept a Friend Request
+### Accept Friend Request
 
 **Command Format:**
 
@@ -126,11 +110,11 @@ accept-request [request_id]
 accept-request req_123456789
 ```
 
-:::tip Request IDs
-The request ID is shown in the friend request notification. It's different from the user ID - it's a unique identifier for that specific request.
+:::tip About Request ID
+Request ID is displayed in the friend request notification. It's different from user ID and is the unique identifier for that request.
 :::
 
-### Reject a Friend Request
+### Reject Friend Request
 
 **Command Format:**
 
@@ -144,24 +128,22 @@ reject-request [request_id]
 reject-request req_123456789
 ```
 
-The sender will NOT be notified that you rejected their request.
+The sender will not be notified that you rejected the request.
 
-:::warning One-Time Decision
-Once you accept or reject a request, you cannot undo it. To add the friend later (after rejection), they need to send a new request.
+:::warning Note
+Once you accept or reject a request, the action is irreversible. If you want to add that friend again, they need to send a new request.
 :::
 
 ## Comparing Scores
 
-### Friend Best 50
+### View Scores as Friend
 
-View a friend's Best 50 chart to compare with your own.
+You can view scores as a friend to compare with your own.
 
 **Command Format:**
 
 ```
 friend-b50 [friend_code]
-フレンドb50 [friend_code]
-friend best50 [friend_code]
 ```
 
 **Example:**
@@ -171,215 +153,157 @@ friend-b50 ABC123
 ```
 
 :::warning Privacy Note
-- This only works for users who have added you as a friend
-- Both parties must have bound their SEGA IDs
-- Some users may have privacy settings that restrict this
+- Only works for users who have added you as a friend
+- Both parties must have bound their SEGA ID
 :::
 
-### What's Shown
-
-The friend B50 chart includes:
-- Top 35 Standard charts
-- Top 15 DX charts
-- Total rating
-- Chart details (score, rating contribution, difficulty)
-- Similar layout to your own B50
-
-### Use Cases
-
-- **Competition**: See how you stack up
-- **Goal Setting**: Find songs to improve on
-- **Discovery**: Learn what songs your friends are playing
-- **Community**: Share achievements together
-
-## Friend System Technical Details
-
-### How Friend Requests Work
-
-1. **Sender** initiates request with `add-friend [user_id]`
-2. **System** creates a friend request record with:
-   - Unique request ID
-   - Sender's user ID
-   - Recipient's user ID
-   - Timestamp
-   - Status (pending)
-
-3. **Recipient** receives notification
-4. **Recipient** accepts or rejects using request ID
-5. **System** updates both users' friend lists (if accepted)
 
 ### Privacy & Security
 
-- ✅ Friend requests require explicit acceptance
+- ✅ All friend requests require explicit consent
 - ✅ No auto-friending
-- ✅ You control who can see your scores
-- ✅ Can remove friends at any time
-- ✅ Rejected requests don't notify sender
+- ✅ Rejecting requests doesn't notify the sender
 
 ### Limitations
 
-- **Max friends**: May have a limit (check with your bot instance)
-- **Request expiration**: Old requests may expire after a period
-- **Rate limiting**: Can't spam friend requests
-- **Binding required**: Both users must have bound accounts
+- **Request Expiration**: Old requests may expire after a certain period
+- **Rate Limiting**: Prevents spam friend requests
+- **Binding Requirement**: Both parties must have bound accounts
 
 ## Troubleshooting
 
-### "User not found"
+### "User Not Found"
 
-**Problem**: Can't send friend request - user not found
+**Problem:** Cannot send friend request.
 
-**Possible causes:**
-- User ID is incorrect
-- User hasn't bound their SEGA ID yet
-- User doesn't use JiETNG
-- Typo in the ID
-
-**Solutions:**
-- Double-check the user ID
-- Ask your friend to verify they're bound with `get me`
-- Try QR code method instead
-- Make sure you're copying the full ID
-
-### "Friend request already sent"
-
-**Problem**: Can't send another request to the same user
-
-**Explanation**: You've already sent a pending request. Wait for them to respond.
-
-**Solution**:
-- Wait for recipient to accept/reject
-- Contact them directly to remind them
-- Expired requests will clear after some time
-
-### "Cannot view friend's B50"
-
-**Problem**: `friend-b50` command doesn't work
-
-**Possible causes:**
-- Not actually friends yet (pending request)
-- Friend hasn't bound their SEGA ID
-- Friend's data hasn't been fetched from maimai NET
-- Friend hasn't updated scores recently
+**Possible Causes:**
+- Incorrect user ID
+- Recipient hasn't bound SEGA ID
+- Recipient doesn't use JiETNG
+- ID spelling error
 
 **Solutions:**
-- Verify you're friends with `friend list`
-- Ask friend to run `maimai update`
-- Check if friend is bound with their user ID
-- Try again later
+- Check if ID is correct
+- Have the recipient verify binding status with `get me`
+- Try using QR code method instead
+- Ensure you copied the complete ID
 
-### Friend List is Empty After Adding
+---
 
-**Problem**: Accepted request but friend doesn't appear
+### "Request Already Sent"
 
-**Possible causes:**
-- Request was already expired
+**Problem:** Already sent a request, cannot send again.
+
+**Reason:** The recipient hasn't processed the previous request yet.
+
+**Solutions:**
+- Wait for them to accept or reject
+- You can remind them to process the request
+- Can resend after expiration
+
+---
+
+
+### Friend List Empty After Adding
+
+**Problem:** Accepted request but friend doesn't appear.
+
+**Possible Causes:**
+- Request has expired
 - System error during acceptance
-- Cache needs refresh
+- Cache hasn't refreshed yet
 
 **Solutions:**
-- Try viewing list again
-- Both users run `friend list` to verify
-- Try removing and re-adding
-- Report bug on [GitHub Issues](https://github.com/Matsuk1/JiETNG/issues)
+- View list again
+- Both parties execute `friend list`
+- Try adding again
+- If still abnormal, report at [GitHub Issues](https://github.com/Matsuk1/JiETNG/issues)
 
-## Best Practices
+## Usage Suggestions
 
-### For Better Friend Experience
+### Tips to Improve Friend Experience
 
-1. **Update Regularly**: Run `maimai update` so friends can see your latest scores
-2. **Clear Name**: Use a recognizable nickname in-game
-3. **Active Friends**: Periodically review and clean up inactive friends
-4. **Community**: Join Discord/groups to find more maimai friends
-5. **QR Codes**: Use QR codes at arcades to quickly friend nearby players
+1. **Update Scores Regularly**: Use `maimai update` to let friends see your latest scores
+2. **Use Clear Nickname**: Make it easy for friends to recognize you
+3. **Clean Up Inactive Friends**: Keep your list organized
+4. **Join Communities**: Join Discord or discussion groups
+5. **Use QR Codes**: Quickly add friends at arcades
 
-### Building a Friend Network
+### Ways to Build Friend Network
 
-- **Local Arcade Community**: Meet people at your local arcade
-- **Online Communities**: Join maimai Discord servers, Reddit, etc.
-- **Social Media**: Share your friend code on Twitter, forums
-- **Tournaments**: Connect with players from events
-- **Score Sharing**: Post your B50 and tag #maimai
+- **Arcade Offline**: Add regular players you meet
+- **Online Communities**: Join maimai forums, Discord groups, etc.
+- **Social Media**: Share your friend code on Twitter or forums
+- **Competitions**: Connect with participants
+- **Score Sharing**: Post your B50 with #maimai tag
 
 ## Friend Commands Quick Reference
 
 | Command | Purpose |
-|---------|---------|
-| `friend list` | View all friends |
+|------|------|
+| `friend list` | View friend list |
 | `add-friend [id]` | Send friend request |
-| `accept-request [req_id]` | Accept pending request |
-| `reject-request [req_id]` | Reject pending request |
-| `friend-b50 [code]` | View friend's Best 50 |
+| `accept-request [req_id]` | Accept request |
+| `reject-request [req_id]` | Reject request |
+| `friend-b50 [code]` | View friend Best 50 |
 
-## Examples
+## Usage Examples
 
-### Adding a Friend at the Arcade
+### Adding Friends at the Arcade
 
-1. You meet someone playing maimai
-2. They show you their QR code on their phone
-3. You scan it with your phone camera
-4. Send the link to JiETNG bot
-5. Friend request sent automatically!
+1. You meet a player who's playing
+2. They show their QR code on their phone
+3. You scan the QR code with your phone
+4. Send the generated link to JiETNG bot
+5. System automatically sends friend request
 6. They accept later
-7. Now you can compare B50s!
+7. Now you can view each other's B50!
 
-### Comparing Scores
+### Score Comparison
 
 ```
-# Check your own B50
+# View your own B50
 b50
 
-# Check friend's B50
+# View scores as friend
 friend-b50 XYZ789
 
-# Compare ratings
+# View friend list
 friend list
 ```
 
-### Cleaning Up Friends
+## Future Planned Features
 
-```
-# View all friends
-friend list
-
-# Note inactive friends
-# (Currently no direct remove command - may need to unbind/rebind
-# or contact support)
-```
-
-## Future Features
-
-Potential friend system enhancements (not yet implemented):
+Possible future additions to the friend system:
 
 - Friend leaderboards
 - Friend activity feed
-- Friend score comparisons on specific songs
-- Friend challenges
-- Friend groups/teams
+- Score comparison for specific songs
+- Friend challenge system
+- Friend groups / teams
 
-Check the [GitHub repository](https://github.com/Matsuk1/JiETNG) for updates!
+Follow the [GitHub project page](https://github.com/Matsuk1/JiETNG) for latest updates.
 
 ## Next Steps
 
-- [Best 50 Feature](/features/b50) - Understand ranking charts
-- [Account Binding](/guide/binding) - Required for friends
-- [Support Page](/more/support) - Report issues
-- [FAQ](/more/faq) - Common questions
+- [Account Binding Guide](/en/guide/binding) — Prerequisite for friend features
+- [Support Page](/en/more/support) — Report issues
+- [FAQ](/en/more/faq)
 
 ---
 
 **Quick Start:**
 
 ```bash
-# 1. Add a friend
+# 1. Add friend
 add-friend U1234567890abcdef
 
-# 2. Accept requests (use request ID from notification)
+# 2. Accept friend request
 accept-request req_123456789
 
 # 3. View friends
 friend list
 
-# 4. Compare scores
+# 4. View scores as friend
 friend-b50 ABC123
 ```

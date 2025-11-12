@@ -8,10 +8,9 @@ Need help with JiETNG? This page will help you find the assistance you need.
 
 Start with our comprehensive documentation:
 
-- **[Getting Started](/guide/getting-started)** - Set up JiETNG
-- **[Features Guide](/features/b50)** - Learn about all features
-- **[Command Reference](/commands/basic)** - Complete command list
-- **[FAQ](/more/faq)** - Common questions
+- **[Getting Started](/en/guide/getting-started)** - Set up JiETNG
+- **[Command Reference](/en/commands/basic)** - Basic command list
+- **[FAQ](/en/more/faq)** - Common questions
 
 ### 🔍 Search First
 
@@ -23,20 +22,19 @@ Use the search function (⌘K or Ctrl+K) to quickly find answers in our document
 
 Found a bug? Please report it on GitHub:
 
-**[Create a Bug Report →](https://github.com/Matsuk1/JiETNG/issues/new?labels=bug&template=bug_report.md)**
+**[Create Bug Report →](https://github.com/Matsuk1/JiETNG/issues/new?labels=bug&template=bug_report.md) **
 
 Please include:
 - 📝 Description of the issue
 - 🔄 Steps to reproduce
-- 📱 Platform (LINE)
+- 📱 Platform
 - 🌐 Language setting
-- 📸 Screenshots (if applicable)
 
 ### 💡 Feature Requests
 
 Have an idea for a new feature?
 
-**[Submit Feature Request →](https://github.com/Matsuk1/JiETNG/issues/new?labels=enhancement&template=feature_request.md)**
+**[Submit Feature Request →](https://github.com/Matsuk1/JiETNG/issues/new?labels=enhancement&template=feature_request.md) **
 
 Please include:
 - 📋 Detailed description
@@ -54,7 +52,7 @@ Join our Discord community:
 - Connect with other users
 - Get announcements
 
-**[Join Discord →](https://discord.gg/your-invite-link)**
+**[Join Discord →](https://discord.gg/your-invite-link) **
 
 ### 📱 LINE
 
@@ -66,7 +64,7 @@ Send "help" or "support" for quick assistance.
 
 ## Frequently Asked Questions
 
-Before asking, check if your question is answered in the [FAQ](/more/faq).
+Before asking, check if your question is answered in the [FAQ](/en/more/faq).
 
 Common topics:
 - Account binding issues
@@ -98,7 +96,7 @@ Want to help improve JiETNG?
 - Clarify confusing sections
 - Translate to other languages
 
-**[Edit on GitHub →](https://github.com/Matsuk1/JiETNG/tree/main/docs)**
+**[Edit on GitHub →](https://github.com/Matsuk1/JiETNG/tree/main/docs) **
 
 ### 🌐 Translations
 
@@ -140,7 +138,7 @@ For developers:
 - Integration issues
 - Technical discussions
 
-**[Discussions →](https://github.com/Matsuk1/JiETNG/discussions)**
+**[Discussions →](https://github.com/Matsuk1/JiETNG/discussions) **
 
 ### 📚 API Documentation
 
@@ -222,21 +220,21 @@ Check current system status:
 Current known issues are tracked on:
 **[GitHub Issues](https://github.com/Matsuk1/JiETNG/issues?q=is%3Aissue+is%3Aopen+label%3Abug)**
 
-## Legal & Privacy
+## Legal and Privacy
 
 For legal or privacy concerns:
 
-- **Privacy Policy**: [View Policy](/more/privacy)
-- **License**: [View License](/more/license)
+- **Privacy Policy**: [View Policy](/en/more/privacy)
+- **License**: [View License](/en/more/license)
 - **Terms of Service**: Contact for details
 
 ---
 
 ## Quick Links
 
-- 📖 [Documentation Home](/)
-- 🚀 [Getting Started](/guide/getting-started)
-- ❓ [FAQ](/more/faq)
+- 📖 [Documentation Home](/en/)
+- 🚀 [Getting Started](/en/guide/getting-started)
+- ❓ [FAQ](/en/more/faq)
 - 🐛 [Report Bug](https://github.com/Matsuk1/JiETNG/issues/new?labels=bug)
 - 💡 [Request Feature](https://github.com/Matsuk1/JiETNG/issues/new?labels=enhancement)
 - 💝 [Support Development](https://ja.liberapay.com/_matsuk1/donate?currency=JPY)

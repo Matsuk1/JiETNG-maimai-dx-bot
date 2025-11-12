@@ -2,17 +2,17 @@
 
 Learn how to bind your SEGA ID to JiETNG to access your maimai DX scores and records.
 
-## How Binding Works
+## Binding Mechanism
 
-JiETNG uses **web-based binding** with secure time-limited tokens. Your credentials are submitted through a secure web form, not in the chat.
+JiETNG uses a **web-based binding** approach with secure time-limited tokens. Your credentials are submitted through a secure web form rather than being entered in the chat.
 
 :::warning Important
-There is NO command-line binding. You cannot type your credentials directly in the chat. All binding is done through a secure web interface.
+There is no command-line binding method. You cannot enter your credentials directly in the chat. All binding is done through a secure web interface.
 :::
 
 ## Binding Your Account
 
-### Step 1: Start Binding Process
+### Step 1: Start the Binding Process
 
 Send one of these commands to the bot:
 
@@ -22,7 +22,7 @@ Send one of these commands to the bot:
 
 ### Step 2: Open the Binding URL
 
-The bot will send you a button with a unique URL:
+The bot will send a button with a unique URL:
 
 ```
 SEGA アカウント連携
@@ -33,19 +33,19 @@ SEGA アカウントと連携されます
 ```
 
 :::tip Token Expiration
-The binding token expires after **2 minutes**. If it expires, simply send the `bind` command again to get a new token.
+Binding tokens expire after **2 minutes**. If it expires, simply send the `bind` command again to get a new token.
 :::
 
 ### Step 3: Enter Your Credentials
 
-The web form will ask for:
+The web form will ask you for:
 
+- **Language**: Select your preferred language
 - **SEGA ID**: Your SEGA account username
 - **Password**: Your SEGA account password
-- **Version**: Select `jp` (Japan) or `intl` (International)
-- **Language**: Select your preferred language
+- **Version**: Choose `jp` (Japan) or `intl` (International)
 
-:::danger Security Note
+:::danger Security Tips
 - Never share your SEGA credentials with anyone
 - The bot does not store your password in plain text
 - Only use the official binding URL provided by the bot
@@ -53,48 +53,37 @@ The web form will ask for:
 
 ### Step 4: Confirmation
 
-Once binding is successful, you'll receive a confirmation message and can start using all features.
+After successful binding, you'll receive a confirmation message and can start using all features.
 
 ## Checking Binding Status
 
-To verify your account is bound:
+Verify if your account is bound:
 
 ```
 get me
-```
-
-or
-
-```
 getme
 ゲットミー
 ```
 
-This will display your current binding information including:
+This will show your current binding information, including:
 - SEGA ID
 - Version (jp/intl)
-- Language setting
-- Personal info status
+- Language settings
+- Personal information status
 
-## Unbinding Your Account
+## Unbinding
 
-To remove your SEGA ID from the bot:
+Remove your SEGA ID from the bot:
 
 ```
 unbind
 ```
 
-or
-
-```
-アンバインド
-```
-
-:::warning Data Removal
-Unbinding will **permanently delete** all your stored data including:
+:::warning Data Deletion
+Unbinding will **permanently delete** all your stored data, including:
 - SEGA credentials
 - Score records
-- Friend list
+- Friend lists
 - Personal information
 - Language preferences
 
@@ -105,11 +94,11 @@ This action cannot be undone.
 
 ### Token Expired Error
 
-**Problem**: The binding URL shows "Token expired" or "Invalid token"
+**Problem**: Binding URL shows "Token expired" or "Invalid token"
 
 **Solution**:
 - Send `bind` again to generate a new token
-- Complete the binding within 2 minutes
+- Complete binding within 2 minutes
 - Make sure you're using the latest URL
 
 ### Invalid Credentials
@@ -119,8 +108,8 @@ This action cannot be undone.
 **Solution**:
 - Double-check your SEGA ID and password
 - Make sure you're using the correct version (jp vs intl)
-- Try logging in to [maimai NET](https://maimaidx.jp/maimai-mobile/) directly to verify credentials
-- For International version, use [maimai NET DX International](https://maimaidx-eng.com/maimai-mobile/)
+- Try logging into [maimai NET](https://maimaidx.jp/maimai-mobile/) directly to verify credentials
+- For international version, use [maimai NET DX International](https://maimaidx-eng.com/maimai-mobile/)
 
 ### Already Bound Error
 
@@ -128,108 +117,95 @@ This action cannot be undone.
 
 **Solution**:
 - Each SEGA ID can only be bound to one LINE account at a time
-- If you need to rebind, first `unbind` from the previous account
-- Contact support if you've lost access to the previous account
+- To rebind, first `unbind` from the previous account
+- If you can't access the previous account, contact support
 
-### Web Form Not Loading
+### Web Form Won't Load
 
-**Problem**: The binding URL doesn't open or shows an error
+**Problem**: Binding URL won't open or shows errors
 
 **Solution**:
 - Check your internet connection
-- Try opening the URL in a different browser
-- Clear your browser cache and cookies
-- If the issue persists, report it on [GitHub Issues](https://github.com/Matsuk1/JiETNG/issues)
+- Try opening in a different browser
+- Clear browser cache and cookies
+- If the problem persists, report it on [GitHub Issues](https://github.com/Matsuk1/JiETNG/issues)
 
 ## Version Selection
 
 ### Japan (jp)
 
-Use if you play on Japanese arcade machines:
-- Official maimai DX in Japan
-- Standard (スタンダード) and DX charts
-- All Japanese exclusive songs
+If you play at arcades in Japan:
+- Official Japanese maimai DX
+- Standard and DX charts
+- All Japan-exclusive songs
 - URL: https://maimaidx.jp/maimai-mobile/
 
 ### International (intl)
 
-Use if you play outside Japan:
+If you play outside Japan:
 - maimai DX machines in other countries
-- May have delayed song updates compared to JP
+- Song updates may lag behind JP version
 - Different regional events
 - URL: https://maimaidx-eng.com/maimai-mobile/
 
-:::tip Choosing the Right Version
-Select the version that matches where you physically play maimai DX. Your account version cannot be changed without unbinding and rebinding.
+:::tip Choose the Right Version
+Select the version that matches where you actually play maimai DX. You cannot change the account version without unbinding and rebinding.
 :::
 
 ## Security Best Practices
 
-### Protect Your Account
+### Protecting Your Account
 
-1. **Never share binding URLs**: Each token is unique to you and expires in 2 minutes
-2. **Use strong passwords**: For your SEGA account
-3. **Verify the domain**: Make sure the binding URL is from the official JiETNG domain
-4. **Log out after use**: On shared devices
-5. **Report suspicious activity**: If you notice unauthorized access
+1. **Don't share binding URLs**: Each token is unique to you and expires in 2 minutes
+2. **Use strong passwords**: Set a strong password for your SEGA account
+3. **Verify the domain**: Make sure the binding URL comes from the official JiETNG domain
+4. **Log out after use**: Remember to log out when using shared devices
+5. **Report suspicious activity**: Report any unauthorized access
 
-### Privacy
-
-- Your SEGA credentials are encrypted
-- The bot only accesses public game data from maimai NET
-- No private messages or chat history are stored
-- See [Privacy Policy](/more/privacy) for details
-
-## What Happens After Binding?
+## Features Available After Binding
 
 Once bound, you can:
 
 ✅ Generate Best 50 charts
-✅ Check song records
+✅ View song records
 ✅ Track plate progress
-✅ Search songs
+✅ Search for songs
 ✅ Update scores from maimai NET
 ✅ Add friends and view friend rankings
 ✅ Generate your maimai pass card
-✅ Find nearby stores
+✅ Find nearby shops
 
 ## Automatic Score Updates
 
-After binding, you can manually update your scores:
+After binding, you can manually update scores:
 
 ```
 maimai update
-```
-
-or
-
-```
 update
 アップデート
 ```
 
-This fetches your latest scores from maimai NET and updates your records in the bot.
+This will fetch your latest scores from maimai NET and update the records in the bot.
 
 :::tip Update Frequency
-Score updates are queued and processed sequentially to avoid overloading the SEGA servers. During peak times, your update may take a few minutes to complete.
+Score updates are queued and processed sequentially to avoid overloading SEGA servers. During peak times, your update may take a few minutes to complete.
 :::
 
-## Multiple Devices
+## Multi-device Usage
 
-- Your binding is tied to your LINE account, not your device
+- Binding is associated with your LINE account, not the device
 - You can use the bot on any device where you're logged in
-- Switching devices doesn't require rebinding
-- If you change your LINE account, you need to bind again
+- No need to rebind when switching devices
+- If you change LINE accounts, you'll need to rebind
 
 ## Need Help?
 
-- Check the [FAQ](/more/faq) for common questions
+- Check the [FAQ](/en/more/faq) for common questions
 - Report issues on [GitHub](https://github.com/Matsuk1/JiETNG/issues)
-- Contact support via the [Support page](/more/support)
+- Contact support via the [support page](/en/more/support)
 
 ---
 
 **Next Steps:**
-- [Getting Started Guide](/guide/getting-started) - Basic usage
-- [Command Reference](/commands/basic) - Available commands
-- [Best 50 Feature](/features/b50) - Generate ranking charts
+- [Getting Started Guide](/en/guide/getting-started) - Basic usage
+- [Command Reference](/en/commands/basic) - Available commands
