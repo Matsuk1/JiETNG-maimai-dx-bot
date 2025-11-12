@@ -17,7 +17,6 @@ npm install
 npm run docs:dev
 ```
 
-The site will be available at `http://localhost:5173`
 
 ## Build
 

@@ -234,7 +234,7 @@
 
 ## 快速链接
 
-- 📖 [文档主页](/zh)
+- 📖 [文档主页](/zh/)
 - 🚀 [入门指南](/zh/guide/getting-started)
 - ❓ [FAQ](/zh/more/faq)
 - 🐛 [报告 Bug](https://github.com/Matsuk1/JiETNG/issues/new?labels=bug)

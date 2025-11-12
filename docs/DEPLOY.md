@@ -17,7 +17,6 @@ npm install
 npm run docs:dev
 ```
 
-Visit `http://localhost:5173` to see the site.
 
 3. **Build for Production**
 

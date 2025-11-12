@@ -93,7 +93,6 @@ dev_mode() {
     print_info "启动开发服务器..."
     echo ""
     print_success "开发服务器即将启动"
-    echo "  访问: http://localhost:5173"
     echo "  按 Ctrl+C 停止服务器"
     echo ""
     npm run docs:dev
