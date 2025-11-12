@@ -154,7 +154,7 @@
 
 **中国**：[爱发电](https://afdian.com/a/matsuki)
 
-**国际**：[GitHub Sponsors](https://github.com/sponsors/Matsuk1)（即将推出）
+**国际**：[GitHub Sponsors](https://github.com/sponsors/Matsuk1)
 
 ### 🌟 非经济支持
 
