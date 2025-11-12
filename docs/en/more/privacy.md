@@ -128,7 +128,7 @@ Your data may be processed on servers outside your country/region. We take appro
 If you have any questions or concerns about this privacy policy:
 
 - 📧 GitHub Issues: [github.com/Matsuk1/JiETNG/issues](https://github.com/Matsuk1/JiETNG/issues)
-- 💬 Discord: [Join our Discord server](https://discord.gg/your-server)
+- 💬 Discord: [Join our Discord server](https://discord.gg/NXxFn9T8Xz)
 
 ## Related Policies
 

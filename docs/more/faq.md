@@ -190,7 +190,7 @@ maimai update
 
 ### 社区
 
-- 💬 [Discord 服务器](https://discord.gg/your-invite-link)
+- 💬 [Discord 服务器](https://discord.gg/NXxFn9T8Xz)
 - 🐛 [GitHub Issues](https://github.com/Matsuk1/JiETNG/issues)
 - 📧 [支持页面](/more/support)
 
@@ -201,7 +201,7 @@ maimai update
 1. 搜索此 FAQ（Ctrl+F / Cmd+F）
 2. 查看其他[文档页面](/)
 3. 搜索 [GitHub Issues](https://github.com/Matsuk1/JiETNG/issues)
-4. 在 [Discord](https://discord.gg/your-invite-link) 提问
+4. 在 [Discord](https://discord.gg/NXxFn9T8Xz) 提问
 5. 创建新 [GitHub Issue](https://github.com/Matsuk1/JiETNG/issues/new)
 
 我们随时为您提供帮助！💙

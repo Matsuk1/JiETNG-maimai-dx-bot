@@ -114,7 +114,7 @@ Get started with JiETNG in three simple steps:
 Need help or want to contribute?
 
 - 📖 [Read the Documentation](/en/guide/introduction)
-- 💬 [Join our Discord](https://discord.gg/your-server)
+- 💬 [Join our Discord](https://discord.gg/NXxFn9T8Xz)
 - 🐛 [Report Issues](https://github.com/Matsuk1/JiETNG/issues)
 - 💝 [Support Development](/en/more/support)
 

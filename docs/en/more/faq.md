@@ -190,7 +190,7 @@ Send `unbind` to permanently delete all your data from JiETNG.
 
 ### Community
 
-- 💬 [Discord Server](https://discord.gg/your-invite-link)
+- 💬 [Discord Server](https://discord.gg/NXxFn9T8Xz)
 - 🐛 [GitHub Issues](https://github.com/Matsuk1/JiETNG/issues)
 - 📧 [Support Page](/en/more/support)
 
@@ -201,7 +201,7 @@ Send `unbind` to permanently delete all your data from JiETNG.
 1. Search this FAQ (Ctrl+F / Cmd+F)
 2. Check other [documentation pages](/en/)
 3. Search [GitHub Issues](https://github.com/Matsuk1/JiETNG/issues)
-4. Ask in [Discord](https://discord.gg/your-invite-link)
+4. Ask in [Discord](https://discord.gg/NXxFn9T8Xz)
 5. Create new [GitHub Issue](https://github.com/Matsuk1/JiETNG/issues/new)
 
 We're here to help! 💙

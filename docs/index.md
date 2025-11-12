@@ -114,7 +114,7 @@ JiETNG 是最全面的 maimai DX 成绩管理机器人，为休闲玩家和硬�
 需要帮助或想要贡献？
 
 - 📖 [阅读文档](/guide/introduction)
-- 💬 [加入 Discord](https://discord.gg/your-server)
+- 💬 [加入 Discord](https://discord.gg/NXxFn9T8Xz)
 - 🐛 [报告问题](https://github.com/Matsuk1/JiETNG/issues)
 - 💝 [支持开发](/more/support)
 

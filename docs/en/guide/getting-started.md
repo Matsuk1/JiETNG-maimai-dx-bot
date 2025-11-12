@@ -202,7 +202,7 @@ FESTiVAL achievement
 
 - 📖 [Read full documentation](/en/guide/introduction)
 - ❓ [View FAQ](/en/more/faq)
-- 💬 [Join Discord](https://discord.gg/your-server)
+- 💬 [Join Discord](https://discord.gg/NXxFn9T8Xz)
 - 🐛 [Report issues](https://github.com/Matsuk1/JiETNG/issues)
 - 📧 [Contact support](/en/more/support)
 

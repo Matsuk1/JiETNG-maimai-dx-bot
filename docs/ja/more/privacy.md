@@ -128,7 +128,7 @@ JiETNG は 13 歳未満の子供から故意に情報を収集しません。未
 本プライバシーポリシーに関するご質問やご懸念がある場合：
 
 - 📧 GitHub Issues：[github.com/Matsuk1/JiETNG/issues](https://github.com/Matsuk1/JiETNG/issues)
-- 💬 Discord：[Discord サーバーに参加](https://discord.gg/your-server)
+- 💬 Discord：[Discord サーバーに参加](https://discord.gg/NXxFn9T8Xz)
 
 ## 関連ポリシー
 

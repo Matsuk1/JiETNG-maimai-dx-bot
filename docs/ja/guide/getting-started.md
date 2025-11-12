@@ -202,7 +202,7 @@ FESTiVAL achievement
 
 - 📖 [完全なドキュメントを読む](/ja/guide/introduction)
 - ❓ [FAQ を見る](/ja/more/faq)
-- 💬 [Discord に参加](https://discord.gg/your-server)
+- 💬 [Discord に参加](https://discord.gg/NXxFn9T8Xz)
 - 🐛 [問題を報告](https://github.com/Matsuk1/JiETNG/issues)
 - 📧 [サポートに連絡](/ja/more/support)
 

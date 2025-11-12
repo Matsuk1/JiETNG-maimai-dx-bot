@@ -22,7 +22,7 @@
 
 发现 bug？请在 GitHub 上报告：
 
-**[创建 Bug 报告 →](https://github.com/Matsuk1/JiETNG/issues/new?labels=bug&template=bug_report.md) **
+**[创建 Bug 报告 →](https://github.com/Matsuk1/JiETNG/issues/new?labels=bug&template=bug_report.md)**
 
 请包含：
 - 📝 问题描述
@@ -34,7 +34,7 @@
 
 有新功能的想法？
 
-**[提交功能请求 →](https://github.com/Matsuk1/JiETNG/issues/new?labels=enhancement&template=feature_request.md) **
+**[提交功能请求 →](https://github.com/Matsuk1/JiETNG/issues/new?labels=enhancement&template=feature_request.md)**
 
 请包含：
 - 📋 详细描述
@@ -52,7 +52,7 @@
 - 与其他用户联系
 - 获取公告
 
-**[加入 Discord →](https://discord.gg/your-invite-link) **
+**[加入 Discord →](https://discord.gg/NXxFn9T8Xz)**
 
 ### 📱 LINE
 
@@ -96,7 +96,7 @@
 - 澄清令人困惑的部分
 - 翻译成其他语言
 
-**[在 GitHub 上编辑 →](https://github.com/Matsuk1/JiETNG/tree/main/docs) **
+**[在 GitHub 上编辑 →](https://github.com/Matsuk1/JiETNG/tree/main/docs)**
 
 ### 🌐 翻译
 
@@ -138,7 +138,7 @@
 - 集成问题
 - 技术讨论
 
-**[讨论 →](https://github.com/Matsuk1/JiETNG/discussions) **
+**[讨论 →](https://github.com/Matsuk1/JiETNG/discussions)**
 
 ### 📚 API 文档
 
@@ -169,7 +169,7 @@
 
 - **GitHub Issues**：[https://github.com/Matsuk1/JiETNG/issues](https://github.com/Matsuk1/JiETNG/issues)
 - **GitHub Discussions**：[https://github.com/Matsuk1/JiETNG/discussions](https://github.com/Matsuk1/JiETNG/discussions)
-- **Discord**：[加入服务器](https://discord.gg/your-invite-link)
+- **Discord**：[加入服务器](https://discord.gg/NXxFn9T8Xz)
 
 ### 开发者
 

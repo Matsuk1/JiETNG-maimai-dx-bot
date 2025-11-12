@@ -190,7 +190,7 @@ maimai update
 
 ### コミュニティ
 
-- 💬 [Discord サーバー](https://discord.gg/your-invite-link)
+- 💬 [Discord サーバー](https://discord.gg/NXxFn9T8Xz)
 - 🐛 [GitHub Issues](https://github.com/Matsuk1/JiETNG/issues)
 - 📧 [サポートページ](/ja/more/support)
 
@@ -201,7 +201,7 @@ maimai update
 1. この FAQ を検索（Ctrl+F / Cmd+F）
 2. 他の[ドキュメントページ](/ja/)を参照
 3. [GitHub Issues](https://github.com/Matsuk1/JiETNG/issues) を検索
-4. [Discord](https://discord.gg/your-invite-link) で質問
+4. [Discord](https://discord.gg/NXxFn9T8Xz) で質問
 5. 新しい [GitHub Issue](https://github.com/Matsuk1/JiETNG/issues/new) を作成
 
 いつでもお手伝いします！💙

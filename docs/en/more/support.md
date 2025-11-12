@@ -22,7 +22,7 @@ Use the search function (⌘K or Ctrl+K) to quickly find answers in our document
 
 Found a bug? Please report it on GitHub:
 
-**[Create Bug Report →](https://github.com/Matsuk1/JiETNG/issues/new?labels=bug&template=bug_report.md) **
+**[Create Bug Report →](https://github.com/Matsuk1/JiETNG/issues/new?labels=bug&template=bug_report.md)**
 
 Please include:
 - 📝 Description of the issue
@@ -34,7 +34,7 @@ Please include:
 
 Have an idea for a new feature?
 
-**[Submit Feature Request →](https://github.com/Matsuk1/JiETNG/issues/new?labels=enhancement&template=feature_request.md) **
+**[Submit Feature Request →](https://github.com/Matsuk1/JiETNG/issues/new?labels=enhancement&template=feature_request.md)**
 
 Please include:
 - 📋 Detailed description
@@ -52,7 +52,7 @@ Join our Discord community:
 - Connect with other users
 - Get announcements
 
-**[Join Discord →](https://discord.gg/your-invite-link) **
+**[Join Discord →](https://discord.gg/NXxFn9T8Xz)**
 
 ### 📱 LINE
 
@@ -96,7 +96,7 @@ Want to help improve JiETNG?
 - Clarify confusing sections
 - Translate to other languages
 
-**[Edit on GitHub →](https://github.com/Matsuk1/JiETNG/tree/main/docs) **
+**[Edit on GitHub →](https://github.com/Matsuk1/JiETNG/tree/main/docs)**
 
 ### 🌐 Translations
 
@@ -138,7 +138,7 @@ For developers:
 - Integration issues
 - Technical discussions
 
-**[Discussions →](https://github.com/Matsuk1/JiETNG/discussions) **
+**[Discussions →](https://github.com/Matsuk1/JiETNG/discussions)**
 
 ### 📚 API Documentation
 
@@ -169,7 +169,7 @@ Love JiETNG? Support its continued development:
 
 - **GitHub Issues**: [https://github.com/Matsuk1/JiETNG/issues](https://github.com/Matsuk1/JiETNG/issues)
 - **GitHub Discussions**: [https://github.com/Matsuk1/JiETNG/discussions](https://github.com/Matsuk1/JiETNG/discussions)
-- **Discord**: [Join Server](https://discord.gg/your-invite-link)
+- **Discord**: [Join Server](https://discord.gg/NXxFn9T8Xz)
 
 ### Developer
 

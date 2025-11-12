@@ -114,7 +114,7 @@ JiETNGは最も包括的なmaimai DXスコア管理ボットです。カジュ�
 ヘルプが必要ですか？貢献したいですか？
 
 - 📖 [ドキュメントを読む](/ja/guide/introduction)
-- 💬 [Discordに参加](https://discord.gg/your-server)
+- 💬 [Discordに参加](https://discord.gg/NXxFn9T8Xz)
 - 🐛 [問題を報告](https://github.com/Matsuk1/JiETNG/issues)
 - 💝 [開発をサポート](/ja/more/support)
 

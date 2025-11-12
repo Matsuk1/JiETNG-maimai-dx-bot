@@ -202,7 +202,7 @@ FESTiVAL achievement
 
 - 📖 [阅读完整文档](/guide/introduction)
 - ❓ [查看 FAQ](/more/faq)
-- 💬 [加入 Discord](https://discord.gg/your-server)
+- 💬 [加入 Discord](https://discord.gg/NXxFn9T8Xz)
 - 🐛 [报告问题](https://github.com/Matsuk1/JiETNG/issues)
 - 📧 [联系支持](/more/support)
 

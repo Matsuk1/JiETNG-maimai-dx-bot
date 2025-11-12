@@ -52,7 +52,7 @@ Discord コミュニティに参加しましょう：
 - 他のユーザーとつながる
 - お知らせを受け取る
 
-**[Discord に参加 →](https://discord.gg/your-invite-link)**
+**[Discord に参加 →](https://discord.gg/NXxFn9T8Xz)**
 
 ### 📱 LINE
 
@@ -169,7 +169,7 @@ JiETNG が気に入りましたか？継続的な開発をサポートしまし�
 
 - **GitHub Issues**：[https://github.com/Matsuk1/JiETNG/issues](https://github.com/Matsuk1/JiETNG/issues)
 - **GitHub Discussions**：[https://github.com/Matsuk1/JiETNG/discussions](https://github.com/Matsuk1/JiETNG/discussions)
-- **Discord**：[サーバーに参加](https://discord.gg/your-invite-link)
+- **Discord**：[サーバーに参加](https://discord.gg/NXxFn9T8Xz)
 
 ### 開発者
 
