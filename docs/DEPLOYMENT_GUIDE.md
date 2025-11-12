@@ -147,7 +147,6 @@ cd /Users/matsuki/Desktop/JiETNG/docs
 npm run docs:dev
 ```
 
-**访问：** http://localhost:5173
 
 **特点：**
 - ✅ 热重载（修改文件自动刷新）
@@ -366,7 +365,6 @@ npm run docs:build
 2. **本地预览**
    ```bash
    npm run docs:dev
-   # 访问 http://localhost:5173 查看效果
    ```
 
 3. **提交到Git**
@@ -418,7 +416,6 @@ npm install
 
 # 开发模式（热重载）
 npm run docs:dev
-# 访问 http://localhost:5173
 
 # 生产构建
 npm run docs:build
