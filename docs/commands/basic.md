@@ -1,34 +1,34 @@
-# Basic Commands
+# 基础命令
 
-This page covers all the essential commands you'll use regularly with JiETNG.
+本页面涵盖您在使用 JiETNG 时会经常用到的所有基本命令。
 
-## Account Management
+## 账户管理
 
-### Bind SEGA Account
+### 绑定 SEGA 账户
 
-Link your SEGA ID to start using JiETNG:
+链接您的 SEGA ID 以开始使用 JiETNG：
 
 ```
 bind
 ```
 
-This will provide a web link for secure binding.
+这将提供一个用于安全绑定的网页链接。
 
-### Unbind Account
+### 解绑账户
 
-Remove your SEGA ID and delete all stored data:
+移除您的 SEGA ID 并删除所有存储的数据：
 
 ```
 unbind
 ```
 
-:::danger Warning
-This action is irreversible. All your data will be permanently deleted.
+:::danger 警告
+此操作不可逆。您的所有数据将被永久删除。
 :::
 
-### Update Scores
+### 更新成绩
 
-Fetch your latest scores from SEGA:
+从 SEGA 获取您的最新成绩：
 
 ```
 maimai update
@@ -37,288 +37,89 @@ update
 レコードアップデート
 ```
 
-**Rate limit**: Once every 5 minutes
+## 计算器
 
-## Viewing Scores
+### 达成率计算器
 
-### Best Charts
-
-Generate your Best 50 or Best 100:
+计算达到目标达成率所需的百分比：
 
 ```
-b50                # Best 50 (35 standard + 15 DX)
-b100               # Best 100 (70 standard + 30 DX)
-best50             # Same as b50
-best100            # Same as b100
+calc <tap> <hold> <slide> [<touch>] <break>
 ```
 
-### Best Variations
-
-```
-best35             # Top 35 standard songs only
-best15             # Top 15 DX songs only
-ab50               # All Best 50 (ignore type)
-ab35               # All Best 35
-apb50              # All Perfect Best 50 (AP/AP+ only)
-idlb50             # Ideal Best 50 (simulated SSS+)
-```
-
-### Recent Plays
-
-View your 50 most recent plays:
-
-```
-recent
-rct50
-```
-
-## Song Search
-
-### Search by Name
-
-Find songs by title:
-
-```
-search <song name>
-```
-
-Examples:
-```
-search 檄
-search geki
-search shama
-```
-
-**Supported**:
-- Full song name (Japanese, English, Chinese)
-- Partial names
-- Romaji
-- Common abbreviations
-
-### Search by Song ID
-
-Use the official song ID:
-
-```
-id:<song_id>
-```
-
-Example:
-```
-id:11051
-```
-
-## Song Information
-
-### View Song Details
-
-Get comprehensive info about a song:
-
-```
-<song abbreviation>
-```
-
-Examples:
-```
-geki              # Show 檄・GEKI・GEKI info
-ifuudoudou        # Show イフウドウドウ info
-```
-
-### View Your Score
-
-If you've played the song, it shows your score. If not, it shows song information.
-
-## Level-Based Queries
-
-### View All Scores for a Level
-
-```
-lv<level>
-lv<level> <page>
-```
-
-Examples:
-```
-lv15              # All your level 15 scores (page 1)
-lv14+ 2           # Level 14.7+ scores (page 2)
-lv13              # Level 13.0-13.6 scores
-```
-
-**Level formats**:
-- `15` = 15.0
-- `15+` = 15.7+
-- `14` = 14.0-14.6
-- `14+` = 14.7-14.9
-
-### Pagination
-
-Each page shows up to 50 scores. Use page numbers for more:
-
-```
-lv15 1            # Page 1
-lv15 2            # Page 2
-lv15 3            # Page 3
-```
-
-## Plate Progress
-
-Track your progress toward plate completions:
-
-```
-<version><plate_type>
-```
-
-Examples:
-```
-真極              # BUDDiES 極 plate
-真将              # BUDDiES 将 plate
-真神              # BUDDiES 神 plate
-真舞舞            # BUDDiES 舞舞 plate (Sync plate)
-```
-
-**Version abbreviations**:
-- `真` = BUDDiES
-- `祭` = FESTiVAL+
-- `宴` = FESTiVAL
-- `舞` = UNiVERSE+
-- `双` = UNiVERSE
-
-**Plate types**:
-- `極` = FC+ or better on all Master charts
-- `将` = SSS or better on all Master charts
-- `神` = AP or better on all Master charts
-- `舞舞` = FDX or better on all Master charts
-
-## Random Song
-
-Get a random song recommendation:
-
-```
-random
-ランダム曲
-```
-
-**With filters**:
-```
-random <level>            # Random from specific level
-random lv14+              # Random level 14.7+ song
-```
-
-## Calculator
-
-### Achievement Calculator
-
-Calculate what % you need for target achievement:
-
-```
-calc <tap> <hold> <slide> <touch> <break>
-```
-
-Example (song with 100 tap, 50 hold, 30 slide, 20 touch, 10 break):
+示例（100 个 tap、50 个 hold、30 个 slide、20 个 touch、10 个 break 的歌曲）：
 ```
 calc 100 50 30 20 10
 ```
 
-Shows the achievement value for each note type.
+显示每种音符类型的达成率值。
 
-## User Profile
+## 用户资料
 
-### View Maipass
+### 查看 Maipass
 
-Generate your player card with QR code:
+生成带有二维码的玩家卡片：
 
 ```
 maipass
 pass
 ```
 
-This creates a shareable card with:
-- Your username and rating
-- QR code for friend adding
-- Profile icon and plate
+这将创建一个可分享的卡片，包含：
+- 您的用户名和 rating
+- 用于添加好友的二维码
+- 个人资料图标和牌子
 
-### Get User Info
+### 获取用户信息
 
 ```
-me
-profile
+getme
 ```
 
-Shows your current:
-- Rating
-- Dan/Class
-- Last update time
-- Bind status
+## 帮助与信息
 
-## Help & Info
-
-### View Help
+### 查看帮助
 
 ```
 help
 ヘルプ
 ```
 
-Displays quick command reference.
+显示快速命令参考。
 
-### View Bot Info
+## 提示
 
-```
-about
-info
-```
+### 命令快捷方式
 
-Shows bot version, uptime, and statistics.
-
-## Language
-
-### Change Language
-
-```
-lang ja           # 日本語
-lang en           # English
-lang zh           # 中文
-```
-
-All future messages will be in your selected language.
-
-## Tips
-
-### Command Shortcuts
-
-Many commands have multiple aliases:
+许多命令有多个别名：
 
 ```
 b50 = best50
 b100 = best100
-lv = level
 ```
 
-### Case Insensitive
+### 不区分大小写
 
-Commands are not case-sensitive:
+命令不区分大小写：
 
 ```
 B50 = b50 = Best50
 RANDOM = random
 ```
 
-### Spaces
+### 空格
 
-Most commands handle extra spaces gracefully:
+大多数命令可以优雅地处理额外的空格：
 
 ```
-search  geki     # Works fine
-b50              # No space needed
-lv 15            # Space optional
+search  geki     # 正常工作
+b50              # 不需要空格
 ```
 
-## Next Steps
+## 下一步
 
-- 📖 [Advanced Commands](/commands/advanced) - Power user features
-- 🔍 [Feature Guide](/features/b50) - Detailed feature explanations
-- ❓ [FAQ](/more/faq) - Common questions
+- 📖 [成绩命令](/zh/commands/record) - 成绩查看命令
 
 ---
 
-Need help? Check the [FAQ](/more/faq) or [contact support](/more/support).
+需要帮助？查看 [FAQ](/zh/more/faq) 或[联系支持](/zh/more/support)。

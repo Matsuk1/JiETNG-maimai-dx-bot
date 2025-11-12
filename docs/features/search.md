@@ -1,383 +1,318 @@
-# Song Search
+# 歌曲搜索和记录查询
 
-Find information about maimai DX songs, get random songs, and explore the song database.
+查找 maimai DX 歌曲信息，获取随机歌曲，并探索完整的歌曲数据库。
 
-## Song Information Search
+## 歌曲信息搜索
 
-Search for songs by name, acronym, or keywords to get detailed information.
+通过歌曲名、缩写或关键词搜索，获取详细信息。
 
-### Basic Search
+### 基本搜索
 
-**Command Format:**
-
-```
-[song name] + info
-[song name] + song-info
-[song name] + ってどんな曲
-```
-
-**Examples:**
+**命令格式：**
 
 ```
-blew moon info
-グリーンライツ・セレナーデ ってどんな曲
+[歌曲名] + info  
+[歌曲名] + song-info  
+[歌曲名] + ってどんな曲
+```
+
+**示例：**
+
+```
+blew moon info  
+グリーンライツ・セレナーデ ってどんな曲  
 AMAZING MIGHTYYYY song-info
 ```
 
-### Search Behavior
+### 搜索行为
 
-- **Fuzzy matching**: The bot uses intelligent matching (85% similarity threshold)
-- **Multiple results**: Returns up to 6 matching songs
-- **Acronyms supported**: Try "bm" for "Blew Moon", "gls" for "グリーンライツ・セレナーデ"
-- **Partial names**: "amazing might" will find "AMAZING MIGHTYYYY!!!!!"
+- **模糊匹配**：采用智能匹配（相似度阈值 85%）  
+- **多结果返回**：最多显示 6 首匹配歌曲
+- **部分名称匹配**：如 “amazing might” 可匹配 “AMAZING MIGHTYYYY!!!!!”
 
-:::tip Search Tips
-- Use English or Japanese names
-- Both full names and abbreviations work
-- The bot is case-insensitive
-- Special characters are usually optional
+:::tip 搜索提示
+- 可使用英文或日文名称  
+- 支持全名与缩写  
+- 不区分大小写  
+- 特殊符号通常可省略  
 :::
 
-### What Information is Shown?
+### 显示内容
 
-Each result displays:
+每个结果包括：
 
-- 📝 **Song title** (English and Japanese)
-- 🎨 **Jacket image**
-- 🎵 **Artist name**
-- 📅 **Version** (when the song was added)
-- 🎮 **Available difficulties** (Basic, Advanced, Expert, Master, Re:MASTER)
-- 📊 **Chart constants** (internal level values)
-- 🎯 **Chart type** (Standard/DX)
-- 🎬 **Genre/Category**
+- 📝 **歌曲标题**（英文与日文）
+- 🎨 **封面图**
+- 🎵 **艺术家**
+- 📅 **版本信息**
+- 🎮 **可用难度**（Basic / Advanced / Expert / Master / Re:MASTER）
+- 📊 **谱面定数**
+- 🎯 **谱面类型**（Standard / DX）
+- 🎬 **分类（Genre）**
 
-### No Results?
+---
 
-If your search returns no results:
+## 随机歌曲
 
-1. **Try different keywords**:
-   - Use official song name
-   - Try the Japanese name if English doesn't work
-   - Use common abbreviations
+随机获取一首歌曲，可选指定等级。
 
-2. **Check spelling**:
-   - Verify character accuracy (especially for special symbols)
-   - Try removing special characters
+### 基本随机
 
-3. **Song might not exist**:
-   - Make sure the song is in maimai DX (not other SEGA rhythm games)
-   - Check if it's available in your version (jp/intl)
-
-## Random Song
-
-Get a random song suggestion, optionally filtered by difficulty level.
-
-### Basic Random Song
-
-**Command Format:**
+**命令格式：**
 
 ```
-random
-random-song
-ランダム
+random  
+random-song  
+ランダム  
 ランダム曲
 ```
 
-**Example:**
+**示例：**
 
 ```
 random
 ```
 
-Returns a random song from the entire maimai DX library.
+从整个 maimai DX 歌库中随机抽取一首歌曲。
 
-### Random Song with Level Filter
+### 指定等级随机
 
-**Command Format:**
-
-```
-random [level]
-random-song [level]
-ランダム [level]
-```
-
-**Examples:**
+**命令格式：**
 
 ```
-random 14
-ランダム曲 13+
+random [等级]  
+random-song [等级]  
+ランダム [等级]
+```
+
+**示例：**
+
+```
+random 14  
+ランダム曲 13+  
 random-song 15
 ```
 
-### Level Filter Syntax
+### 等级筛选语法
 
-You can specify:
+- `14` 表示 14.0~14.4  
+- `13+` 表示 13.5~13.9  
+- `14.6` 表示只选择定数为 14.6 的谱面  
 
-- **Single level**: `14` (exactly 14.0-14.4)
-- **Plus level**: `13+` (exactly 13.5-13.9)
-- **Specific internal level**: `14.6` (only 14.6 charts)
-
-The bot will randomly select from songs with ANY chart matching the specified level.
-
-:::tip Random Challenge
-Use random songs for:
-- Practice challenges
-- Discovery of new songs
-- Breaking out of comfort zones
-- Daily song goals
+:::tip 随机挑战
+可以用随机功能来：
+- 做练习挑战  
+- 发现新曲  
+- 打破惯性曲风  
+- 作为每日任务目标  
 :::
 
-## Version-Specific Songs
+---
 
-View all songs from a specific maimai DX version.
+## 按版本查看歌曲
 
-### Command Format
+查看某个 maimai DX 版本新增的所有歌曲。
 
-```
-[version name] + version
-[version name] + version-list
-[version name] + のバージョンリスト
-```
-
-### Available Versions
-
-Major versions:
-- `maimai`, `maimai PLUS`
-- `GreeN`, `GreeN PLUS`
-- `ORANGE`, `ORANGE PLUS`
-- `PiNK`, `PiNK PLUS`
-- `MURASAKi`, `MURASAKi PLUS`
-- `MiLK`, `MiLK PLUS`
-- `FiNALE`
-- `でらっくす` (Deluxe), `でらっくす PLUS`
-- `Splash`, `Splash PLUS`
-- `UNiVERSE`, `UNiVERSE PLUS`
-- `FESTiVAL`, `FESTiVAL PLUS`
-- `BUDDiES`, `BUDDiES PLUS`
-
-**Examples:**
+**命令格式：**
 
 ```
-FESTiVAL version
-BUDDiES PLUS のバージョンリスト
-Splash version-list
+[版本名] + version  
+[版本名] + version-list  
+[版本名] + のバージョンリスト
+```
+
+**示例：**
+
+```
+FESTiVAL version  
+BUDDiES PLUS のバージョンリスト  
+Splash version-list  
 でらっくす PLUS version
 ```
 
-:::tip Version Names
-- For PLUS versions, use a space: `FESTiVAL PLUS` ✅
-- The bot will automatically handle `+` in input: `FESTiVAL+` → `FESTiVAL PLUS`
-- Both English and Japanese names work
+:::tip 提示
+- `FESTiVAL+` 会自动识别为 `FESTiVAL PLUS` 
 :::
 
-### What You Get
+**显示内容：**
+- 歌曲列表  
 
-The version list shows:
-- All songs added in that version
-- Song jackets
-- Standard vs DX designation
-- Difficulty levels available
-- Artist names
+---
 
-## Song Records
+## 成绩查询
 
-Check your personal record on a specific song.
+查看你在某首歌的游玩记录。
 
-### Command Format
+**命令格式：**
 
 ```
-[song name] + record
-[song name] + song-record
-[song name] + のレコード
+[歌曲名] + record  
+[歌曲名] + song-record  
+[歌曲名] + のレコード
 ```
 
-**Examples:**
+**示例：**
 
 ```
-blew moon record
-オンゲキ音頭 のレコード
+blew moon record  
+オンゲキ音頭 のレコード  
 AMAZING MIGHTYYYY song-record
 ```
 
-:::warning Binding Required
-Song records require you to bind your SEGA ID. See [Account Binding](/guide/binding).
+:::warning 需绑定账号
+成绩功能需要先绑定 SEGA ID。详见 [账户绑定](/zh/guide/binding)
 :::
 
-### What's Shown
+**显示内容：**
+- 📊 达成率  
+- 🎵 DX 分数  
+- 🏆 完成状态（FC / FC+ / AP / AP+）  
+- 💎 同步状态（FS / FS+ / FDX / FDX+）  
+- 📈 评级贡献值  
 
-For each difficulty you've played:
-- 📊 Achievement percentage
-- 🎵 DX Score
-- 🏆 Clear lamp (Clear, FC, FC+, AP, AP+)
-- 💎 Sync status (FS, FS+, FDX, FDX+)
-- 📈 Rating contribution
-- 🎯 Accuracy breakdown (if available)
+若显示“未找到记录”：
+- 可能未游玩此曲  
+- 成绩未更新（尝试 `maimai update`）  
+- 名称匹配错误（可先使用 info 搜索）
 
-### No Record?
+---
 
-If you see "No record found":
-- You haven't played this song yet
-- Your scores haven't been updated (try `maimai update`)
-- The song name might not match exactly (try using info search first)
+## 按等级查看成绩
 
-## Level-Based Records
+查看指定等级下的全部成绩。
 
-View all your records for songs of a specific level.
-
-### Command Format
+**命令格式：**
 
 ```
-[level] + record-list
-[level] + records
-[level] + のレコードリスト
+[等级] + record-list  
+[等级] + records  
+[等级] + のレコードリスト
 ```
 
-**Examples:**
+**示例：**
 
 ```
-14 record-list
-13+ のレコードリスト
+14 record-list  
+13+ のレコードリスト  
 15 records
 ```
 
-### Pagination
-
-Records are split into pages (default: 50 per page).
-
-Add a page number to see more:
-
+分页：
 ```
-14 record-list 2
+14 record-list 2  
 13+ のレコードリスト 3
 ```
 
-:::tip Finding Your Target Songs
-Use level records to:
-- Track progress on high-level charts
-- Find songs to improve rating
-- Identify weak spots in your gameplay
-- Plan your grinding targets
+:::tip 提示
+用等级记录可以：
+- 追踪高难度进度  
+- 寻找提升空间  
+- 分析弱项  
+- 制定练习目标  
 :::
 
-## Advanced Search Use Cases
+---
 
-### Finding Similar Songs
+## 高级用法
 
-1. Search for a song you like:
+### 找到相似歌曲
+
+1. 搜索喜欢的歌曲：
    ```
    blew moon info
    ```
+2. 查看类别或艺术家  
+3. 查看同版本曲目列表寻找相似作品  
 
-2. Note the genre/artist
+### 发现新曲
 
-3. Search version list to find similar songs from same update
-
-### Discovering New Songs
-
-1. Use random with your skill level:
+1. 按等级随机：
    ```
    random 13+
    ```
+2. 查看歌曲信息  
+3. 若已游玩，可直接查成绩  
 
-2. Check the song info if interested
+### 练习规划
 
-3. Look up your record if you've played it
-
-### Practice Planning
-
-1. Find songs in a level range:
+1. 查等级曲目：
    ```
    14 record-list
    ```
+2. 找出待提升曲  
+3. 查看谱面详情辅助练习  
 
-2. Identify songs with room for improvement
+---
 
-3. Look up specific song info for practice
+## 对比：搜索与成绩查询
 
-## Comparison: Search vs Records
+| 功能 | 歌曲信息搜索 | 成绩查询 |
+|------|---------------|-----------|
+| **目的** | 获取歌曲数据 | 查看个人成绩 |
+| **是否需绑定** | ❌ 否 | ✅ 是 |
+| **显示内容** | 曲目信息 | 个人数据 |
+| **用途** | 探索/了解歌曲 | 进度追踪 |
+| **响应速度** | 快 | 快（缓存） |
 
-| Feature | Song Info Search | Song Records |
-|---------|-----------------|-------------|
-| **Purpose** | Get song data | Get YOUR scores |
-| **Requires Binding** | ❌ No | ✅ Yes |
-| **Shows** | Chart info | Your achievements |
-| **Use Case** | Discovery | Progress tracking |
-| **Speed** | Fast | Fast (cached) |
-
-## Search Performance
-
-- **Fuzzy matching**: Uses optimized algorithm (85% threshold)
-- **Max results**: 6 songs per search
-- **Response time**: Usually < 1 second
-- **Cache**: Song database is cached in memory
-
-:::tip Pro Tip
-If you know the exact song name, use records instead of info to save time:
+:::tip 专业提示
+若确定歌曲名无误，可直接用 record 命令：
 ```
 blew moon record
 ```
-This shows both song info AND your scores in one command!
+这样能同时显示歌曲信息与成绩！
 :::
 
-## Troubleshooting
+---
 
-### "Song not found"
+## 故障排查
 
-**Possible causes:**
-- Typo in song name
-- Song doesn't exist in maimai DX
-- Wrong version (jp vs intl)
+### 「未找到歌曲」
 
-**Solutions:**
-- Try different keywords
-- Search on [maimai wiki](https://maimai.fandom.com/)
-- Use English name instead of Japanese (or vice versa)
+**可能原因：**
+- 拼写错误  
+- 歌曲不属于 maimai DX  
+- 版本错误（JP / 国际版）
 
-### Random Song Keeps Repeating
+**解决方案：**
+- 换关键词  
+- 查 [maimai wiki](https://maimai.fandom.com/)  
+- 尝试英文或日文名  
 
-**Explanation:**
-Random selection is truly random - repetition is normal probability.
+### 随机曲重复
 
-**Workaround:**
-Narrow down with level filters:
+属于正常随机概率，可通过等级筛选减少重复：
 ```
 random 14+
 ```
 
-### Version List is Incomplete
+### 版本列表不完整
 
-**Possible causes:**
-- Version name typo
-- Bot's song database needs updating
+**可能原因：**
+- 名称错误  
+- 数据库待更新  
 
-**Solutions:**
-- Check spelling (e.g., `FESTiVAL` not `FESTIVAL`)
-- Try alternative version names
-- Report missing songs on [GitHub Issues](https://github.com/Matsuk1/JiETNG/issues)
-
-## Next Steps
-
-- [Level Records](/features/level-records) - Explore level-based filtering
-- [Command Reference](/commands/basic) - All available commands
-- [Advanced Filters](/commands/advanced) - Filter by rating, DX score, etc.
+**解决：**
+- 检查拼写  
+- 尝试其他写法  
+- 可在 [GitHub Issues](https://github.com/Matsuk1/JiETNG/issues) 报告  
 
 ---
 
-**Quick Reference:**
+## 快速参考
 
 ```bash
-# Search
-[song] info                    # Find song info
-[song] record                  # Your score on this song
+# 搜索
+[song] info          # 查歌曲信息
+[song] record        # 查个人成绩
 
-# Random
-random                         # Any song
-random 14                      # Random lv14 song
+# 随机
+random               # 随机一首
+random 14            # 随机 Lv14
 
-# Version
-FESTiVAL version              # All FESTiVAL songs
+# 版本
+FESTiVAL version     # 查看 FESTiVAL 曲目
 
-# Level Records
-14 record-list                # All your lv14 records
-13+ records 2                 # Page 2 of lv13+ records
+# 等级成绩
+14 record-list       # Lv14 曲目成绩
+13+ records 2        # 第 2 页的 Lv13+ 成绩
 ```

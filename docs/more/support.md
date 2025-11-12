@@ -1,248 +1,247 @@
-# Support
+# 支持
 
-Need help with JiETNG? This page will help you find the assistance you need.
+需要 JiETNG 的帮助？本页面将帮助您找到所需的协助。
 
-## Getting Help
+## 获取帮助
 
-### 📖 Documentation
+### 📖 文档
 
-Start with our comprehensive documentation:
+从我们全面的文档开始：
 
-- **[Getting Started](/guide/getting-started)** - Set up JiETNG
-- **[Features Guide](/features/b50)** - Learn about all features
-- **[Command Reference](/commands/basic)** - Complete command list
-- **[FAQ](/more/faq)** - Common questions
+- **[入门指南](/zh/guide/getting-started)** - 设置 JiETNG
+- **[功能指南](/zh/features/b50)** - 了解所有功能
+- **[命令参考](/zh/commands/basic)** - 完整命令列表
+- **[FAQ](/zh/more/faq)** - 常见问题
 
-### 🔍 Search First
+### 🔍 先搜索
 
-Use the search function (⌘K or Ctrl+K) to quickly find answers in our documentation.
+使用搜索功能（⌘K 或 Ctrl+K）快速在我们的文档中找到答案。
 
-## Report Issues
+## 报告问题
 
-### 🐛 Bug Reports
+### 🐛 Bug 报告
 
-Found a bug? Please report it on GitHub:
+发现 bug？请在 GitHub 上报告：
 
-**[Create a Bug Report →](https://github.com/Matsuk1/JiETNG/issues/new?labels=bug&template=bug_report.md)**
+**[创建 Bug 报告 →](https://github.com/Matsuk1/JiETNG/issues/new?labels=bug&template=bug_report.md) **
 
-Please include:
-- 📝 Description of the issue
-- 🔄 Steps to reproduce
-- 📱 Platform (LINE)
-- 🌐 Language setting
-- 📸 Screenshots (if applicable)
+请包含：
+- 📝 问题描述
+- 🔄 重现步骤
+- 📱 平台
+- 🌐 语言设置
 
-### 💡 Feature Requests
+### 💡 功能请求
 
-Have an idea for a new feature?
+有新功能的想法？
 
-**[Submit Feature Request →](https://github.com/Matsuk1/JiETNG/issues/new?labels=enhancement&template=feature_request.md)**
+**[提交功能请求 →](https://github.com/Matsuk1/JiETNG/issues/new?labels=enhancement&template=feature_request.md) **
 
-Please include:
-- 📋 Detailed description
-- 🎯 Use case / benefit
-- 🖼️ Mock-ups (if applicable)
+请包含：
+- 📋 详细描述
+- 🎯 使用场景 / 收益
+- 🖼️ 模型图（如适用）
 
-## Community Support
+## 社区支持
 
-### 💬 Discord Server
+### 💬 Discord 服务器
 
-Join our Discord community:
+加入我们的 Discord 社区：
 
-- Ask questions
-- Share tips and tricks
-- Connect with other users
-- Get announcements
+- 提问
+- 分享技巧和窍门
+- 与其他用户联系
+- 获取公告
 
-**[Join Discord →](https://discord.gg/your-invite-link)**
+**[加入 Discord →](https://discord.gg/your-invite-link) **
 
 ### 📱 LINE
 
-Contact through the bot:
+通过 bot 联系：
 
-- **LINE**: [@299bylay](https://line.me/R/ti/p/@299bylay)
+- **LINE**：[@299bylay](https://line.me/R/ti/p/@299bylay)
 
-Send "help" or "support" for quick assistance.
+发送"help"或"support"以获得快速帮助。
 
-## Frequently Asked Questions
+## 常见问题
 
-Before asking, check if your question is answered in the [FAQ](/more/faq).
+在提问之前，请查看您的问题是否在 [FAQ](/zh/more/faq) 中得到解答。
 
-Common topics:
-- Account binding issues
-- Score sync problems
-- Command usage
-- Feature availability
+常见主题：
+- 账户绑定问题
+- 成绩同步问题
+- 命令使用
+- 功能可用性
 
-## Response Times
+## 响应时间
 
-| Support Channel | Expected Response |
+| 支持渠道 | 预期响应 |
 |----------------|------------------|
-| Documentation | Immediate (self-service) |
-| GitHub Issues | 1-3 business days |
-| Discord | Community-driven (varies) |
-| Direct Message | Best effort |
+| 文档 | 即时（自助服务）|
+| GitHub Issues | 1-3 个工作日 |
+| Discord | 社区驱动（因情况而异）|
+| 直接消息 | 尽力而为 |
 
-:::tip Priority Support
-Critical bugs and security issues are prioritized. Please mark them appropriately.
+:::tip 优先支持
+关键 bug 和安全问题将被优先处理。请适当标记它们。
 :::
 
-## Contributing
+## 贡献
 
-Want to help improve JiETNG?
+想帮助改进 JiETNG？
 
-### 📝 Improve Documentation
+### 📝 改进文档
 
-- Fix typos and errors
-- Add examples
-- Clarify confusing sections
-- Translate to other languages
+- 修复拼写错误和错误
+- 添加示例
+- 澄清令人困惑的部分
+- 翻译成其他语言
 
-**[Edit on GitHub →](https://github.com/Matsuk1/JiETNG/tree/main/docs)**
+**[在 GitHub 上编辑 →](https://github.com/Matsuk1/JiETNG/tree/main/docs) **
 
-### 🌐 Translations
+### 🌐 翻译
 
-Help translate documentation:
-- Japanese improvements
-- Chinese improvements
-- Other languages
+帮助翻译文档：
+- 日语改进
+- 中文改进
+- 其他语言
 
-### 🧪 Beta Testing
+### 🧪 Beta 测试
 
-Join our beta testing program:
-- Test new features early
-- Provide feedback
-- Report bugs before release
+加入我们的 beta 测试计划：
+- 提前测试新功能
+- 提供反馈
+- 在发布前报告 bug
 
-Contact via GitHub to join.
+通过 GitHub 联系加入。
 
-## Bug Bounty Program
+## Bug 赏金计划
 
-While we don't offer monetary rewards, we acknowledge contributors:
+虽然我们不提供金钱奖励，但我们会表彰贡献者：
 
-- 🏆 Hall of Fame listing
-- 🎖️ Special role in Discord
-- 📝 Mentioned in release notes
+- 🏆 名人堂列表
+- 🎖️ Discord 中的特殊角色
+- 📝 在发布说明中提及
 
-### Eligible Issues
+### 符合条件的问题
 
-- **Security vulnerabilities** (highest priority)
-- **Critical bugs** affecting many users
-- **Performance issues**
-- **Data integrity problems**
+- **安全漏洞**（最高优先级）
+- **关键 bug**影响许多用户
+- **性能问题**
+- **数据完整性问题**
 
-## Development Support
+## 开发支持
 
-### 🔧 Technical Questions
+### 🔧 技术问题
 
-For developers:
-- API usage questions
-- Integration issues
-- Technical discussions
+对于开发者：
+- API 使用问题
+- 集成问题
+- 技术讨论
 
-**[Discussions →](https://github.com/Matsuk1/JiETNG/discussions)**
+**[讨论 →](https://github.com/Matsuk1/JiETNG/discussions) **
 
-### 📚 API Documentation
+### 📚 API 文档
 
-Coming soon - detailed API documentation for advanced users.
+即将推出 - 面向高级用户的详细 API 文档。
 
-## Support Development
+## 支持开发
 
-Love JiETNG? Support its continued development:
+喜欢 JiETNG？支持其持续开发：
 
-### 💝 Financial Support
+### 💝 经济支持
 
-**Japan**: [Liberapay](https://ja.liberapay.com/_matsuk1/donate?currency=JPY)
+**日本**：[Liberapay](https://ja.liberapay.com/_matsuk1/donate?currency=JPY)
 
-**China**: [爱发电](https://afdian.com/a/matsuki)
+**中国**：[爱发电](https://afdian.com/a/matsuki)
 
-**International**: [GitHub Sponsors](https://github.com/sponsors/Matsuk1) (coming soon)
+**国际**：[GitHub Sponsors](https://github.com/sponsors/Matsuk1)（即将推出）
 
-### 🌟 Non-Financial Support
+### 🌟 非经济支持
 
-- ⭐ Star the project on [GitHub](https://github.com/Matsuk1/JiETNG)
-- 📢 Share with friends
-- 📝 Write tutorials or blog posts
-- 🎨 Create fan art or promotional materials
+- ⭐ 在 [GitHub](https://github.com/Matsuk1/JiETNG) 上为项目加星
+- 📢 与朋友分享
+- 📝 撰写教程或博客文章
+- 🎨 创作同人艺术或宣传材料
 
-## Contact Information
+## 联系信息
 
-### Primary Channels
+### 主要渠道
 
-- **GitHub Issues**: [https://github.com/Matsuk1/JiETNG/issues](https://github.com/Matsuk1/JiETNG/issues)
-- **GitHub Discussions**: [https://github.com/Matsuk1/JiETNG/discussions](https://github.com/Matsuk1/JiETNG/discussions)
-- **Discord**: [Join Server](https://discord.gg/your-invite-link)
+- **GitHub Issues**：[https://github.com/Matsuk1/JiETNG/issues](https://github.com/Matsuk1/JiETNG/issues)
+- **GitHub Discussions**：[https://github.com/Matsuk1/JiETNG/discussions](https://github.com/Matsuk1/JiETNG/discussions)
+- **Discord**：[加入服务器](https://discord.gg/your-invite-link)
 
-### Developer
+### 开发者
 
-- **GitHub**: [@Matsuk1](https://github.com/Matsuk1)
-- **LINE Bot**: [@299bylay](https://line.me/R/ti/p/@299bylay)
+- **GitHub**：[@Matsuk1](https://github.com/Matsuk1)
+- **LINE Bot**：[@299bylay](https://line.me/R/ti/p/@299bylay)
 
-### Response Policy
+### 响应政策
 
-- **Security issues**: Within 24 hours
-- **Critical bugs**: 1-3 business days
-- **Feature requests**: Reviewed weekly
-- **General questions**: Best effort basis
+- **安全问题**：24 小时内
+- **关键 bug**：1-3 个工作日
+- **功能请求**：每周审查
+- **一般问题**：尽力而为
 
-:::warning Security Vulnerabilities
-For security issues, please contact privately first via GitHub Security Advisory rather than public issues.
+:::warning 安全漏洞
+对于安全问题，请先通过 GitHub Security Advisory 私下联系，而不是公开问题。
 :::
 
-## Guidelines
+## 指南
 
-When seeking support:
+在寻求支持时：
 
-### ✅ Do
+### ✅ 应该
 
-- Search existing issues first
-- Provide detailed information
-- Be patient and respectful
-- Follow up if requested
-- Mark issues as resolved when fixed
+- 首先搜索现有问题
+- 提供详细信息
+- 保持耐心和尊重
+- 如有要求，请跟进
+- 问题解决后标记为已解决
 
-### ❌ Don't
+### ❌ 不应该
 
-- Spam multiple channels
-- Demand immediate responses
-- Share private account credentials
-- Post off-topic content
-- Be rude or disrespectful
+- 在多个渠道发送垃圾邮件
+- 要求立即回复
+- 分享私人账户凭据
+- 发布离题内容
+- 粗鲁或不尊重
 
-## Service Status
+## 服务状态
 
-Check current system status:
+查看当前系统状态：
 
-- **Bot Status**: Usually displayed in bot profile
-- **API Status**: Check GitHub for announcements
-- **Maintenance**: Announced in Discord and GitHub
+- **Bot 状态**：通常显示在 bot 个人资料中
+- **API 状态**：查看 GitHub 公告
+- **维护**：在 Discord 和 GitHub 上公布
 
-### Known Issues
+### 已知问题
 
-Current known issues are tracked on:
+当前已知问题在以下位置跟踪：
 **[GitHub Issues](https://github.com/Matsuk1/JiETNG/issues?q=is%3Aissue+is%3Aopen+label%3Abug)**
 
-## Legal & Privacy
+## 法律和隐私
 
-For legal or privacy concerns:
+对于法律或隐私问题：
 
-- **Privacy Policy**: [View Policy](/more/privacy)
-- **License**: [View License](/more/license)
-- **Terms of Service**: Contact for details
+- **隐私政策**：[查看政策](/zh/more/privacy)
+- **许可证**：[查看许可证](/zh/more/license)
+- **服务条款**：联系以获取详细信息
 
 ---
 
-## Quick Links
+## 快速链接
 
-- 📖 [Documentation Home](/)
-- 🚀 [Getting Started](/guide/getting-started)
-- ❓ [FAQ](/more/faq)
-- 🐛 [Report Bug](https://github.com/Matsuk1/JiETNG/issues/new?labels=bug)
-- 💡 [Request Feature](https://github.com/Matsuk1/JiETNG/issues/new?labels=enhancement)
-- 💝 [Support Development](https://ja.liberapay.com/_matsuk1/donate?currency=JPY)
+- 📖 [文档主页](/zh/)
+- 🚀 [入门指南](/zh/guide/getting-started)
+- ❓ [FAQ](/zh/more/faq)
+- 🐛 [报告 Bug](https://github.com/Matsuk1/JiETNG/issues/new?labels=bug)
+- 💡 [请求功能](https://github.com/Matsuk1/JiETNG/issues/new?labels=enhancement)
+- 💝 [支持开发](https://ja.liberapay.com/_matsuk1/donate?currency=JPY)
 
 ---
 
 <div style="text-align: center; padding: 20px; opacity: 0.7;">
-  <p>Thank you for using JiETNG! Your support keeps this project alive. 💙</p>
+  <p>感谢您使用 JiETNG！您的支持使这个项目保持活力。💙</p>
 </div>

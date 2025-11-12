@@ -1,143 +1,211 @@
-# Getting Started
+# 快速开始
 
-Welcome to JiETNG! This guide will help you set up the bot and start tracking your Maimai DX scores.
+只需三个简单步骤即可开始使用 JiETNG 追踪您的 maimai DX 成绩。
 
-## Prerequisites
+## 前提条件
 
-Before you begin, make sure you have:
+在开始之前，请确保您有：
 
-- A LINE account
-- A SEGA ID (used to login to the official Maimai DX website)
-- Your SEGA ID password
+- ✅ LINE 账号
+- ✅ SEGA ID 账号（用于 maimai NET）
+- ✅ 访问 maimai NET 的权限
+- ✅ 智能手机或电脑
 
-:::warning Security Notice
-JiETNG requires your SEGA ID credentials to fetch your scores from the official website. Your credentials are encrypted and stored securely, and are never shared with third parties.
+## 步骤 1: 添加机器人
+
+1. 在 LINE 中搜索 **@299bylay**
+2. 或扫描二维码：[LINE Bot QR Code]
+3. 点击"添加好友"
+4. 开始对话
+
+## 步骤 2: 绑定 SEGA ID
+
+这是最重要的步骤 - 将您的 SEGA 账号连接到机器人。
+
+### 开始绑定
+
+向机器人发送：
+
+```
+bind
+```
+
+### 完成绑定流程
+
+1. 机器人会发送一个带有 **绑定URL** 的按钮
+2. **点击按钮**打开绑定网页
+3. **输入您的凭据**：
+   - SEGA ID（用户名）
+   - 密码
+   - 选择版本（JP 或 International）
+   - 选择语言
+4. **提交表单**
+5. 等待确认消息
+
+:::warning ⚠️ 重要安全提示
+- **不要在聊天中输入密码**
+- 只使用机器人提供的官方链接
+- 令牌在 2 分钟后过期
+- 您的密码经过加密存储
 :::
 
-## Step 1: Add the Bot
+### 验证绑定
 
-1. Click this link or scan the QR code: [Add JiETNG on LINE](https://line.me/R/ti/p/@your-bot-id)
-2. Click "Add Friend"
-3. Start chatting with JiETNG
+检查绑定是否成功：
 
-## Step 2: Bind Your SEGA Account
+```
+get me
+```
 
-After adding the bot, you need to link your SEGA ID:
+您应该看到您的 SEGA ID、版本和语言信息。
 
-1. Send `bind` to the bot
-2. Click the binding link provided
-3. Enter your SEGA ID and password
-4. Choose your game version (JP or INTL)
-5. Click "Bind"
+[需要帮助绑定？查看详细绑定指南 →](/zh/guide/binding)
 
-:::tip Language Selection
-During binding, you can choose your preferred language (Japanese, English, or Chinese). The bot will remember your preference for all future interactions.
-:::
+## 步骤 3: 更新您的成绩
 
-## Step 3: Update Your Scores
+现在从 maimai NET 同步您的成绩！
 
-After binding, sync your scores from the official website:
+### 首次同步
 
 ```
 maimai update
 ```
 
-or in Japanese:
+### 等待处理
 
-```
-マイマイアップデート
-```
+- ⏱️ 更新时间：20-30 秒
+- 📊 获取所有您的曲目和成绩
 
-This process takes about 20-30 seconds. The bot will:
-
-1. Login to your SEGA account
-2. Fetch all your play records
-3. Calculate ratings and achievements
-4. Store the data securely
-
-:::warning Rate Limiting
-To prevent server overload, you can only update your scores once every 5 minutes.
+:::tip 🎯 何时更新
+- 在游戏厅游玩后
+- 想查看最新成绩前
 :::
 
-## Step 4: View Your Scores
+## 步骤 4: 生成您的 Best 50
 
-Now you're ready to use JiETNG! Try these commands:
+现在开始有趣的部分 - 查看您的最佳成绩！
 
-### Check Your Best 50
+### 基础命令
 
 ```
 b50
 ```
 
-This generates a beautiful chart showing your top 35 old version songs and top 15 current version songs.
+### 您将获得什么
 
-### Search for a Song
+精美的图表显示：
+- 📊 您的前 35 首旧曲（以前版本的歌曲）
+- 🎵 您的前 15 首新曲（当前版本的歌曲）
+- 📈 总 rating
+- 🎯 每首曲目的详细信息
 
-```
-search <song name>
-```
-
-Example:
-```
-search 檄・GEKI
-```
-
-### Check a Specific Score
+### 其他变体
 
 ```
-<song abbreviation>
+b100      # Best 100（前 70 旧曲 + 前 30 新曲）
+b35       # 仅前 35 旧曲
+b15       # 仅前 15 新曲
 ```
 
-Example:
+[了解更多关于 Best 50 →](/zh/commands/record)
+
+## 下一步做什么
+
+### 探索功能
+
+现在您已设置完成，尝试这些命令：
+
+**搜索曲目**：
 ```
-geki
-```
-
-[View all available commands →](/commands/basic)
-
-## What's Next?
-
-Now that you're set up, explore these features:
-
-- 🏆 [Score System](/features/b50) - View your top scores
-- 🔍 [Score Search](/features/search) - Find specific songs
-- 👥 [Friend System](/features/friends) - Connect with other players
-
-## Troubleshooting
-
-### "SEGA ID not bound" error
-
-Make sure you've completed Step 2 correctly. Try sending `bind` again.
-
-### "Login failed" error
-
-This usually means your SEGA ID or password is incorrect. Double-check your credentials.
-
-### "Maintenance" error
-
-The official Maimai DX website is under maintenance (usually late night JST). Try again later.
-
-### Scores not updating
-
-Make sure you've waited at least 5 minutes since your last update. If the problem persists, try:
-
-```
-unbind
-bind
-maimai update
+[曲名] info
 ```
 
-Still having issues? Check our [FAQ](/more/faq) or [contact support](/more/support).
+**随机曲目**：
+```
+random
+random 14
+```
 
-## Privacy & Security
+**好友列表**：
+```
+friend list
+```
 
-Your data security is our top priority:
+**查看版本成就**：
+```
+FESTiVAL achievement
+```
 
-- 🔒 Credentials are encrypted using industry-standard encryption
-- 🛡️ No third-party access to your data
-- 🗑️ You can delete your data anytime with `unbind`
-- 📜 Read our full [Privacy Policy](/more/privacy)
+### 学习更多
+
+- 🎮 [基础命令列表](/zh/commands/basic)
+- ❓ [常见问题](/zh/more/faq)
+
+## 常用命令速查
+
+| 命令 | 用途 |
+|----------|---------|
+| `maimai update` | 从 maimai NET 同步成绩 |
+| `b50` | 生成 Best 50 图表 |
+| `[曲名] song-info` | 搜索曲目信息 |
+| `[曲名] record` | 查看您在该曲目的成绩 |
+| `14 record-list` | 查看所有 14 级成绩 |
+| `friend list` | 查看您的好友 |
+| `get me` | 查看账号信息 |
+| `unbind` | 解除绑定 SEGA ID |
+
+## 故障排除
+
+### "您尚未绑定 SEGA ID"
+
+**解决方案**：完成步骤 2 - 使用 `bind` 命令
+
+### "更新失败"
+
+**可能原因**：
+- maimai NET 正在维护
+- 网络连接问题
+- SEGA 凭据错误
+
+**解决方案**：
+- 等待几分钟后重试
+- 检查 maimai NET 能否直接访问
+- 使用 `unbind` 然后重新 `bind`
+
+### "命令不起作用"
+
+**检查列表**：
+- ✅ 是否已绑定？（`get me`）
+- ✅ 是否已更新成绩？（`maimai update`）
+- ✅ 拼写是否正确？
+- ✅ 使用的是正确的命令吗？
+
+[查看完整故障排除指南 →](/zh/more/faq)
+
+## 提示与技巧
+
+### 💡 专业提示
+
+1. **定期更新**：游玩后立即 `maimai update`
+2. **使用过滤器**：`b50 -lv 14 -scr 97 98` 查找改进机会
+3. **添加好友**：与其他玩家比较成绩
+4. **追踪牌子**：使用 `[版本] achievement` 追踪进度
+5. **设置目标**：使用 `idealb50` 查看潜在 rating
+
+### 🎯 充分利用 JiETNG
+
+- 🤝 加入社区 Discord
+- 📊 定期检查您的进度
+- 💬 在社区分享您的成就
+
+## 需要帮助？
+
+- 📖 [阅读完整文档](/zh/guide/introduction)
+- ❓ [查看 FAQ](/zh/more/faq)
+- 💬 [加入 Discord](https://discord.gg/your-server)
+- 🐛 [报告问题](https://github.com/Matsuk1/JiETNG/issues)
+- 📧 [联系支持](/zh/more/support)
 
 ---
 
-Ready to dive deeper? Check out our [Feature Guide](/features/b50) or explore [Advanced Commands](/commands/advanced).
+**祝您玩得开心并提高 rating！** 🎊

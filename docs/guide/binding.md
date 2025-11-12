@@ -1,235 +1,212 @@
-# Account Binding
+# 账号绑定
 
-Learn how to bind your SEGA ID to JiETNG to access your maimai DX scores and records.
+了解如何将您的 SEGA ID 绑定到 JiETNG，以访问您的 maimai DX 成绩和记录。
 
-## How Binding Works
+## 绑定机制
 
-JiETNG uses **web-based binding** with secure time-limited tokens. Your credentials are submitted through a secure web form, not in the chat.
+JiETNG 使用**基于 Web 的绑定**方式，采用安全的限时令牌。您的凭据通过安全的 Web 表单提交，而不是在聊天中输入。
 
-:::warning Important
-There is NO command-line binding. You cannot type your credentials directly in the chat. All binding is done through a secure web interface.
+:::warning 重要
+没有命令行绑定方式。您不能在聊天中直接输入您的凭据。所有绑定都通过安全的 Web 界面完成。
 :::
 
-## Binding Your Account
+## 绑定账号
 
-### Step 1: Start Binding Process
+### 步骤 1: 开始绑定流程
 
-Send one of these commands to the bot:
+向机器人发送以下任一命令：
 
 - `bind`
 - `segaid bind`
-- `バインド` (Japanese)
+- `バインド`（日语）
 
-### Step 2: Open the Binding URL
+### 步骤 2: 打开绑定 URL
 
-The bot will send you a button with a unique URL:
+机器人将发送一个带有唯一 URL 的按钮：
 
 ```
 SEGA アカウント連携
 SEGA アカウントと連携されます
-有効期限は発行から2分間です
+有效期限は発行から2分間です
 
-[押しで連携] ← Click this button
+[押しで連携] ← 点击此按钮
 ```
 
-:::tip Token Expiration
-The binding token expires after **2 minutes**. If it expires, simply send the `bind` command again to get a new token.
+:::tip 令牌过期
+绑定令牌将在 **2 分钟后**过期。如果过期，只需再次发送 `bind` 命令获取新令牌。
 :::
 
-### Step 3: Enter Your Credentials
+### 步骤 3: 输入您的凭据
 
-The web form will ask for:
+Web 表单将要求您输入：
 
-- **SEGA ID**: Your SEGA account username
-- **Password**: Your SEGA account password
-- **Version**: Select `jp` (Japan) or `intl` (International)
-- **Language**: Select your preferred language
+- **语言**: 选择您偏好的语言
+- **SEGA ID**: 您的 SEGA 账户用户名
+- **密码**: 您的 SEGA 账户密码
+- **版本**: 选择 `jp`（日本）或 `intl`（国际版）
 
-:::danger Security Note
-- Never share your SEGA credentials with anyone
-- The bot does not store your password in plain text
-- Only use the official binding URL provided by the bot
+:::danger 安全提示
+- 永远不要与任何人分享您的 SEGA 凭据
+- 机器人不会以明文存储您的密码
+- 只使用机器人提供的官方绑定 URL
 :::
 
-### Step 4: Confirmation
+### 步骤 4: 确认
 
-Once binding is successful, you'll receive a confirmation message and can start using all features.
+绑定成功后，您将收到确认消息，然后就可以开始使用所有功能了。
 
-## Checking Binding Status
+## 检查绑定状态
 
-To verify your account is bound:
+验证您的账号是否已绑定：
 
 ```
 get me
-```
-
-or
-
-```
 getme
 ゲットミー
 ```
 
-This will display your current binding information including:
+这将显示您当前的绑定信息，包括：
 - SEGA ID
-- Version (jp/intl)
-- Language setting
-- Personal info status
+- 版本（jp/intl）
+- 语言设置
+- 个人信息状态
 
-## Unbinding Your Account
+## 解除绑定
 
-To remove your SEGA ID from the bot:
+从机器人中移除您的 SEGA ID：
 
 ```
 unbind
 ```
 
-or
+:::warning 数据删除
+解除绑定将**永久删除**您所有存储的数据，包括：
+- SEGA 凭据
+- 成绩记录
+- 好友列表
+- 个人信息
+- 语言偏好
 
-```
-アンバインド
-```
-
-:::warning Data Removal
-Unbinding will **permanently delete** all your stored data including:
-- SEGA credentials
-- Score records
-- Friend list
-- Personal information
-- Language preferences
-
-This action cannot be undone.
+此操作无法撤销。
 :::
 
-## Troubleshooting
+## 故障排除
 
-### Token Expired Error
+### 令牌过期错误
 
-**Problem**: The binding URL shows "Token expired" or "Invalid token"
+**问题**: 绑定 URL 显示"令牌已过期"或"无效令牌"
 
-**Solution**:
-- Send `bind` again to generate a new token
-- Complete the binding within 2 minutes
-- Make sure you're using the latest URL
+**解决方案**:
+- 再次发送 `bind` 生成新令牌
+- 在 2 分钟内完成绑定
+- 确保使用最新的 URL
 
-### Invalid Credentials
+### 无效凭据
 
-**Problem**: "Login failed" or "Invalid SEGA ID/Password"
+**问题**: "登录失败"或"无效的 SEGA ID/密码"
 
-**Solution**:
-- Double-check your SEGA ID and password
-- Make sure you're using the correct version (jp vs intl)
-- Try logging in to [maimai NET](https://maimaidx.jp/maimai-mobile/) directly to verify credentials
-- For International version, use [maimai NET DX International](https://maimaidx-eng.com/maimai-mobile/)
+**解决方案**:
+- 仔细检查您的 SEGA ID 和密码
+- 确保使用正确的版本（jp vs intl）
+- 尝试直接登录 [maimai NET](https://maimaidx.jp/maimai-mobile/) 验证凭据
+- 国际版请使用 [maimai NET DX International](https://maimaidx-eng.com/maimai-mobile/)
 
-### Already Bound Error
+### 已绑定错误
 
-**Problem**: "This SEGA ID is already bound to another account"
+**问题**: "此 SEGA ID 已绑定到另一个账户"
 
-**Solution**:
-- Each SEGA ID can only be bound to one LINE account at a time
-- If you need to rebind, first `unbind` from the previous account
-- Contact support if you've lost access to the previous account
+**解决方案**:
+- 每个 SEGA ID 一次只能绑定到一个 LINE 账户
+- 如需重新绑定，首先从之前的账户 `unbind`
+- 如果无法访问之前的账户，请联系支持
 
-### Web Form Not Loading
+### Web 表单无法加载
 
-**Problem**: The binding URL doesn't open or shows an error
+**问题**: 绑定 URL 打不开或显示错误
 
-**Solution**:
-- Check your internet connection
-- Try opening the URL in a different browser
-- Clear your browser cache and cookies
-- If the issue persists, report it on [GitHub Issues](https://github.com/Matsuk1/JiETNG/issues)
+**解决方案**:
+- 检查您的网络连接
+- 尝试在不同的浏览器中打开
+- 清除浏览器缓存和 cookie
+- 如果问题持续，请在 [GitHub Issues](https://github.com/Matsuk1/JiETNG/issues) 报告
 
-## Version Selection
+## 版本选择
 
-### Japan (jp)
+### 日本（jp）
 
-Use if you play on Japanese arcade machines:
-- Official maimai DX in Japan
-- Standard (スタンダード) and DX charts
-- All Japanese exclusive songs
+如果您在日本的街机上玩：
+- 日本官方 maimai DX
+- 标准和 DX 谱面
+- 所有日本独占歌曲
 - URL: https://maimaidx.jp/maimai-mobile/
 
-### International (intl)
+### 国际版（intl）
 
-Use if you play outside Japan:
-- maimai DX machines in other countries
-- May have delayed song updates compared to JP
-- Different regional events
+如果您在日本以外地区玩：
+- 其他国家的 maimai DX 机台
+- 相比 JP 版本歌曲更新可能会延迟
+- 不同地区活动
 - URL: https://maimaidx-eng.com/maimai-mobile/
 
-:::tip Choosing the Right Version
-Select the version that matches where you physically play maimai DX. Your account version cannot be changed without unbinding and rebinding.
+:::tip 选择正确的版本
+选择与您实际游玩 maimai DX 的地点匹配的版本。除非解除绑定并重新绑定，否则无法更改账户版本。
 :::
 
-## Security Best Practices
+## 安全最佳实践
 
-### Protect Your Account
+### 保护您的账号
 
-1. **Never share binding URLs**: Each token is unique to you and expires in 2 minutes
-2. **Use strong passwords**: For your SEGA account
-3. **Verify the domain**: Make sure the binding URL is from the official JiETNG domain
-4. **Log out after use**: On shared devices
-5. **Report suspicious activity**: If you notice unauthorized access
+1. **不要分享绑定 URL**: 每个令牌都是您专属的，且在 2 分钟后过期
+2. **使用强密码**: 为您的 SEGA 账户设置强密码
+3. **验证域名**: 确保绑定 URL 来自官方 JiETNG 域名
+4. **使用后登出**: 在共享设备上使用后记得登出
+5. **报告可疑活动**: 如发现未经授权的访问请报告
 
-### Privacy
+## 绑定后可用功能
 
-- Your SEGA credentials are encrypted
-- The bot only accesses public game data from maimai NET
-- No private messages or chat history are stored
-- See [Privacy Policy](/more/privacy) for details
+绑定后，您可以：
 
-## What Happens After Binding?
+✅ 生成 Best 50 图表
+✅ 查看歌曲记录
+✅ 追踪牌子进度
+✅ 搜索歌曲
+✅ 从 maimai NET 更新成绩
+✅ 添加好友并查看好友排名
+✅ 生成您的 maimai 通行证卡片
+✅ 查找附近店铺
 
-Once bound, you can:
+## 自动成绩更新
 
-✅ Generate Best 50 charts
-✅ Check song records
-✅ Track plate progress
-✅ Search songs
-✅ Update scores from maimai NET
-✅ Add friends and view friend rankings
-✅ Generate your maimai pass card
-✅ Find nearby stores
-
-## Automatic Score Updates
-
-After binding, you can manually update your scores:
+绑定后，您可以手动更新成绩：
 
 ```
 maimai update
-```
-
-or
-
-```
 update
 アップデート
 ```
 
-This fetches your latest scores from maimai NET and updates your records in the bot.
+这将从 maimai NET 获取您的最新成绩并更新机器人中的记录。
 
-:::tip Update Frequency
-Score updates are queued and processed sequentially to avoid overloading the SEGA servers. During peak times, your update may take a few minutes to complete.
+:::tip 更新频率
+成绩更新会排队并按顺序处理，以避免SEGA服务器过载。在高峰时段，您的更新可能需要几分钟才能完成。
 :::
 
-## Multiple Devices
+## 多设备使用
 
-- Your binding is tied to your LINE account, not your device
-- You can use the bot on any device where you're logged in
-- Switching devices doesn't require rebinding
-- If you change your LINE account, you need to bind again
+- 绑定关联到您的 LINE 账户，而不是设备
+- 您可以在任何登录的设备上使用机器人
+- 切换设备不需要重新绑定
+- 如果更换 LINE 账户，需要重新绑定
 
-## Need Help?
+## 需要帮助？
 
-- Check the [FAQ](/more/faq) for common questions
-- Report issues on [GitHub](https://github.com/Matsuk1/JiETNG/issues)
-- Contact support via the [Support page](/more/support)
+- 查看 [FAQ](/zh/more/faq) 了解常见问题
+- 在 [GitHub](https://github.com/Matsuk1/JiETNG/issues) 报告问题
+- 通过 [支持页面](/zh/more/support) 联系支持
 
 ---
 
-**Next Steps:**
-- [Getting Started Guide](/guide/getting-started) - Basic usage
-- [Command Reference](/commands/basic) - Available commands
-- [Best 50 Feature](/features/b50) - Generate ranking charts
+**下一步:**
+- [入门指南](/zh/guide/getting-started) - 基本用法
+- [命令参考](/zh/commands/basic) - 可用命令
+- [Best 50 功能](/zh/features/b50) - 生成排名图表

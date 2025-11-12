@@ -45,8 +45,7 @@ export default defineConfig({
         text: 'Commands',
         items: [
           { text: 'Basic Commands', link: '/commands/basic' },
-          { text: 'Advanced', link: '/commands/advanced' },
-          { text: 'Admin', link: '/commands/admin' }
+          { text: 'Record Commands', link: '/commands/record' }
         ]
       },
       {
@@ -94,8 +93,8 @@ export default defineConfig({
   // 多语言支持
   locales: {
     root: {
-      label: 'English',
-      lang: 'en'
+      label: '中文',
+      lang: 'zh-CN'
     },
     ja: {
       label: '日本語',
@@ -122,15 +121,14 @@ export default defineConfig({
             items: [
               { text: 'スコアシステム', link: '/ja/features/b50' },
               { text: '楽曲検索', link: '/ja/features/search' },
-              { text: 'フレンド機能', link: '/ja/features/friends' },
-              { text: 'レベル別記録', link: '/ja/features/level-records' }
+              { text: 'フレンド機能', link: '/ja/features/friends' }
             ]
           },
           {
             text: 'コマンド',
             items: [
               { text: '基本コマンド', link: '/ja/commands/basic' },
-              { text: '高度なフィルター', link: '/ja/commands/advanced' }
+              { text: 'レコードコマンド', link: '/ja/commands/record' }
             ]
           },
           {
@@ -145,39 +143,38 @@ export default defineConfig({
       }
     },
     zh: {
-      label: '简体中文',
-      lang: 'zh-CN',
-      link: '/zh/',
+      label: 'English',
+      lang: 'en',
+      link: '/en/',
       themeConfig: {
         nav: [
-          { text: '首页', link: '/zh/' },
-          { text: '指南', link: '/zh/guide/getting-started' },
-          { text: '功能', link: '/zh/features/b50' },
-          { text: '命令', link: '/zh/commands/basic' }
+          { text: '首页', link: '/en/' },
+          { text: '指南', link: '/en/guide/getting-started' },
+          { text: '功能', link: '/en/features/b50' },
+          { text: '命令', link: '/en/commands/basic' }
         ],
         sidebar: [
           {
             text: '开始使用',
             items: [
-              { text: '介绍', link: '/zh/guide/introduction' },
-              { text: '快速开始', link: '/zh/guide/getting-started' },
-              { text: '绑定账号', link: '/zh/guide/binding' }
+              { text: '介绍', link: '/en/guide/introduction' },
+              { text: '快速开始', link: '/en/guide/getting-started' },
+              { text: '绑定账号', link: '/en/guide/binding' }
             ]
           },
           {
             text: '功能特性',
             items: [
-              { text: '成绩系统', link: '/zh/features/b50' },
-              { text: '成绩查询', link: '/zh/features/search' },
-              { text: '好友系统', link: '/zh/features/friends' },
-              { text: '等级记录', link: '/zh/features/level-records' }
+              { text: '成绩系统', link: '/en/features/b50' },
+              { text: '成绩查询', link: '/en/features/search' },
+              { text: '好友系统', link: '/en/features/friends' }
             ]
           },
           {
             text: '命令参考',
             items: [
               { text: '基础命令', link: '/zh/commands/basic' },
-              { text: '高级过滤', link: '/zh/commands/advanced' }
+              { text: '成绩命令', link: '/zh/commands/record' }
             ]
           },
           {

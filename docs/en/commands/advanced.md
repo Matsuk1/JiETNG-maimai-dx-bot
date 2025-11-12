@@ -595,7 +595,6 @@ ab50 -lv 14.6 -scr 98
 
 ## Next Steps
 
-- [Level Records](/features/level-records) - Browse by level
 - [Best 50](/features/b50) - Core ranking feature
 - [Basic Commands](/commands/basic) - Essential commands
 
