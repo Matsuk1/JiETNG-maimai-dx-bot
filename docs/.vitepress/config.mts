@@ -12,6 +12,14 @@ export default defineConfig({
   // 自定义域名 (docs.jietng.com): 使用 '/'
   base: '/',
 
+  // Markdown 配置
+  markdown: {
+    theme: {
+      light: 'github-light',
+      dark: 'github-dark'
+    }
+  },
+
   // 主题配置
   themeConfig: {
     logo: '/logo.svg',
@@ -215,10 +223,13 @@ export default defineConfig({
 
   // 头部meta标签
   head: [
-    ['link', { rel: 'icon', href: '/favicon.ico' }],
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }],
+    ['link', { rel: 'icon', type: 'image/png', href: '/favicon.ico' }],
+    ['link', { rel: 'apple-touch-icon', href: '/logo.svg' }],
     ['meta', { name: 'theme-color', content: '#ff1744' }],
     ['meta', { name: 'og:type', content: 'website' }],
     ['meta', { name: 'og:title', content: 'JiETNG - Maimai DX Bot' }],
-    ['meta', { name: 'og:description', content: 'Professional Maimai DX score management bot' }]
+    ['meta', { name: 'og:description', content: 'Professional Maimai DX score management bot' }],
+    ['meta', { name: 'og:image', content: '/logo.svg' }]
   ]
 })
