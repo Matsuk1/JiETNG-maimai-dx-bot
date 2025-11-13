@@ -1,7 +1,8 @@
 import { defineConfig } from 'vitepress'
+import { withMermaid } from 'vitepress-plugin-mermaid'
 
 // https://vitepress.dev/reference/site-config
-export default defineConfig({
+export default withMermaid(defineConfig({
   title: "JiETNG",
   description: "Maimai DX Score Management Bot",
 
@@ -231,5 +232,10 @@ export default defineConfig({
     ['meta', { name: 'og:title', content: 'JiETNG - Maimai DX Bot' }],
     ['meta', { name: 'og:description', content: 'Professional Maimai DX score management bot' }],
     ['meta', { name: 'og:image', content: '/logo.svg' }]
-  ]
-})
+  ],
+
+  // Mermaid 配置
+  mermaid: {
+    // 参考 https://mermaid.js.org/config/setup/modules/mermaidAPI.html#mermaidapi-configuration-defaults
+  }
+}))
