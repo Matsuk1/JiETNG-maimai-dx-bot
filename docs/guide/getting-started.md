@@ -14,7 +14,7 @@
 ## 步骤 1: 添加机器人
 
 1. 在 LINE 中搜索 **@299bylay**
-2. 或扫描二维码：[LINE Bot QR Code]
+2. 或点击链接：[@299bylay](https://line.me/R/ti/p/@299bylay)
 3. 点击"添加好友"
 4. 开始对话
 
