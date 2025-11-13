@@ -3,6 +3,7 @@ import DefaultTheme from 'vitepress/theme'
 import { onMounted, watch, nextTick } from 'vue'
 import { useRoute } from 'vitepress'
 import type { Theme } from 'vitepress'
+import './custom.css'
 
 export default {
   extends: DefaultTheme,

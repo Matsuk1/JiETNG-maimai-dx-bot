@@ -63,7 +63,7 @@ graph LR
     A[Player] -->|Send Command| B[JiETNG Bot]
     B -->|Fetch Data| C[SEGA Website]
     C -->|Return Scores| B
-    B -->|Generate Chart| D
+    B -->|Generate Chart| D[Score Chart]
     D -->|Send| A
 ```
 
