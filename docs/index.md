@@ -91,14 +91,6 @@ features:
 }
 </style>
 
-## Best 50 成绩系统
-
-查看您的最佳 50 首歌曲成绩，精确的 Rating 计算和美观的数据可视化。
-
-<div style="text-align: center; margin: 2rem 0;">
-  <img src="/b50_example.png" alt="Best 50 成绩示例" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" />
-</div>
-
 ## 为什么选择 JiETNG？
 
 JiETNG 是最全面的 maimai DX 成绩管理机器人，为休闲玩家和硬核竞技者都提供强大功能。

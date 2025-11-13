@@ -6,10 +6,12 @@ Best 50 (b50) and Best 100 (b100) charts are fundamental features of JiETNG, dis
 
 The "Best 50" system is Maimai DX's official ranking method, consisting of:
 
-- **Best 35**: Your top 35 highest scores in **Standard songs (songs from previous versions)**
-- **Best 15**: Your top 15 highest scores in **DX songs (songs from current version)**
+- **Best 35**: Your top 35 highest scores in **old version songs (songs from previous versions)**
+- **Best 15**: Your top 15 highest scores in **current version songs (songs from current version)**
 
 Your **Maimai DX Rating** is the sum of these 50 scores.
+
+<img src="/b50_example.png" alt="Best 50 Score Example" style="width: 22%; max-width: 400px; min-width: 200px; display: block; margin: 1.5rem auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" />
 
 ## Commands
 
@@ -25,8 +27,8 @@ best100      # Alternative command for b100
 ### Variations
 
 ```
-best35       # Show only top 35 Standard songs
-best15       # Show only top 15 DX songs
+best35       # Show only top 35 old version songs
+best15       # Show only top 15 current version songs
 ab50         # All Best 50 (ignore song version)
 ab35         # All Best 35 (ignore song version)
 apb50        # All Perfect Best 50 (AP/AP+ scores only)
@@ -39,24 +41,24 @@ idlb50       # Ideal Best 50 (simulate best scores)
 
 Each score card displays:
 
-- <µ **Song name** and difficulty
-- <® **Song version**: Standard or DX
+- <ï¿½ **Song name** and difficulty
+- <ï¿½ **Song version**: old version or current version
 - P **Internal constant**: e.g., 14.7
-- =¯ **Achievement rate**: Your score percentage
-- <Æ **Rank grade**: SSS+, SSS, SS+, etc.
+- =ï¿½ **Achievement rate**: Your score percentage
+- <ï¿½ **Rank grade**: SSS+, SSS, SS+, etc.
 - < **Full Combo type**: AP+, AP, FC+, FC
 - =% **Full Sync**: FDX+, FDX, FS+, FS
-- =Ê **Rating**: Single song rating
-- =È **DX Rating**: Your DX Rating
+- =ï¿½ **Rating**: Single song rating
+- =ï¿½ **DX Rating**: Your DX Rating
 
 ### User Info Header
 
 Charts include your profile:
 
 - =d Player name and avatar
-- <Å Dan/Class
+- <ï¿½ Dan/Class
 - P Total rating
-- <– Title
+- <ï¿½ Title
 
 ## Advanced Usage
 
@@ -168,4 +170,4 @@ Make sure you've played these songs recently. Older scores may not appear if:
 
 ---
 
-Next: [Learn about advanced score search ’](/en/features/search)
+Next: [Learn about advanced score search ï¿½](/en/features/search)

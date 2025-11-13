@@ -11,6 +11,8 @@ Best 50（b50）和 Best 100（b100）图表是 JiETNG 的基础功能，以精�
 
 您的 **Maimai DX Rating** 是这 50 个分数的总和。
 
+<img src="/b50_example.png" alt="Best 50 成绩示例" style="width: 22%; max-width: 400px; min-width: 200px; display: block; margin: 1.5rem auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" />
+
 ## 命令
 
 ### 基础 Best 图表

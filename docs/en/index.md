@@ -91,14 +91,6 @@ features:
 }
 </style>
 
-## Best 50 Score System
-
-View your top 50 song scores with precise Rating calculations and beautiful data visualization.
-
-<div style="text-align: center; margin: 2rem 0;">
-  <img src="/b50_example.png" alt="Best 50 Score Example" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" />
-</div>
-
 ## Why Choose JiETNG?
 
 JiETNG is the most comprehensive Maimai DX score management bot, offering powerful features for both casual players and hardcore competitors.

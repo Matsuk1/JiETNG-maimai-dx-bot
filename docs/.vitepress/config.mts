@@ -44,17 +44,17 @@ export default withMermaid(defineConfig({
         ]
       },
       {
-        text: '功能特性',
-        items: [
-          { text: '成绩查询', link: '/features/search' },
-          { text: '好友系统', link: '/features/friends' }
-        ]
-      },
-      {
         text: '命令参考',
         items: [
           { text: '基础命令', link: '/commands/basic' },
           { text: '成绩命令', link: '/commands/record' }
+        ]
+      },
+      {
+        text: '功能特性',
+        items: [
+          { text: '成绩查询', link: '/features/search' },
+          { text: '好友系统', link: '/features/friends' }
         ]
       },
       {
@@ -127,17 +127,17 @@ export default withMermaid(defineConfig({
             ]
           },
           {
-            text: 'Features',
-            items: [
-              { text: 'Score Search', link: '/en/features/search' },
-              { text: 'Friend System', link: '/en/features/friends' }
-            ]
-          },
-          {
             text: 'Commands',
             items: [
               { text: 'Basic Commands', link: '/en/commands/basic' },
               { text: 'Record Commands', link: '/en/commands/record' }
+            ]
+          },
+          {
+            text: 'Features',
+            items: [
+              { text: 'Score Search', link: '/en/features/search' },
+              { text: 'Friend System', link: '/en/features/friends' }
             ]
           },
           {
@@ -184,17 +184,17 @@ export default withMermaid(defineConfig({
             ]
           },
           {
-            text: '機能',
-            items: [
-              { text: '楽曲検索', link: '/ja/features/search' },
-              { text: 'フレンド機能', link: '/ja/features/friends' }
-            ]
-          },
-          {
             text: 'コマンド',
             items: [
               { text: '基本コマンド', link: '/ja/commands/basic' },
               { text: 'レコードコマンド', link: '/ja/commands/record' }
+            ]
+          },
+          {
+            text: '機能',
+            items: [
+              { text: '楽曲検索', link: '/ja/features/search' },
+              { text: 'フレンド機能', link: '/ja/features/friends' }
             ]
           },
           {

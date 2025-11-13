@@ -91,14 +91,6 @@ features:
 }
 </style>
 
-## Best 50 スコアシステム
-
-トップ50楽曲のスコアを表示。正確なレーティング計算と美しいデータビジュアライゼーションを提供します。
-
-<div style="text-align: center; margin: 2rem 0;">
-  <img src="/b50_example.png" alt="Best 50 スコア例" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" />
-</div>
-
 ## なぜJiETNGなのか？
 
 JiETNGは最も包括的なmaimai DXスコア管理ボットです。カジュアルプレイヤーからハードコアな競技者まで、あらゆるプレイヤーに強力な機能を提供します。
