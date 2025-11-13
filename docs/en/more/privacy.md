@@ -1,6 +1,6 @@
 # Privacy Policy
 
-Last Updated: January 2025
+Last Updated: November 2025
 
 ## Overview
 
@@ -138,6 +138,6 @@ If you have any questions or concerns about this privacy policy:
 
 ---
 
-**Effective Date**: January 1, 2025
+**Effective Date**: December 1, 2025
 
 By using JiETNG, you acknowledge that you have read and understood this privacy policy.
