@@ -14,7 +14,7 @@ Before you begin, make sure you have:
 ## Step 1: Add the Bot
 
 1. Search for **@299bylay** in LINE
-2. Or scan the QR code: [LINE Bot QR Code]
+2. Or click this link: [@299bylay](https://line.me/R/ti/p/@299bylay)
 3. Click "Add Friend"
 4. Start a conversation
 
