@@ -13,8 +13,8 @@ hero:
       text: 始める
       link: /ja/guide/getting-started
     - theme: alt
-      text: 機能を見る
-      link: /ja/commands/record
+      text: 紹介
+      link: /ja/guide/introduction
     - theme: alt
       text: GitHub
       link: https://github.com/Matsuk1/JiETNG
@@ -38,25 +38,25 @@ features:
     link: /ja/features/friends
     linkText: 詳細
 
-  - icon: 🏆
-    title: プレート進捗追跡
-    details: 各種プレートチャレンジ（極、将、神、舞舞）の進捗を視覚的に追跡。
-
   - icon: 🌐
     title: 多言語対応
     details: 日本語、英語、中国語に完全対応。言語間のシームレスな切り替えが可能。
     link: /ja/guide/getting-started
     linkText: 詳細
 
-  - icon: 🎨
-    title: 美しいUI
-    details: エレガントでモダンなインターフェース。ダークモード対応、スムーズなアニメーション、レスポンシブデザイン。
-
   - icon: 🔒
     title: プライバシー＆セキュリティ
     details: あなたのデータは暗号化され安全に保存されます。第三者と情報を共有することはありません。
     link: /ja/more/privacy
     linkText: プライバシーポリシー
+
+  - icon: 🏆
+    title: プレート進捗追跡
+    details: 各種プレートチャレンジ（極、将、神、舞舞）の進捗を視覚的に追跡。
+
+  - icon: 🎨
+    title: 美しいUI
+    details: エレガントでモダンなインターフェース。ダークモード対応、スムーズなアニメーション、レスポンシブデザイン。
 
   - icon: 📱
     title: LINEプラットフォーム
@@ -91,13 +91,17 @@ features:
 }
 </style>
 
+## Best 50 スコアシステム
+
+トップ50楽曲のスコアを表示。正確なレーティング計算と美しいデータビジュアライゼーションを提供します。
+
+<div style="text-align: center; margin: 2rem 0;">
+  <img src="/b50_example.png" alt="Best 50 スコア例" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" />
+</div>
+
 ## なぜJiETNGなのか？
 
 JiETNGは最も包括的なmaimai DXスコア管理ボットです。カジュアルプレイヤーからハードコアな競技者まで、あらゆるプレイヤーに強力な機能を提供します。
-
-:::tip 🌟 プレイヤーから信頼されています
-世界中の数千人のmaimai DXプレイヤーが、日々のスコア追跡と分析にJiETNGを使用しています。
-:::
 
 ## クイックスタート
 
@@ -121,6 +125,6 @@ JiETNGは最も包括的なmaimai DXスコア管理ボットです。カジュ�
 ---
 
 <div style="text-align: center; padding: 40px 0; opacity: 0.8;">
-  <p>❤️を込めて <a href="https://github.com/Matsuk1">Matsuki</a> が開発</p>
+  <p>すべてのプレイを記録に残そう</p>
   <p style="font-size: 0.9em; margin-top: 8px;">Copyright © 2025 Matsuki. All Rights Reserved.</p>
 </div>

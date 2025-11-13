@@ -13,8 +13,8 @@ hero:
       text: 开始使用
       link: /guide/getting-started
     - theme: alt
-      text: 查看功能
-      link: /commands/record
+      text: 介绍
+      link: /guide/introduction
     - theme: alt
       text: GitHub
       link: https://github.com/Matsuk1/JiETNG
@@ -38,25 +38,25 @@ features:
     link: /features/friends
     linkText: 了解更多
 
-  - icon: 🏆
-    title: 牌子进度追踪
-    details: 追踪您完成各种牌子挑战（极、将、神、舞舞）的进度，提供可视化进度指示器。
-
   - icon: 🌐
     title: 多语言支持
     details: 完全支持日语、英语和中文，可以无缝切换语言。
     link: /guide/getting-started
     linkText: 了解更多
 
-  - icon: 🎨
-    title: 精美界面
-    details: 优雅现代的界面设计，支持深色模式、流畅动画和响应式设计。
-
   - icon: 🔒
     title: 隐私与安全
     details: 您的数据经过加密并安全存储。我们绝不会与第三方分享您的信息。
     link: /more/privacy
     linkText: 隐私政策
+
+  - icon: 🏆
+    title: 牌子进度追踪
+    details: 追踪您完成各种牌子挑战（极、将、神、舞舞）的进度，提供可视化进度指示器。
+
+  - icon: 🎨
+    title: 精美界面
+    details: 优雅现代的界面设计，支持深色模式、流畅动画和响应式设计。
 
   - icon: 📱
     title: LINE 平台
@@ -91,13 +91,17 @@ features:
 }
 </style>
 
+## Best 50 成绩系统
+
+查看您的最佳 50 首歌曲成绩，精确的 Rating 计算和美观的数据可视化。
+
+<div style="text-align: center; margin: 2rem 0;">
+  <img src="/b50_example.png" alt="Best 50 成绩示例" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" />
+</div>
+
 ## 为什么选择 JiETNG？
 
 JiETNG 是最全面的 maimai DX 成绩管理机器人，为休闲玩家和硬核竞技者都提供强大功能。
-
-:::tip 🌟 受玩家信赖
-全球数千名 maimai DX 玩家每天使用 JiETNG 进行成绩追踪和分析。
-:::
 
 ## 快速开始
 
@@ -121,6 +125,6 @@ JiETNG 是最全面的 maimai DX 成绩管理机器人，为休闲玩家和硬�
 ---
 
 <div style="text-align: center; padding: 40px 0; opacity: 0.8;">
-  <p>由 <a href="https://github.com/Matsuk1">Matsuki</a> 用 ❤️ 打造</p>
+  <p>让每一次游玩都有迹可循</p>
   <p style="font-size: 0.9em; margin-top: 8px;">Copyright © 2025 Matsuki. 保留所有权利。</p>
 </div>

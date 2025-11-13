@@ -13,8 +13,8 @@ hero:
       text: Get Started
       link: /en/guide/getting-started
     - theme: alt
-      text: View Features
-      link: /en/commands/record
+      text: Introduction
+      link: /en/guide/introduction
     - theme: alt
       text: GitHub
       link: https://github.com/Matsuk1/JiETNG
@@ -38,25 +38,25 @@ features:
     link: /en/features/friends
     linkText: Learn more
 
-  - icon: 🏆
-    title: Plate Progress Tracking
-    details: Track your progress towards completing various plate challenges (極, 将, 神, 舞舞) with visual progress indicators.
-
   - icon: 🌐
     title: Multi-Language Support
     details: Full support for Japanese, English, and Chinese languages with seamless switching between them.
     link: /en/guide/getting-started
     linkText: Learn more
 
-  - icon: 🎨
-    title: Beautiful UI
-    details: Elegant and modern interface with dark mode support, smooth animations, and responsive design.
-
   - icon: 🔒
     title: Privacy & Security
     details: Your data is encrypted and stored securely. We never share your information with third parties.
     link: /en/more/privacy
     linkText: Privacy Policy
+
+  - icon: 🏆
+    title: Plate Progress Tracking
+    details: Track your progress towards completing various plate challenges (極, 将, 神, 舞舞) with visual progress indicators.
+
+  - icon: 🎨
+    title: Beautiful UI
+    details: Elegant and modern interface with dark mode support, smooth animations, and responsive design.
 
   - icon: 📱
     title: LINE Platform
@@ -91,13 +91,17 @@ features:
 }
 </style>
 
+## Best 50 Score System
+
+View your top 50 song scores with precise Rating calculations and beautiful data visualization.
+
+<div style="text-align: center; margin: 2rem 0;">
+  <img src="/b50_example.png" alt="Best 50 Score Example" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" />
+</div>
+
 ## Why Choose JiETNG?
 
 JiETNG is the most comprehensive Maimai DX score management bot, offering powerful features for both casual players and hardcore competitors.
-
-:::tip 🌟 Trusted by Players
-Used by thousands of Maimai DX players worldwide for daily score tracking and analysis.
-:::
 
 ## Quick Start
 
@@ -121,6 +125,6 @@ Need help or want to contribute?
 ---
 
 <div style="text-align: center; padding: 40px 0; opacity: 0.8;">
-  <p>Built with ❤️ by <a href="https://github.com/Matsuk1">Matsuki</a></p>
+  <p>Making every play count</p>
   <p style="font-size: 0.9em; margin-top: 8px;">Copyright © 2025 Matsuki. All Rights Reserved.</p>
 </div>

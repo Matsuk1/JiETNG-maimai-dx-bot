@@ -1,13 +1,13 @@
 /**
- * 自定义样式 - 恢复渐变色和原有设计
+ * 自定义样式 - 深蓝色渐变设计
  */
 
 /* 主题渐变色 */
 :root {
   --vp-home-hero-name-color: transparent;
-  --vp-home-hero-name-background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  
-  --vp-home-hero-image-background-image: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --vp-home-hero-name-background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+
+  --vp-home-hero-image-background-image: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
   --vp-home-hero-image-filter: blur(44px);
 }
 
@@ -25,7 +25,7 @@
 
 /* Hero 标题渐变 */
 .VPHero .name {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -34,12 +34,12 @@
 /* 按钮渐变 */
 .VPButton.brand {
   border-color: transparent;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
   color: var(--vp-button-brand-text);
 }
 
 .VPButton.brand:hover {
-  background: linear-gradient(135deg, #5568d3 0%, #6941a0 100%);
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%);
 }
 
 /* Feature 卡片悬停效果 */
@@ -49,7 +49,7 @@
 
 .VPFeature:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(102, 126, 234, 0.15);
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.15);
 }
 
 .VPFeature:hover .icon {
@@ -59,7 +59,7 @@
 /* 导航栏激活状态渐变 */
 .VPNavBarMenuLink.active .link,
 .VPSidebarItem.is-active > .item .link {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -67,7 +67,7 @@
 
 /* 链接悬停渐变 */
 .vp-doc a:hover {
-  color: #667eea;
+  color: #2563eb;
 }
 
 /* 代码块样式 */
@@ -78,7 +78,7 @@
 
 /* 自定义容器 */
 .vp-doc .custom-block.tip {
-  border-left: 4px solid #667eea;
+  border-left: 4px solid #2563eb;
 }
 
 .vp-doc .custom-block.warning {
@@ -107,15 +107,15 @@
 
 /* 深色模式适配 */
 .dark {
-  --vp-home-hero-name-background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --vp-home-hero-name-background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
 }
 
 .dark .VPButton.brand {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
 }
 
 .dark .VPButton.brand:hover {
-  background: linear-gradient(135deg, #7888f1 0%, #8b5cb8 100%);
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
 }
 
 /* 侧边栏滚动条美化 */
@@ -128,12 +128,12 @@
 }
 
 .VPSidebar::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
   border-radius: 3px;
 }
 
 .VPSidebar::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, #5568d3 0%, #6941a0 100%);
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%);
 }
 
 /* 页面滚动进度条 */
@@ -142,7 +142,7 @@
   top: 0;
   left: 0;
   height: 3px;
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(90deg, #2563eb 0%, #1e40af 100%);
   z-index: 9999;
   transition: width 0.2s ease;
 }
