@@ -483,7 +483,7 @@ def get_maimai_info(session: requests.Session, ver="jp"):
         trophy_texts = trophy_block.xpath('.//text()')
         trophy_content = trophy_texts[1]
     else:
-        trophy_content = "N/A"
+        return {}
 
     user_info = {
         "name": user_name[0].strip() if user_name else "N/A",
@@ -494,7 +494,7 @@ def get_maimai_info(session: requests.Session, ver="jp"):
         "icon_url": icon_url[0] if icon_url else "N/A",
         "nameplate_url": nameplate_url[0] if nameplate_url else "N/A",
         "trophy_type": trophy_type[0].strip().lower() if trophy_type else "N/A",
-        "trophy_content": trophy_content.strip() if trophy_content else "N/A",
+        "trophy_content": trophy_content.strip() if trophy_content else "N/A"
     }
 
     return user_info
