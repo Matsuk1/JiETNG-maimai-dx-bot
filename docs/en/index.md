@@ -54,21 +54,9 @@ features:
     title: Plate Progress Tracking
     details: Track your progress towards completing various plate challenges (極, 将, 神, 舞舞) with visual progress indicators.
 
-  - icon: 🎨
-    title: Beautiful UI
-    details: Elegant and modern interface with dark mode support, smooth animations, and responsive design.
-
-  - icon: 📱
-    title: LINE Platform
-    details: Available on LINE with rich UI features including FlexMessage and QuickReply for seamless interaction.
-
   - icon: 🚀
     title: Fast & Reliable
     details: Optimized performance with caching, rate limiting, and efficient data processing for quick responses.
-
-  - icon: 🎯
-    title: Accurate Calculations
-    details: Precise rating calculations following official Maimai DX algorithms with regular updates.
 
   - icon: 💝
     title: Free & Open Development

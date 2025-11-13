@@ -54,21 +54,9 @@ features:
     title: プレート進捗追跡
     details: 各種プレートチャレンジ（極、将、神、舞舞）の進捗を視覚的に追跡。
 
-  - icon: 🎨
-    title: 美しいUI
-    details: エレガントでモダンなインターフェース。ダークモード対応、スムーズなアニメーション、レスポンシブデザイン。
-
-  - icon: 📱
-    title: LINEプラットフォーム
-    details: LINE対応。FlexMessageやQuickReplyなどのリッチな機能で快適な操作を実現。
-
   - icon: 🚀
     title: 高速＆信頼性
     details: キャッシング、レート制限、効率的なデータ処理による最適化されたパフォーマンスで高速応答。
-
-  - icon: 🎯
-    title: 正確な計算
-    details: 公式maimaiDXアルゴリズムに従った正確なレーティング計算。定期的なアップデート。
 
   - icon: 💝
     title: 無料＆オープン開発

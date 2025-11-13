@@ -54,21 +54,9 @@ features:
     title: 牌子进度追踪
     details: 追踪您完成各种牌子挑战（极、将、神、舞舞）的进度，提供可视化进度指示器。
 
-  - icon: 🎨
-    title: 精美界面
-    details: 优雅现代的界面设计，支持深色模式、流畅动画和响应式设计。
-
-  - icon: 📱
-    title: LINE 平台
-    details: 支持 LINE 平台，提供 FlexMessage 和 QuickReply 等丰富的交互功能。
-
   - icon: 🚀
     title: 快速可靠
     details: 通过缓存、速率限制和高效数据处理优化性能，确保快速响应。
-
-  - icon: 🎯
-    title: 精确计算
-    details: 遵循官方 maimai DX 算法进行精确的 rating 计算，定期更新。
 
   - icon: 💝
     title: 免费开源开发

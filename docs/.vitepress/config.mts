@@ -8,6 +8,9 @@ export default withMermaid(defineConfig({
 
   cleanUrls: true,
 
+  // 排除文件
+  srcExclude: ['**/README.md'],
+
   // Base URL配置
   // GitHub Pages (username.github.io/JiETNG/): 使用 '/JiETNG/'
   // 自定义域名 (docs.jietng.com): 使用 '/'
