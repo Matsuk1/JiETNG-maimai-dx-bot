@@ -3,9 +3,9 @@ import { withMermaid } from 'vitepress-plugin-mermaid'
 
 // https://vitepress.dev/reference/site-config
 export default withMermaid(defineConfig({
-  title: "JiETNG | Maimai DX LINE-Bot for JP & Intl Servers",
+  title: "JiETNG",
   description: "Maimai DX Score Management Bot",
-  titleTemplate: ":title",
+  titleTemplate: ":title | JiETNG - Maimai DX LINE-Bot for JP & Intl Servers",
 
   cleanUrls: true,
 

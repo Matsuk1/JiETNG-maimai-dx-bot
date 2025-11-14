@@ -1,5 +1,7 @@
 ---
 layout: home
+title: JiETNG - Maimai DX LINE-Bot for JP & Intl Servers
+titleTemplate: false
 
 hero:
   name: "JiETNG"
