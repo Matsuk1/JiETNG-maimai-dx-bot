@@ -244,7 +244,7 @@ export default withMermaid(defineConfig({
     ['meta', { name: 'google-site-verification', content: 'AFFp6ZYIkyQJr6lPnfQ5iQt_eLXph0pjhIgbYqsr7eU' }],
 
     // SEO meta标签
-    ['meta', { name: 'keywords', content: 'maimai DX, maimai bot, score tracker, rating calculator, best 50, b50, LINE bot, 舞萌DX, 成绩管理, 查分器, スコア管理, レーティング計算, maimaiDXボット, ベスト50, 日本サーバー, 国際サーバー, maimaiDX bot, rhythm game, arcade game tracker, Japanese server, International server, 日服, 国际服' }],
+    ['meta', { name: 'keywords', content: 'maimai, maimai DX, maimai でらっくす, maimaiでらっくす, maimai bot, score tracker, rating calculator, best 50, b50, LINE bot, 舞萌DX, 舞萌, 成绩管理, 查分器, スコア管理, レーティング計算, maimaiDXボット, ベスト50, 日本サーバー, 国際サーバー, 日本版, 海外版, 日版, 国际版, maimaiDX bot, rhythm game, arcade game tracker, Japanese server, International server, 日服, 国际服' }],
     ['meta', { name: 'description', content: 'JiETNG - Maimai DX score management bot for LINE supporting both Japanese and International servers. Track your progress, analyze performance, and compete with friends. Free rating calculator and best 50 chart generator.' }],
     ['meta', { name: 'author', content: 'Matsuki' }],
 
