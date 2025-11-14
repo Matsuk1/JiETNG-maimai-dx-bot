@@ -263,6 +263,9 @@ export default withMermaid(defineConfig({
     ['meta', { property: 'og:title', content: 'JiETNG -『maimai でらっくす』Score Management Bot' }],
     ['meta', { property: 'og:description', content: '『maimai でらっくす』score management bot supporting both Japanese and International servers.' }],
     ['meta', { property: 'og:image', content: 'https://jietng.matsuki.work/og-image.png' }],
+    ['meta', { property: 'og:image:width', content: '1200' }],
+    ['meta', { property: 'og:image:height', content: '630' }],
+    ['meta', { property: 'og:image:type', content: 'image/png' }],
     ['meta', { property: 'og:url', content: 'https://jietng.matsuki.work' }],
 
     // Twitter Card
