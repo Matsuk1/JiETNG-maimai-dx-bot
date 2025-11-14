@@ -81,7 +81,7 @@ features:
 
 ## Why Choose JiETNG?
 
-JiETNG is the most comprehensive Maimai DX score management bot, offering powerful features for both casual players and hardcore competitors.
+JiETNG is a Maimai DX score management bot supporting both Japanese and International servers, offering powerful features for both casual players and hardcore competitors.
 
 ## Quick Start
 
