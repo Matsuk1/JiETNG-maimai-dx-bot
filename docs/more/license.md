@@ -60,7 +60,7 @@ JiETNG 是广泛开发工作的成果，代表了重要的知识产权。专有�
 
 - ✅ 将 bot 添加到您的 LINE
 - ✅ 绑定您的 SEGA 账户
-- ✅ 追踪您的 Maimai DX 成绩
+- ✅ 追踪您的 『maimai でらっくす』 成绩
 - ✅ 免费使用所有功能
 
 [开始使用 →](/guide/getting-started)
@@ -95,13 +95,13 @@ JiETNG 使用以下第三方库和服务：
 ### 服务
 
 - **LINE Messaging API** - LINE Corporation
-- **SEGA Maimai DX** - SEGA Corporation
+- **SEGA 『maimai でらっくす』** - SEGA Corporation
 
 ## 致谢
 
 特别感谢：
 
-- Maimai DX 社区
+- 『maimai でらっくす』 社区
 - DXRating 项目的贡献者
 - 所有提供反馈的用户
 

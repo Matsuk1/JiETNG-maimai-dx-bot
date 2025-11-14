@@ -4,8 +4,8 @@ import { withMermaid } from 'vitepress-plugin-mermaid'
 // https://vitepress.dev/reference/site-config
 export default withMermaid(defineConfig({
   title: "JiETNG",
-  description: "Maimai DX Score Management Bot",
-  titleTemplate: ":title | JiETNG - Maimai DX LINE-Bot for JP & Intl Servers",
+  description: "『maimai でらっくす』Score Management Bot",
+  titleTemplate: ":title | JiETNG -『maimai でらっくす』LINE-Bot for JP & Intl Servers",
 
   cleanUrls: true,
 
@@ -114,13 +114,13 @@ export default withMermaid(defineConfig({
     root: {
       label: '简体中文',
       lang: 'zh-CN',
-      description: 'JiETNG - 支持日服和国际服的 maimai DX 查分机器人。追踪进度，分析表现，与好友竞争。免费的 Rating 计算器和 Best 50 图表生成器。'
+      description: 'JiETNG - 支持日服和国际服的『maimai でらっくす』查分机器人。免费的 Rating 计算器和 Best 50 图表生成器。'
     },
     en: {
       label: 'English',
       lang: 'en',
       link: '/en/',
-      description: 'JiETNG - Maimai DX score management bot for LINE supporting both Japanese and International servers. Track your progress, analyze performance, and compete with friends.',
+      description: 'JiETNG -『maimai でらっくす』score management bot for LINE supporting both Japanese and International servers.',
       themeConfig: {
         nav: [
           { text: 'Home', link: '/en/' },
@@ -178,7 +178,7 @@ export default withMermaid(defineConfig({
       label: '日本語',
       lang: 'ja',
       link: '/ja/',
-      description: 'JiETNG - 国内版と海外版の両方に対応した maimai でらっくす スコア管理ボット。無料のレーティング計算機とベスト50チャート生成器。',
+      description: 'JiETNG - 国内版と海外版の両方に対応した『maimai でらっくす』スコア管理ボット。無料のレーティング計算機とベスト50チャート生成器。',
       themeConfig: {
         nav: [
           { text: 'ホーム', link: '/ja/' },
@@ -245,22 +245,22 @@ export default withMermaid(defineConfig({
     ['meta', { name: 'google-site-verification', content: 'AFFp6ZYIkyQJr6lPnfQ5iQt_eLXph0pjhIgbYqsr7eU' }],
 
     // SEO meta标签
-    ['meta', { name: 'keywords', content: 'maimai, maimai DX, maimai でらっくす, maimaiでらっくす, maimai bot, score tracker, rating calculator, best 50, b50, LINE bot, 舞萌DX, 舞萌, 成绩管理, 查分器, スコア管理, レーティング計算, maimaiDXボット, ベスト50, 日本サーバー, 国際サーバー, 日本版, 海外版, 日版, 国际版, maimaiDX bot, rhythm game, arcade game tracker, Japanese server, International server, 日服, 国际服' }],
-    ['meta', { name: 'description', content: 'JiETNG - Maimai DX score management bot for LINE supporting both Japanese and International servers. Track your progress, analyze performance, and compete with friends. Free rating calculator and best 50 chart generator.' }],
+    ['meta', { name: 'keywords', content: 'maimai, maimai でらっくす, maimaiでらっくす, maimai bot, score tracker, rating calculator, best 50, b50, LINE bot, 舞萌DX, 舞萌, 成绩管理, 查分器, スコア管理, レーティング計算, maimaiDXボット, ベスト50, 日本サーバー, 国際サーバー, 日本版, 海外版, 日版, 国际版, maimaiDX bot, rhythm game, arcade game tracker, Japanese server, International server, 日服, 国际服' }],
+    ['meta', { name: 'description', content: 'JiETNG -『maimai でらっくす』score management bot for LINE supporting both Japanese and International servers. Free rating calculator and best 50 chart generator.' }],
     ['meta', { name: 'author', content: 'Matsuki' }],
 
     // Open Graph
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:site_name', content: 'JiETNG' }],
-    ['meta', { property: 'og:title', content: 'JiETNG - Maimai DX Score Management Bot' }],
-    ['meta', { property: 'og:description', content: 'Maimai DX score management bot supporting both Japanese and International servers. Track your progress, analyze performance, and compete with friends.' }],
+    ['meta', { property: 'og:title', content: 'JiETNG -『maimai でらっくす』Score Management Bot' }],
+    ['meta', { property: 'og:description', content: '『maimai でらっくす』score management bot supporting both Japanese and International servers.' }],
     ['meta', { property: 'og:image', content: 'https://jietng.matsuki.work/logo.svg' }],
     ['meta', { property: 'og:url', content: 'https://jietng.matsuki.work' }],
 
     // Twitter Card
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
-    ['meta', { name: 'twitter:title', content: 'JiETNG - Maimai DX Score Management Bot' }],
-    ['meta', { name: 'twitter:description', content: 'Maimai DX score management bot supporting both Japanese and International servers. Track your progress, analyze performance, and compete with friends.' }],
+    ['meta', { name: 'twitter:title', content: 'JiETNG -『maimai でらっくす』Score Management Bot' }],
+    ['meta', { name: 'twitter:description', content: '『maimai でらっくす』score management bot supporting both Japanese and International servers.' }],
     ['meta', { name: 'twitter:image', content: 'https://jietng.matsuki.work/logo.svg' }]
   ],
 

@@ -1,11 +1,11 @@
 ---
 layout: home
-title: JiETNG - Maimai DX LINE-Bot for JP & Intl Servers
+title: JiETNG -『maimai でらっくす』LINE-Bot for JP & Intl Servers
 titleTemplate: false
 
 hero:
   name: "JiETNG"
-  text: "maimai DX LINE Bot"
+  text: "『maimai でらっくす』 LINE Bot"
   tagline: Professional score management bot supporting both Japanese and International servers.
   image:
     src: /hero-image.svg
@@ -83,7 +83,7 @@ features:
 
 ## Why Choose JiETNG?
 
-JiETNG is a Maimai DX score management bot supporting both Japanese and International servers, offering powerful features for both casual players and hardcore competitors.
+JiETNG is a『maimai でらっくす』score management bot supporting both Japanese and International servers, offering powerful features for both casual players and hardcore competitors.
 
 ## Quick Start
 

@@ -6,7 +6,7 @@ Common questions and answers about using JiETNG.
 
 ### What is JiETNG?
 
-JiETNG is a LINE bot for maimai DX players that provides:
+JiETNG is a LINE bot for 『maimai でらっくす』 players that provides:
 - Score tracking and analysis
 - Best 50 chart generation
 - Song search and discovery
@@ -123,7 +123,7 @@ See [Account Binding](/en/guide/binding).
 
 **Causes:**
 - Song name typo
-- Song doesn't exist in maimai DX
+- Song doesn't exist in 『maimai でらっくす』
 - Wrong version (jp vs intl)
 
 **Solutions:**

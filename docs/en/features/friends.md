@@ -1,6 +1,6 @@
 # Friend System (Friend System)
 
-Through JiETNG's friend system, you can connect with other maimai DX players, compare scores, and compete in rankings.
+Through JiETNG's friend system, you can connect with other 『maimai でらっくす』 players, compare scores, and compete in rankings.
 
 ## Overview
 

@@ -1,12 +1,12 @@
 ---
 layout: home
-title: JiETNG - Maimai DX LINE-Bot for JP & Intl Servers
+title: JiETNG -『maimai でらっくす』LINE-Bot for JP & Intl Servers
 titleTemplate: false
 
 hero:
   name: "JiETNG"
-  text: "maimai DX LINE 机器人"
-  tagline: 支持日服和国际服的专业成绩管理机器人。
+  text: "『maimai でらっくす』<br>成绩管理工具"
+  tagline: 支持日服和国际服的成绩管理用 LINE 机器人。
   image:
     src: /hero-image.svg
     alt: JiETNG Logo
@@ -83,7 +83,7 @@ features:
 
 ## 为什么选择 JiETNG？
 
-JiETNG 是同时支持 maimai DX 日服和国际服的查分机器人，为休闲玩家和硬核竞技者都提供强大功能。
+JiETNG 是同时支持 『maimai でらっくす』 日服和国际服的查分机器人，为休闲玩家和硬核竞技者都提供强大功能。
 
 ## 快速开始
 

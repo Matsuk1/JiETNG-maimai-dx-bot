@@ -1,10 +1,10 @@
 # Introduction
 
-JiETNG is a comprehensive maimai DX score management bot designed to help players track progress, analyze performance, and connect with the community.
+JiETNG is a comprehensive 『maimai でらっくす』 score management bot designed to help players track progress, analyze performance, and connect with the community.
 
 ## What is JiETNG?
 
-JiETNG (pronounced "jie ting") is a free, feature-rich bot available on LINE that automatically tracks and manages your maimai DX scores. It fetches your play data directly from the official SEGA website and presents it in beautiful, easy-to-understand visualizations.
+JiETNG (pronounced "jie ting") is a free, feature-rich bot available on LINE that automatically tracks and manages your 『maimai でらっくす』 scores. It fetches your play data directly from the official SEGA website and presents it in beautiful, easy-to-understand visualizations.
 
 ## Core Features
 
@@ -114,7 +114,7 @@ While JiETNG's source code is proprietary, the development process is transparen
 
 ## Community
 
-Join hundreds of maimai DX players using JiETNG:
+Join hundreds of 『maimai でらっくす』 players using JiETNG:
 
 - 🌏 Players from Japan, Asia, and around the world
 - 💬 Active community discussions

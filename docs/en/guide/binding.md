@@ -1,6 +1,6 @@
 # Account Binding
 
-Learn how to bind your SEGA ID to JiETNG to access your maimai DX scores and records.
+Learn how to bind your SEGA ID to JiETNG to access your 『maimai でらっくす』 scores and records.
 
 ## Binding Mechanism
 
@@ -135,7 +135,7 @@ This action cannot be undone.
 ### Japan (jp)
 
 If you play at arcades in Japan:
-- Official Japanese maimai DX
+- Official Japanese 『maimai でらっくす』
 - Standard and DX charts
 - All Japan-exclusive songs
 - URL: https://maimaidx.jp/maimai-mobile/
@@ -143,13 +143,13 @@ If you play at arcades in Japan:
 ### International (intl)
 
 If you play outside Japan:
-- maimai DX machines in other countries
+- 『maimai でらっくす』 machines in other countries
 - Song updates may lag behind JP version
 - Different regional events
 - URL: https://maimaidx-eng.com/maimai-mobile/
 
 :::tip Choose the Right Version
-Select the version that matches where you actually play maimai DX. You cannot change the account version without unbinding and rebinding.
+Select the version that matches where you actually play 『maimai でらっくす』. You cannot change the account version without unbinding and rebinding.
 :::
 
 ## Security Best Practices

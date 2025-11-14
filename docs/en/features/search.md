@@ -1,6 +1,6 @@
 # Song Search and Record Query
 
-Find maimai DX song information, get random songs, and explore the complete song database.
+Find 『maimai でらっくす』 song information, get random songs, and explore the complete song database.
 
 ## Song Information Search
 
@@ -73,7 +73,7 @@ random-song
 random
 ```
 
-Randomly selects a song from the entire maimai DX song library.
+Randomly selects a song from the entire 『maimai でらっくす』 song library.
 
 ### Random by Level
 
@@ -111,7 +111,7 @@ You can use the random feature to:
 
 ## View Songs by Version
 
-View all songs added in a specific maimai DX version.
+View all songs added in a specific 『maimai でらっくす』 version.
 
 **Command Format:**
 
@@ -270,7 +270,7 @@ This will display both song information and scores at once!
 
 **Possible Causes:**
 - Spelling error
-- Song is not part of maimai DX
+- Song is not part of 『maimai でらっくす』
 - Version error (JP / International)
 
 **Solutions:**

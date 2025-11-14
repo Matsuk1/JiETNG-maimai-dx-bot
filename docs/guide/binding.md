@@ -1,6 +1,6 @@
 # 账号绑定
 
-了解如何将您的 SEGA ID 绑定到 JiETNG，以访问您的 maimai DX 成绩和记录。
+了解如何将您的 SEGA ID 绑定到 JiETNG，以访问您的 『maimai でらっくす』 成绩和记录。
 
 ## 绑定机制
 
@@ -135,7 +135,7 @@ unbind
 ### 日本（jp）
 
 如果您在日本的街机上玩：
-- 日本官方 maimai DX
+- 日本官方 『maimai でらっくす』
 - 标准和 DX 谱面
 - 所有日本独占歌曲
 - URL: https://maimaidx.jp/maimai-mobile/
@@ -143,13 +143,13 @@ unbind
 ### 国际版（intl）
 
 如果您在日本以外地区玩：
-- 其他国家的 maimai DX 机台
+- 其他国家的 『maimai でらっくす』 机台
 - 相比 JP 版本歌曲更新可能会延迟
 - 不同地区活动
 - URL: https://maimaidx-eng.com/maimai-mobile/
 
 :::tip 选择正确的版本
-选择与您实际游玩 maimai DX 的地点匹配的版本。除非解除绑定并重新绑定，否则无法更改账户版本。
+选择与您实际游玩 『maimai でらっくす』 的地点匹配的版本。除非解除绑定并重新绑定，否则无法更改账户版本。
 :::
 
 ## 安全最佳实践

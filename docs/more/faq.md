@@ -6,7 +6,7 @@
 
 ### 什么是 JiETNG？
 
-JiETNG 是一个面向 maimai DX 玩家的 LINE 机器人，提供以下功能：
+JiETNG 是一个面向 『maimai でらっくす』 玩家的 LINE 机器人，提供以下功能：
 - 成绩追踪和分析
 - Best 50 图表生成
 - 曲目搜索和发现
@@ -123,7 +123,7 @@ maimai update
 
 **原因**:
 - 曲名拼写错误
-- maimai DX 中不存在该曲目
+- 『maimai でらっくす』 中不存在该曲目
 - 版本错误（jp vs intl）
 
 **解决方案**:

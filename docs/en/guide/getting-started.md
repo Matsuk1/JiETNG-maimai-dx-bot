@@ -1,6 +1,6 @@
 # Getting Started
 
-Get started with JiETNG and begin tracking your maimai DX scores in just three simple steps.
+Get started with JiETNG and begin tracking your 『maimai でらっくす』 scores in just three simple steps.
 
 ## Prerequisites
 

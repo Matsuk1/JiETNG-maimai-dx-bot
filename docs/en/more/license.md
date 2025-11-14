@@ -60,7 +60,7 @@ While the source code is proprietary, the **bot service itself is free to use**:
 
 - ✅ Add the bot to your LINE
 - ✅ Bind your SEGA account
-- ✅ Track your Maimai DX scores
+- ✅ Track your『maimai でらっくす』scores
 - ✅ Use all features for free
 
 [Get Started →](/en/guide/getting-started)
@@ -95,13 +95,13 @@ JiETNG uses the following third-party libraries and services:
 ### Services
 
 - **LINE Messaging API** - LINE Corporation
-- **SEGA Maimai DX** - SEGA Corporation
+- **SEGA『maimai でらっくす』** - SEGA Corporation
 
 ## Acknowledgments
 
 Special thanks to:
 
-- The Maimai DX community
+- The『maimai でらっくす』community
 - Contributors to DXRating project
 - All users who provide feedback
 

@@ -4,12 +4,12 @@ Best 50 (b50) and Best 100 (b100) charts are fundamental features of JiETNG, dis
 
 ## What is Best 50?
 
-The "Best 50" system is Maimai DX's official ranking method, consisting of:
+The "Best 50" system is『maimai でらっくす』official ranking method, consisting of:
 
 - **Best 35**: Your top 35 highest scores in **old version songs** (songs from previous versions)
 - **Best 15**: Your top 15 highest scores in **current version songs** (songs from current version)
 
-Your **Maimai DX Rating** is the sum of these 50 scores.
+Your **DX Rating** is the sum of these 50 scores.
 
 <img src="/b50_example.png" alt="Best 50 Score Example" style="width: 22%; max-width: 400px; min-width: 200px; display: block; margin: 1.5rem auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" />
 
