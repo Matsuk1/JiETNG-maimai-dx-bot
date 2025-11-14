@@ -237,6 +237,9 @@ export default withMermaid(defineConfig({
     ['link', { rel: 'apple-touch-icon', href: '/logo.svg' }],
     ['meta', { name: 'theme-color', content: '#2563eb' }],
 
+    // Google Search Console 验证
+    ['meta', { name: 'google-site-verification', content: 'AFFp6ZYIkyQJr6lPnfQ5iQt_eLXph0pjhIgbYqsr7eU' }],
+
     // SEO meta标签
     ['meta', { name: 'keywords', content: 'maimai DX, maimai bot, score tracker, rating calculator, best 50, b50, LINE bot, 舞萌DX, 成绩管理, スコア管理, レーティング計算, maimaiDX bot, rhythm game, arcade game tracker' }],
     ['meta', { name: 'description', content: 'JiETNG - Professional Maimai DX score management bot for LINE. Track your progress, analyze performance, and compete with friends. Free rating calculator and best 50 chart generator.' }],
