@@ -5,8 +5,8 @@ titleTemplate: false
 
 hero:
   name: "JiETNG"
-  text: "maimai DX 机器人"
-  tagline: 支持 LINE 的专业成绩管理机器人。追踪进度，分析表现，与好友竞争。
+  text: "maimai DX LINE 机器人"
+  tagline: 支持日服和国际服的专业成绩管理机器人。
   image:
     src: /hero-image.svg
     alt: JiETNG Logo

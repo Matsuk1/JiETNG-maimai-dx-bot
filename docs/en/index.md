@@ -5,8 +5,8 @@ titleTemplate: false
 
 hero:
   name: "JiETNG"
-  text: "maimai DX Bot"
-  tagline: Professional score management bot for LINE. Track your progress, analyze your performance, compete with friends.
+  text: "maimai DX LINE Bot"
+  tagline: Professional score management bot supporting both Japanese and International servers.
   image:
     src: /hero-image.svg
     alt: JiETNG Logo

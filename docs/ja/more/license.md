@@ -60,7 +60,7 @@ JiETNG は広範な開発作業の成果であり、重要な知的財産を表�
 
 - ✅ LINE にボットを追加
 - ✅ SEGA アカウントを連携
-- ✅ Maimai DX スコアを追跡
+- ✅ Maimai でらっくす スコアを追跡
 - ✅ すべての機能を無料で使用
 
 [今すぐ始める →](/ja/guide/getting-started)
@@ -89,20 +89,20 @@ JiETNG は以下のサードパーティライブラリとサービスを使用�
 
 ### データソース
 
-- **DXRating** - https://github.com/gekichumai/dxrating
+- **DX Rating** - https://github.com/gekichumai/dxrating
 - **arcade-songs** - https://arcade-songs.zetaraku.dev
 
 ### サービス
 
 - **LINE Messaging API** - LINE Corporation
-- **SEGA Maimai DX** - SEGA Corporation
+- **SEGA Maimai でらっくす** - SEGA Corporation
 
 ## 謝辞
 
 特別な感謝：
 
-- Maimai DX コミュニティ
-- DXRating プロジェクトの貢献者
+- Maimai でらっくす コミュニティ
+- DX Rating プロジェクトの貢献者
 - フィードバックを提供してくださったすべてのユーザー
 
 ---

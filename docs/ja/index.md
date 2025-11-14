@@ -5,8 +5,8 @@ titleTemplate: false
 
 hero:
   name: "JiETNG"
-  text: "maimai DX Bot"
-  tagline: LINE対応のプロフェッショナルなスコア管理ボット。進捗を記録し、パフォーマンスを分析し、フレンドと競争しよう。
+  text: "maimai でらっくす LINE ボット"
+  tagline: 国内版と海外版の両方に対応したプロフェッショナルなスコア管理ボット。
   image:
     src: /hero-image.svg
     alt: JiETNG Logo
@@ -83,7 +83,7 @@ features:
 
 ## なぜJiETNGなのか？
 
-JiETNGは maimai DX の日本サーバーと国際サーバーの両方に対応したスコア管理ボットで、カジュアルプレイヤーからハードコアな競技者まで、あらゆるプレイヤーに強力な機能を提供します。
+JiETNGは maimai でらっくす の国内版と海外版の両方に対応したスコア管理ボットで、カジュアルプレイヤーからハードコアな競技者まで、あらゆるプレイヤーに強力な機能を提供します。
 
 ## クイックスタート
 

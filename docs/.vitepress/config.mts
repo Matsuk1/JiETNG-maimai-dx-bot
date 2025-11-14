@@ -178,7 +178,7 @@ export default withMermaid(defineConfig({
       label: '日本語',
       lang: 'ja',
       link: '/ja/',
-      description: 'JiETNG - 日本サーバーと国際サーバーの両方に対応した maimai DX スコア管理ボット。進捗を追跡し、パフォーマンスを分析し、フレンドと競争しよう。無料のレーティング計算機とベスト50チャート生成器。',
+      description: 'JiETNG - 国内版と海外版の両方に対応した maimai でらっくす スコア管理ボット。無料のレーティング計算機とベスト50チャート生成器。',
       themeConfig: {
         nav: [
           { text: 'ホーム', link: '/ja/' },

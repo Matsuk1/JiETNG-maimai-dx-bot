@@ -4,12 +4,12 @@ Best 50（b50）と Best 100（b100）チャートは JiETNG の基本機能で�
 
 ## Best 50 とは？
 
-「Best 50」システムは Maimai DX の公式ランキング方法で、以下で構成されます：
+「Best 50」システムは Maimai でらっくす の公式ランキング方法で、以下で構成されます：
 
 - **Best 35**：**旧曲**（以前のバージョンの楽曲）でのトップ 35 のハイスコア
 - **Best 15**：**新曲**（現在のバージョンの楽曲）でのトップ 15 のハイスコア
 
-あなたの **Maimai DX Rating** は、これら 50 のスコアの合計です。
+あなたの **Maimai でらっくす Rating** は、これら 50 のスコアの合計です。
 
 <img src="/b50_example.png" alt="Best 50 スコア例" style="width: 22%; max-width: 400px; min-width: 200px; display: block; margin: 1.5rem auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" />
 
@@ -47,9 +47,9 @@ idlb50       # Ideal Best 50（最高スコアをシミュレート）
 - 💯 **達成率**：スコアのパーセンテージ
 - 🏆 **評価ランク**：SSS+、SSS、SS+ など
 - 🌟 **Full Combo タイプ**：AP+、AP、FC+、FC
-- 🔥 **Full Sync**：FDX+、FDX、FS+、FS
+- 🔥 **Full Sync**：Fでらっくす+、Fでらっくす、FS+、FS
 - 📊 **Rating**：単一楽曲の評価
-- 📈 **DX Rating**：あなたの DX Rating
+- 📈 **でらっくす Rating**：あなたの でらっくす Rating
 
 ### ユーザー情報ヘッダー
 
@@ -88,11 +88,11 @@ b50 -scr 100.5          # 達成率 100.5%+
 b50 -scr 99 100         # 達成率 99%-100%
 ```
 
-#### DX Score でフィルター
+#### でらっくす Score でフィルター
 
 ```
-b50 -dx 95              # DX score 95%+
-b50 -dx 90 95           # DX score 90-95%
+b50 -dx 95              # でらっくす score 95%+
+b50 -dx 90 95           # でらっくす score 90-95%
 ```
 
 ### フィルターの組み合わせ
@@ -101,7 +101,7 @@ b50 -dx 90 95           # DX score 90-95%
 
 ```
 b50 -lv 15 -scr 100.5            # レベル 15 かつ達成率 100.5%+ の楽曲
-b50 -ra 200 -dx 95               # Rating 200+ かつ DX score 95%+
+b50 -ra 200 -dx 95               # Rating 200+ かつ でらっくす score 95%+
 b50 -lv 14 15 -scr 99.5 -dx 90   # 複雑なフィルター
 ```
 
@@ -112,7 +112,7 @@ b50 -lv 14 15 -scr 99.5 -dx 90   # 複雑なフィルター
 公式ルールに従った標準ランキングチャート：
 - 旧バージョン楽曲のトップ 35
 - 新バージョン楽曲のトップ 15
-- あなたの実際の DX rating
+- あなたの実際の でらっくす rating
 
 **使用シーン**：公式 rating と進捗を確認
 

@@ -1,6 +1,6 @@
 # アカウント連携
 
-SEGA IDをJiETNGに連携して、maimai DXのスコアやレコードにアクセスする方法を学びましょう。
+SEGA IDをJiETNGに連携して、maimai でらっくすのスコアやレコードにアクセスする方法を学びましょう。
 
 ## 連携の仕組み
 
@@ -120,7 +120,7 @@ unbind
 - SEGA IDとパスワードを再確認
 - 正しいバージョン（jp vs intl）を使用していることを確認
 - [maimai NET](https://maimaidx.jp/maimai-mobile/)に直接ログインして認証情報を確認
-- 国際版の場合は[maimai NET DX International](https://maimaidx-eng.com/maimai-mobile/)を使用
+- 国際版の場合は[maimai NET でらっくす International](https://maimaidx-eng.com/maimai-mobile/)を使用
 
 ### すでに連携済みエラー
 
@@ -146,21 +146,21 @@ unbind
 ### 日本（jp）
 
 日本のアーケード筐体でプレイしている場合に使用：
-- 日本の公式maimai DX
-- スタンダードとDX譜面
+- 日本の公式maimai でらっくす
+- スタンダードとでらっくす譜面
 - すべての日本限定楽曲
 - URL: https://maimaidx.jp/maimai-mobile/
 
 ### 国際版（intl）
 
 日本国外でプレイしている場合に使用：
-- 他の国のmaimai DX筐体
+- 他の国のmaimai でらっくす筐体
 - JPに比べて楽曲アップデートが遅延する可能性あり
 - 地域別イベント
 - URL: https://maimaidx-eng.com/maimai-mobile/
 
 :::tip 正しいバージョンの選択
-物理的にmaimai DXをプレイする場所に合ったバージョンを選択してください。連携を解除して再連携しない限り、アカウントのバージョンは変更できません。
+物理的にmaimai でらっくすをプレイする場所に合ったバージョンを選択してください。連携を解除して再連携しない限り、アカウントのバージョンは変更できません。
 :::
 
 ## セキュリティのベストプラクティス
