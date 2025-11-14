@@ -575,21 +575,141 @@ def user_set_language(user_id, language):
 def get_user(user_id):
     read_user()
 
-    result = f"USER_ID: {user_id}\n"
+    from modules.message_manager import get_user_language, get_multilingual_text
 
-    if user_id in USERS :
-        if "sega_id" in USERS[user_id] :
-            result += f"SEGA_ID: {USERS[user_id]['sega_id']}\n"
-        else :
-            result += "SEGA_ID: 未連携\n"
+    # 多语言文本
+    texts = {
+        'title': {
+            'ja': '👤 ユーザー情報',
+            'en': '👤 User Information',
+            'zh': '👤 用户信息'
+        },
+        'user_id': {
+            'ja': 'LINE ID',
+            'en': 'LINE ID',
+            'zh': 'LINE ID'
+        },
+        'name': {
+            'ja': 'プレイヤー名',
+            'en': 'Player Name',
+            'zh': '玩家名称'
+        },
+        'rating': {
+            'ja': 'レーティング',
+            'en': 'Rating',
+            'zh': 'Rating'
+        },
+        'sega_id': {
+            'ja': 'SEGA ID',
+            'en': 'SEGA ID',
+            'zh': 'SEGA ID'
+        },
+        'password': {
+            'ja': 'パスワード',
+            'en': 'Password',
+            'zh': '密码'
+        },
+        'server': {
+            'ja': 'サーバー',
+            'en': 'Server',
+            'zh': '服务器'
+        },
+        'language': {
+            'ja': '言語',
+            'en': 'Language',
+            'zh': '语言'
+        },
+        'bound': {
+            'ja': '連携済み',
+            'en': 'Bound',
+            'zh': '已绑定'
+        },
+        'not_bound': {
+            'ja': '未連携',
+            'en': 'Not Bound',
+            'zh': '未绑定'
+        },
+        'jp_server': {
+            'ja': '日本版',
+            'en': 'Japanese Server',
+            'zh': '日服'
+        },
+        'intl_server': {
+            'ja': '海外版',
+            'en': 'International Server',
+            'zh': '国际服'
+        },
+        'lang_ja': {
+            'ja': '日本語',
+            'en': 'Japanese',
+            'zh': '日语'
+        },
+        'lang_en': {
+            'ja': '英語',
+            'en': 'English',
+            'zh': '英语'
+        },
+        'lang_zh': {
+            'ja': '中国語',
+            'en': 'Chinese',
+            'zh': '中文'
+        }
+    }
 
-        if "sega_pwd" in USERS[user_id] :
-            result += f"PASSWORD: 連携完了"
-        else :
-            result += "PASSWORD: 未連携"
+    # 获取用户语言
+    lang = get_user_language(user_id)
 
-    else :
-        result += "USER_INFO: 未連携"
+    # 构建输出
+    result = f"{'='*30}\n"
+    result += f"{get_multilingual_text(texts['title'], language=lang)}\n"
+    result += f"{'='*30}\n\n"
+
+    if user_id in USERS:
+        user_data = USERS[user_id]
+
+        # 基本信息
+        result += f"📱 {get_multilingual_text(texts['user_id'], language=lang)}: {user_id}\n\n"
+
+        # 玩家信息
+        if "personal_info" in user_data:
+            personal_info = user_data['personal_info']
+            if 'name' in personal_info:
+                result += f"🎮 {get_multilingual_text(texts['name'], language=lang)}: {personal_info['name']}\n"
+            if 'rating' in personal_info:
+                result += f"⭐ {get_multilingual_text(texts['rating'], language=lang)}: {personal_info['rating']}\n"
+            result += "\n"
+
+        # SEGA账号信息
+        if "sega_id" in user_data:
+            result += f"🔑 {get_multilingual_text(texts['sega_id'], language=lang)}: {user_data['sega_id']}\n"
+        else:
+            result += f"🔑 {get_multilingual_text(texts['sega_id'], language=lang)}: {get_multilingual_text(texts['not_bound'], language=lang)}\n"
+
+        if "sega_pwd" in user_data:
+            result += f"🔐 {get_multilingual_text(texts['password'], language=lang)}: {get_multilingual_text(texts['bound'], language=lang)}\n"
+        else:
+            result += f"🔐 {get_multilingual_text(texts['password'], language=lang)}: {get_multilingual_text(texts['not_bound'], language=lang)}\n"
+
+        result += "\n"
+
+        # 服务器版本
+        if "version" in user_data:
+            server_text = texts['jp_server'] if user_data['version'] == 'jp' else texts['intl_server']
+            result += f"🌐 {get_multilingual_text(texts['server'], language=lang)}: {get_multilingual_text(server_text, language=lang)}\n"
+
+        # 语言设置
+        lang_display = {
+            'ja': texts['lang_ja'],
+            'en': texts['lang_en'],
+            'zh': texts['lang_zh']
+        }.get(lang, texts['lang_ja'])
+        result += f"🌍 {get_multilingual_text(texts['language'], language=lang)}: {get_multilingual_text(lang_display, language=lang)}\n"
+
+    else:
+        result += f"📱 {get_multilingual_text(texts['user_id'], language=lang)}: {user_id}\n\n"
+        result += f"❌ {get_multilingual_text(texts['not_bound'], language=lang)}\n"
+
+    result += f"\n{'='*30}"
 
     return result
 
