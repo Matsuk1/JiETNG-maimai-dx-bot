@@ -5,8 +5,8 @@ titleTemplate: false
 
 hero:
   name: "JiETNG"
-  text: "maimai でらっくす<br>LINE ボット"
-  tagline: 国内版と海外版の両方に対応したプロフェッショナルなスコア管理ボット。
+  text: "maimai でらっくす<br>スコア管理ツール"
+  tagline: 国内版と海外版の両方に対応したプロフェッショナルな LINE スコア管理ボット
   image:
     src: /hero-image.svg
     alt: JiETNG Logo
