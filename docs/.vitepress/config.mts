@@ -84,8 +84,8 @@ export default withMermaid(defineConfig({
 
     // 页脚
     footer: {
-      message: 'Released under the Proprietary License.',
-      copyright: 'Copyright © 2025 Matsuki. All Rights Reserved.'
+      message: '让每一次游玩都有迹可循',
+      copyright: 'Copyright © 2025 Matsuki. 保留所有权利。'
     },
 
     // 搜索
@@ -171,6 +171,10 @@ export default withMermaid(defineConfig({
             dateStyle: 'short',
             timeStyle: 'short'
           }
+        },
+        footer: {
+          message: 'Making every play count',
+          copyright: 'Copyright © 2025 Matsuki. All Rights Reserved.'
         }
       }
     },
@@ -229,6 +233,10 @@ export default withMermaid(defineConfig({
             dateStyle: 'short',
             timeStyle: 'short'
           }
+        },
+        footer: {
+          message: 'すべてのプレイを記録に残そう',
+          copyright: 'Copyright © 2025 Matsuki. All Rights Reserved.'
         }
       }
     }
@@ -254,14 +262,14 @@ export default withMermaid(defineConfig({
     ['meta', { property: 'og:site_name', content: 'JiETNG' }],
     ['meta', { property: 'og:title', content: 'JiETNG -『maimai でらっくす』Score Management Bot' }],
     ['meta', { property: 'og:description', content: '『maimai でらっくす』score management bot supporting both Japanese and International servers.' }],
-    ['meta', { property: 'og:image', content: 'https://jietng.matsuki.work/logo.svg' }],
+    ['meta', { property: 'og:image', content: 'https://jietng.matsuki.work/og-image.png' }],
     ['meta', { property: 'og:url', content: 'https://jietng.matsuki.work' }],
 
     // Twitter Card
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
     ['meta', { name: 'twitter:title', content: 'JiETNG -『maimai でらっくす』Score Management Bot' }],
     ['meta', { name: 'twitter:description', content: '『maimai でらっくす』score management bot supporting both Japanese and International servers.' }],
-    ['meta', { name: 'twitter:image', content: 'https://jietng.matsuki.work/logo.svg' }]
+    ['meta', { name: 'twitter:image', content: 'https://jietng.matsuki.work/og-image.png' }]
   ],
 
   // Mermaid 配置
