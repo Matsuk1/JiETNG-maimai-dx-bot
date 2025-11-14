@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://jietng.matsuki.work/sitemap.xml

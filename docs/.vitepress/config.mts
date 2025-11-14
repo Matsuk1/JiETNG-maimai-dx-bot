@@ -16,6 +16,11 @@ export default withMermaid(defineConfig({
   // 自定义域名 (docs.jietng.com): 使用 '/'
   base: '/',
 
+  // Sitemap 配置（用于 SEO）
+  sitemap: {
+    hostname: 'https://jietng.matsuki.work'
+  },
+
   // Markdown 配置
   markdown: {
     theme: {
@@ -230,11 +235,26 @@ export default withMermaid(defineConfig({
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }],
     ['link', { rel: 'icon', type: 'image/png', href: '/favicon.ico' }],
     ['link', { rel: 'apple-touch-icon', href: '/logo.svg' }],
-    ['meta', { name: 'theme-color', content: '#ff1744' }],
-    ['meta', { name: 'og:type', content: 'website' }],
-    ['meta', { name: 'og:title', content: 'JiETNG - Maimai DX Bot' }],
-    ['meta', { name: 'og:description', content: 'Professional Maimai DX score management bot' }],
-    ['meta', { name: 'og:image', content: '/logo.svg' }]
+    ['meta', { name: 'theme-color', content: '#2563eb' }],
+
+    // SEO meta标签
+    ['meta', { name: 'keywords', content: 'maimai DX, maimai bot, score tracker, rating calculator, best 50, b50, LINE bot, 舞萌DX, 成绩管理, スコア管理, レーティング計算, maimaiDX bot, rhythm game, arcade game tracker' }],
+    ['meta', { name: 'description', content: 'JiETNG - Professional Maimai DX score management bot for LINE. Track your progress, analyze performance, and compete with friends. Free rating calculator and best 50 chart generator.' }],
+    ['meta', { name: 'author', content: 'Matsuki' }],
+
+    // Open Graph
+    ['meta', { property: 'og:type', content: 'website' }],
+    ['meta', { property: 'og:site_name', content: 'JiETNG' }],
+    ['meta', { property: 'og:title', content: 'JiETNG - Maimai DX Score Management Bot' }],
+    ['meta', { property: 'og:description', content: 'Professional Maimai DX score management bot for LINE. Track your progress, analyze performance, and compete with friends.' }],
+    ['meta', { property: 'og:image', content: 'https://jietng.matsuki.work/logo.svg' }],
+    ['meta', { property: 'og:url', content: 'https://jietng.matsuki.work' }],
+
+    // Twitter Card
+    ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
+    ['meta', { name: 'twitter:title', content: 'JiETNG - Maimai DX Score Management Bot' }],
+    ['meta', { name: 'twitter:description', content: 'Professional Maimai DX score management bot for LINE. Track your progress, analyze performance, and compete with friends.' }],
+    ['meta', { name: 'twitter:image', content: 'https://jietng.matsuki.work/logo.svg' }]
   ],
 
   // Mermaid 配置
