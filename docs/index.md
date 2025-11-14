@@ -5,7 +5,7 @@ titleTemplate: false
 
 hero:
   name: "JiETNG"
-  text: "『maimai でらっくす』<br>成绩管理工具"
+  text: "maimai でらっくす<br>成绩管理工具"
   tagline: 支持日服和国际服的成绩管理用 LINE 机器人。
   image:
     src: /hero-image.svg

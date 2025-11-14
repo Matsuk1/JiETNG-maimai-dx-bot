@@ -5,7 +5,7 @@ titleTemplate: false
 
 hero:
   name: "JiETNG"
-  text: "『maimai でらっくす』 LINE Bot"
+  text: "maimai でらっくす<br>LINE Bot"
   tagline: Professional score management bot supporting both Japanese and International servers.
   image:
     src: /hero-image.svg
