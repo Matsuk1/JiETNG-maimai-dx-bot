@@ -9,7 +9,6 @@ def song_info_generate(song_json, played_data = []):
     cover_img = get_cached_image(cover_url)
 
     if not cover_img:
-        # 如果获取失败，创建占位图
         cover_img = Image.new("RGBA", (200, 200), (200, 200, 200))
     else:
         cover_img = cover_img.convert("RGBA")
@@ -22,7 +21,7 @@ def song_info_generate(song_json, played_data = []):
     else:
         img2 = resize_by_width(_makeup_played_data(played_data), 600)
 
-    song_img = combine_with_rounded_background(img1, img2)
+    song_img = compose_images([img1, img2])
 
     return song_img
 

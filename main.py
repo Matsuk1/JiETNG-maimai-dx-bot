@@ -1129,7 +1129,7 @@ def generate_plate_rcd(user_id, title, ver="jp"):
 
     img = generate_plate_image(target_data, title, headers = target_num)
 
-    img = combine_with_rounded_background(create_user_info_img(user_id), img)
+    img = compose_images([create_user_info_img(user_id), img])
 
     original_url, preview_url = smart_upload(img)
     message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
@@ -1204,7 +1204,7 @@ def create_user_info_img(user_id, scale=1.5):
     draw.rectangle([129, 92, 129 + 266, 92 + 21], fill=trophy_color(user_info['trophy_type']))
     draw.text((135, 93), user_info['trophy_content'], fill=(0, 0, 0), font=font_small)
 
-    info_img = info_img.resize((int(img_width * scale), int(img_height * scale)), Image.LANCZOS)
+    info_img = info_img.resize((int(img_width * scale), int(img_height * scale)), Image.Resampling.LANCZOS)
     return info_img
 
 def generate_maipass(user_id):
@@ -1229,7 +1229,7 @@ def generate_maipass(user_id):
 
     qr_img = generate_qr_with_title(f"https://jietng.matsuki.top/linebot/add_friend?id={user_id}", title_list)
 
-    img = combine_with_rounded_background(user_img, qr_img)
+    img = compose_images([user_img, qr_img])
 
     original_url, preview_url = smart_upload(img)
     img_msg = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
@@ -1343,7 +1343,7 @@ def selgen_records(user_id, type="best50", command="", ver="jp"):
         return picture_error(user_id)
 
     img = generate_records_picture(up_songs, down_songs, type.upper())
-    img = combine_with_rounded_background(create_user_info_img(user_id), img)
+    img = compose_images([create_user_info_img(user_id), img])
 
     original_url, preview_url = smart_upload(img)
     message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
@@ -1376,7 +1376,7 @@ def generate_yang_rating(user_id, ver="jp"):
         version_records.append(version_data)
 
     img = generate_yang_records_picture(version_records)
-    img = combine_with_rounded_background(create_user_info_img(user_id), img)
+    img = compose_images([create_user_info_img(user_id), img])
 
     original_url, preview_url = smart_upload(img)
     message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
@@ -1464,7 +1464,7 @@ def generate_level_records(user_id, level, ver="jp", page=1):
 
     img = generate_records_picture(up_level_list, down_level_list, title)
 
-    img = combine_with_rounded_background(create_user_info_img(user_id), img)
+    img = compose_images([create_user_info_img(user_id), img])
 
     original_url, preview_url = smart_upload(img)
     message = [

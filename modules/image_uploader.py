@@ -76,7 +76,7 @@ def _upload_to_imgur(img):
     return None
 
 def _compress_image(img, max_width=800, quality=85):
-    """压缩图片
+    """压缩图片并转换为 JPEG 格式
 
     Args:
         img: PIL Image 对象
@@ -84,20 +84,31 @@ def _compress_image(img, max_width=800, quality=85):
         quality: JPEG 质量 (1-100)
 
     Returns:
-        压缩后的 PIL Image 对象
+        压缩后的 BytesIO 对象（JPEG 格式）
     """
-    # 如果宽度小于等于 max_width，不需要压缩
-    if img.width <= max_width:
-        return img.copy()
+    # 转换为 RGB（JPEG 不支持透明通道）
+    if img.mode in ('RGBA', 'LA', 'P'):
+        # 创建白色背景
+        background = Image.new('RGB', img.size, (255, 255, 255))
+        if img.mode == 'P':
+            img = img.convert('RGBA')
+        background.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA') else None)
+        img = background
+    elif img.mode != 'RGB':
+        img = img.convert('RGB')
 
-    # 计算新尺寸
-    ratio = max_width / img.width
-    new_height = int(img.height * ratio)
+    # 如果宽度大于 max_width，调整大小
+    if img.width > max_width:
+        ratio = max_width / img.width
+        new_height = int(img.height * ratio)
+        img = img.resize((max_width, new_height), Image.Resampling.LANCZOS)
 
-    # 调整大小
-    compressed = img.resize((max_width, new_height), Image.Resampling.LANCZOS)
+    # 保存为 JPEG 格式到 BytesIO
+    img_io = BytesIO()
+    img.save(img_io, format='JPEG', quality=quality, optimize=True)
+    img_io.seek(0)
 
-    return compressed
+    return img_io
 
 # 智能图床上传（上传原图和预览图）
 def smart_upload(img):
@@ -109,9 +120,6 @@ def smart_upload(img):
     Returns:
         tuple: (original_url, preview_url) 如果上传失败返回 (None, None)
     """
-    # 生成压缩预览图
-    preview_img = _compress_image(img, max_width=800)
-
     # 上传原图
     print("[smart_upload] 上传原图...")
     original_url = None
@@ -133,25 +141,25 @@ def smart_upload(img):
         print("[smart_upload] 原图上传失败")
         return None, None
 
-    # 上传预览图
+    # 生成并上传压缩预览图（JPEG格式）
     print("[smart_upload] 上传预览图...")
     preview_url = None
 
-    # 优先尝试 imgur
-    if IMGUR_CLIENT_ID:
-        print("[smart_upload] 使用 imgur 上传预览图")
-        preview_url = _upload_to_imgur(preview_img)
+    try:
+        preview_io = _compress_image(img, max_width=800, quality=85)
 
-    if not preview_url:
-        print("[smart_upload] 使用 uguu 上传预览图")
-        preview_url = _upload_to_uguu(preview_img)
+        # 直接上传压缩后的 BytesIO（优先使用 0x0，因为它支持直接上传）
+        files = {'file': ('preview.jpg', preview_io, 'image/jpeg')}
+        response = requests.post("https://0x0.st", files=files)
 
-    if not preview_url:
-        print("[smart_upload] 使用 0x0 上传预览图")
-        preview_url = _upload_to_0x0(preview_img)
-
-    if not preview_url:
-        print("[smart_upload] 预览图上传失败，使用原图链接作为预览")
+        if response.status_code == 200 and response.text.startswith("https://0x0.st/"):
+            preview_url = response.text.strip()
+            print("[smart_upload] 预览图上传成功（0x0）")
+        else:
+            print("[smart_upload] 预览图上传失败，使用原图链接")
+            preview_url = original_url
+    except Exception as e:
+        print(f"[smart_upload] 预览图上传异常: {e}，使用原图链接")
         preview_url = original_url
 
     print(f"[smart_upload] 上传完成 - 原图: {original_url}, 预览图: {preview_url}")
