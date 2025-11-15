@@ -172,7 +172,7 @@ View all songs of a specified difficulty level, grouped by internal constants (e
 ```
 13の定数リスト    # Japanese command (constant list)
 13のレベルリスト  # Japanese command (level list)
-13 level-list     # English command
+13 level-list   # English command
 ```
 
 ### What's Displayed
