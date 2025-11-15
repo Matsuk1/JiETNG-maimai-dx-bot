@@ -312,42 +312,70 @@ def generate_yang_records_picture(version_songs, title="YANG"):
 
     return combined
 
-def create_small_record(cover, icon, icon_type):
-    img_width = 150
-    img_height = 150
-    record_img = Image.new("RGBA", (img_width, img_height), (255, 255, 255, 255))
+def generate_cover(cover, type, icon=None, icon_type=None, size=150):
+    """
+    生成歌曲封面图片，带有类型标识和可选图标
+
+    参数:
+        cover: 封面 URL
+        type: 歌曲类型 ("std" 或 "dx")
+        icon: 可选的图标名称（如 "ap", "fc" 等）
+        icon_type: 可选的图标类型（如 "combo", "score", "sync"）
+        size: 封面尺寸（默认150）
+    """
+    img_width = size
+    img_height = size
+    record_img = Image.new("RGB", (img_width, img_height), (255, 255, 255))
 
     # 加载封面图片
     cover_img = get_cached_image(cover)
     if cover_img:
-        cover_img = cover_img.resize((150, 150))
+        cover_img = cover_img.resize((size, size))
         record_img.paste(cover_img, (0, 0))
 
-    if icon != "back":
+    # 添加 kind 图标（std/dx）- 按比例缩放
+    kind_width = int(size * 0.333)  # 50/150 ≈ 0.333
+    kind_height = int(size * 0.1)    # 15/150 = 0.1
+    paste_icon_optimized(
+        record_img,
+        {'kind': type},
+        key='kind',
+        size=(kind_width, kind_height),
+        position=(img_width - kind_width, img_height - kind_height),
+        save_dir='./assets/icon/kind',
+        url_func=lambda value: "https://maimaidx.jp/maimai-mobile/img/music_standard.png" if value == "std" else "https://maimaidx.jp/maimai-mobile/img/music_dx.png"
+    )
+
+    # 如果提供了 icon 和 icon_type，显示对应的图标
+    if icon and icon_type and icon != "back":
         try:
             file_path = f"./assets/icon/{icon_type}/{icon}.png"
             url = f"https://maimaidx.jp/maimai-mobile/img/music_icon_{icon}.png"
 
             icon_img = download_and_cache_icon(url, file_path)
             if icon_img:
-                # 计算缩放
+                # 转换为 RGBA 以支持透明度
+                record_img = record_img.convert("RGBA")
+
+                # 计算缩放 - 按比例缩放图标
+                icon_width = int(size * 0.867)  # 130/150 ≈ 0.867
                 aspect_ratio = icon_img.height / icon_img.width
-                new_height = int(130 * aspect_ratio)
-                resized_img = icon_img.resize((130, new_height), Image.Resampling.LANCZOS)
+                new_height = int(icon_width * aspect_ratio)
+                resized_img = icon_img.resize((icon_width, new_height), Image.Resampling.LANCZOS)
 
                 # 阴影处理
                 shadow = Image.new("RGBA", record_img.size, (0, 0, 0, 150))
-                record_img = Image.alpha_composite(record_img.convert("RGBA"), shadow)
+                record_img = Image.alpha_composite(record_img, shadow)
 
                 # 粘贴图标
-                x_offset = (record_img.width - 130) // 2
+                x_offset = (record_img.width - icon_width) // 2
                 y_offset = (record_img.height - new_height) // 2
                 record_img.paste(resized_img, (x_offset, y_offset), resized_img.convert("RGBA"))
 
         except Exception as e:
             print(f"Error loading icon {icon}: {e}")
 
-    return record_img
+    return record_img.convert("RGB")
 
 def generate_plate_image(target_data, title, img_width=1700, img_height=600, max_per_row=9, margin=20, headers={}):
     level_width = 100
@@ -384,6 +412,67 @@ def generate_plate_image(target_data, title, img_width=1700, img_height=600, max
     y_offset = margin + 30 + 180
     for level, img_list in rows:
         draw.text((margin, y_offset + img_size // 3), level, fill="black", font=font_for_plate)
+
+        x_offset = level_width + margin
+        for i, img in enumerate(img_list):
+            if i > 0 and i % max_per_row == 0:
+                y_offset += row_height
+                x_offset = level_width + margin
+
+            final_img.paste(img, (x_offset, y_offset))
+            x_offset += img_size + margin
+
+        y_offset += row_height
+
+    return final_img
+
+def generate_internallevel_image(target_data, level_name, img_width=2000, max_per_row=12, margin=20):
+    """
+    生成定数查询图片，左侧显示定数（如 13.0, 13.1），右侧显示歌曲封面
+
+    参数:
+        target_data: 歌曲数据列表，每个元素为 {"img": PIL.Image, "internal_level": float}
+        level_name: 难度名称（如 "13", "13+", "14", "14+"）
+        img_width: 图片总宽度
+        max_per_row: 每行最多显示的歌曲数量
+        margin: 边距
+    """
+    level_width = 100
+    img_size = 135  # 150 的 90% = 135
+    row_height = img_size + margin
+
+    # 按照定数分组（13.0, 13.1, 13.2, ...）
+    rows = []
+    rows_num = 0
+
+    # 获取所有不重复的定数并排序
+    internal_levels = sorted(set(entry["internal_level"] for entry in target_data), reverse=True)
+
+    for internal_level in internal_levels:
+        # 格式化定数显示（保留一位小数）
+        level_str = f"{internal_level:.1f}"
+        row_imgs = [entry["img"] for entry in target_data if entry["internal_level"] == internal_level]
+        rows_num += math.ceil(len(row_imgs) / max_per_row)
+        if row_imgs:
+            rows.append((level_str, row_imgs))
+
+    # 计算总高度（顶部标题区域 + 内容区域）
+    total_height = rows_num * row_height + margin + 170
+
+    final_img = Image.new("RGB", (img_width, total_height), "white")
+    draw = ImageDraw.Draw(final_img)
+
+    # 添加右侧标题
+    title_text = f"{level_name} 定数リスト"
+    title_text_size = draw.textlength(title_text, font=font_huge_huge)
+    title_x = img_width - margin - title_text_size - 30
+    title_y = margin - 45
+    draw.text((title_x, title_y), title_text, fill=(206, 206, 206), font=font_huge_huge)
+
+    # 渲染主体图像内容
+    y_offset = margin + 30 + 140
+    for level_str, img_list in rows:
+        draw.text((margin, y_offset + img_size // 3), level_str, fill="black", font=font_for_plate)
 
         x_offset = level_width + margin
         for i, img in enumerate(img_list):

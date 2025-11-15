@@ -163,11 +163,41 @@ Make sure you've played these songs recently. Older scores may not appear if:
 - Data sync issues (try `maimai update` again)
 
 
+## Internal Level Query
+
+View all songs of a specified difficulty level, grouped by internal constants (e.g., 13.0, 13.1, 13.2, etc.).
+
+### Command Format
+
+```
+13の定数リスト    # Japanese command (constant list)
+13のレベルリスト  # Japanese command (level list)
+13 level-list     # English command
+```
+
+### What's Displayed
+
+- Left side shows internal constants (e.g., 13.0, 13.1, 13.2, etc.)
+- Right side shows all song covers for each constant
+- Top shows total song count statistics
+- Constants sorted from high to low
+
+### Server Selection
+
+Level queries automatically use your currently selected server (JP or INTL):
+- Use `maimai jp` to view JP server songs
+- Use `maimai intl` to view INTL server songs
+
+### Use Cases
+
+- 📋 **View constant distribution**: Understand constant ranges for a difficulty
+- 🎯 **Find target songs**: Find songs in specific constant ranges
+- 📊 **Compare difficulties**: Compare song counts across different levels
+
 ## Related Features
 
-- =
- [Score Search](/en/features/search) - Search for specific songs
+- 🔍 [Score Search](/en/features/search) - Search for specific songs
 
 ---
 
-Next: [Learn about advanced score search �](/en/features/search)
+Next: [Learn about advanced score search →](/en/features/search)

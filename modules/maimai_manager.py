@@ -270,7 +270,10 @@ def parse_level_value(input_str):
     elif input_str.endswith('+'):
         try:
             base = int(input_str[:-1])
-            return [round(base + i * 0.1, 1) for i in range(6, 10)]
+            target = [round(base + i * 0.1, 1) for i in range(6, 10)]
+            if input_str == "14+":
+                target.append(15.0)
+            return target
         except ValueError:
             raise ValueError(f"无法解析带加号的整数: {input_str}")
 

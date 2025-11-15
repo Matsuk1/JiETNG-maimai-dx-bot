@@ -1,7 +1,5 @@
 """
 JiETNG Maimai DX LINE Bot 主程序
-
-提供 Maimai DX 成绩追踪、好友系统、数据可视化等功能
 """
 
 import gc
@@ -117,24 +115,13 @@ WEB_MAX_CONCURRENT_TASKS = 1    # 网络任务并发数
 TASK_TIMEOUT_SECONDS = 120
 
 # 搜索结果限制
-MAX_SEARCH_RESULTS = 6
+MAX_SEARCH_RESULTS = 5
 
 # Rating计算范围
 RC_SCORE_MIN = 97.0000
 RC_SCORE_MAX = 100.5001
 RC_SCORE_STEP = 0.0001
 
-# 成绩列表分页
-B50_OLD_SONGS = 35
-B50_NEW_SONGS = 15
-B100_OLD_SONGS = 70
-B100_NEW_SONGS = 30
-
-# 请求超时
-HTTP_TIMEOUT = 30
-
-# 错误通知配置
-ERROR_MESSAGE_MAX_LENGTH = 1000  # LINE消息最大长度限制
 ERROR_NOTIFICATION_ENABLED = True  # 是否启用错误通知
 
 # ==================== 日志配置 ====================
@@ -894,7 +881,7 @@ def search_song(user_id, acronym, ver="jp"):
     matching_songs = find_matching_songs(acronym, SONGS, max_results=6, threshold=0.85)
 
     # 没有匹配结果
-    if not matching_songs:
+    if not matching_songs or len(matching_songs) > MAX_SEARCH_RESULTS:
         return song_error(user_id)
 
     # 生成消息列表
@@ -1125,13 +1112,70 @@ def generate_plate_rcd(user_id, title, ver="jp"):
                         target_num[difficulty]['clear'] += 1
 
             if sheet['difficulty'] == "master" :
-                target_data.append({"img": create_small_record(song['cover_url'], icon, target_type), "level": sheet['level']})
+                target_data.append({"img": generate_cover(song['cover_url'], song_type, icon, target_type), "level": sheet['level']})
 
     img = generate_plate_image(target_data, title, headers = target_num)
 
     img = compose_images([create_user_info_img(user_id), img])
 
     original_url, preview_url = smart_upload(img)
+    message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
+
+    return message
+
+def generate_internallevel_songs(user_id, level, ver="jp"):
+    """
+    生成指定定数范围的歌曲列表图片
+
+    参数:
+        level: 难度等级（如 "13", "13+", "14", "14+"）
+        ver: 服务器版本（"jp" 或 "intl"）
+    """
+    read_dxdata(ver)
+
+    # 验证 level 参数
+    valid_levels = ["10", "10+", "11", "11+", "12", "12+", "13", "13+", "14", "14+", "15"]
+    if level not in valid_levels:
+        from modules.message_manager import song_error
+        return song_error(user_id)
+
+    # 收集符合条件的歌曲
+    target_data = []
+    region_key = ver  # "jp" 或 "intl"
+
+    for song in SONGS:
+        if song['type'] == 'utage':  # 跳过宴会场
+            continue
+
+        for sheet in song['sheets']:
+            # 检查地区和难度等级
+            if not sheet['regions'].get(region_key, False):
+                continue
+
+            if not (sheet['level'] == level or (level == "14+" and sheet['level'] == "15")):
+                continue
+
+            # 生成封面图片（包含 std/dx 图标，尺寸135x135）
+            cover_img = generate_cover(song['cover_url'], song['type'], size=135)
+
+            target_data.append({
+                "img": cover_img,
+                "internal_level": sheet['internalLevelValue']
+            })
+
+    # 检查是否有符合条件的歌曲
+    if not target_data:
+        from modules.message_manager import song_error
+        return song_error(user_id)
+
+    # 生成定数表图片
+    level_img = generate_internallevel_image(target_data, level)
+
+    # 添加页脚
+    final_img = compose_images([level_img])
+
+    # 上传并返回
+    original_url, preview_url = smart_upload(final_img)
     message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
 
     return message
@@ -1414,7 +1458,7 @@ def generate_friend_b50(user_id, friend_code, ver="jp"):
     down_songs = sorted(down_songs_data, key=lambda x: -x["ra"])[:15]
 
     img = generate_records_picture(up_songs, down_songs, "FRD-B50")
-    img = wrap_in_rounded_background(img)
+    img = compose_images([img])
 
     original_url, preview_url = smart_upload(img)
     message = [
@@ -1489,7 +1533,13 @@ def generate_version_songs(user_id, version_title, ver="jp"):
         return version_error(user_id)
 
     songs_data = list(filter(lambda x: x['version'] in target_version and x['type'] not in ['utage'], SONGS))
-    img = generate_version_list(songs_data)
+    version_img = generate_version_list(songs_data)
+
+    # 按宽度缩小为原来的 1/3
+    target_width = version_img.width // 3
+    version_img = resize_by_width(version_img, target_width)
+
+    img = compose_images([version_img])
 
     original_url, preview_url = smart_upload(img)
     message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
@@ -1609,7 +1659,8 @@ IMAGE_TASK_ROUTES = {
         ("ってどんな曲", "info", "song-info"),
         ("の達成状況", "の達成情報", "の達成表", "achievement-list", "achievement"),
         ("のレコード", "song-record", "record"),
-        ("のバージョンリスト", "version-list", "version")
+        ("のバージョンリスト", "version-list", "version"),
+        ("の定数リスト", "のレベルリスト", "level-list")
     ],
     # B系列命令 (生成图片)
     'b_commands': {
@@ -1851,7 +1902,7 @@ def handle_sync_text_command(event):
         (lambda msg: msg.endswith(("ってどんな曲", "info", "song-info")),
         lambda msg: search_song(
             user_id,
-            re.sub(r"(ってどんな曲|info|song-info)$", "", msg).strip(),
+            re.sub(r"\s*(ってどんな曲|info|song-info)$", "", msg).strip(),
             mai_ver
         )),
 
@@ -1873,7 +1924,7 @@ def handle_sync_text_command(event):
         (lambda msg: msg.endswith(("の達成状況", "の達成情報", "の達成表", "achievement-list", "achievement")),
         lambda msg: generate_plate_rcd(
             id_use,
-            re.sub(r"(の達成状況|の達成情報|の達成表|achievement-list|achievement)$", "", msg).strip(),
+            re.sub(r"\s*(の達成状況|の達成情報|の達成表|achievement-list|achievement)$", "", msg).strip(),
             mai_ver_use
         )),
 
@@ -1881,7 +1932,7 @@ def handle_sync_text_command(event):
         (lambda msg: msg.endswith(("のレコード", "song-record", "record")),
         lambda msg: get_song_record(
             id_use,
-            re.sub(r"(のレコード|song-record|record)$", "", msg).strip(),
+            re.sub(r"\s*(のレコード|song-record|record)$", "", msg).strip(),
             mai_ver_use
         )),
 
@@ -1889,7 +1940,7 @@ def handle_sync_text_command(event):
         (lambda msg: re.match(r".+(のレコードリスト|record-list|records)[ 　]*\d*$", msg),
         lambda msg: generate_level_records(
             id_use,
-            re.sub(r"(のレコードリスト|record-list|records)[ 　]*\d*$", "", msg).strip(),
+            re.sub(r"\s*(のレコードリスト|record-list|records)[ 　]*\d*$", "", msg).strip(),
             mai_ver_use,
             int(re.search(r"(\d+)$", msg).group(1)) if re.search(r"(\d+)$", msg) else 1
         )),
@@ -1899,6 +1950,14 @@ def handle_sync_text_command(event):
         lambda msg: generate_version_songs(
             user_id,
             re.sub(r"\s*\+\s*", " PLUS", re.sub(r"(のバージョンリスト|version-list|version)$", "", msg)).strip(),
+            mai_ver
+        )),
+
+        # 定数查询
+        (lambda msg: msg.endswith(("の定数リスト", "のレベルリスト", "level-list")),
+        lambda msg: generate_internallevel_songs(
+            user_id,
+            re.sub(r"\s*(の定数リスト|のレベルリスト|level-list)$", "", msg),
             mai_ver
         )),
 
