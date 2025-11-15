@@ -139,6 +139,18 @@ song_error_text = {
     "zh": "没有符合条件的歌曲..."
 }
 
+level_not_supported_text = {
+    "ja": "このレベルの定数表はサポートされていません。\nレベル12以上のみ対応しています。",
+    "en": "This level constant table is not supported.\nOnly levels 12 and above are available.",
+    "zh": "不支持该等级的定数表。\n仅支持12级及以上。"
+}
+
+cache_not_found_text = {
+    "ja": "定数表のキャッシュが見つかりません。\n管理者に問い合わせてください。",
+    "en": "Level chart cache not found.\nPlease contact the administrator.",
+    "zh": "定数表缓存不存在。\n请联系管理员。"
+}
+
 plate_error_text = {
     "ja": "そのプレートがわからないね...",
     "en": "I don't recognize that plate...",
@@ -701,6 +713,14 @@ def picture_error(user_id=None):
 def song_error(user_id=None):
     """生成歌曲错误消息"""
     return create_text_message(song_error_text, user_id, get_support_quick_reply(user_id))
+
+def level_not_supported(user_id=None):
+    """生成等级不支持消息"""
+    return create_text_message(level_not_supported_text, user_id, get_support_quick_reply(user_id))
+
+def cache_not_found(user_id=None):
+    """生成缓存不存在消息"""
+    return create_text_message(cache_not_found_text, user_id, get_support_quick_reply(user_id))
 
 def plate_error(user_id=None):
     """生成牌子错误消息"""

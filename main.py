@@ -1132,7 +1132,7 @@ def generate_internallevel_songs(user_id, level, ver="jp"):
         ver: 服务器版本（"jp" 或 "intl"）
     """
     import os
-    from modules.message_manager import song_error
+    from modules.message_manager import song_error, level_not_supported, cache_not_found
 
     read_dxdata(ver)
 
@@ -1141,6 +1141,11 @@ def generate_internallevel_songs(user_id, level, ver="jp"):
     if level not in valid_levels:
         return song_error(user_id)
 
+    # 检查等级是否支持（只支持12及以上）
+    supported_levels = ["12", "12+", "13", "13+", "14", "14+", "15"]
+    if level not in supported_levels:
+        return level_not_supported(user_id)
+
     # 检查缓存
     cache_dir = "./data/level_cache"
     cache_filename = f"{ver}_{level.replace('+', 'plus')}.png"
@@ -1148,7 +1153,7 @@ def generate_internallevel_songs(user_id, level, ver="jp"):
 
     if not os.path.exists(cache_path):
         # 缓存不存在，返回错误
-        return song_error(user_id)
+        return cache_not_found(user_id)
 
     # 从缓存读取图片并上传
     try:
@@ -1158,7 +1163,7 @@ def generate_internallevel_songs(user_id, level, ver="jp"):
         return message
     except Exception as e:
         print(f"读取缓存失败: {e}")
-        return song_error(user_id)
+        return cache_not_found(user_id)
 
 def _generate_level_cache_for_server(ver):
     """
@@ -1173,8 +1178,8 @@ def _generate_level_cache_for_server(ver):
 
     read_dxdata(ver)
 
-    # 定义所有支持的等级（14+ 会包含 14+ 和 15，15 单独只包含 15.0）
-    valid_levels = ["10", "10+", "11", "11+", "12", "12+", "13", "13+", "14", "14+", "15"]
+    # 定义所有支持的等级（只生成12及以上，14+ 会包含 14+ 和 15，15 单独只包含 15.0）
+    valid_levels = ["12", "12+", "13", "13+", "14", "14+", "15"]
 
     # 创建缓存目录
     cache_dir = "./data/level_cache"
@@ -1205,7 +1210,7 @@ def _generate_level_cache_for_server(ver):
                             continue
 
                     # 生成封面图片
-                    cover_img = cover_generate(song['cover_url'], song['type'], size=135)
+                    cover_img = generate_cover(song['cover_url'], song['type'], size=135)
 
                     target_data.append({
                         "img": cover_img,
@@ -1218,6 +1223,13 @@ def _generate_level_cache_for_server(ver):
 
             # 生成图片
             level_img = generate_internallevel_image(target_data, level)
+
+            # 按宽度缩小为3/5
+            new_width = int(level_img.width * 3 / 5)
+            new_height = int(level_img.height * 3 / 5)
+            level_img = level_img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+            # 用compose函数包装
             final_img = compose_images([level_img])
 
             # 保存到缓存
@@ -1239,8 +1251,30 @@ def generate_all_level_caches():
         _generate_level_cache_for_server("jp")
         _generate_level_cache_for_server("intl")
         print("[Cache] 所有等级缓存生成完成")
+
+        # 通知所有管理员缓存生成完成
+        from modules.line_messenger import smart_push
+        for admin_user_id in ADMIN_ID:
+            try:
+                smart_push(admin_user_id, TextMessage(
+                    text="✅ 定数表缓存生成完成\n已为所有服务器生成12级及以上的定数表缓存"
+                ), configuration)
+            except Exception as e:
+                logger.error(f"Failed to notify admin {admin_user_id} about cache completion: {e}")
     except Exception as e:
         print(f"[Cache] 缓存生成失败: {e}")
+        import traceback
+        traceback.print_exc()
+
+        # 通知所有管理员缓存生成失败
+        from modules.line_messenger import smart_push
+        for admin_user_id in ADMIN_ID:
+            try:
+                smart_push(admin_user_id, TextMessage(
+                    text=f"❌ 定数表缓存生成失败\n错误: {e}"
+                ), configuration)
+            except Exception as notify_error:
+                logger.error(f"Failed to notify admin {admin_user_id} about cache failure: {notify_error}")
 
 def create_user_info_img(user_id, scale=1.5):
     read_user()

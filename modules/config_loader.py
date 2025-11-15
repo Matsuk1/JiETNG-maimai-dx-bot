@@ -200,7 +200,7 @@ def read_dxdata(ver="jp"):
                 cur[last] = value
             else:
                 cur[last] = value
-    
+
     SONGS.extend(dxdata_file['songs'])
     VERSIONS.clear()
     VERSIONS.extend(dxdata_file['versions'])
