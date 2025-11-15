@@ -1131,54 +1131,116 @@ def generate_internallevel_songs(user_id, level, ver="jp"):
         level: 难度等级（如 "13", "13+", "14", "14+"）
         ver: 服务器版本（"jp" 或 "intl"）
     """
+    import os
+    from modules.message_manager import song_error
+
     read_dxdata(ver)
 
     # 验证 level 参数
     valid_levels = ["10", "10+", "11", "11+", "12", "12+", "13", "13+", "14", "14+", "15"]
     if level not in valid_levels:
-        from modules.message_manager import song_error
         return song_error(user_id)
 
-    # 收集符合条件的歌曲
-    target_data = []
-    region_key = ver  # "jp" 或 "intl"
+    # 检查缓存
+    cache_dir = "./data/level_cache"
+    cache_filename = f"{ver}_{level.replace('+', 'plus')}.png"
+    cache_path = os.path.join(cache_dir, cache_filename)
 
-    for song in SONGS:
-        if song['type'] == 'utage':  # 跳过宴会场
-            continue
-
-        for sheet in song['sheets']:
-            # 检查地区和难度等级
-            if not sheet['regions'].get(region_key, False):
-                continue
-
-            if not (sheet['level'] == level or (level == "14+" and sheet['level'] == "15")):
-                continue
-
-            # 生成封面图片（包含 std/dx 图标，尺寸135x135）
-            cover_img = generate_cover(song['cover_url'], song['type'], size=135)
-
-            target_data.append({
-                "img": cover_img,
-                "internal_level": sheet['internalLevelValue']
-            })
-
-    # 检查是否有符合条件的歌曲
-    if not target_data:
-        from modules.message_manager import song_error
+    if not os.path.exists(cache_path):
+        # 缓存不存在，返回错误
         return song_error(user_id)
 
-    # 生成定数表图片
-    level_img = generate_internallevel_image(target_data, level)
+    # 从缓存读取图片并上传
+    try:
+        cached_img = Image.open(cache_path)
+        original_url, preview_url = smart_upload(cached_img)
+        message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
+        return message
+    except Exception as e:
+        print(f"读取缓存失败: {e}")
+        return song_error(user_id)
 
-    # 添加页脚
-    final_img = compose_images([level_img])
+def _generate_level_cache_for_server(ver):
+    """
+    为指定服务器生成所有等级的缓存
 
-    # 上传并返回
-    original_url, preview_url = smart_upload(final_img)
-    message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
+    参数:
+        ver: 服务器版本（"jp" 或 "intl"）
+    """
+    import os
 
-    return message
+    print(f"[Cache] 开始为 {ver.upper()} 服务器生成等级缓存...")
+
+    read_dxdata(ver)
+
+    # 定义所有支持的等级（14+ 会包含 14+ 和 15，15 单独只包含 15.0）
+    valid_levels = ["10", "10+", "11", "11+", "12", "12+", "13", "13+", "14", "14+", "15"]
+
+    # 创建缓存目录
+    cache_dir = "./data/level_cache"
+    os.makedirs(cache_dir, exist_ok=True)
+
+    generated_count = 0
+
+    for level in valid_levels:
+        try:
+            # 收集符合条件的歌曲
+            target_data = []
+            region_key = ver
+
+            for song in SONGS:
+                if song['type'] == 'utage':
+                    continue
+
+                for sheet in song['sheets']:
+                    if not sheet['regions'].get(region_key, False):
+                        continue
+
+                    # 14+ 包含 14+ 和 15 级别
+                    if level == "14+":
+                        if sheet['level'] not in ["14+", "15"]:
+                            continue
+                    else:
+                        if sheet['level'] != level:
+                            continue
+
+                    # 生成封面图片
+                    cover_img = cover_generate(song['cover_url'], song['type'], size=135)
+
+                    target_data.append({
+                        "img": cover_img,
+                        "internal_level": sheet['internalLevelValue']
+                    })
+
+            if not target_data:
+                print(f"[Cache] {ver.upper()} Lv.{level}: 无歌曲，跳过")
+                continue
+
+            # 生成图片
+            level_img = generate_internallevel_image(target_data, level)
+            final_img = compose_images([level_img])
+
+            # 保存到缓存
+            cache_filename = f"{ver}_{level.replace('+', 'plus')}.png"
+            cache_path = os.path.join(cache_dir, cache_filename)
+            final_img.save(cache_path, 'PNG')
+
+            generated_count += 1
+            print(f"[Cache] {ver.upper()} Lv.{level}: ✓ ({len(target_data)} 首歌曲)")
+
+        except Exception as e:
+            print(f"[Cache] {ver.upper()} Lv.{level}: ✗ 错误: {e}")
+
+    print(f"[Cache] {ver.upper()} 服务器缓存生成完成：{generated_count}/{len(valid_levels)} 个等级")
+
+def generate_all_level_caches():
+    """后台生成所有服务器的等级缓存"""
+    try:
+        _generate_level_cache_for_server("jp")
+        _generate_level_cache_for_server("intl")
+        print("[Cache] 所有等级缓存生成完成")
+    except Exception as e:
+        print(f"[Cache] 缓存生成失败: {e}")
 
 def create_user_info_img(user_id, scale=1.5):
     read_user()
@@ -2071,6 +2133,10 @@ def handle_sync_text_command(event):
                         smart_push(admin_user_id, notification_message, configuration)
                     except Exception as e:
                         logger.error(f"Failed to notify admin {admin_user_id}: {e}")
+
+            # 在后台生成所有等级缓存
+            cache_thread = threading.Thread(target=generate_all_level_caches, daemon=True)
+            cache_thread.start()
 
             return
 
