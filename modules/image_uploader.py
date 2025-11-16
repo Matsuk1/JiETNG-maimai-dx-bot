@@ -120,6 +120,11 @@ def smart_upload(img):
     Returns:
         tuple: (original_url, preview_url) 如果上传失败返回 (None, None)
     """
+    # 一次性转换为 BytesIO，避免重复序列化
+    original_io = BytesIO()
+    img.save(original_io, format='PNG')
+    original_io.seek(0)
+
     # 上传原图
     print("[smart_upload] 上传原图...")
     original_url = None
@@ -127,15 +132,44 @@ def smart_upload(img):
     # 优先尝试 imgur
     if IMGUR_CLIENT_ID:
         print("[smart_upload] 使用 imgur 上传原图")
-        original_url = _upload_to_imgur(img)
+        url = "https://api.imgur.com/3/image"
+        headers = {"Authorization": f"Client-ID {IMGUR_CLIENT_ID}"}
+        files = {'image': original_io}
+
+        try:
+            response = requests.post(url, headers=headers, files=files)
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("success") and data.get("data"):
+                    original_url = data["data"]["link"]
+        except Exception as e:
+            print(f"[imgur] 异常: {e}")
+
+        original_io.seek(0)  # 重置指针以供后续使用
 
     if not original_url:
         print("[smart_upload] 使用 uguu 上传原图")
-        original_url = _upload_to_uguu(img)
+        files = {'files[]': ('image.png', original_io, 'image/png')}
+        try:
+            resp = requests.post("https://uguu.se/upload.php", files=files)
+            if resp.status_code == 200:
+                data = resp.json()
+                if data.get("success") and data.get("files"):
+                    original_url = data["files"][0]["url"]
+        except Exception as e:
+            print(f"[uguu] 异常: {e}")
+
+        original_io.seek(0)
 
     if not original_url:
         print("[smart_upload] 使用 0x0 上传原图")
-        original_url = _upload_to_0x0(img)
+        files = {'file': ('image.png', original_io, 'image/png')}
+        try:
+            response = requests.post("https://0x0.st", files=files)
+            if response.status_code == 200 and response.text.startswith("https://0x0.st/"):
+                original_url = response.text.strip()
+        except Exception as e:
+            print(f"[0x0] 异常: {e}")
 
     if not original_url:
         print("[smart_upload] 原图上传失败")

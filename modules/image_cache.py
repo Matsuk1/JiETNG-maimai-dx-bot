@@ -11,6 +11,7 @@ from PIL import Image
 from io import BytesIO
 from functools import lru_cache
 import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # 禁用 SSL 警告
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -69,7 +70,7 @@ def download_and_cache_icon(url, save_path):
         return None
 
 
-@lru_cache(maxsize=128)
+@lru_cache(maxsize=2048)
 def get_cached_image(url):
     """
     从 URL 获取图片（带内存缓存）
@@ -128,3 +129,34 @@ def paste_icon_optimized(img, song_data, key, size, position, save_dir, url_func
 
     except Exception as e:
         print(f"[paste_icon_optimized] Error for '{key}': {e}")
+
+
+def batch_download_images(urls, max_workers=10):
+    """
+    并发批量下载图片
+
+    Args:
+        urls: URL 列表
+        max_workers: 最大并发数
+
+    Returns:
+        dict: {url: PIL.Image} 字典
+    """
+    results = {}
+
+    def download_single(url):
+        try:
+            img = get_cached_image(url)
+            return url, img
+        except Exception as e:
+            print(f"[batch_download] Error downloading {url}: {e}")
+            return url, None
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {executor.submit(download_single, url): url for url in urls}
+        for future in as_completed(futures):
+            url, img = future.result()
+            if img:
+                results[url] = img
+
+    return results

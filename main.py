@@ -1173,6 +1173,7 @@ def _generate_level_cache_for_server(ver):
         ver: 服务器版本（"jp" 或 "intl"）
     """
     import os
+    from modules.image_cache import batch_download_images
 
     print(f"[Cache] 开始为 {ver.upper()} 服务器生成等级缓存...")
 
@@ -1189,8 +1190,8 @@ def _generate_level_cache_for_server(ver):
 
     for level in valid_levels:
         try:
-            # 收集符合条件的歌曲
-            target_data = []
+            # 收集符合条件的歌曲信息
+            song_data_list = []
             region_key = ver
 
             for song in SONGS:
@@ -1209,16 +1210,34 @@ def _generate_level_cache_for_server(ver):
                         if sheet['level'] != level:
                             continue
 
-                    # 生成封面图片
-                    cover_img = generate_cover(song['cover_url'], song['type'], size=135)
-
-                    target_data.append({
-                        "img": cover_img,
+                    song_data_list.append({
+                        "cover_url": song['cover_url'],
+                        "type": song['type'],
                         "internal_level": sheet['internalLevelValue']
                     })
 
-            if not target_data:
+            if not song_data_list:
                 print(f"[Cache] {ver.upper()} Lv.{level}: 无歌曲，跳过")
+                continue
+
+            # 批量并发下载所有封面
+            print(f"[Cache] {ver.upper()} Lv.{level}: 并发下载 {len(song_data_list)} 首歌曲封面...")
+            cover_urls = [s['cover_url'] for s in song_data_list]
+            downloaded_covers = batch_download_images(cover_urls, max_workers=20)
+
+            # 生成封面图片（使用已下载的图片）
+            target_data = []
+            for song_data in song_data_list:
+                cover_url = song_data['cover_url']
+                if cover_url in downloaded_covers:
+                    cover_img = generate_cover(cover_url, song_data['type'], size=135)
+                    target_data.append({
+                        "img": cover_img,
+                        "internal_level": song_data['internal_level']
+                    })
+
+            if not target_data:
+                print(f"[Cache] {ver.upper()} Lv.{level}: 封面下载失败，跳过")
                 continue
 
             # 生成图片
@@ -1242,6 +1261,8 @@ def _generate_level_cache_for_server(ver):
 
         except Exception as e:
             print(f"[Cache] {ver.upper()} Lv.{level}: ✗ 错误: {e}")
+            import traceback
+            traceback.print_exc()
 
     print(f"[Cache] {ver.upper()} 服务器缓存生成完成：{generated_count}/{len(valid_levels)} 个等级")
 
