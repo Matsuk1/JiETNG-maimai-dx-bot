@@ -6,33 +6,43 @@
   <title>Admin Panel | JiETNG</title>
   <style>
     :root {
-      --bg-gradient-1: #667eea;
-      --bg-gradient-2: #764ba2;
-      --bg-gradient-3: #f093fb;
-      --bg-gradient-4: #4facfe;
+      /* 浅色模式 - Light Mode */
+      --bg-gradient-1: #f5f5f5;
+      --bg-gradient-2: #ffffff;
+      --bg-gradient-3: #fafafa;
+      --bg-gradient-4: #f0f0f0;
 
-      --text-color: #ffffff;
-      --text-secondary: rgba(255, 255, 255, 0.8);
-      --text-tertiary: rgba(255, 255, 255, 0.6);
+      --text-color: #1a1a1a;
+      --text-secondary: rgba(0, 0, 0, 0.7);
+      --text-tertiary: rgba(0, 0, 0, 0.5);
 
-      --glass-bg: rgba(255, 255, 255, 0.1);
-      --glass-border: rgba(255, 255, 255, 0.2);
-      --glass-shadow: rgba(0, 0, 0, 0.1);
+      --glass-bg: rgba(255, 255, 255, 0.9);
+      --glass-border: rgba(153, 0, 0, 0.12);
+      --glass-shadow: rgba(0, 0, 0, 0.05);
 
-      --accent-color: #fbbf24;
-      --accent-glow: rgba(251, 191, 36, 0.4);
+      --bg-color: #ffffff;
+      --card-bg: rgba(255, 255, 255, 0.95);
+      --border-color: rgba(0, 0, 0, 0.1);
+      --hover-bg: rgba(0, 0, 0, 0.05);
 
-      --success-color: #10b981;
-      --success-glow: rgba(16, 185, 129, 0.3);
+      --accent-color: #C49000;
+      --accent-glow: rgba(196, 144, 0, 0.4);
 
-      --warning-color: #f59e0b;
-      --warning-glow: rgba(245, 158, 11, 0.3);
+      --success-color: #059669;
+      --success-glow: rgba(5, 150, 105, 0.2);
 
-      --danger-color: #ef4444;
-      --danger-glow: rgba(239, 68, 68, 0.3);
+      --warning-color: #d97706;
+      --warning-glow: rgba(217, 119, 6, 0.2);
 
-      --info-color: #3b82f6;
-      --info-glow: rgba(59, 130, 246, 0.3);
+      --danger-color: #dc2626;
+      --danger-glow: rgba(220, 38, 38, 0.2);
+
+      --info-color: #2563eb;
+      --info-glow: rgba(37, 99, 235, 0.2);
+
+      --burgundy: #660033;
+      --crimson: #990000;
+      --deep-red: #810020;
 
       --card-hover-scale: 1.02;
       --transition-speed: 0.3s;
@@ -40,13 +50,39 @@
 
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg-gradient-1: #1a1a2e;
-        --bg-gradient-2: #16213e;
-        --bg-gradient-3: #0f3460;
-        --bg-gradient-4: #533483;
+        /* 深色模式 - Dark Mode */
+        --bg-gradient-1: #0f0f0f;
+        --bg-gradient-2: #1a1a1a;
+        --bg-gradient-3: #141414;
+        --bg-gradient-4: #0a0a0a;
 
-        --glass-bg: rgba(255, 255, 255, 0.05);
-        --glass-border: rgba(255, 255, 255, 0.1);
+        --text-color: #ffffff;
+        --text-secondary: rgba(255, 255, 255, 0.85);
+        --text-tertiary: rgba(255, 255, 255, 0.6);
+
+        --glass-bg: rgba(102, 0, 51, 0.06);
+        --glass-border: rgba(153, 0, 0, 0.15);
+        --glass-shadow: rgba(0, 0, 0, 0.1);
+
+        --bg-color: #1a1a1a;
+        --card-bg: rgba(26, 26, 26, 0.8);
+        --border-color: rgba(255, 255, 255, 0.1);
+        --hover-bg: rgba(255, 255, 255, 0.05);
+
+        --accent-color: #EFBF04;
+        --accent-glow: rgba(239, 191, 4, 0.5);
+
+        --success-color: #10b981;
+        --success-glow: rgba(16, 185, 129, 0.3);
+
+        --warning-color: #f59e0b;
+        --warning-glow: rgba(245, 158, 11, 0.3);
+
+        --danger-color: #FF6B6B;
+        --danger-glow: rgba(255, 107, 107, 0.3);
+
+        --info-color: #60a5fa;
+        --info-glow: rgba(96, 165, 250, 0.3);
       }
     }
 
@@ -56,7 +92,8 @@
       box-sizing: border-box;
     }
 
-    body {
+    html {
+      height: 100%;
       background: linear-gradient(135deg,
         var(--bg-gradient-1) 0%,
         var(--bg-gradient-2) 25%,
@@ -64,13 +101,20 @@
         var(--bg-gradient-4) 75%,
         var(--bg-gradient-1) 100%);
       background-size: 400% 400%;
-      animation: gradientShift 15s ease infinite;
+      animation: gradientShift 20s ease infinite;
+      background-attachment: fixed;
+    }
+
+    body {
+      background: transparent;
       color: var(--text-color);
-      font-family: "Inter", "Helvetica Neue", "Yu Gothic", "Meiryo", sans-serif;
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", "Yu Gothic", "Meiryo", sans-serif;
       padding: 20px;
       min-height: 100vh;
+      min-height: -webkit-fill-available;
       position: relative;
       overflow-x: hidden;
+      overflow-y: auto;
     }
 
     @keyframes gradientShift {
@@ -759,19 +803,83 @@
     }
 
     @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+
+      .container {
+        max-width: 100%;
+      }
+
       .header {
         flex-direction: column;
         gap: 16px;
+        padding: 16px;
+      }
+
+      .header h1 {
+        font-size: 24px;
+        text-align: center;
       }
 
       .tabs {
         overflow-x: auto;
+        gap: 8px;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        padding-bottom: 8px;
+      }
+
+      .tabs::-webkit-scrollbar {
+        display: none;
+      }
+
+      .tab {
+        font-size: 13px;
+        padding: 10px 16px;
+        white-space: nowrap;
+        min-width: fit-content;
+      }
+
+      .section {
+        padding: 20px 16px;
+        margin-bottom: 16px;
+      }
+
+      .section-title {
+        font-size: 18px;
+        margin-bottom: 16px;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .stat-card {
+        padding: 20px 16px;
+      }
+
+      .stat-value {
+        font-size: 28px;
+      }
+
+      .stat-label {
+        font-size: 12px;
       }
 
       .user-header {
         flex-direction: column;
         align-items: flex-start;
         gap: 12px;
+      }
+
+      .user-info h3 {
+        font-size: 16px;
+      }
+
+      .user-info p {
+        font-size: 13px;
       }
 
       .user-actions {
@@ -782,14 +890,20 @@
 
       .user-actions .btn {
         width: 100%;
-        padding: 10px 16px;
+        padding: 12px 16px;
         font-size: 14px;
+        justify-content: center;
       }
 
       .task-item {
         flex-direction: column;
         align-items: flex-start;
         gap: 12px;
+        padding: 16px;
+      }
+
+      .task-item > div:first-child {
+        width: 100%;
       }
 
       .task-item > div:last-child {
@@ -801,8 +915,9 @@
 
       .task-item .btn {
         width: 100%;
-        padding: 10px 16px;
+        padding: 12px 16px;
         font-size: 14px;
+        justify-content: center;
       }
 
       .task-item .status-badge {
@@ -811,34 +926,71 @@
         padding: 8px 12px;
       }
 
-      .stats-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .stat-card {
-        padding: 20px;
-      }
-
       .modal-content {
-        margin: 20px;
-        max-width: calc(100% - 40px);
+        margin: 10px;
+        max-width: calc(100% - 20px);
+        padding: 24px 20px;
+        max-height: calc(100vh - 40px);
+        overflow-y: auto;
       }
 
-      .section-title {
-        font-size: 16px;
+      .modal-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 20px;
       }
 
-      .tabs {
-        gap: 8px;
+      .modal-header h2 {
+        font-size: 20px;
       }
 
-      .tab {
+      .form-group {
+        margin-bottom: 16px;
+      }
+
+      .form-group label {
         font-size: 13px;
-        padding: 10px 16px;
+        margin-bottom: 6px;
       }
 
-      body {
-        padding: 10px;
+      .form-group input,
+      .form-group select,
+      .form-group textarea {
+        padding: 12px;
+        font-size: 15px;
+      }
+
+      .form-actions {
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .form-actions .btn {
+        width: 100%;
+        padding: 14px;
+        font-size: 15px;
+        justify-content: center;
+      }
+
+      /* 优化卡片间距 */
+      .user-card {
+        margin-bottom: 12px;
+      }
+
+      /* 优化公告卡片 */
+      .announcement-card {
+        padding: 16px;
+      }
+
+      /* 确保表单元素不会溢出 */
+      input, select, textarea, button {
+        max-width: 100%;
+      }
+
+      /* 优化滚动条 */
+      .task-list {
+        -webkit-overflow-scrolling: touch;
       }
     }
 
@@ -864,6 +1016,7 @@
       <button class="tab active" onclick="switchTab('stats')">Statistics</button>
       <button class="tab" onclick="switchTab('users')">Users</button>
       <button class="tab" onclick="switchTab('tasks')">Task Queue</button>
+      <button class="tab" onclick="switchTab('cache')">Cache & Data</button>
       <button class="tab" onclick="switchTab('notices')">Notices</button>
       <button class="tab" onclick="switchTab('logs')">Logs</button>
     </div>
@@ -1179,6 +1332,39 @@
       </div>
     </div>
 
+    <!-- Cache & Data Tab -->
+    <div id="cache-tab" class="tab-content">
+      <!-- DXData Status Section -->
+      <div class="section">
+        <div class="section-title">DXData Status</div>
+
+        <div id="dxdata-status-container">
+          <div style="text-align: center; padding: 40px; opacity: 0.5;">
+            Loading DXData status...
+          </div>
+        </div>
+
+        <div style="margin-top: 12px; text-align: center;">
+          <button class="btn btn-primary" onclick="loadDXDataStatus()">Refresh</button>
+        </div>
+      </div>
+
+      <!-- Cache Generation Progress Section -->
+      <div class="section">
+        <div class="section-title">Cache Generation Progress</div>
+
+        <div id="cache-progress-container">
+          <div style="text-align: center; padding: 40px; opacity: 0.5;">
+            Loading cache progress...
+          </div>
+        </div>
+
+        <div style="margin-top: 12px; text-align: center;">
+          <button class="btn btn-primary" onclick="loadCacheProgress()">Refresh</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Logs Tab -->
     <div id="logs-tab" class="tab-content">
       <div class="section">
@@ -1278,6 +1464,12 @@
       // 如果切换到stats标签，加载内存统计
       if (tabName === 'stats') {
         loadMemoryStats();
+      }
+
+      // 如果切换到cache标签，加载缓存进度和DXData状态
+      if (tabName === 'cache') {
+        loadCacheProgress();
+        loadDXDataStatus();
       }
     }
 
@@ -2075,6 +2267,207 @@
         btn.textContent = originalText;
       });
     }
+
+    // ==================== Cache & Data Functions ====================
+
+    function loadCacheProgress() {
+      const container = document.getElementById('cache-progress-container');
+      container.innerHTML = '<div style="text-align: center; padding: 40px; opacity: 0.5;">Loading...</div>';
+
+      fetch('/linebot/admin/cache_progress')
+        .then(res => res.json())
+        .then(data => {
+          displayCacheProgress(data);
+        })
+        .catch(err => {
+          container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--danger-color);">Network error: ' + err + '</div>';
+        });
+    }
+
+    function displayCacheProgress(progress) {
+      const container = document.getElementById('cache-progress-container');
+
+      let statusColor = 'var(--text-secondary)';
+      let statusText = progress.status;
+
+      if (progress.status === 'idle') {
+        statusColor = 'var(--text-secondary)';
+        statusText = 'Idle';
+      } else if (progress.status === 'running') {
+        statusColor = 'var(--info-color)';
+        statusText = 'Running';
+      } else if (progress.status === 'completed') {
+        statusColor = 'var(--success-color)';
+        statusText = 'Completed';
+      } else if (progress.status === 'error') {
+        statusColor = 'var(--danger-color)';
+        statusText = 'Error';
+      }
+
+      let html = `
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;">
+          <div style="padding: 20px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px;">
+            <div style="font-size: 12px; opacity: 0.6; margin-bottom: 8px;">Status</div>
+            <div style="font-size: 24px; font-weight: 700; color: ${statusColor}; margin-bottom: 4px;">
+              ${statusText}
+            </div>
+            <div style="font-size: 13px; opacity: 0.5;">Cache generation</div>
+          </div>
+
+          <div style="padding: 20px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px;">
+            <div style="font-size: 12px; opacity: 0.6; margin-bottom: 8px;">Progress</div>
+            <div style="font-size: 32px; font-weight: 700; color: var(--accent-color); margin-bottom: 4px;">
+              ${progress.progress}<span style="font-size: 18px; opacity: 0.5; margin-left: 4px;">%</span>
+            </div>
+            <div style="width: 100%; height: 6px; background: var(--border-color); border-radius: 3px; margin-top: 8px; opacity: 0.3;">
+              <div style="height: 100%; background: var(--accent-color); border-radius: 3px; width: ${progress.progress}%; transition: width 0.3s;"></div>
+            </div>
+          </div>
+
+          <div style="padding: 20px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px;">
+            <div style="font-size: 12px; opacity: 0.6; margin-bottom: 8px;">Completed Levels</div>
+            <div style="font-size: 32px; font-weight: 700; color: var(--accent-color); margin-bottom: 4px;">
+              ${progress.completed_levels} / ${progress.total_levels}
+            </div>
+            <div style="font-size: 13px; opacity: 0.5;">Levels generated</div>
+          </div>
+        </div>
+      `;
+
+      if (progress.status === 'running' && progress.current_server && progress.current_level) {
+        html += `
+          <div style="padding: 16px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px; margin-bottom: 16px;">
+            <div style="font-size: 12px; font-weight: 600; opacity: 0.7; margin-bottom: 8px;">Current Task</div>
+            <div style="font-size: 14px;">
+              Server: <span style="font-weight: 600; color: var(--accent-color);">${progress.current_server}</span> |
+              Level: <span style="font-weight: 600; color: var(--accent-color);">${progress.current_level}</span>
+            </div>
+          </div>
+        `;
+      }
+
+      if (progress.error_message) {
+        html += `
+          <div style="padding: 16px; background: rgba(220, 38, 38, 0.1); border: 1px solid var(--danger-color); border-radius: 12px; margin-bottom: 16px;">
+            <div style="font-size: 12px; font-weight: 600; color: var(--danger-color); margin-bottom: 8px;">Error Message</div>
+            <div style="font-size: 13px; color: var(--danger-color); font-family: 'Courier New', monospace;">
+              ${escapeHtml(progress.error_message)}
+            </div>
+          </div>
+        `;
+      }
+
+      if (progress.start_time) {
+        html += `
+          <div style="padding: 16px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px;">
+            <div style="font-size: 12px; font-weight: 600; opacity: 0.7; margin-bottom: 8px;">Timing</div>
+            <div style="font-size: 13px; opacity: 0.7;">
+              Start: ${progress.start_time || 'N/A'}
+              ${progress.end_time ? '<br>End: ' + progress.end_time : ''}
+            </div>
+          </div>
+        `;
+      }
+
+      container.innerHTML = html;
+    }
+
+    function loadDXDataStatus() {
+      const container = document.getElementById('dxdata-status-container');
+      container.innerHTML = '<div style="text-align: center; padding: 40px; opacity: 0.5;">Loading...</div>';
+
+      fetch('/linebot/admin/dxdata_status')
+        .then(res => res.json())
+        .then(data => {
+          displayDXDataStatus(data);
+        })
+        .catch(err => {
+          container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--danger-color);">Network error: ' + err + '</div>';
+        });
+    }
+
+    function displayDXDataStatus(data) {
+      const container = document.getElementById('dxdata-status-container');
+
+      const html = `
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;">
+          <div style="padding: 20px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px;">
+            <div style="font-size: 12px; opacity: 0.6; margin-bottom: 8px;">Total Songs</div>
+            <div style="font-size: 32px; font-weight: 700; color: var(--accent-color); margin-bottom: 4px;">
+              ${data.songs.total}
+            </div>
+            <div style="font-size: 13px; opacity: 0.5;">All songs in database</div>
+          </div>
+
+          <div style="padding: 20px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px;">
+            <div style="font-size: 12px; opacity: 0.6; margin-bottom: 8px;">Standard Songs</div>
+            <div style="font-size: 32px; font-weight: 700; color: var(--accent-color); margin-bottom: 4px;">
+              ${data.songs.std}
+            </div>
+            <div style="font-size: 13px; opacity: 0.5;">STD type songs</div>
+          </div>
+
+          <div style="padding: 20px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px;">
+            <div style="font-size: 12px; opacity: 0.6; margin-bottom: 8px;">DX Songs</div>
+            <div style="font-size: 32px; font-weight: 700; color: var(--accent-color); margin-bottom: 4px;">
+              ${data.songs.dx}
+            </div>
+            <div style="font-size: 13px; opacity: 0.5;">DX type songs</div>
+          </div>
+
+          <div style="padding: 20px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px;">
+            <div style="font-size: 12px; opacity: 0.6; margin-bottom: 8px;">UTAGE Songs</div>
+            <div style="font-size: 32px; font-weight: 700; color: var(--accent-color); margin-bottom: 4px;">
+              ${data.songs.utage}
+            </div>
+            <div style="font-size: 13px; opacity: 0.5;">UTAGE type songs</div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;">
+          <div style="padding: 20px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px;">
+            <div style="font-size: 12px; opacity: 0.6; margin-bottom: 8px;">Total Sheets</div>
+            <div style="font-size: 32px; font-weight: 700; color: var(--accent-color); margin-bottom: 4px;">
+              ${data.sheets.total}
+            </div>
+            <div style="font-size: 13px; opacity: 0.5;">All difficulty charts</div>
+          </div>
+
+          <div style="padding: 20px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px;">
+            <div style="font-size: 12px; opacity: 0.6; margin-bottom: 8px;">JP Sheets</div>
+            <div style="font-size: 32px; font-weight: 700; color: var(--accent-color); margin-bottom: 4px;">
+              ${data.sheets.jp}
+            </div>
+            <div style="font-size: 13px; opacity: 0.5;">Available in JP</div>
+          </div>
+
+          <div style="padding: 20px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px;">
+            <div style="font-size: 12px; opacity: 0.6; margin-bottom: 8px;">INTL Sheets</div>
+            <div style="font-size: 32px; font-weight: 700; color: var(--accent-color); margin-bottom: 4px;">
+              ${data.sheets.intl}
+            </div>
+            <div style="font-size: 13px; opacity: 0.5;">Available in INTL</div>
+          </div>
+
+          <div style="padding: 20px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px;">
+            <div style="font-size: 12px; opacity: 0.6; margin-bottom: 8px;">Versions</div>
+            <div style="font-size: 32px; font-weight: 700; color: var(--accent-color); margin-bottom: 4px;">
+              ${data.versions}
+            </div>
+            <div style="font-size: 13px; opacity: 0.5;">Game versions</div>
+          </div>
+        </div>
+      `;
+
+      container.innerHTML = html;
+    }
+
+    // Auto-refresh cache progress every 30 seconds when on cache tab
+    setInterval(() => {
+      if (document.getElementById('cache-tab').classList.contains('active')) {
+        loadCacheProgress();
+      }
+    }, 30000);
   </script>
 </body>
 </html>

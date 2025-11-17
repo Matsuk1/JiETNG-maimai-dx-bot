@@ -75,7 +75,7 @@ def _upload_to_imgur(img):
 
     return None
 
-def _compress_image(img, max_width=800, quality=85):
+def _compress_image(img, max_width=1600, quality=90):
     """压缩图片并转换为 JPEG 格式
 
     Args:
@@ -180,7 +180,7 @@ def smart_upload(img):
     preview_url = None
 
     try:
-        preview_io = _compress_image(img, max_width=800, quality=85)
+        preview_io = _compress_image(img, max_width=1600, quality=90)
 
         # 直接上传压缩后的 BytesIO（优先使用 0x0，因为它支持直接上传）
         files = {'file': ('preview.jpg', preview_io, 'image/jpeg')}

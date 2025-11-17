@@ -162,6 +162,23 @@ image_concurrency_limit = threading.Semaphore(MAX_CONCURRENT_IMAGE_TASKS)
 webtask_queue = queue.Queue(maxsize=MAX_QUEUE_SIZE)
 webtask_concurrency_limit = threading.Semaphore(WEB_MAX_CONCURRENT_TASKS)
 
+# 缓存生成任务队列 (处理定数表缓存生成等后台任务)
+cache_queue = queue.Queue(maxsize=5)  # 缓存任务通常较少，队列较小
+cache_concurrency_limit = threading.Semaphore(1)  # 同时只允许1个缓存任务
+
+# 缓存生成进度跟踪
+cache_generation_progress = {
+    "status": "idle",  # idle, running, completed, error
+    "current_server": "",  # jp, intl
+    "current_level": "",  # 12, 12+, 13, etc.
+    "progress": 0,  # 0-100
+    "total_levels": 0,
+    "completed_levels": 0,
+    "error_message": "",
+    "start_time": None,
+    "end_time": None
+}
+
 
 def run_task_with_limit(func: callable, args: tuple, sem: threading.Semaphore,
                         q: queue.Queue, task_id: str = None, is_web_task: bool = False) -> None:
@@ -331,6 +348,22 @@ def webtask_worker() -> None:
             webtask_queue.task_done()
 
 
+def cache_worker() -> None:
+    """缓存生成任务队列的工作线程"""
+    while True:
+        try:
+            item = cache_queue.get()
+            func, args = item
+            run_task_with_limit(func, args, cache_concurrency_limit, cache_queue, None, False)
+        except Exception as e:
+            logger.error(f"Cache task worker error: {e}", exc_info=True)
+            with stats_lock:
+                cache_generation_progress["status"] = "error"
+                cache_generation_progress["error_message"] = str(e)
+                cache_generation_progress["end_time"] = datetime.now().isoformat()
+            cache_queue.task_done()
+
+
 # ==================== 系统启动自检 ====================
 # 在启动 worker 线程之前执行系统自检
 print("\n" + "=" * 60)
@@ -358,7 +391,10 @@ for i in range(MAX_CONCURRENT_IMAGE_TASKS):
 for i in range(WEB_MAX_CONCURRENT_TASKS):
     threading.Thread(target=webtask_worker, daemon=True, name=f"WebTaskWorker-{i+1}").start()
 
-print(f"Started {MAX_CONCURRENT_IMAGE_TASKS} image workers and {WEB_MAX_CONCURRENT_TASKS} web task workers")
+# 启动缓存生成 worker（只需1个）
+threading.Thread(target=cache_worker, daemon=True, name="CacheWorker-1").start()
+
+print(f"Started {MAX_CONCURRENT_IMAGE_TASKS} image workers, {WEB_MAX_CONCURRENT_TASKS} web task workers, and 1 cache worker")
 print("=" * 60 + "\n")
 
 
@@ -1188,7 +1224,14 @@ def _generate_level_cache_for_server(ver):
 
     generated_count = 0
 
-    for level in valid_levels:
+    for idx, level in enumerate(valid_levels):
+        # 更新进度
+        with stats_lock:
+            cache_generation_progress["current_server"] = ver.upper()
+            cache_generation_progress["current_level"] = level
+            cache_generation_progress["completed_levels"] = generated_count
+            cache_generation_progress["progress"] = int((idx / len(valid_levels)) * 50 + (0 if ver == "jp" else 50))
+
         try:
             # 收集符合条件的歌曲信息
             song_data_list = []
@@ -1243,10 +1286,8 @@ def _generate_level_cache_for_server(ver):
             # 生成图片
             level_img = generate_internallevel_image(target_data, level)
 
-            # 按宽度缩小为3/5
-            new_width = int(level_img.width * 3 / 5)
-            new_height = int(level_img.height * 3 / 5)
-            level_img = level_img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            # 不再缩小图片 - 保持高清晰度 (原本缩小到3/5会降低清晰度)
+            # 已提升 img_size 从 135px 到 180px,水印会自动按比例调整
 
             # 用compose函数包装
             final_img = compose_images([level_img])
@@ -1267,11 +1308,29 @@ def _generate_level_cache_for_server(ver):
     print(f"[Cache] {ver.upper()} 服务器缓存生成完成：{generated_count}/{len(valid_levels)} 个等级")
 
 def generate_all_level_caches():
-    """后台生成所有服务器的等级缓存"""
+    """后台生成所有服务器的等级缓存（带进度跟踪）"""
+    from datetime import datetime
+
+    # 初始化进度
+    with stats_lock:
+        cache_generation_progress["status"] = "running"
+        cache_generation_progress["progress"] = 0
+        cache_generation_progress["total_levels"] = 14  # 7 levels * 2 servers
+        cache_generation_progress["completed_levels"] = 0
+        cache_generation_progress["error_message"] = ""
+        cache_generation_progress["start_time"] = datetime.now().isoformat()
+        cache_generation_progress["end_time"] = None
+
     try:
         _generate_level_cache_for_server("jp")
         _generate_level_cache_for_server("intl")
         print("[Cache] 所有等级缓存生成完成")
+
+        # 标记完成
+        with stats_lock:
+            cache_generation_progress["status"] = "completed"
+            cache_generation_progress["progress"] = 100
+            cache_generation_progress["end_time"] = datetime.now().isoformat()
 
         # 通知所有管理员缓存生成完成
         from modules.line_messenger import smart_push
@@ -1652,9 +1711,8 @@ def generate_version_songs(user_id, version_title, ver="jp"):
     songs_data = list(filter(lambda x: x['version'] in target_version and x['type'] not in ['utage'], SONGS))
     version_img = generate_version_list(songs_data)
 
-    # 按宽度缩小为原来的 1/3
-    target_width = version_img.width // 3
-    version_img = resize_by_width(version_img, target_width)
+    # 不再缩小图片 - 保持高清晰度 (原本缩小到1/3会严重降低清晰度)
+    # 已提升缩略图尺寸从 300x150 到 400x200,水印会自动按比例调整
 
     img = compose_images([version_img])
 
@@ -2189,9 +2247,12 @@ def handle_sync_text_command(event):
                     except Exception as e:
                         logger.error(f"Failed to notify admin {admin_user_id}: {e}")
 
-            # 在后台生成所有等级缓存
-            cache_thread = threading.Thread(target=generate_all_level_caches, daemon=True)
-            cache_thread.start()
+            # 将缓存生成任务添加到队列
+            try:
+                cache_queue.put((generate_all_level_caches, ()), block=False)
+                logger.info("Cache generation task queued")
+            except queue.Full:
+                logger.warning("Cache queue is full, task not queued")
 
             return
 
@@ -2896,6 +2957,70 @@ def admin_load_nicknames():
         return jsonify({
             'success': False,
             'message': str(e)
+        }), 500
+
+@app.route("/linebot/admin/cache_progress", methods=["GET"])
+def admin_cache_progress():
+    """获取缓存生成进度"""
+    if not check_admin_auth():
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    with stats_lock:
+        progress_data = cache_generation_progress.copy()
+
+    return jsonify(progress_data)
+
+@app.route("/linebot/admin/dxdata_status", methods=["GET"])
+def admin_dxdata_status():
+    """获取 DXData 状态（歌曲数、谱面数、版本数）"""
+    if not check_admin_auth():
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    try:
+        # 不重新加载数据，直接使用当前已加载的全局变量
+        # 统计歌曲数
+        total_songs = len(SONGS)
+        std_songs = len([s for s in SONGS if s['type'] == 'std'])
+        dx_songs = len([s for s in SONGS if s['type'] == 'dx'])
+        utage_songs = len([s for s in SONGS if s['type'] == 'utage'])
+
+        # 统计谱面数（不包括宴会曲）
+        total_sheets = 0
+        jp_sheets = 0
+        intl_sheets = 0
+
+        for song in SONGS:
+            if song['type'] == 'utage':
+                continue
+            for sheet in song['sheets']:
+                total_sheets += 1
+                if sheet['regions'].get('jp', False):
+                    jp_sheets += 1
+                if sheet['regions'].get('intl', False):
+                    intl_sheets += 1
+
+        # 使用 VERSIONS 全局变量
+        total_versions = len(VERSIONS)
+
+        return jsonify({
+            'songs': {
+                'total': total_songs,
+                'std': std_songs,
+                'dx': dx_songs,
+                'utage': utage_songs
+            },
+            'sheets': {
+                'total': total_sheets,
+                'jp': jp_sheets,
+                'intl': intl_sheets
+            },
+            'versions': total_versions
+        })
+
+    except Exception as e:
+        logger.error(f"Admin DXData status error: {e}", exc_info=True)
+        return jsonify({
+            'error': str(e)
         }), 500
 
 if __name__ == "__main__":

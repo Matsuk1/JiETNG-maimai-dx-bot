@@ -86,10 +86,8 @@ def _generate_level_cache_for_server(ver):
             # 生成图片
             level_img = generate_internallevel_image(target_data, level)
 
-            # 按宽度缩小为3/5
-            new_width = int(level_img.width * 3 / 5)
-            new_height = int(level_img.height * 3 / 5)
-            level_img = level_img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            # 不再缩小图片 - 保持高清晰度 (原本缩小到3/5会降低清晰度)
+            # 已提升 img_size 从 135px 到 180px,水印会自动按比例调整
 
             # 用compose函数包装
             final_img = compose_images([level_img])

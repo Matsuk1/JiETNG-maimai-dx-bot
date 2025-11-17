@@ -98,6 +98,33 @@ def merge_json_by_key(source, target, key_field):
                 result[k] = copy.deepcopy(v)
 
     return result
+
+def merge_songs_list(source_songs, target_songs, key_field="title"):
+    """
+    合并两个 songs 列表,按 key_field 去重
+
+    Args:
+        source_songs: 源歌曲列表
+        target_songs: 目标歌曲列表
+        key_field: 用于匹配的键名
+
+    Returns:
+        合并后的歌曲列表
+    """
+    result = copy.deepcopy(target_songs)
+    target_index = {item.get(key_field): item for item in result if key_field in item}
+
+    for item in source_songs:
+        key_val = item.get(key_field)
+        if key_val in target_index:
+            # 如果已存在,合并数据
+            merge_json(item, target_index[key_val])
+        else:
+            # 如果不存在,添加新项
+            result.append(copy.deepcopy(item))
+
+    return result
+
 def load_dxdata(url):
     try:
         response = requests.get(url)
@@ -241,9 +268,10 @@ def update_dxdata_with_comparison(urls, save_to: str = None):
     new_datas = []
     for url in urls:
         new_datas.append(load_dxdata(url))
-    
+
+    # 只合并 songs 字段
     for i in range(1, len(new_datas)):
-        new_datas[0] = merge_json_by_key(new_datas[i], new_datas[0], "title")
+        new_datas[0]['songs'] = merge_songs_list(new_datas[i]['songs'], new_datas[0]['songs'], "title")
 
     new_data = new_datas[0]
 
