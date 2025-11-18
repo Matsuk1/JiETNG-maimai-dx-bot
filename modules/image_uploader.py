@@ -178,27 +178,6 @@ def smart_upload(img):
         logger.info(" 原图上传失败")
         return None, None
 
-    # 生成并上传压缩预览图（JPEG格式）
-    logger.info(" 上传预览图...")
-    preview_url = None
-
-    try:
-        preview_io = _compress_image(img, max_width=1600, quality=90)
-
-        # 直接上传压缩后的 BytesIO（优先使用 0x0，因为它支持直接上传）
-        files = {'file': ('preview.jpg', preview_io, 'image/jpeg')}
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
-        response = requests.post("https://0x0.st", files=files, headers=headers, timeout=30)
-
-        if response.status_code == 200 and response.text.startswith("https://0x0.st/"):
-            preview_url = response.text.strip()
-            logger.info(" 预览图上传成功（0x0）")
-        else:
-            logger.info(f" 预览图上传失败 (status: {response.status_code}, response: {response.text[:100]})，使用原图链接")
-            preview_url = original_url
-    except Exception as e:
-        logger.info(f" 预览图上传异常: {e}，使用原图链接")
-        preview_url = original_url
-
-    logger.info(f" 上传完成 - 原图: {original_url}, 预览图: {preview_url}")
-    return original_url, preview_url
+    # 不再上传预览图，直接使用原图
+    logger.info(f" 上传完成 - 原图: {original_url}")
+    return original_url, original_url
