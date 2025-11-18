@@ -7,6 +7,7 @@
 import os
 import requests
 import urllib3
+import logging
 from PIL import Image
 from io import BytesIO
 from functools import lru_cache
@@ -17,6 +18,9 @@ from modules.config_loader import COVERS_DIR
 
 # 禁用 SSL 警告
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+# 获取logger
+logger = logging.getLogger(__name__)
 
 # 线程本地存储（每个线程独立的 session）
 _thread_local = threading.local()
@@ -68,7 +72,7 @@ def download_and_cache_icon(url, save_path):
         return Image.open(save_path).convert("RGBA")
 
     except Exception as e:
-        print(f"[image_cache] Error downloading {url}: {e}")
+        logger.error(f"Error downloading {url}: {e}")
         return None
 
 
@@ -100,7 +104,7 @@ def get_cached_image(url):
         response.raise_for_status()
         return Image.open(BytesIO(response.content))
     except Exception as e:
-        print(f"[image_cache] Error loading {url}: {e}")
+        logger.error(f"Error loading {url}: {e}")
         return None
 
 
@@ -130,7 +134,7 @@ def paste_icon_optimized(img, song_data, key, size, position, save_dir, url_func
             img.paste(icon_img, position, mask=icon_img)
 
     except Exception as e:
-        print(f"[paste_icon_optimized] Error for '{key}': {e}")
+        logger.error(f"paste_icon_optimized error for '{key}': {e}")
 
 
 def get_cover_image(cover_url, cover_name, covers_dir=None):
@@ -161,13 +165,13 @@ def get_cover_image(cover_url, cover_name, covers_dir=None):
             try:
                 return Image.open(local_path).convert("RGBA")
             except Exception as e:
-                print(f"[get_cover_image] Error loading local file {local_path}: {e}")
+                logger.warning(f"Error loading local file {local_path}: {e}, will re-download")
                 # 如果本地文件损坏，删除它并重新下载
                 os.remove(local_path)
 
         # 2. 本地不存在，从 URL 下载
         if not cover_url:
-            print(f"[get_cover_image] No cover_url provided for {cover_name}")
+            logger.warning(f"No cover_url provided for {cover_name}")
             return None
 
         session = _get_session()
@@ -190,17 +194,17 @@ def get_cover_image(cover_url, cover_name, covers_dir=None):
                 if attempt < max_retries - 1:
                     continue  # 重试
                 else:
-                    print(f"[get_cover_image] Timeout after {max_retries} attempts for {cover_name}")
+                    logger.error(f"Timeout after {max_retries} attempts for {cover_name}")
                     return None
             except requests.exceptions.HTTPError as e:
                 # 403/404 等 HTTP 错误不重试
                 if e.response.status_code in [403, 404]:
                     return None
-                print(f"[get_cover_image] HTTP Error for {cover_name}: {e}")
+                logger.error(f"HTTP Error for {cover_name}: {e}")
                 return None
 
     except Exception as e:
-        print(f"[get_cover_image] Error for {cover_name}: {e}")
+        logger.error(f"Error downloading cover {cover_name}: {e}")
         return None
 
 
@@ -222,7 +226,7 @@ def batch_download_images(urls, max_workers=5):
             img = get_cached_image(url)
             return url, img
         except Exception as e:
-            print(f"[batch_download] Error downloading {url}: {e}")
+            logger.error(f"Error downloading {url}: {e}")
             return url, None
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:

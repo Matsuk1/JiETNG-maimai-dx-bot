@@ -127,14 +127,46 @@ ERROR_NOTIFICATION_ENABLED = True  # 是否启用错误通知
 # ==================== 日志配置 ====================
 
 # 配置日志
+# 带颜色的日志格式化器
+class ColoredFormatter(logging.Formatter):
+    COLORS = {
+        'DEBUG': '\033[36m',    # 青色
+        'INFO': '\033[32m',     # 绿色
+        'WARNING': '\033[33m',  # 黄色
+        'ERROR': '\033[31m',    # 红色
+        'CRITICAL': '\033[35m', # 紫色
+    }
+    RESET = '\033[0m'
+    GRAY = '\033[90m'
+
+    def format(self, record):
+        # 为级别名添加颜色
+        levelname = record.levelname
+        if levelname in self.COLORS:
+            record.levelname = f"{self.COLORS[levelname]}{levelname}{self.RESET}"
+
+        # 时间戳使用灰色
+        formatted = super().format(record)
+        formatted = formatted.replace(record.asctime, f"{self.GRAY}{record.asctime}{self.RESET}", 1)
+
+        return formatted
+
+# 配置日志
+file_handler = logging.FileHandler('jietng.log', encoding='utf-8')
+file_handler.setFormatter(logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+))
+
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(ColoredFormatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%H:%M:%S'
+))
+
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S',
-    handlers=[
-        logging.FileHandler('jietng.log', encoding='utf-8'),
-        logging.StreamHandler()
-    ]
+    handlers=[file_handler, console_handler]
 )
 
 logger = logging.getLogger(__name__)
