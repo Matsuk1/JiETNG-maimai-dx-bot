@@ -176,11 +176,14 @@ def get_cover_image(cover_url, cover_name, covers_dir=None):
 
         session = _get_session()
 
+        # CloudFront 需要 .png 扩展名
+        download_url = cover_url if cover_url.endswith('.png') else f"{cover_url}.png"
+
         # 重试机制：最多尝试 3 次
         max_retries = 3
         for attempt in range(max_retries):
             try:
-                response = session.get(cover_url, timeout=30)
+                response = session.get(download_url, timeout=30)
                 response.raise_for_status()
 
                 # 3. 保存到本地
