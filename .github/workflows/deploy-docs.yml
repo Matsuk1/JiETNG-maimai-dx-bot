@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
 
+# 防止并发运行，避免多个 artifact 冲突
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
 permissions:
   pages: write
   id-token: write
