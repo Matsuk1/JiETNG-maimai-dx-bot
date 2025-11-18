@@ -13,6 +13,8 @@ from functools import lru_cache
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+from modules.config_loader import COVERS_DIR
+
 # 禁用 SSL 警告
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -129,6 +131,59 @@ def paste_icon_optimized(img, song_data, key, size, position, save_dir, url_func
 
     except Exception as e:
         print(f"[paste_icon_optimized] Error for '{key}': {e}")
+
+
+def get_cover_image(cover_url, cover_name, covers_dir=None):
+    """
+    获取封面图片（优先从本地加载，不存在则下载）
+
+    Args:
+        cover_url: 封面图片 URL
+        cover_name: 封面文件名（包含扩展名，如 "12345.png"）
+        covers_dir: 本地封面缓存目录（默认使用配置中的路径）
+
+    Returns:
+        PIL.Image 或 None
+    """
+    try:
+        # 使用配置中的路径（如果未指定）
+        if covers_dir is None:
+            covers_dir = COVERS_DIR
+
+        # 确保缓存目录存在
+        os.makedirs(covers_dir, exist_ok=True)
+
+        # 构建本地文件路径
+        local_path = os.path.join(covers_dir, cover_name)
+
+        # 1. 首先尝试从本地加载
+        if os.path.exists(local_path):
+            try:
+                return Image.open(local_path).convert("RGBA")
+            except Exception as e:
+                print(f"[get_cover_image] Error loading local file {local_path}: {e}")
+                # 如果本地文件损坏，删除它并重新下载
+                os.remove(local_path)
+
+        # 2. 本地不存在，从 URL 下载
+        if not cover_url:
+            print(f"[get_cover_image] No cover_url provided for {cover_name}")
+            return None
+
+        session = _get_session()
+        response = session.get(cover_url, timeout=10)
+        response.raise_for_status()
+
+        # 3. 保存到本地
+        with open(local_path, "wb") as f:
+            f.write(response.content)
+
+        # 4. 返回图片对象
+        return Image.open(local_path).convert("RGBA")
+
+    except Exception as e:
+        print(f"[get_cover_image] Error for {cover_name}: {e}")
+        return None
 
 
 def batch_download_images(urls, max_workers=10):

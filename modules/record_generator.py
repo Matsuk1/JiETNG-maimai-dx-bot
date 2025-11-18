@@ -6,7 +6,15 @@ import math
 
 from PIL import Image, ImageDraw, ImageFont
 
-from modules.config_loader import LOGO_PATH
+from modules.config_loader import (
+    LOGO_PATH,
+    ICON_TYPE_DIR,
+    ICON_SCORE_DIR,
+    ICON_DX_STAR_DIR,
+    ICON_COMBO_DIR,
+    ICON_SYNC_DIR,
+    ICON_BASE_DIR
+)
 from modules.image_cache import *
 from modules.image_manager import *
 
@@ -31,9 +39,13 @@ def create_thumbnail(song, thumb_size=(300, 150), padding=15):
     # --- 封面 ---
     # 根据缩略图尺寸动态计算封面大小 (保持比例: 80/300 ≈ 0.267)
     cover_size = int(thumb_size[0] * 0.267)
-    if 'cover_url' in song and song['cover_url']:
+    if 'cover_name' in song and song['cover_name']:
         try:
-            cover_img = get_cached_image(song['cover_url'])
+            # 使用新的 get_cover_image 函数（优先本地，不存在则下载）
+            cover_img = get_cover_image(
+                cover_url=song.get('cover_url'),
+                cover_name=song['cover_name']
+            )
             if cover_img:
                 # 使用 LANCZOS 高质量重采样
                 cover_img = cover_img.resize((cover_size, cover_size), Image.Resampling.LANCZOS)
@@ -49,7 +61,7 @@ def create_thumbnail(song, thumb_size=(300, 150), padding=15):
         img, song, key='kind',
         size=(kind_width, kind_height),
         position=(padding + cover_size - kind_width, padding + cover_size - kind_height),
-        save_dir='./assets/icon/kind',
+        save_dir=ICON_TYPE_DIR,
         url_func=lambda value: "https://maimaidx.jp/maimai-mobile/img/music_standard.png" if value == "std" else "https://maimaidx.jp/maimai-mobile/img/music_dx.png"
     )
 
@@ -78,7 +90,7 @@ def create_thumbnail(song, thumb_size=(300, 150), padding=15):
         img, song, key='score_icon',
         size=(score_icon_width, score_icon_height),
         position=(score_x_offset - score_icon_width + 5, padding + line_spacing),
-        save_dir='./assets/icon/score',
+        save_dir=ICON_SCORE_DIR,
         url_func=lambda value: f"https://maimaidx.jp/maimai-mobile/img/music_icon_{value}.png"
     )
 
@@ -119,7 +131,7 @@ def create_thumbnail(song, thumb_size=(300, 150), padding=15):
                 img, {'star': str(star_num)}, key='star',
                 size=(star_width, star_height),
                 position=(padding + cover_size, thumb_size[1] - int(thumb_size[1] * 0.213)),
-                save_dir='./assets/icon/dx_star',
+                save_dir=ICON_DX_STAR_DIR,
                 url_func=lambda value: f"https://maimaidx.jp/maimai-mobile/img/music_icon_dxstar_detail_{value}.png"
             )
 
@@ -134,7 +146,7 @@ def create_thumbnail(song, thumb_size=(300, 150), padding=15):
         img, song, key='combo_icon',
         size=(combo_icon_width, combo_icon_height),
         position=(padding - 5, thumb_size[1] - int(thumb_size[1] * 0.32)),
-        save_dir='./assets/icon/combo',
+        save_dir=ICON_COMBO_DIR,
         url_func=lambda value: f"https://maimaidx.jp/maimai-mobile/img/music_icon_{value}.png"
     )
 
@@ -143,7 +155,7 @@ def create_thumbnail(song, thumb_size=(300, 150), padding=15):
         img, song, key='sync_icon',
         size=(combo_icon_width, combo_icon_height),
         position=(padding + combo_icon_width - 5, thumb_size[1] - int(thumb_size[1] * 0.32)),
-        save_dir='./assets/icon/sync',
+        save_dir=ICON_SYNC_DIR,
         url_func=lambda value: f"https://maimaidx.jp/maimai-mobile/img/music_icon_{value}.png"
     )
 
@@ -328,23 +340,29 @@ def generate_yang_records_picture(version_songs, title="YANG"):
 
     return combined
 
-def generate_cover(cover, type, icon=None, icon_type=None, size=150):
+def generate_cover(cover, type, icon=None, icon_type=None, size=150, cover_name=None):
     """
     生成歌曲封面图片，带有类型标识和可选图标
 
     参数:
-        cover: 封面 URL
+        cover: 封面 URL（兼容旧代码）
         type: 歌曲类型 ("std" 或 "dx")
         icon: 可选的图标名称（如 "ap", "fc" 等）
         icon_type: 可选的图标类型（如 "combo", "score", "sync"）
         size: 封面尺寸（默认150）
+        cover_name: 封面文件名（包含扩展名），优先使用本地文件
     """
     img_width = size
     img_height = size
     record_img = Image.new("RGB", (img_width, img_height), (255, 255, 255))
 
-    # 加载封面图片
-    cover_img = get_cached_image(cover)
+    # 加载封面图片（优先使用 cover_name 本地文件）
+    if cover_name:
+        cover_img = get_cover_image(cover_url=cover, cover_name=cover_name)
+    else:
+        # 向后兼容：没有 cover_name 时直接从 URL 下载
+        cover_img = get_cached_image(cover)
+
     if cover_img:
         cover_img = cover_img.resize((size, size))
         record_img.paste(cover_img, (0, 0))
@@ -358,14 +376,14 @@ def generate_cover(cover, type, icon=None, icon_type=None, size=150):
         key='kind',
         size=(kind_width, kind_height),
         position=(img_width - kind_width, img_height - kind_height),
-        save_dir='./assets/icon/kind',
+        save_dir=ICON_TYPE_DIR,
         url_func=lambda value: "https://maimaidx.jp/maimai-mobile/img/music_standard.png" if value == "std" else "https://maimaidx.jp/maimai-mobile/img/music_dx.png"
     )
 
     # 如果提供了 icon 和 icon_type，显示对应的图标
     if icon and icon_type and icon != "back":
         try:
-            file_path = f"./assets/icon/{icon_type}/{icon}.png"
+            file_path = f"{ICON_BASE_DIR}/{icon_type}/{icon}.png"
             url = f"https://maimaidx.jp/maimai-mobile/img/music_icon_{icon}.png"
 
             icon_img = download_and_cache_icon(url, file_path)
@@ -442,7 +460,7 @@ def generate_plate_image(target_data, title, img_width=1700, img_height=600, max
 
     return final_img
 
-def generate_internallevel_image(target_data, level_name, img_width=2300, max_per_row=12, margin=20):
+def generate_internallevel_image(target_data, level_name, img_width=2400, max_per_row=12, margin=20):
     """
     生成定数查询图片，左侧显示定数（如 13.0, 13.1），右侧显示歌曲封面
 
@@ -455,8 +473,8 @@ def generate_internallevel_image(target_data, level_name, img_width=2300, max_pe
     """
     level_width = 100
     img_size = 180  # 提升清晰度: 135 -> 180 (增加33%)
-    img_gap = 8  # 同一行内封面之间的间距（减小间距）
-    row_gap = 8  # 同一定数内不同行之间的间距（减小间距）
+    img_gap = 5  # 同一行内封面之间的间距
+    row_gap = 5  # 同一定数内不同行之间的间距
     level_gap = margin  # 不同定数之间的间距（保持原有的 margin）
     row_height = img_size + level_gap  # 用于计算总高度
 
@@ -496,18 +514,24 @@ def generate_internallevel_image(target_data, level_name, img_width=2300, max_pe
 
     # 渲染主体图像内容
     y_offset = margin + 30 + 140
-    for level_str, img_list in rows:
+    for level_idx, (level_str, img_list) in enumerate(rows):
         draw.text((margin, y_offset + img_size // 3), level_str, fill="black", font=font_for_plate)
 
         x_offset = level_width + margin
+        row_count = 0  # 当前定数的行数计数
         for i, img in enumerate(img_list):
             if i > 0 and i % max_per_row == 0:
                 y_offset += img_size + row_gap  # 同一定数内行间距
                 x_offset = level_width + margin
+                row_count += 1
 
             final_img.paste(img, (x_offset, y_offset))
             x_offset += img_size + img_gap  # 同一行内封面间距
 
-        y_offset += img_size + level_gap  # 不同定数之间的间距
+        # 移动到下一个定数: 当前行底部 + 定数间距
+        if level_idx < len(rows) - 1:  # 如果不是最后一个定数
+            y_offset += img_size + level_gap
+        else:
+            y_offset += img_size  # 最后一个定数只需要加上图片高度
 
     return final_img

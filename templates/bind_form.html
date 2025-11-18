@@ -2,181 +2,43 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <title id="page-title">SEGA アカウント連携 | JiETNG</title>
+  {% include 'common_styles.html' %}
+
   <style>
+    /* 页面特定 CSS 变量 - Page-specific CSS Variables */
     :root {
-      /* 浅色模式 */
-      --bg-gradient-1: #f5f5f5;
-      --bg-gradient-2: #ffffff;
-      --bg-gradient-3: #fafafa;
-      --bg-gradient-4: #f0f0f0;
-
-      --text-color: #1a1a1a;
-      --text-secondary: rgba(0, 0, 0, 0.7);
-
       --card-bg: rgba(102, 0, 51, 0.04);
       --card-border: rgba(153, 0, 0, 0.15);
       --card-glow: rgba(129, 0, 32, 0.08);
-
-      --glass-bg: rgba(255, 255, 255, 0.9);
-      --glass-border: rgba(153, 0, 0, 0.12);
-
-      --accent-color: #C49000;
-      --accent-glow: rgba(196, 144, 0, 0.4);
-
-      --burgundy: #660033;
-      --crimson: #990000;
-      --deep-red: #810020;
-
       --input-bg: rgba(0, 0, 0, 0.03);
       --input-border: rgba(153, 0, 0, 0.2);
     }
 
     @media (prefers-color-scheme: dark) {
       :root {
-        /* 深色模式 */
-        --bg-gradient-1: #0f0f0f;
-        --bg-gradient-2: #1a1a1a;
-        --bg-gradient-3: #141414;
-        --bg-gradient-4: #0a0a0a;
-
-        --text-color: #ffffff;
-        --text-secondary: rgba(255, 255, 255, 0.85);
-
         --card-bg: rgba(102, 0, 51, 0.08);
         --card-border: rgba(153, 0, 0, 0.2);
         --card-glow: rgba(129, 0, 32, 0.15);
-
-        --glass-bg: rgba(102, 0, 51, 0.06);
-        --glass-border: rgba(153, 0, 0, 0.15);
-
-        --accent-color: #EFBF04;
-        --accent-glow: rgba(239, 191, 4, 0.6);
-
         --input-bg: rgba(255, 255, 255, 0.03);
         --input-border: rgba(153, 0, 0, 0.4);
       }
     }
 
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    html {
-      height: 100%;
-      background: linear-gradient(135deg,
-        var(--bg-gradient-1) 0%,
-        var(--bg-gradient-2) 25%,
-        var(--bg-gradient-3) 50%,
-        var(--bg-gradient-4) 75%,
-        var(--bg-gradient-1) 100%);
-      background-size: 400% 400%;
-      animation: gradientShift 20s ease infinite;
-      background-attachment: fixed;
-    }
-
+    /* 页面特定样式 - Page-specific Styles */
     body {
-      background: transparent;
-      color: var(--text-color);
-      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", "Yu Gothic", "Meiryo", sans-serif;
       display: flex;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
-      min-height: -webkit-fill-available;
-      padding: 20px;
+      /* safe-area padding 已在 :root 上，这里只加额外的 20px */
+      /* padding: 20px; */
       position: relative;
       overflow-x: hidden;
       overflow-y: auto;
     }
 
-    @keyframes gradientShift {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-
-    /* 背景装饰 */
-    body::before {
-      content: '';
-      position: fixed;
-      top: -50%;
-      right: -50%;
-      width: 200%;
-      height: 200%;
-      background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
-      animation: rotate 30s linear infinite;
-      pointer-events: none;
-    }
-
-    @keyframes rotate {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-
-    /* 浮动装饰 */
-    .floating-shapes {
-      position: fixed;
-      width: 100%;
-      height: 100%;
-      top: 0;
-      left: 0;
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    .shape {
-      position: absolute;
-      border-radius: 50%;
-      filter: blur(60px);
-      opacity: 0.3;
-    }
-
-    .shape1 {
-      width: 300px;
-      height: 300px;
-      background: var(--burgundy);
-      top: 10%;
-      left: 10%;
-      animation: float1 20s ease-in-out infinite;
-    }
-
-    .shape2 {
-      width: 400px;
-      height: 400px;
-      background: var(--crimson);
-      bottom: 10%;
-      right: 10%;
-      animation: float2 25s ease-in-out infinite;
-    }
-
-    .shape3 {
-      width: 250px;
-      height: 250px;
-      background: var(--deep-red);
-      top: 50%;
-      left: 50%;
-      animation: float3 18s ease-in-out infinite;
-    }
-
-    @keyframes float1 {
-      0%, 100% { transform: translate(0, 0); }
-      50% { transform: translate(100px, 100px); }
-    }
-
-    @keyframes float2 {
-      0%, 100% { transform: translate(0, 0); }
-      50% { transform: translate(-80px, -80px); }
-    }
-
-    @keyframes float3 {
-      0%, 100% { transform: translate(-50%, -50%); }
-      50% { transform: translate(-50%, -65%); }
-    }
-
+    /* 页面特定样式 - Page-specific Styles */
     .container {
       width: 100%;
       max-width: 500px;
@@ -409,12 +271,6 @@
   </style>
 </head>
 <body>
-  <div class="floating-shapes">
-    <div class="shape shape1"></div>
-    <div class="shape shape2"></div>
-    <div class="shape shape3"></div>
-  </div>
-
   <div class="container">
     <h2 id="page-heading">SEGA アカウント連携</h2>
     <form method="POST">
@@ -441,20 +297,19 @@
     </form>
 
     <div class="notice">
-      <strong id="notice-title">ご利用に関するご注意</strong><br><br>
-
+      <strong id="notice-title">ご利用に関するご注意</strong><br>
       <div id="notice-ja" style="display: block;">
-        ご入力いただいた情報はすべて暗号化された形式で安全に保存され、第三者に提供されることはありません。<br>
+        ご入力いただいた情報はすべて暗号化された形式で安全に保存され、第三者に提供されることはありません。<br><br>
         ただし、本サービスは個人によって運営されており、公式な保証やサポートは提供されておりません。本サービスの性質上、セキュリティや運用方針に不安がある場合は、利用をお控えいただくようお願いいたします。情報提供はあくまでご自身の判断と責任にてお願いいたします。
       </div>
 
       <div id="notice-en" style="display: none;">
-        All information you provide will be securely stored in encrypted format and will not be shared with third parties.<br>
+        All information you provide will be securely stored in encrypted format and will not be shared with third parties.<br><br>
         However, this service is operated by an individual and does not provide official guarantees or support. Given the nature of this service, if you have concerns about security or operational policies, please refrain from using it. You provide information at your own judgment and responsibility.
       </div>
 
       <div id="notice-zh" style="display: none;">
-        您输入的所有信息都将以加密形式安全保存，不会提供给第三方。<br>
+        您输入的所有信息都将以加密形式安全保存，不会提供给第三方。<br><br>
         但是，本服务由个人运营，不提供官方保证或支持。鉴于本服务的性质，如果您对安全性或运营政策有顾虑，请勿使用。信息提供完全基于您自己的判断和责任。
       </div>
     </div>

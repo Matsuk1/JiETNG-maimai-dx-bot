@@ -28,11 +28,20 @@ default_config = {
     "port": 5000,
     "file_path": {
         "dxdata_list": "./data/dxdata.json",
+        "dxdata_version": "./data/dxdata_version.json",
         "re_dxdata_list": "./data/re_dxdata.json",
         "user_list": "./data/user.json.enc",
         "notice_file": "./data/notice.json",
         "font": "./assets/fonts/mplus-jietng.ttf",
-        "logo": "./assets/pics/logo.png"
+        "logo": "./assets/pics/logo.png",
+        "level_cache": "./data/level_cache",
+        "covers": "./data/covers",
+        "icon_type": "./assets/icon/type",
+        "icon_score": "./assets/icon/score",
+        "icon_dx_star": "./assets/icon/dx_star",
+        "icon_combo": "./assets/icon/combo",
+        "icon_sync": "./assets/icon/sync",
+        "icon_base": "./assets/icon"
     },
     "record_database": {
         "host": "localhost",
@@ -127,6 +136,14 @@ USER_LIST = FILE_PATH["user_list"]
 NOTICE_FILE = FILE_PATH["notice_file"]
 FONT_PATH = FILE_PATH["font"]
 LOGO_PATH = FILE_PATH["logo"]
+LEVEL_CACHE_DIR = FILE_PATH["level_cache"]
+COVERS_DIR = FILE_PATH["covers"]
+ICON_TYPE_DIR = FILE_PATH["icon_type"]
+ICON_SCORE_DIR = FILE_PATH["icon_score"]
+ICON_DX_STAR_DIR = FILE_PATH["icon_dx_star"]
+ICON_COMBO_DIR = FILE_PATH["icon_combo"]
+ICON_SYNC_DIR = FILE_PATH["icon_sync"]
+ICON_BASE_DIR = FILE_PATH["icon_base"]
 
 # 数据库配置字段
 RECORD_DATABASE = _config["record_database"]

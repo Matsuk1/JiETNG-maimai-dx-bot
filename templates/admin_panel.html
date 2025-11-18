@@ -2,145 +2,44 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <title>Admin Panel | JiETNG</title>
+  {% include 'common_styles.html' %}
+
   <style>
+    /* 页面特定 CSS 变量 - Page-specific CSS Variables */
     :root {
-      /* 浅色模式 - Light Mode */
-      --bg-gradient-1: #f5f5f5;
-      --bg-gradient-2: #ffffff;
-      --bg-gradient-3: #fafafa;
-      --bg-gradient-4: #f0f0f0;
-
-      --text-color: #1a1a1a;
-      --text-secondary: rgba(0, 0, 0, 0.7);
       --text-tertiary: rgba(0, 0, 0, 0.5);
-
-      --glass-bg: rgba(255, 255, 255, 0.9);
-      --glass-border: rgba(153, 0, 0, 0.12);
       --glass-shadow: rgba(0, 0, 0, 0.05);
-
       --bg-color: #ffffff;
       --card-bg: rgba(255, 255, 255, 0.95);
       --border-color: rgba(0, 0, 0, 0.1);
       --hover-bg: rgba(0, 0, 0, 0.05);
-
-      --accent-color: #C49000;
-      --accent-glow: rgba(196, 144, 0, 0.4);
-
-      --success-color: #059669;
-      --success-glow: rgba(5, 150, 105, 0.2);
-
-      --warning-color: #d97706;
-      --warning-glow: rgba(217, 119, 6, 0.2);
-
-      --danger-color: #dc2626;
-      --danger-glow: rgba(220, 38, 38, 0.2);
-
-      --info-color: #2563eb;
-      --info-glow: rgba(37, 99, 235, 0.2);
-
-      --burgundy: #660033;
-      --crimson: #990000;
-      --deep-red: #810020;
-
       --card-hover-scale: 1.02;
       --transition-speed: 0.3s;
     }
 
     @media (prefers-color-scheme: dark) {
       :root {
-        /* 深色模式 - Dark Mode */
-        --bg-gradient-1: #0f0f0f;
-        --bg-gradient-2: #1a1a1a;
-        --bg-gradient-3: #141414;
-        --bg-gradient-4: #0a0a0a;
-
-        --text-color: #ffffff;
-        --text-secondary: rgba(255, 255, 255, 0.85);
         --text-tertiary: rgba(255, 255, 255, 0.6);
-
-        --glass-bg: rgba(102, 0, 51, 0.06);
-        --glass-border: rgba(153, 0, 0, 0.15);
         --glass-shadow: rgba(0, 0, 0, 0.1);
-
         --bg-color: #1a1a1a;
         --card-bg: rgba(26, 26, 26, 0.8);
         --border-color: rgba(255, 255, 255, 0.1);
         --hover-bg: rgba(255, 255, 255, 0.05);
-
-        --accent-color: #EFBF04;
-        --accent-glow: rgba(239, 191, 4, 0.5);
-
-        --success-color: #10b981;
-        --success-glow: rgba(16, 185, 129, 0.3);
-
-        --warning-color: #f59e0b;
-        --warning-glow: rgba(245, 158, 11, 0.3);
-
-        --danger-color: #FF6B6B;
-        --danger-glow: rgba(255, 107, 107, 0.3);
-
-        --info-color: #60a5fa;
-        --info-glow: rgba(96, 165, 250, 0.3);
       }
     }
 
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    html {
-      height: 100%;
-      background: linear-gradient(135deg,
-        var(--bg-gradient-1) 0%,
-        var(--bg-gradient-2) 25%,
-        var(--bg-gradient-3) 50%,
-        var(--bg-gradient-4) 75%,
-        var(--bg-gradient-1) 100%);
-      background-size: 400% 400%;
-      animation: gradientShift 20s ease infinite;
-      background-attachment: fixed;
-    }
-
+    /* 页面特定样式 - Page-specific Styles */
     body {
-      background: transparent;
-      color: var(--text-color);
-      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", "Yu Gothic", "Meiryo", sans-serif;
+      /* safe-area padding 已在 :root 上，这里只加额外的 20px */
       padding: 20px;
-      min-height: 100vh;
-      min-height: -webkit-fill-available;
       position: relative;
       overflow-x: hidden;
       overflow-y: auto;
     }
 
-    @keyframes gradientShift {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-
-    /* 背景装饰 */
-    body::before {
-      content: '';
-      position: fixed;
-      top: -50%;
-      right: -50%;
-      width: 200%;
-      height: 200%;
-      background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
-      animation: rotate 30s linear infinite;
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    @keyframes rotate {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
+    /* 背景装饰已移至 common_styles.html */
 
     .container {
       max-width: 1400px;
@@ -804,6 +703,7 @@
 
     @media (max-width: 768px) {
       body {
+        /* 移动端：safe-area padding 已在 :root 上，这里只加额外的 10px */
         padding: 10px;
       }
 
@@ -1155,7 +1055,7 @@
 
           <div class="stat-card">
             <div class="stat-label" style="font-size: 11px; opacity: 0.6; margin-bottom: 8px;">CPU Usage</div>
-            <div class="stat-value" style="font-size: 32px;">{{ stats.cpu_percent }}<span style="font-size: 18px; opacity: 0.5; margin-left: 4px;">%</span></div>
+            <div class="stat-value" style="font-size: 32px;">{{ stats.cpu_percent }}<span style="font-size: 18px; margin-left: 4px;">%</span></div>
             <div style="width: 100%; height: 6px; background: var(--border-color); border-radius: 3px; margin-top: 8px; opacity: 0.3;">
               <div style="height: 100%; background: var(--accent-color); border-radius: 3px; width: {{ stats.cpu_percent }}%;"></div>
             </div>
@@ -1163,7 +1063,7 @@
 
           <div class="stat-card">
             <div class="stat-label" style="font-size: 11px; opacity: 0.6; margin-bottom: 8px;">Memory</div>
-            <div class="stat-value" style="font-size: 32px;">{{ stats.memory_percent }}<span style="font-size: 18px; opacity: 0.5; margin-left: 4px;">%</span></div>
+            <div class="stat-value" style="font-size: 32px;">{{ stats.memory_percent }}<span style="font-size: 18px; margin-left: 4px;">%</span></div>
             <div style="width: 100%; height: 6px; background: var(--border-color); border-radius: 3px; margin-top: 8px; opacity: 0.3;">
               <div style="height: 100%; background: var(--accent-color); border-radius: 3px; width: {{ stats.memory_percent }}%;"></div>
             </div>
@@ -2317,7 +2217,7 @@
           <div style="padding: 20px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px;">
             <div style="font-size: 12px; opacity: 0.6; margin-bottom: 8px;">Progress</div>
             <div style="font-size: 32px; font-weight: 700; color: var(--accent-color); margin-bottom: 4px;">
-              ${progress.progress}<span style="font-size: 18px; opacity: 0.5; margin-left: 4px;">%</span>
+              ${progress.progress}<span style="font-size: 18px; margin-left: 4px;">%</span>
             </div>
             <div style="width: 100%; height: 6px; background: var(--border-color); border-radius: 3px; margin-top: 8px; opacity: 0.3;">
               <div style="height: 100%; background: var(--accent-color); border-radius: 3px; width: ${progress.progress}%; transition: width 0.3s;"></div>

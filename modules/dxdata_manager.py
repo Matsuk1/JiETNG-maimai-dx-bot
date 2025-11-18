@@ -160,6 +160,7 @@ def _split_song_sheets_by_type(song_list):
             "bpm": song["bpm"],
             "version": song.get("version", ""),
             "cover_url": f"https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/cover/{song['imageName']}",
+            "cover_name": song["imageName"],
             "search_acronyms": song.get("searchAcronyms", [])
         }
 

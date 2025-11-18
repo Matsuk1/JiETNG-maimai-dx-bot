@@ -3,6 +3,7 @@ from PIL import Image, ImageDraw, ImageFont
 from modules.record_generator import create_thumbnail
 from modules.image_manager import *
 from modules.image_cache import paste_icon_optimized, get_cached_image
+from modules.config_loader import ICON_TYPE_DIR
 
 def song_info_generate(song_json, played_data = []):
     cover_url = song_json["cover_url"]
@@ -70,7 +71,7 @@ def _render_basic_info_image(song_json, cover_img):
         img, song_json, key='type',
         size=(100, 30),
         position=(cover_x + cover_size - 100, cover_y + cover_size - 30),
-        save_dir='./assets/icon/kind',
+        save_dir=ICON_TYPE_DIR,
         url_func=lambda value: "https://maimaidx.jp/maimai-mobile/img/music_standard.png" if value == "std" else "https://maimaidx.jp/maimai-mobile/img/music_dx.png"
     )
 
@@ -212,7 +213,7 @@ def _render_song_info_small_img(song_json, cover_img):
         img, song_json, key='type',
         size=(100, 30),
         position=(cover_x + cover_size - 100, cover_y + cover_size - 30),
-        save_dir='./assets/icon/kind',
+        save_dir=ICON_TYPE_DIR,
         url_func=lambda value: "https://maimaidx.jp/maimai-mobile/img/music_standard.png" if value == "std" else "https://maimaidx.jp/maimai-mobile/img/music_dx.png"
     )
 

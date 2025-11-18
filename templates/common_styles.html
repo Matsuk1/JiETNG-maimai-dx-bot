@@ -1,49 +1,152 @@
+<!-- Theme color for browser chrome (移动浏览器主题色) -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f5f5f5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f0f0f" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="format-detection" content="telephone=no">
+
 <style>
+  /* ========================================
+     Common Base Styles - 通用基础样式
+     由所有页面共享的基础样式和 CSS 变量
+     ======================================== */
+
+  /* CSS 变量定义 - CSS Variables */
   :root {
-    --bg-color: #ffffff;
-    --text-color: #222222;
-    --border-color: #cccccc;
-    --accent-color: #000000;
-    --card-bg: #f9f9f9;
-    --button-bg: #ffffff;
-    --button-text: #000000;
-    --button-hover-bg: #f0f0f0;
-    --notice-bg: #f0f0f0;
-    --error-color: #dc3545;
-    --success-color: #28a745;
-    --warning-color: #ffc107;
-    --danger-color: #dc3545;
-    --info-color: #17a2b8;
+    color-scheme: light dark;
+
+    /* 浅色模式渐变背景 - Light Mode Gradients */
+    --bg-gradient-1: #fceef5;  /* 淡粉灰色，与你的品牌色（burgundy/crimson）协调 */
+    --bg-gradient-2: #ffffff;
+    --bg-gradient-3: #fafafa;
+    --bg-gradient-4: #f9f0f4;
+
+    /* 基础文字颜色 - Base Text Colors */
+    --text-color: #1a1a1a;
+    --text-secondary: rgba(0, 0, 0, 0.7);
+
+    /* 毛玻璃效果 - Glass Effect */
+    --glass-bg: rgba(255, 255, 255, 0.9);
+    --glass-border: rgba(153, 0, 0, 0.12);
+
+    /* 主题色 - Theme Colors */
+    --accent-color: #C49000;
+    --accent-glow: rgba(196, 144, 0, 0.4);
+
+    /* 品牌色 - Brand Colors */
+    --burgundy: #660033;
+    --crimson: #990000;
+    --deep-red: #810020;
+
+    /* 状态颜色 - Status Colors (Light Mode) */
+    --success-color: #059669;
+    --success-glow: rgba(5, 150, 105, 0.2);
+    --warning-color: #d97706;
+    --warning-glow: rgba(217, 119, 6, 0.2);
+    --danger-color: #dc2626;
+    --danger-glow: rgba(220, 38, 38, 0.2);
+    --error-color: #dc2626;
+    --error-glow: rgba(220, 38, 38, 0.3);
+    --info-color: #2563eb;
+    --info-glow: rgba(37, 99, 235, 0.2);
   }
 
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg-color: #000000;
-      --text-color: #eeeeee;
-      --border-color: #555555;
-      --accent-color: #ffffff;
-      --card-bg: #1a1a1a;
-      --button-bg: #111111;
-      --button-text: #ffffff;
-      --button-hover-bg: #222222;
-      --notice-bg: #111111;
-      --error-color: #ff6b6b;
-      --success-color: #4caf50;
-      --warning-color: #ffeb3b;
-      --danger-color: #ff6b6b;
-      --info-color: #29b6f6;
+      /* 深色模式渐变背景 - Dark Mode Gradients */
+      --bg-gradient-1: #0f0f0f;
+      --bg-gradient-2: #1a1a1a;
+      --bg-gradient-3: #141414;
+      --bg-gradient-4: #0a0a0a;
+
+      /* 基础文字颜色 - Base Text Colors */
+      --text-color: #ffffff;
+      --text-secondary: rgba(255, 255, 255, 0.85);
+
+      /* 毛玻璃效果 - Glass Effect */
+      --glass-bg: rgba(102, 0, 51, 0.06);
+      --glass-border: rgba(153, 0, 0, 0.15);
+
+      /* 主题色 - Theme Colors */
+      --accent-color: #EFBF04;
+      --accent-glow: rgba(239, 191, 4, 0.6);
+
+      /* 状态颜色 - Status Colors (Dark Mode) */
+      --success-color: #10b981;
+      --success-glow: rgba(16, 185, 129, 0.3);
+      --warning-color: #f59e0b;
+      --warning-glow: rgba(245, 158, 11, 0.3);
+      --danger-color: #FF6B6B;
+      --danger-glow: rgba(255, 107, 107, 0.3);
+      --error-color: #FF6B6B;
+      --error-glow: rgba(255, 107, 107, 0.5);
+      --info-color: #60a5fa;
+      --info-glow: rgba(96, 165, 250, 0.3);
     }
   }
 
+  /* 全局重置 - Global Reset */
   * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
   }
 
+  /* ========================================
+     Safari 安全区域修复 - Safari Safe Area Fix
+     html 和 body 都必须有相同的背景色
+     ======================================== */
+
+  /* HTML 纯色背景 - 作为备用，实际渐变在 body::before */
+  html {
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    /* 关键：padding 让 html 延伸到 safe-area 区域 */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    /* 纯色背景作为备用 */
+    background: var(--bg-gradient-1);
+  }
+
+  /* Body 透明背景 - 关键！body 必须透明才能看到 html 的背景！ */
   body {
-    background-color: var(--bg-color);
+    background: transparent;
     color: var(--text-color);
-    font-family: "Helvetica Neue", "Yu Gothic", "Meiryo", sans-serif;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", "Yu Gothic", "Meiryo", sans-serif;
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    position: relative;
+  }
+
+  /* 渐变动画 - Gradient Animation */
+  @keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* ========================================
+     背景装饰效果 - Background Decorations
+     ======================================== */
+
+  /* iOS Safari 防白边兜底层 - 渐变背景层 */
+  body::before {
+    content: "";
+    position: fixed;
+    /* 关键：使用负值扩展到 safe-area 外 */
+    top: calc(-1 * env(safe-area-inset-top, 0px));
+    left: calc(-1 * env(safe-area-inset-left, 0px));
+    right: calc(-1 * env(safe-area-inset-right, 0px));
+    bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
+    z-index: -1;
+    background: linear-gradient(135deg,
+      var(--bg-gradient-1) 0%,
+      var(--bg-gradient-2) 25%,
+      var(--bg-gradient-3) 50%,
+      var(--bg-gradient-4) 75%,
+      var(--bg-gradient-1) 100%
+    );
+    background-size: 400% 400%;
+    animation: gradientShift 20s ease infinite;
   }
 </style>

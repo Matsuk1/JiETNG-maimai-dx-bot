@@ -1148,7 +1148,7 @@ def generate_plate_rcd(user_id, title, ver="jp"):
                         target_num[difficulty]['clear'] += 1
 
             if sheet['difficulty'] == "master" :
-                target_data.append({"img": generate_cover(song['cover_url'], song_type, icon, target_type), "level": sheet['level']})
+                target_data.append({"img": generate_cover(song['cover_url'], song_type, icon, target_type, cover_name=song.get('cover_name')), "level": sheet['level']})
 
     img = generate_plate_image(target_data, title, headers = target_num)
 
@@ -1183,9 +1183,8 @@ def generate_internallevel_songs(user_id, level, ver="jp"):
         return level_not_supported(user_id)
 
     # 检查缓存
-    cache_dir = "./data/level_cache"
     cache_filename = f"{ver}_{level.replace('+', 'plus')}.png"
-    cache_path = os.path.join(cache_dir, cache_filename)
+    cache_path = os.path.join(LEVEL_CACHE_DIR, cache_filename)
 
     if not os.path.exists(cache_path):
         # 缓存不存在，返回错误
@@ -1219,20 +1218,18 @@ def _generate_level_cache_for_server(ver):
     valid_levels = ["12", "12+", "13", "13+", "14", "14+", "15"]
 
     # 创建缓存目录
-    cache_dir = "./data/level_cache"
-    os.makedirs(cache_dir, exist_ok=True)
+    os.makedirs(LEVEL_CACHE_DIR, exist_ok=True)
 
     generated_count = 0
 
     for idx, level in enumerate(valid_levels):
-        # 更新进度
-        with stats_lock:
-            cache_generation_progress["current_server"] = ver.upper()
-            cache_generation_progress["current_level"] = level
-            cache_generation_progress["completed_levels"] = generated_count
-            cache_generation_progress["progress"] = int((idx / len(valid_levels)) * 50 + (0 if ver == "jp" else 50))
-
         try:
+            # 更新进度 - 开始处理这个等级
+            with stats_lock:
+                cache_generation_progress["current_server"] = ver.upper()
+                cache_generation_progress["current_level"] = level
+                cache_generation_progress["completed_levels"] = generated_count
+                cache_generation_progress["progress"] = int((generated_count / 14) * 100)
             # 收集符合条件的歌曲信息
             song_data_list = []
             region_key = ver
@@ -1273,7 +1270,7 @@ def _generate_level_cache_for_server(ver):
             for song_data in song_data_list:
                 cover_url = song_data['cover_url']
                 if cover_url in downloaded_covers:
-                    cover_img = generate_cover(cover_url, song_data['type'], size=135)
+                    cover_img = generate_cover(cover_url, song_data['type'], size=135, cover_name=song_data.get('cover_name'))
                     target_data.append({
                         "img": cover_img,
                         "internal_level": song_data['internal_level']
@@ -1294,10 +1291,16 @@ def _generate_level_cache_for_server(ver):
 
             # 保存到缓存
             cache_filename = f"{ver}_{level.replace('+', 'plus')}.png"
-            cache_path = os.path.join(cache_dir, cache_filename)
+            cache_path = os.path.join(LEVEL_CACHE_DIR, cache_filename)
             final_img.save(cache_path, 'PNG')
 
             generated_count += 1
+
+            # 立即更新完成的等级数和进度
+            with stats_lock:
+                cache_generation_progress["completed_levels"] = generated_count
+                cache_generation_progress["progress"] = int((generated_count / 14) * 100)
+
             print(f"[Cache] {ver.upper()} Lv.{level}: ✓ ({len(target_data)} 首歌曲)")
 
         except Exception as e:
@@ -1311,11 +1314,15 @@ def generate_all_level_caches():
     """后台生成所有服务器的等级缓存（带进度跟踪）"""
     from datetime import datetime
 
+    # 计算实际的总等级数
+    valid_levels = ["12", "12+", "13", "13+", "14", "14+", "15"]
+    total_levels = len(valid_levels)  # 每个服务器都有这些等级
+
     # 初始化进度
     with stats_lock:
         cache_generation_progress["status"] = "running"
         cache_generation_progress["progress"] = 0
-        cache_generation_progress["total_levels"] = 14  # 7 levels * 2 servers
+        cache_generation_progress["total_levels"] = total_levels
         cache_generation_progress["completed_levels"] = 0
         cache_generation_progress["error_message"] = ""
         cache_generation_progress["start_time"] = datetime.now().isoformat()
@@ -2977,7 +2984,7 @@ def admin_dxdata_status():
         return jsonify({'error': 'Unauthorized'}), 401
 
     try:
-        # 不重新加载数据，直接使用当前已加载的全局变量
+        read_dxdata()
         # 统计歌曲数
         total_songs = len(SONGS)
         std_songs = len([s for s in SONGS if s['type'] == 'std'])

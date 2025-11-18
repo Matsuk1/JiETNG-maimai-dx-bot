@@ -2,172 +2,24 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <title>Admin Login | JiETNG</title>
+  {% include 'common_styles.html' %}
+
   <style>
-    :root {
-      /* 浅色模式 - Light Mode */
-      --bg-gradient-1: #f5f5f5;
-      --bg-gradient-2: #ffffff;
-      --bg-gradient-3: #fafafa;
-      --bg-gradient-4: #f0f0f0;
-
-      --text-color: #1a1a1a;
-      --text-secondary: rgba(0, 0, 0, 0.7);
-
-      --glass-bg: rgba(255, 255, 255, 0.9);
-      --glass-border: rgba(153, 0, 0, 0.12);
-
-      --accent-color: #C49000;
-      --accent-glow: rgba(196, 144, 0, 0.4);
-
-      --error-color: #dc2626;
-      --error-glow: rgba(220, 38, 38, 0.2);
-
-      --burgundy: #660033;
-      --crimson: #990000;
-      --deep-red: #810020;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      :root {
-        /* 深色模式 - Dark Mode */
-        --bg-gradient-1: #0f0f0f;
-        --bg-gradient-2: #1a1a1a;
-        --bg-gradient-3: #141414;
-        --bg-gradient-4: #0a0a0a;
-
-        --text-color: #ffffff;
-        --text-secondary: rgba(255, 255, 255, 0.85);
-
-        --glass-bg: rgba(102, 0, 51, 0.06);
-        --glass-border: rgba(153, 0, 0, 0.15);
-
-        --accent-color: #EFBF04;
-        --accent-glow: rgba(239, 191, 4, 0.6);
-
-        --error-color: #FF6B6B;
-        --error-glow: rgba(255, 107, 107, 0.3);
-      }
-    }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    html {
-      height: 100%;
-      background: linear-gradient(135deg,
-        var(--bg-gradient-1) 0%,
-        var(--bg-gradient-2) 25%,
-        var(--bg-gradient-3) 50%,
-        var(--bg-gradient-4) 75%,
-        var(--bg-gradient-1) 100%);
-      background-size: 400% 400%;
-      animation: gradientShift 20s ease infinite;
-      background-attachment: fixed;
-    }
-
+    /* 页面特定样式 - Page-specific Styles */
     body {
-      background: transparent;
-      color: var(--text-color);
-      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", "Yu Gothic", "Meiryo", sans-serif;
       display: flex;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
-      min-height: -webkit-fill-available;
+      /* safe-area padding 已在 :root 上，这里只加额外的 20px */
       padding: 20px;
       position: relative;
       overflow-x: hidden;
       overflow-y: auto;
     }
 
-    @keyframes gradientShift {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-
-    /* 背景装饰 */
-    body::before {
-      content: '';
-      position: fixed;
-      top: -50%;
-      right: -50%;
-      width: 200%;
-      height: 200%;
-      background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
-      animation: rotate 30s linear infinite;
-      pointer-events: none;
-    }
-
-    @keyframes rotate {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-
-    /* 浮动装饰元素 */
-    .floating-shapes {
-      position: fixed;
-      width: 100%;
-      height: 100%;
-      top: 0;
-      left: 0;
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    .shape {
-      position: absolute;
-      border-radius: 50%;
-      filter: blur(60px);
-      opacity: 0.3;
-    }
-
-    .shape1 {
-      width: 300px;
-      height: 300px;
-      background: var(--accent-color);
-      top: 10%;
-      left: 10%;
-      animation: float1 20s ease-in-out infinite;
-    }
-
-    .shape2 {
-      width: 400px;
-      height: 400px;
-      background: var(--bg-gradient-3);
-      bottom: 10%;
-      right: 10%;
-      animation: float2 25s ease-in-out infinite;
-    }
-
-    .shape3 {
-      width: 250px;
-      height: 250px;
-      background: var(--bg-gradient-4);
-      top: 50%;
-      left: 50%;
-      animation: float3 18s ease-in-out infinite;
-    }
-
-    @keyframes float1 {
-      0%, 100% { transform: translate(0, 0); }
-      50% { transform: translate(100px, 100px); }
-    }
-
-    @keyframes float2 {
-      0%, 100% { transform: translate(0, 0); }
-      50% { transform: translate(-80px, -80px); }
-    }
-
-    @keyframes float3 {
-      0%, 100% { transform: translate(-50%, -50%); }
-      50% { transform: translate(-50%, -65%); }
-    }
+    /* 背景装饰已移至 common_styles.html */
 
     .login-container {
       width: 100%;
@@ -407,12 +259,6 @@
   </style>
 </head>
 <body>
-  <div class="floating-shapes">
-    <div class="shape shape1"></div>
-    <div class="shape shape2"></div>
-    <div class="shape shape3"></div>
-  </div>
-
   <div class="login-container">
     <div class="login-header">
       <h1>Admin Panel</h1>
