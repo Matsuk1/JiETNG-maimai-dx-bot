@@ -184,13 +184,13 @@ def smart_upload(img):
 
         # 直接上传压缩后的 BytesIO（优先使用 0x0，因为它支持直接上传）
         files = {'file': ('preview.jpg', preview_io, 'image/jpeg')}
-        response = requests.post("https://0x0.st", files=files)
+        response = requests.post("https://0x0.st", files=files, timeout=30)
 
         if response.status_code == 200 and response.text.startswith("https://0x0.st/"):
             preview_url = response.text.strip()
             print("[smart_upload] 预览图上传成功（0x0）")
         else:
-            print("[smart_upload] 预览图上传失败，使用原图链接")
+            print(f"[smart_upload] 预览图上传失败 (status: {response.status_code}, response: {response.text[:100]})，使用原图链接")
             preview_url = original_url
     except Exception as e:
         print(f"[smart_upload] 预览图上传异常: {e}，使用原图链接")
