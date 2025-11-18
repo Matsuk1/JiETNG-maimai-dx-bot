@@ -1263,7 +1263,7 @@ def _generate_level_cache_for_server(ver):
             # 批量并发下载所有封面
             print(f"[Cache] {ver.upper()} Lv.{level}: 并发下载 {len(song_data_list)} 首歌曲封面...")
             cover_urls = [s['cover_url'] for s in song_data_list]
-            downloaded_covers = batch_download_images(cover_urls, max_workers=20)
+            downloaded_covers = batch_download_images(cover_urls, max_workers=5)
 
             # 生成封面图片（使用已下载的图片）
             target_data = []

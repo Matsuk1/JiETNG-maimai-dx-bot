@@ -204,7 +204,7 @@ def get_cover_image(cover_url, cover_name, covers_dir=None):
         return None
 
 
-def batch_download_images(urls, max_workers=10):
+def batch_download_images(urls, max_workers=5):
     """
     并发批量下载图片
 

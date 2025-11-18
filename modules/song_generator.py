@@ -252,7 +252,7 @@ def generate_version_list(songs_json):
     # 批量并发下载所有封面（速度优化）
     from modules.image_cache import batch_download_images
     cover_urls = [song["cover_url"] for song in songs_json]
-    batch_download_images(cover_urls, max_workers=20)  # 预先下载所有封面
+    batch_download_images(cover_urls, max_workers=5)  # 预先下载所有封面
 
     song_imgs = []
 
