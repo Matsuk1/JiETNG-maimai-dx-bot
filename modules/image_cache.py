@@ -181,6 +181,12 @@ def get_cover_image(cover_url, cover_name, covers_dir=None):
         # 4. 返回图片对象
         return Image.open(local_path).convert("RGBA")
 
+    except requests.exceptions.HTTPError as e:
+        # 403/404 等 HTTP 错误是预期的（CloudFront 限制），不打印错误
+        if e.response.status_code in [403, 404]:
+            return None
+        print(f"[get_cover_image] HTTP Error for {cover_name}: {e}")
+        return None
     except Exception as e:
         print(f"[get_cover_image] Error for {cover_name}: {e}")
         return None
