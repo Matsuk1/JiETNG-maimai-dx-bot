@@ -180,7 +180,7 @@ def write_record(user_id, record_json, recent=False):
 
             sql = f"""
             INSERT INTO {table} (
-                user_id, name, difficulty, kind, score, dx_score,
+                user_id, name, difficulty, type, score, dx_score,
                 score_icon, combo_icon, sync_icon
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
@@ -191,7 +191,7 @@ def write_record(user_id, record_json, recent=False):
                     user_id,
                     song.get("name"),
                     song.get("difficulty"),
-                    song.get("kind"),
+                    song.get("type"),
                     song.get("score"),
                     song.get("dx_score"),
                     song.get("score_icon"),
@@ -241,7 +241,7 @@ def get_detailed_info(song_record, ver="jp", yang=False):
 
     for record in song_record:
         found = False
-        key = (record['name'], record['kind'])
+        key = (record['name'], record['type'])
 
         if key in song_map:
             song = song_map[key]
@@ -255,6 +255,7 @@ def get_detailed_info(song_record, ver="jp", yang=False):
                     record['ra'] = get_single_ra(float(record['internalLevelValue']), float(record['score'][:-1]), (ap_clear and ver == "jp"))
                     record['id'] = sheet['internalId'] if 'internalId' in sheet else -1
                     record['cover_url'] = song['cover_url']
+                    record['cover_name'] = song['cover_name']
                     if yang:
                         record['ra'] = get_yang_single_ra(record)
                     break

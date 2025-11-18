@@ -53,14 +53,14 @@ def create_thumbnail(song, thumb_size=(300, 150), padding=15):
         except Exception as e:
             print(f"Error loading cover image: {e}")
 
-    # --- kind 图标 ---
+    # --- type 图标 ---
     # 根据封面尺寸动态计算图标大小
-    kind_width = int(cover_size * 0.5)  # 40/80 = 0.5
-    kind_height = int(cover_size * 0.15)  # 12/80 = 0.15
+    type_width = int(cover_size * 0.5)  # 40/80 = 0.5
+    type_height = int(cover_size * 0.15)  # 12/80 = 0.15
     paste_icon_optimized(
-        img, song, key='kind',
-        size=(kind_width, kind_height),
-        position=(padding + cover_size - kind_width, padding + cover_size - kind_height),
+        img, song, key='type',
+        size=(type_width, type_height),
+        position=(padding + cover_size - type_width, padding + cover_size - type_height),
         save_dir=ICON_TYPE_DIR,
         url_func=lambda value: "https://maimaidx.jp/maimai-mobile/img/music_standard.png" if value == "std" else "https://maimaidx.jp/maimai-mobile/img/music_dx.png"
     )
@@ -367,15 +367,15 @@ def generate_cover(cover, type, icon=None, icon_type=None, size=150, cover_name=
         cover_img = cover_img.resize((size, size))
         record_img.paste(cover_img, (0, 0))
 
-    # 添加 kind 图标（std/dx）- 按比例缩放
-    kind_width = int(size * 0.333)  # 50/150 ≈ 0.333
-    kind_height = int(size * 0.1)    # 15/150 = 0.1
+    # 添加 type 图标（std/dx）- 按比例缩放
+    type_width = int(size * 0.333)  # 50/150 ≈ 0.333
+    type_height = int(size * 0.1)    # 15/150 = 0.1
     paste_icon_optimized(
         record_img,
-        {'kind': type},
-        key='kind',
-        size=(kind_width, kind_height),
-        position=(img_width - kind_width, img_height - kind_height),
+        {'type': type},
+        key='type',
+        size=(type_width, type_height),
+        position=(img_width - type_width, img_height - type_height),
         save_dir=ICON_TYPE_DIR,
         url_func=lambda value: "https://maimaidx.jp/maimai-mobile/img/music_standard.png" if value == "std" else "https://maimaidx.jp/maimai-mobile/img/music_dx.png"
     )

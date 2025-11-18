@@ -418,7 +418,7 @@ CREATE TABLE best_records (
     user_id VARCHAR(64),
     name VARCHAR(255),
     difficulty VARCHAR(20),
-    kind VARCHAR(10),
+    type VARCHAR(10),
     score VARCHAR(20),
     dx_score VARCHAR(20),
     score_icon VARCHAR(10),

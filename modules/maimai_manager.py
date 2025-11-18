@@ -180,16 +180,16 @@ def get_maimai_records(session: requests.Session, ver="jp"):
             else:
                 dx_score = "N/A"
 
-            kind_icon = block.xpath('.//img[contains(@class, "music_kind_icon")]/@src')
-            if kind_icon:
-                if "standard.png" in kind_icon[0]:
-                    kind = "std"
-                elif "dx.png" in kind_icon[0]:
-                    kind = "dx"
+            type_icon = block.xpath('.//img[contains(@class, "music_kind_icon")]/@src')
+            if type_icon:
+                if "standard.png" in type_icon[0]:
+                    type = "std"
+                elif "dx.png" in type_icon[0]:
+                    type = "dx"
                 else:
-                    kind = "N/A"
+                    type = "N/A"
             else:
-                kind = "N/A"
+                type = "N/A"
 
             icons = block.xpath('.//img[contains(@class, "h_30")]/@src')
             sync_icon = combo_icon = score_icon = ""
@@ -205,7 +205,7 @@ def get_maimai_records(session: requests.Session, ver="jp"):
             music_record.append({
                 "name": name,
                 "difficulty": difficulty[page_num],
-                "kind": kind,
+                "type": type,
                 "score": score,
                 "dx_score": dx_score,
                 "score_icon": score_icon,
@@ -315,16 +315,16 @@ def get_recent_records(session: requests.Session, ver="jp"):
             dx_score = block.xpath('.//div[contains(@class, "playlog_score_block")]//div[contains(@class, "white")]/text()')
             dx_score = dx_score[0].strip() if dx_score else "?"
 
-            kind_icon = block.xpath('.//img[contains(@class, "playlog_music_kind_icon")]/@src')
-            if kind_icon:
-                if "standard.png" in kind_icon[0]:
-                    kind = "std"
-                elif "dx.png" in kind_icon[0]:
-                    kind = "dx"
+            type_icon = block.xpath('.//img[contains(@class, "playlog_music_kind_icon")]/@src')
+            if type_icon:
+                if "standard.png" in type_icon[0]:
+                    type = "std"
+                elif "dx.png" in type_icon[0]:
+                    type = "dx"
                 else:
-                    kind = "N/A"
+                    type = "N/A"
             else:
-                kind = "N/A"
+                type = "N/A"
 
             diff_img = block.xpath('.//img[contains(@class, "playlog_diff")]/@src')
             if diff_img:
@@ -351,7 +351,7 @@ def get_recent_records(session: requests.Session, ver="jp"):
             recent_record.append({
                 "name": name,
                 "difficulty": difficulty,
-                "kind": kind,
+                "type": type,
                 "score": score,
                 "dx_score": dx_score,
                 "score_icon": score_icon.replace("plus", "p"),
@@ -392,16 +392,16 @@ def get_friend_records(session: requests.Session, user_id: str, ver="jp"):
                     continue
 
                 # 谱面种类
-                kind_img = block.xpath('.//img[contains(@class, "music_kind_icon")]/@src')
-                if kind_img:
-                    if "standard.png" in kind_img[0]:
-                        kind = "std"
-                    elif "dx.png" in kind_img[0]:
-                        kind = "dx"
+                type_img = block.xpath('.//img[contains(@class, "music_kind_icon")]/@src')
+                if type_img:
+                    if "standard.png" in type_img[0]:
+                        type = "std"
+                    elif "dx.png" in type_img[0]:
+                        type = "dx"
                     else:
-                        kind = "N/A"
+                        type = "N/A"
                 else:
-                    kind = "N/A"
+                    type = "N/A"
 
                 # 图标（取自右边 <td class="t_r f_0">）
                 icons = block.xpath('.//td[@class="t_r f_0"]/img/@src')
@@ -418,7 +418,7 @@ def get_friend_records(session: requests.Session, user_id: str, ver="jp"):
                 music_record.append({
                     "name": name,
                     "difficulty": difficulty[diff],
-                    "kind": kind,
+                    "type": type,
                     "score": score,
                     "dx_score": "0 / 1000",
                     "score_icon": score_icon,

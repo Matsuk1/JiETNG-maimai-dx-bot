@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS best_records (
 
     `name` VARCHAR(255),
     difficulty VARCHAR(20),
-    kind VARCHAR(10),
+    type VARCHAR(10),
     score VARCHAR(20),
     `dx_score` VARCHAR(20),
 

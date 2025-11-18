@@ -157,11 +157,7 @@ def get_cover_image(cover_url, cover_name, covers_dir=None):
         # 确保缓存目录存在
         os.makedirs(covers_dir, exist_ok=True)
 
-        # 构建本地文件路径（如果 cover_name 没有 .png，则添加）
-        if not cover_name.endswith('.png'):
-            local_path = os.path.join(covers_dir, f"{cover_name}.png")
-        else:
-            local_path = os.path.join(covers_dir, cover_name)
+        local_path = os.path.join(covers_dir, cover_name)
 
         # 1. 首先尝试从本地加载
         if os.path.exists(local_path):
@@ -179,8 +175,7 @@ def get_cover_image(cover_url, cover_name, covers_dir=None):
 
         session = _get_session()
 
-        # CloudFront 需要 .png 扩展名
-        download_url = cover_url if cover_url.endswith('.png') else f"{cover_url}.png"
+        download_url = cover_url
 
         # 重试机制：最多尝试 3 次
         max_retries = 3

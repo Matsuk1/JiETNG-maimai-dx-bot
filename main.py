@@ -1049,7 +1049,7 @@ def get_song_record(user_id, acronym, ver="jp"):
 
         # 使用优化的精确匹配函数
         for rcd in song_record:
-            if is_exact_song_title_match(rcd['name'], song['title']) and rcd['kind'] == song['type']:
+            if is_exact_song_title_match(rcd['name'], song['title']) and rcd['type'] == song['type']:
                 rcd['rank'] = ""
                 played_data.append(rcd)
 
@@ -1135,15 +1135,15 @@ def generate_plate_rcd(user_id, title, ver="jp"):
     for rcd in version_rcd_data:
         name = rcd['name']
         difficulty = rcd['difficulty']
-        kind = rcd['kind']
+        type = rcd['type']
 
         # 策略1: 精确匹配
-        key1 = (name, difficulty, kind)
+        key1 = (name, difficulty, type)
         rcd_map[key1] = rcd
 
         # 策略2: 标准化匹配 (处理全角半角、特殊符号等)
         normalized_name = normalize_text(name)
-        key2 = (normalized_name, difficulty, kind)
+        key2 = (normalized_name, difficulty, type)
         rcd_map[key2] = rcd
 
     for song in SONGS :
