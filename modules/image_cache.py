@@ -171,22 +171,34 @@ def get_cover_image(cover_url, cover_name, covers_dir=None):
             return None
 
         session = _get_session()
-        response = session.get(cover_url, timeout=10)
-        response.raise_for_status()
 
-        # 3. 保存到本地
-        with open(local_path, "wb") as f:
-            f.write(response.content)
+        # 重试机制：最多尝试 3 次
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                response = session.get(cover_url, timeout=30)
+                response.raise_for_status()
 
-        # 4. 返回图片对象
-        return Image.open(local_path).convert("RGBA")
+                # 3. 保存到本地
+                with open(local_path, "wb") as f:
+                    f.write(response.content)
 
-    except requests.exceptions.HTTPError as e:
-        # 403/404 等 HTTP 错误是预期的（CloudFront 限制），不打印错误
-        if e.response.status_code in [403, 404]:
-            return None
-        print(f"[get_cover_image] HTTP Error for {cover_name}: {e}")
-        return None
+                # 4. 返回图片对象
+                return Image.open(local_path).convert("RGBA")
+
+            except requests.exceptions.Timeout:
+                if attempt < max_retries - 1:
+                    continue  # 重试
+                else:
+                    print(f"[get_cover_image] Timeout after {max_retries} attempts for {cover_name}")
+                    return None
+            except requests.exceptions.HTTPError as e:
+                # 403/404 等 HTTP 错误不重试
+                if e.response.status_code in [403, 404]:
+                    return None
+                print(f"[get_cover_image] HTTP Error for {cover_name}: {e}")
+                return None
+
     except Exception as e:
         print(f"[get_cover_image] Error for {cover_name}: {e}")
         return None
