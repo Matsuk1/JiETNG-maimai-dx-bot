@@ -138,8 +138,8 @@ def get_cover_image(cover_url, cover_name, covers_dir=None):
     获取封面图片（优先从本地加载，不存在则下载）
 
     Args:
-        cover_url: 封面图片 URL
-        cover_name: 封面文件名（包含扩展名，如 "12345.png"）
+        cover_url: 封面图片 URL（不带扩展名）
+        cover_name: 封面文件名（hash，不带扩展名）
         covers_dir: 本地封面缓存目录（默认使用配置中的路径）
 
     Returns:
@@ -153,8 +153,8 @@ def get_cover_image(cover_url, cover_name, covers_dir=None):
         # 确保缓存目录存在
         os.makedirs(covers_dir, exist_ok=True)
 
-        # 构建本地文件路径
-        local_path = os.path.join(covers_dir, cover_name)
+        # 构建本地文件路径（添加 .png 扩展名）
+        local_path = os.path.join(covers_dir, f"{cover_name}.png")
 
         # 1. 首先尝试从本地加载
         if os.path.exists(local_path):
