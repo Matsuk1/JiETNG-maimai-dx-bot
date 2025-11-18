@@ -2,12 +2,18 @@ import json
 from PIL import Image, ImageDraw, ImageFont
 from modules.record_generator import create_thumbnail
 from modules.image_manager import *
-from modules.image_cache import paste_icon_optimized, get_cached_image
+from modules.image_cache import paste_icon_optimized, get_cached_image, get_cover_image
 from modules.config_loader import ICON_TYPE_DIR
 
 def song_info_generate(song_json, played_data = []):
-    cover_url = song_json["cover_url"]
-    cover_img = get_cached_image(cover_url)
+    cover_url = song_json.get("cover_url")
+    cover_name = song_json.get("cover_name")
+
+    # 优先使用本地缓存
+    if cover_name:
+        cover_img = get_cover_image(cover_url, cover_name)
+    else:
+        cover_img = get_cached_image(cover_url)
 
     if not cover_img:
         cover_img = Image.new("RGBA", (200, 200), (200, 200, 200))
@@ -251,8 +257,14 @@ def generate_version_list(songs_json):
     song_imgs = []
 
     for song in songs_json:
-        cover_url = song["cover_url"]
-        cover_img = get_cached_image(cover_url)
+        cover_url = song.get("cover_url")
+        cover_name = song.get("cover_name")
+
+        # 优先使用本地缓存
+        if cover_name:
+            cover_img = get_cover_image(cover_url, cover_name)
+        else:
+            cover_img = get_cached_image(cover_url)
 
         if not cover_img:
             cover_img = Image.new("RGBA", (200, 200), (200, 200, 200))
