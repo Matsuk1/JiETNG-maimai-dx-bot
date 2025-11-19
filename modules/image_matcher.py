@@ -162,7 +162,7 @@ def load_cover_cache(covers_dir):
     logger.info(f"✓ 封面数据库加载完成: {loaded}/{len(cover_files)} 张")
 
 
-def find_similar_cover(input_image, covers_dir=None, hash_threshold=15):
+def find_similar_cover(input_image, covers_dir=None, hash_threshold=15, return_multiple=False, max_results=3):
     """
     混合策略匹配封面
 
@@ -174,9 +174,14 @@ def find_similar_cover(input_image, covers_dir=None, hash_threshold=15):
         input_image: PIL Image 对象
         covers_dir: 封面目录
         hash_threshold: 哈希距离阈值（越小越严格，推荐 15）
+        return_multiple: 是否返回多个匹配结果（用于图片中有多个封面的场景）
+        max_results: 最多返回多少个结果（仅当 return_multiple=True 时有效）
 
     Returns:
-        tuple: (cover_name, score, method) 或 (None, None, None)
+        如果 return_multiple=False:
+            tuple: (cover_name, score, method) 或 (None, None, None)
+        如果 return_multiple=True:
+            list: [(cover_name, score, method), ...] 按分数降序排列
 
     特征点匹配采用自适应阈值：
         - 匹配质量 ≥ 60% (几何验证通过率)
@@ -200,25 +205,44 @@ def find_similar_cover(input_image, covers_dir=None, hash_threshold=15):
 
     input_hash = calculate_image_hash(input_image)
     if input_hash:
-        best_hash_match = None
-        best_hash_distance = float('inf')
+        # 收集所有哈希匹配结果
+        hash_matches = []
 
         for cover_name, cover_hash in _hash_cache.items():
-            distance = abs(input_hash - cover_hash)  # 使用绝对值确保距离为正
-            if distance < best_hash_distance:
-                best_hash_distance = distance
-                best_hash_match = cover_name
+            distance = abs(input_hash - cover_hash)
+            if distance <= hash_threshold:
+                confidence = 100 * (1 - distance / (hash_threshold * 2))
+                hash_matches.append({
+                    'cover_name': cover_name,
+                    'distance': distance,
+                    'confidence': confidence
+                })
 
-        logger.info(f"  最佳哈希匹配: {best_hash_match}, 距离: {best_hash_distance}")
+        # 按距离升序排序（距离越小越好）
+        hash_matches.sort(key=lambda x: x['distance'])
 
-        # 如果哈希距离很小，直接返回
-        if best_hash_distance <= hash_threshold:
-            confidence = 100 * (1 - best_hash_distance / (hash_threshold * 2))  # 0-100 分数
-            logger.info(f"✓ 哈希匹配成功: {best_hash_match}")
-            logger.info(f"  汉明距离: {best_hash_distance} (阈值: {hash_threshold})")
-            logger.info(f"  置信度: {confidence:.2f}%")
-            logger.info("=" * 60)
-            return best_hash_match, confidence, "hash"
+        if hash_matches:
+            if return_multiple:
+                # 返回多个哈希匹配结果
+                results = []
+                for i, match in enumerate(hash_matches[:max_results]):
+                    results.append((match['cover_name'], match['confidence'], 'hash'))
+                    logger.info(f"  匹配 #{i+1}: {match['cover_name']}")
+                    logger.info(f"    汉明距离: {match['distance']}")
+                    logger.info(f"    置信度: {match['confidence']:.2f}%")
+
+                logger.info(f"✓ 哈希匹配成功: 找到 {len(results)} 个可能的封面")
+                logger.info("=" * 60)
+                return results
+            else:
+                # 只返回最佳匹配
+                best = hash_matches[0]
+                logger.info(f"  最佳哈希匹配: {best['cover_name']}, 距离: {best['distance']}")
+                logger.info(f"✓ 哈希匹配成功: {best['cover_name']}")
+                logger.info(f"  汉明距离: {best['distance']} (阈值: {hash_threshold})")
+                logger.info(f"  置信度: {best['confidence']:.2f}%")
+                logger.info("=" * 60)
+                return best['cover_name'], best['confidence'], "hash"
 
     # ========== 策略 2: 特征点匹配（精确） ==========
     logger.info("→ 阶段 2: 特征点匹配（处理场景图片/部分截图）")
@@ -233,11 +257,8 @@ def find_similar_cover(input_image, covers_dir=None, hash_threshold=15):
 
     logger.info(f"  输入图片特征点: {len(input_kp)} 个")
 
-    best_feature_match = None
-    best_feature_score = 0
-    best_geometric_matches = 0
-    best_match_quality = 0
-    best_coverage = 0
+    # 收集所有合格的匹配
+    feature_matches = []
 
     for cover_name, (cover_kp, cover_desc) in _feature_cache.items():
         good_matches, geometric_matches, match_quality = match_sift_features(
@@ -264,55 +285,117 @@ def find_similar_cover(input_image, covers_dir=None, hash_threshold=15):
 
         logger.debug(f"  {cover_name}: 几何={geometric_matches}, 质量={match_quality:.2%}, 覆盖={coverage:.2%}, 分数={score:.2f}")
 
-        if score > best_feature_score:
-            best_feature_score = score
-            best_feature_match = cover_name
-            best_geometric_matches = geometric_matches
-            best_match_quality = match_quality
-            best_coverage = coverage
+        # 添加到结果列表
+        feature_matches.append({
+            'cover_name': cover_name,
+            'score': score,
+            'geometric_matches': geometric_matches,
+            'match_quality': match_quality,
+            'coverage': coverage
+        })
 
-    if best_feature_match:
-        logger.info(f"  最佳特征匹配: {best_feature_match}")
-        logger.info(f"    几何验证: {best_geometric_matches} 个")
-        logger.info(f"    匹配质量: {best_match_quality:.2%}")
-        logger.info(f"    覆盖率: {best_coverage:.2%}")
-        logger.info(f"    综合分数: {best_feature_score:.2f}")
+    # 按分数降序排序
+    feature_matches.sort(key=lambda x: x['score'], reverse=True)
 
-        logger.info(f"✓ 特征匹配成功: {best_feature_match}")
-        logger.info("=" * 60)
-        return best_feature_match, best_feature_score, "sift"
+    if feature_matches:
+        if return_multiple:
+            # 返回多个结果
+            results = []
+            for i, match in enumerate(feature_matches[:max_results]):
+                results.append((match['cover_name'], match['score'], 'sift'))
+                logger.info(f"  匹配 #{i+1}: {match['cover_name']}")
+                logger.info(f"    几何验证: {match['geometric_matches']} 个")
+                logger.info(f"    匹配质量: {match['match_quality']:.2%}")
+                logger.info(f"    覆盖率: {match['coverage']:.2%}")
+                logger.info(f"    综合分数: {match['score']:.2f}")
+
+            logger.info(f"✓ 特征匹配成功: 找到 {len(results)} 个可能的封面")
+            logger.info("=" * 60)
+            return results
+        else:
+            # 只返回最佳匹配
+            best = feature_matches[0]
+            logger.info(f"  最佳特征匹配: {best['cover_name']}")
+            logger.info(f"    几何验证: {best['geometric_matches']} 个")
+            logger.info(f"    匹配质量: {best['match_quality']:.2%}")
+            logger.info(f"    覆盖率: {best['coverage']:.2%}")
+            logger.info(f"    综合分数: {best['score']:.2f}")
+
+            logger.info(f"✓ 特征匹配成功: {best['cover_name']}")
+            logger.info("=" * 60)
+            return best['cover_name'], best['score'], "sift"
 
     # ========== 全部失败 ==========
     logger.warning("✗ 未找到匹配的封面")
-    logger.warning(f"  哈希最佳距离: {best_hash_distance if input_hash else 'N/A'}")
-    logger.warning(f"  特征点最佳几何验证: {best_geometric_matches}")
     logger.info("=" * 60)
 
-    return None, None, None
+    if return_multiple:
+        return []  # 返回空列表
+    else:
+        return None, None, None  # 返回三个 None
 
 
-def find_song_by_cover(input_image, songs_data, covers_dir=None, hash_threshold=15):
+def find_song_by_cover(input_image, songs_data, covers_dir=None, hash_threshold=15, return_multiple=False, max_results=3):
     """
-    通过封面图片查找歌曲（混合策略）
+    通过封面图片查找歌曲（混合策略，支持识别多个封面）
 
     Args:
         input_image: PIL Image 对象
         songs_data: 歌曲数据列表
         covers_dir: 封面目录
         hash_threshold: 哈希距离阈值
+        return_multiple: 是否返回多个结果（用于图片中有多个封面的场景）
+        max_results: 最多返回多少个结果
+
+    Returns:
+        如果 return_multiple=False:
+            dict: 匹配到的歌曲数据，或 None
+        如果 return_multiple=True:
+            list: [dict, ...] 歌曲列表，按匹配分数降序排列
+    """
+    # 调用封面匹配
+    result = find_similar_cover(
+        input_image, covers_dir,
+        hash_threshold,
+        return_multiple=return_multiple,
+        max_results=max_results
+    )
+
+    if return_multiple:
+        # 处理多个结果
+        if not result or len(result) == 0:
+            return []
+
+        songs = []
+        for cover_name, score, method in result:
+            song = _find_song_by_cover_name(cover_name, songs_data, method)
+            if song:
+                songs.append(song)
+
+        if songs:
+            logger.info(f"✓ 成功识别 {len(songs)} 首歌曲")
+        return songs
+    else:
+        # 处理单个结果
+        cover_name, score, method = result
+        if cover_name is None:
+            return None
+
+        return _find_song_by_cover_name(cover_name, songs_data, method)
+
+
+def _find_song_by_cover_name(cover_name, songs_data, method):
+    """
+    根据封面名称在歌曲数据中查找歌曲
+
+    Args:
+        cover_name: 封面文件名（不含扩展名）
+        songs_data: 歌曲数据列表
+        method: 识别方法（hash 或 sift）
 
     Returns:
         dict: 匹配到的歌曲数据，或 None
     """
-    cover_name, score, method = find_similar_cover(
-        input_image, covers_dir,
-        hash_threshold
-    )
-
-    if cover_name is None:
-        return None
-
-    # 在歌曲数据中查找
     target_cover_with_ext = f"{cover_name}.png"
     target_cover_without_ext = cover_name
 

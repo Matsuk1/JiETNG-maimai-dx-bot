@@ -2340,21 +2340,39 @@ def handle_image_message(event):
                 mai_ver = USERS[user_id]['version']
 
         read_dxdata(mai_ver)
-        # 混合策略匹配：hash 快速匹配完整封面，sift 处理场景图片和部分遮挡
-        matched_song = find_song_by_cover(image, SONGS, hash_threshold=15)
 
-        if matched_song:
-            # 找到匹配的歌曲，返回 search_song 格式的结果
+        # 混合策略匹配：hash 快速匹配完整封面，sift 处理场景图片和部分遮挡
+        # 先尝试单个匹配
+        matched_song = find_song_by_cover(image, SONGS, hash_threshold=15, return_multiple=False)
+
+        # 如果单个匹配失败，尝试多个匹配（可能图片中有多个封面）
+        matched_songs = []
+        if not matched_song:
+            matched_songs = find_song_by_cover(image, SONGS, hash_threshold=15, return_multiple=True, max_results=3)
+
+        if matched_song or matched_songs:
             try:
-                original_url, preview_url = smart_upload(song_info_generate(matched_song))
-                message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
-                smart_reply(
-                    event.source.user_id,
-                    event.reply_token,
-                    [message],
-                    configuration,
-                    DIVIDER
-                )
+                reply_messages = []
+
+                # 处理单个匹配结果
+                if matched_song:
+                    original_url, preview_url = smart_upload(song_info_generate(matched_song))
+                    reply_messages.append(ImageMessage(original_content_url=original_url, preview_image_url=preview_url))
+
+                # 处理多个匹配结果
+                elif matched_songs:
+                    for song in matched_songs[:3]:  # 最多返回 3 个
+                        original_url, preview_url = smart_upload(song_info_generate(song))
+                        reply_messages.append(ImageMessage(original_content_url=original_url, preview_image_url=preview_url))
+
+                if reply_messages:
+                    smart_reply(
+                        event.source.user_id,
+                        event.reply_token,
+                        reply_messages,
+                        configuration,
+                        DIVIDER
+                    )
             except Exception as e:
                 logger.error(f"生成歌曲图片失败: {e}")
                 smart_reply(
