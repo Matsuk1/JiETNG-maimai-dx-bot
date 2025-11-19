@@ -206,14 +206,73 @@ def calculate_combined_distance(hashes1, hashes2):
     return total_distance / total_weight
 
 
-def find_similar_cover(input_image, covers_dir=None, threshold=15):
+def calculate_sliding_window_match(small_img, large_img, step=20):
     """
-    在封面库中查找与输入图片最相似的封面（支持模糊匹配）
+    使用滑动窗口检测小图是否在大图中（应对部分截图）
+
+    Args:
+        small_img: 小图片（可能是封面的一部分）
+        large_img: 大图片（完整封面）
+        step: 滑动步长（像素）
+
+    Returns:
+        float: 最佳匹配分数（越小越好）
+    """
+    try:
+        # 确保都是 RGB
+        if small_img.mode != 'RGB':
+            small_img = small_img.convert('RGB')
+        if large_img.mode != 'RGB':
+            large_img = large_img.convert('RGB')
+
+        small_w, small_h = small_img.size
+        large_w, large_h = large_img.size
+
+        # 如果小图比大图还大，交换
+        if small_w > large_w or small_h > large_h:
+            small_img, large_img = large_img, small_img
+            small_w, small_h = small_img.size
+            large_w, large_h = large_img.size
+
+        # 小图必须足够小才使用滑动窗口
+        if small_w > large_w * 0.9 or small_h > large_h * 0.9:
+            return float('inf')
+
+        # 计算小图的哈希
+        small_hashes = calculate_multi_hash(small_img)
+        if not small_hashes:
+            return float('inf')
+
+        best_score = float('inf')
+
+        # 滑动窗口遍历
+        for y in range(0, large_h - small_h + 1, step):
+            for x in range(0, large_w - small_w + 1, step):
+                # 裁剪窗口区域
+                window = large_img.crop((x, y, x + small_w, y + small_h))
+                window_hashes = calculate_multi_hash(window)
+
+                if window_hashes:
+                    score = calculate_combined_distance(small_hashes, window_hashes)
+                    if score < best_score:
+                        best_score = score
+
+        return best_score
+
+    except Exception as e:
+        logger.error(f"滑动窗口匹配失败: {e}")
+        return float('inf')
+
+
+def find_similar_cover(input_image, covers_dir=None, threshold=15, enable_partial_match=True):
+    """
+    在封面库中查找与输入图片最相似的封面（支持模糊匹配和部分匹配）
 
     Args:
         input_image: PIL Image 对象（用户发送的图片）
         covers_dir: 封面缓存目录
         threshold: 相似度阈值（综合距离，越小越相似）
+        enable_partial_match: 是否启用部分匹配（滑动窗口，用于检测部分截图）
 
     Returns:
         tuple: (cover_name, similarity_score) 或 (None, None)
@@ -258,11 +317,27 @@ def find_similar_cover(input_image, covers_dir=None, threshold=15):
             if cover_hashes is None:
                 continue
 
-            # 对每个输入变体计算距离，取最小值
+            # 方法1: 对每个输入变体计算距离，取最小值
             min_distance = float('inf')
             for input_hashes in input_hashes_list:
                 distance = calculate_combined_distance(input_hashes, cover_hashes)
                 min_distance = min(min_distance, distance)
+
+            # 方法2: 如果启用部分匹配，尝试滑动窗口
+            if enable_partial_match and min_distance > threshold * 0.7:
+                # 只有当常规匹配分数不够好时才尝试滑动窗口（节省性能）
+                try:
+                    # 尝试输入图片在封面中的匹配
+                    partial_score1 = calculate_sliding_window_match(input_image, cover_image, step=30)
+                    # 尝试封面在输入图片中的匹配（反向）
+                    partial_score2 = calculate_sliding_window_match(cover_image, input_image, step=30)
+
+                    partial_score = min(partial_score1, partial_score2)
+                    if partial_score < min_distance:
+                        min_distance = partial_score
+                        logger.debug(f"滑动窗口找到更好的匹配: {partial_score:.2f}")
+                except Exception as e:
+                    logger.debug(f"滑动窗口匹配失败: {e}")
 
             if min_distance < best_score:
                 best_score = min_distance
@@ -281,20 +356,21 @@ def find_similar_cover(input_image, covers_dir=None, threshold=15):
         return None, None
 
 
-def find_song_by_cover(input_image, songs_data, covers_dir=None, threshold=15):
+def find_song_by_cover(input_image, songs_data, covers_dir=None, threshold=15, enable_partial_match=True):
     """
-    通过封面图片查找歌曲
+    通过封面图片查找歌曲（支持部分截图）
 
     Args:
         input_image: PIL Image 对象
         songs_data: 歌曲数据列表
         covers_dir: 封面缓存目录
         threshold: 相似度阈值
+        enable_partial_match: 是否启用部分匹配（用于部分截图场景）
 
     Returns:
         dict: 匹配到的歌曲数据，或 None
     """
-    cover_name, score = find_similar_cover(input_image, covers_dir, threshold)
+    cover_name, score = find_similar_cover(input_image, covers_dir, threshold, enable_partial_match)
 
     if cover_name is None:
         return None
