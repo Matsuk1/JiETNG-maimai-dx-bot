@@ -184,7 +184,7 @@ def find_similar_cover(input_image, covers_dir=None, hash_threshold=15, return_m
             list: [(cover_name, score, method), ...] 按分数降序排列
 
     特征点匹配采用自适应阈值：
-        - 匹配质量 ≥ 60% (几何验证通过率)
+        - 匹配质量 ≥ 75% (几何验证通过率)
         - 绝对数量 ≥ 8 (应对部分遮挡)
     """
     if covers_dir is None:
@@ -192,7 +192,10 @@ def find_similar_cover(input_image, covers_dir=None, hash_threshold=15, return_m
 
     if not os.path.exists(covers_dir):
         logger.warning(f"封面目录不存在: {covers_dir}")
-        return None, None, None
+        if return_multiple:
+            return []
+        else:
+            return None, None, None
 
     # 加载缓存
     load_cover_cache(covers_dir)
@@ -253,7 +256,10 @@ def find_similar_cover(input_image, covers_dir=None, hash_threshold=15, return_m
     if input_desc is None:
         logger.warning("✗ 输入图片特征点不足")
         logger.info("=" * 60)
-        return None, None, None
+        if return_multiple:
+            return []
+        else:
+            return None, None, None
 
     logger.info(f"  输入图片特征点: {len(input_kp)} 个")
 
@@ -266,8 +272,8 @@ def find_similar_cover(input_image, covers_dir=None, hash_threshold=15, return_m
             cover_kp, cover_desc
         )
 
-        # 匹配质量阈值：至少 60% 的匹配通过几何验证
-        if match_quality < 0.6:
+        # 匹配质量阈值：至少 75% 的匹配通过几何验证
+        if match_quality < 0.75:
             continue
 
         # 绝对数量要求：至少 8 个（降低了，应对部分遮挡）
@@ -367,13 +373,18 @@ def find_song_by_cover(input_image, songs_data, covers_dir=None, hash_threshold=
             return []
 
         songs = []
+
         for cover_name, score, method in result:
             song = _find_song_by_cover_name(cover_name, songs_data, method)
             if song:
-                songs.append(song)
+                songs.extend(song)
 
         if songs:
+            if len(songs) > 5:
+                songs = [s for s in songs if s['type'] in ['dx', 'std']]
+            songs = songs[:5]
             logger.info(f"✓ 成功识别 {len(songs)} 首歌曲")
+
         return songs
     else:
         # 处理单个结果
@@ -399,13 +410,18 @@ def _find_song_by_cover_name(cover_name, songs_data, method):
     target_cover_with_ext = f"{cover_name}.png"
     target_cover_without_ext = cover_name
 
+    result = []
+
     for song in songs_data:
         song_cover = song.get('cover_name', '')
         if song_cover == target_cover_with_ext or song_cover == target_cover_without_ext:
             logger.info(f"✓ 成功识别歌曲: 《{song.get('title')}》")
             logger.info(f"  艺术家: {song.get('artist')}")
             logger.info(f"  识别方式: {method}")
-            return song
+            result.append(song)
+
+    if result:
+        return result
 
     logger.error(f"数据库错误：找到封面 {cover_name}，但数据库中无对应歌曲")
     return None
