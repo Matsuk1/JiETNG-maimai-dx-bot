@@ -112,13 +112,17 @@ def find_song_by_cover(input_image, songs_data, covers_dir=None, threshold=10):
         return None
 
     # 在歌曲数据中查找对应的歌曲
-    # cover_name 格式: "hash.png"
-    target_cover = f"{cover_name}.png"
+    # cover_name 已经不含 .png 扩展名（在 line 81 已移除）
+    # 而 songs_data 中的 cover_name 包含 .png
+    target_cover_with_ext = f"{cover_name}.png"
+    target_cover_without_ext = cover_name
 
     for song in songs_data:
-        if song.get('cover_name') == target_cover:
+        song_cover = song.get('cover_name', '')
+        # 同时匹配带扩展名和不带扩展名的情况
+        if song_cover == target_cover_with_ext or song_cover == target_cover_without_ext:
             logger.info(f"匹配到歌曲: {song.get('title')}")
             return song
 
-    logger.warning(f"找到封面 {target_cover}，但未在歌曲数据中找到对应歌曲")
+    logger.warning(f"找到封面 {cover_name}，但未在歌曲数据中找到对应歌曲")
     return None
