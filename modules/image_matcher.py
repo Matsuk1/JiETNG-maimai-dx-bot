@@ -5,8 +5,9 @@
 """
 import os
 import logging
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, ImageFilter, ImageChops
 import imagehash
+import numpy as np
 from modules.config_loader import COVERS_DIR
 
 logger = logging.getLogger(__name__)
@@ -39,6 +40,89 @@ def calculate_multi_hash(image):
         return None
 
 
+def detect_content_region(image, threshold=30):
+    """
+    检测图片中的主要内容区域（去除大面积单色边框）
+
+    Args:
+        image: PIL Image 对象
+        threshold: 边缘检测阈值
+
+    Returns:
+        PIL.Image: 裁剪后的图片，或原图（如果检测失败）
+    """
+    try:
+        # 转换为 RGB
+        if image.mode != 'RGB':
+            img_rgb = image.convert('RGB')
+        else:
+            img_rgb = image.copy()
+
+        # 转换为 numpy 数组
+        img_array = np.array(img_rgb)
+
+        # 计算每行和每列的标准差（用于检测内容丰富度）
+        row_std = np.std(img_array, axis=(1, 2))  # 每行的标准差
+        col_std = np.std(img_array, axis=(0, 2))  # 每列的标准差
+
+        # 找到内容区域的边界（标准差大于阈值的区域）
+        content_rows = np.where(row_std > threshold)[0]
+        content_cols = np.where(col_std > threshold)[0]
+
+        if len(content_rows) > 0 and len(content_cols) > 0:
+            # 获取内容区域的边界
+            top = content_rows[0]
+            bottom = content_rows[-1]
+            left = content_cols[0]
+            right = content_cols[-1]
+
+            # 添加小边距（5%）避免裁剪过度
+            height, width = img_array.shape[:2]
+            margin_h = int((bottom - top) * 0.05)
+            margin_w = int((right - left) * 0.05)
+
+            top = max(0, top - margin_h)
+            bottom = min(height, bottom + margin_h)
+            left = max(0, left - margin_w)
+            right = min(width, right + margin_w)
+
+            # 确保裁剪区域有效
+            if bottom > top and right > left:
+                cropped = img_rgb.crop((left, top, right, bottom))
+                logger.debug(f"检测到内容区域: ({left}, {top}, {right}, {bottom})")
+                return cropped
+
+        # 如果检测失败，返回原图
+        return image
+
+    except Exception as e:
+        logger.error(f"内容区域检测失败: {e}")
+        return image
+
+
+def extract_center_region(image, ratio=0.8):
+    """
+    提取图片中心区域
+
+    Args:
+        image: PIL Image 对象
+        ratio: 保留中心区域的比例 (0-1)
+
+    Returns:
+        PIL.Image: 中心区域图片
+    """
+    width, height = image.size
+    new_width = int(width * ratio)
+    new_height = int(height * ratio)
+
+    left = (width - new_width) // 2
+    top = (height - new_height) // 2
+    right = left + new_width
+    bottom = top + new_height
+
+    return image.crop((left, top, right, bottom))
+
+
 def preprocess_image_variants(image):
     """
     生成图片的多个预处理变体（用于模糊匹配）
@@ -49,32 +133,45 @@ def preprocess_image_variants(image):
     Returns:
         list: 图片变体列表
     """
-    variants = [image]  # 原图
+    variants = []
 
     try:
-        # 转换为正方形（填充白边）
+        # 1. 原图
+        variants.append(image)
+
+        # 2. 智能裁剪 - 去除大面积单色边框
+        content_region = detect_content_region(image, threshold=30)
+        if content_region.size != image.size:  # 确实裁剪了
+            variants.append(content_region)
+            logger.debug(f"添加内容区域变体: {content_region.size}")
+
+        # 3. 提取中心区域（80%）
+        center_80 = extract_center_region(image, ratio=0.8)
+        variants.append(center_80)
+
+        # 4. 提取中心区域（60% - 应对大边框）
+        center_60 = extract_center_region(image, ratio=0.6)
+        variants.append(center_60)
+
+        # 5. 转换为正方形（填充白边）- 应对比例不同
         max_side = max(image.size)
         squared = Image.new('RGB', (max_side, max_side), (255, 255, 255))
         paste_x = (max_side - image.width) // 2
         paste_y = (max_side - image.height) // 2
-        squared.paste(image, (paste_x, paste_y))
+        if image.mode != 'RGB':
+            image_rgb = image.convert('RGB')
+        else:
+            image_rgb = image
+        squared.paste(image_rgb, (paste_x, paste_y))
         variants.append(squared)
-
-        # 中心裁剪（应对有边框的情况）
-        width, height = image.size
-        crop_margin = min(width, height) // 10  # 裁剪 10% 边缘
-        if crop_margin > 0:
-            cropped = image.crop((
-                crop_margin,
-                crop_margin,
-                width - crop_margin,
-                height - crop_margin
-            ))
-            variants.append(cropped)
 
     except Exception as e:
         logger.error(f"图片预处理失败: {e}")
+        # 至少返回原图
+        if not variants:
+            variants.append(image)
 
+    logger.debug(f"生成了 {len(variants)} 个图片变体")
     return variants
 
 
