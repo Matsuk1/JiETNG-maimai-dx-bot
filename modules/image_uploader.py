@@ -78,41 +78,6 @@ def _upload_to_imgur(img):
 
     return None
 
-def _compress_image(img, max_width=1600, quality=90):
-    """压缩图片并转换为 JPEG 格式
-
-    Args:
-        img: PIL Image 对象
-        max_width: 最大宽度
-        quality: JPEG 质量 (1-100)
-
-    Returns:
-        压缩后的 BytesIO 对象（JPEG 格式）
-    """
-    # 转换为 RGB（JPEG 不支持透明通道）
-    if img.mode in ('RGBA', 'LA', 'P'):
-        # 创建白色背景
-        background = Image.new('RGB', img.size, (255, 255, 255))
-        if img.mode == 'P':
-            img = img.convert('RGBA')
-        background.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA') else None)
-        img = background
-    elif img.mode != 'RGB':
-        img = img.convert('RGB')
-
-    # 如果宽度大于 max_width，调整大小
-    if img.width > max_width:
-        ratio = max_width / img.width
-        new_height = int(img.height * ratio)
-        img = img.resize((max_width, new_height), Image.Resampling.LANCZOS)
-
-    # 保存为 JPEG 格式到 BytesIO
-    img_io = BytesIO()
-    img.save(img_io, format='JPEG', quality=quality, optimize=True)
-    img_io.seek(0)
-
-    return img_io
-
 # 智能图床上传（上传原图和预览图）
 def smart_upload(img):
     """上传图片到图床，返回原图和预览图链接

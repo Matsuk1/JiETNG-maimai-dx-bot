@@ -64,41 +64,6 @@ def merge_json(source, target):
     return target
 
 
-def merge_json_by_key(source, target, key_field):
-    """
-    按 key_field 匹配并合并 source 与 target。
-    适用于顶层结构类似 {"songs": [ {...}, {...} ]}
-    """
-    result = copy.deepcopy(target)
-
-    for k, v in source.items():
-        if isinstance(v, list) and all(isinstance(i, dict) for i in v):
-            # 处理列表中的字典（带 key_field）
-            target_list = result.get(k, [])
-            target_index = {item.get(key_field): item for item in target_list if key_field in item}
-
-            for item in v:
-                key_val = item.get(key_field)
-                if key_val in target_index:
-                    merge_json(item, target_index[key_val])
-                else:
-                    target_list.append(copy.deepcopy(item))
-            result[k] = target_list
-
-        elif isinstance(v, dict):
-            # 递归合并 dict
-            if k in result and isinstance(result[k], dict):
-                merge_json(v, result[k])
-            else:
-                result[k] = copy.deepcopy(v)
-
-        else:
-            # 简单类型：仅在目标为空时更新
-            if k not in result or result[k] in (None, '', [], {}):
-                result[k] = copy.deepcopy(v)
-
-    return result
-
 def merge_songs_list(source_songs, target_songs, key_field="title"):
     """
     合并两个 songs 列表,按 key_field 去重
