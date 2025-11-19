@@ -2339,7 +2339,7 @@ def handle_image_message(event):
                 mai_ver = USERS[user_id]['version']
 
         read_dxdata(mai_ver)
-        matched_song = find_song_by_cover(image, SONGS, threshold=10)
+        matched_song = find_song_by_cover(image, SONGS, threshold=15)
 
         if matched_song:
             # 找到匹配的歌曲，返回 search_song 格式的结果
