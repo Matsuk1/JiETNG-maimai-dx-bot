@@ -6,6 +6,7 @@ imagehash==4.3.1
 line-bot-sdk==3.14.5
 lxml==5.3.0
 numpy==2.2.5
+opencv-python==4.10.0.84
 Pillow==11.2.1
 psutil==5.9.8
 pymysql==1.1.1

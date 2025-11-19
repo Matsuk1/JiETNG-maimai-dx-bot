@@ -2308,6 +2308,7 @@ def handle_image_message(event):
         message_content = line_bot_blob_api.get_message_content(message_id)
 
     image = Image.open(BytesIO(message_content))
+    image.load()  # 强制加载像素数据到内存，避免 BytesIO 作用域问题
 
     qr_results = decode(image)
 
@@ -2339,7 +2340,8 @@ def handle_image_message(event):
                 mai_ver = USERS[user_id]['version']
 
         read_dxdata(mai_ver)
-        matched_song = find_song_by_cover(image, SONGS, threshold=15)
+        # 混合策略匹配：hash 快速匹配完整封面，sift 处理场景图片和部分遮挡
+        matched_song = find_song_by_cover(image, SONGS, hash_threshold=15)
 
         if matched_song:
             # 找到匹配的歌曲，返回 search_song 格式的结果
