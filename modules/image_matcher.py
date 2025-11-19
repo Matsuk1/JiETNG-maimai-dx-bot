@@ -305,10 +305,13 @@ def find_similar_cover(input_image, covers_dir=None, threshold=15, enable_partia
 
     # 遍历封面库
     cover_files = [f for f in os.listdir(covers_dir) if f.endswith('.png')]
+    total_files = len(cover_files)
 
-    logger.info(f"开始模糊匹配，封面库共有 {len(cover_files)} 张图片")
+    logger.info(f"开始模糊匹配，封面库共有 {total_files} 张图片")
 
+    processed_count = 0
     for cover_file in cover_files:
+        processed_count += 1
         try:
             cover_path = os.path.join(covers_dir, cover_file)
             cover_image = Image.open(cover_path)
@@ -342,17 +345,24 @@ def find_similar_cover(input_image, covers_dir=None, threshold=15, enable_partia
             if min_distance < best_score:
                 best_score = min_distance
                 best_match = cover_file.replace('.png', '')  # 移除扩展名
+                logger.debug(f"进度 {processed_count}/{total_files}: 找到更好的匹配 - {cover_file} (分数: {min_distance:.2f})")
 
         except Exception as e:
             logger.error(f"处理封面 {cover_file} 时出错: {e}")
             continue
 
+    # 匹配完成，输出结果
+    logger.info(f"匹配完成！已检查 {processed_count} 张封面")
+
     # 检查是否符合阈值
     if best_match and best_score <= threshold:
-        logger.info(f"找到匹配: {best_match}, 相似度分数: {best_score:.2f}")
+        logger.info(f"✓ 成功匹配: {best_match}")
+        logger.info(f"  相似度分数: {best_score:.2f} (阈值: {threshold})")
         return best_match, best_score
     else:
-        logger.info(f"未找到匹配（最佳分数: {best_score:.2f}, 阈值: {threshold}）")
+        logger.warning(f"✗ 未找到匹配的封面")
+        logger.warning(f"  最佳分数: {best_score:.2f} (需要 ≤ {threshold})")
+        logger.warning(f"  建议: 尝试发送更完整的封面图片")
         return None, None
 
 
@@ -370,12 +380,19 @@ def find_song_by_cover(input_image, songs_data, covers_dir=None, threshold=15, e
     Returns:
         dict: 匹配到的歌曲数据，或 None
     """
+    logger.info("=" * 50)
+    logger.info("开始图片封面识别...")
+
     cover_name, score = find_similar_cover(input_image, covers_dir, threshold, enable_partial_match)
 
     if cover_name is None:
+        logger.warning("封面识别失败：未找到匹配的封面")
+        logger.info("=" * 50)
         return None
 
     # 在歌曲数据中查找对应的歌曲
+    logger.info(f"正在查找封面对应的歌曲: {cover_name}")
+
     # cover_name 已经不含 .png 扩展名（在 line 81 已移除）
     # 而 songs_data 中的 cover_name 包含 .png
     target_cover_with_ext = f"{cover_name}.png"
@@ -385,8 +402,12 @@ def find_song_by_cover(input_image, songs_data, covers_dir=None, threshold=15, e
         song_cover = song.get('cover_name', '')
         # 同时匹配带扩展名和不带扩展名的情况
         if song_cover == target_cover_with_ext or song_cover == target_cover_without_ext:
-            logger.info(f"匹配到歌曲: {song.get('title')}")
+            logger.info(f"✓ 成功识别歌曲: 《{song.get('title')}》")
+            logger.info(f"  艺术家: {song.get('artist')}")
+            logger.info(f"  类型: {song.get('type')}")
+            logger.info("=" * 50)
             return song
 
-    logger.warning(f"找到封面 {cover_name}，但未在歌曲数据中找到对应歌曲")
+    logger.error(f"数据库错误：找到封面 {cover_name}，但数据库中无对应歌曲")
+    logger.info("=" * 50)
     return None
