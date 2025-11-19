@@ -86,6 +86,7 @@ from modules.message_manager import *
 # Image processing
 from modules.image_uploader import smart_upload
 from modules.image_manager import *
+from modules.image_matcher import find_song_by_cover
 
 # System utilities
 from modules.system_checker import run_system_check
@@ -2313,9 +2314,10 @@ def handle_image_message(event):
     reply_msg = []
 
     if qr_results:
+        # 发现 QR 码，解析并处理
         for qr in qr_results:
             data = qr.data.decode("utf-8")
-            new_reply_msg = handle_image_message_task(event.source.user_id, event.reply_token, data)
+            new_reply_msg = handle_image_message_task(event.source.user_id, event.reply_token, data, image)
             if new_reply_msg:
                 reply_msg.append(new_reply_msg)
         if reply_msg:
@@ -2328,18 +2330,63 @@ def handle_image_message(event):
             )
 
     else:
-        smart_reply(
-            event.source.user_id,
-            event.reply_token,
-            qrcode_error(event.source.user_id),
-            configuration,
-            DIVIDER
-        )
+        # 没有 QR 码，尝试封面匹配
+        user_id = event.source.user_id
+        mai_ver = "jp"
+        read_user()
+        if user_id in USERS:
+            if 'version' in USERS[user_id]:
+                mai_ver = USERS[user_id]['version']
 
-def handle_image_message_task(user_id, reply_token, data):
+        read_dxdata(mai_ver)
+        matched_song = find_song_by_cover(image, SONGS, threshold=10)
+
+        if matched_song:
+            # 找到匹配的歌曲，返回 search_song 格式的结果
+            try:
+                original_url, preview_url = smart_upload(song_info_generate(matched_song))
+                message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
+                smart_reply(
+                    event.source.user_id,
+                    event.reply_token,
+                    [message],
+                    configuration,
+                    DIVIDER
+                )
+            except Exception as e:
+                logger.error(f"生成歌曲图片失败: {e}")
+                smart_reply(
+                    event.source.user_id,
+                    event.reply_token,
+                    qrcode_error(event.source.user_id),
+                    configuration,
+                    DIVIDER
+                )
+        else:
+            # 未找到匹配，返回错误
+            smart_reply(
+                event.source.user_id,
+                event.reply_token,
+                qrcode_error(event.source.user_id),
+                configuration,
+                DIVIDER
+            )
+
+def handle_image_message_task(user_id, reply_token, data, image=None):
+    """
+    处理图片消息中的数据
+
+    Args:
+        user_id: 用户ID
+        reply_token: 回复令牌
+        data: QR码解析出的数据
+        image: PIL Image 对象（用于封面匹配）
+
+    Returns:
+        消息对象或消息列表
+    """
     if DOMAIN in data:
         return handle_internal_link(user_id, reply_token, data)
-
     else:
         return TextMessage(text=data)
 
