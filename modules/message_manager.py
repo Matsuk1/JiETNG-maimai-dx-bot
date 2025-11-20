@@ -495,9 +495,9 @@ tip_messages = [
         "zh": "💡 输入「宴極の達成状況」等命令可以查看牌子达成情况！"
     },
     {
-        "ja": "💡 より詳細な定数検索は https://dxrating.net をご利用ください！",
-        "en": "💡 For more accurate constant queries, visit https://dxrating.net!",
-        "zh": "💡 想要更精确的定数查询？请访问 https://dxrating.net！"
+        "ja": "💡 より詳細な楽曲検索は https://dxrating.net をご利用ください！",
+        "en": "💡 For more accurate song queries, visit https://dxrating.net!",
+        "zh": "💡 想要更精确的歌曲查询？请访问 https://dxrating.net！"
     },
 ]
 
