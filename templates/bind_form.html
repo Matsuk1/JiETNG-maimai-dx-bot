@@ -274,6 +274,7 @@
   <div class="container">
     <h2 id="page-heading">SEGA アカウント連携</h2>
     <form method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
       <label for="language" id="label-language">言語</label>
       <select id="language" name="language" required>
         <option value="ja" selected>日本語</option>

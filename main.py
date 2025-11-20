@@ -40,6 +40,7 @@ from flask import (
     jsonify,
     make_response
 )
+from flask_wtf.csrf import CSRFProtect
 
 from linebot.v3 import WebhookHandler
 from linebot.v3.exceptions import InvalidSignatureError
@@ -174,6 +175,32 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(32)  # 用于session加密
+
+# 启用 CSRF 保护
+csrf = CSRFProtect(app)
+
+# 配置安全响应头
+@app.after_request
+def set_security_headers(response):
+    """设置安全响应头"""
+    # 防止 XSS 攻击
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+
+    # Content Security Policy
+    response.headers['Content-Security-Policy'] = (
+        "default-src 'self'; "
+        "style-src 'self' 'unsafe-inline'; "
+        "script-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data: https:; "
+        "font-src 'self' data:;"
+    )
+
+    # Strict Transport Security (如果使用 HTTPS)
+    # response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+
+    return response
 
 # 记录服务启动时间和统计
 SERVICE_START_TIME = datetime.now()
@@ -447,6 +474,7 @@ handler = WebhookHandler(LINE_CHANNEL_SECRET)
 # ==================== Flask 路由 ====================
 
 @app.route("/linebot/webhook", methods=['POST'])
+@csrf.exempt  # LINE Webhook 使用签名验证，无需 CSRF token
 def linebot_reply():
     """
     LINE Webhook 接收端点

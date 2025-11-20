@@ -272,6 +272,7 @@
     {% endif %}
 
     <form method="POST" action="/linebot/admin" onsubmit="handleSubmit(event)">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
       <div class="form-group">
         <label class="form-label" for="password">Password</label>
         <input
