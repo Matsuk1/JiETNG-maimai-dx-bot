@@ -2,8 +2,6 @@
 
 This document lists all available commands for the JiETNG LINE Bot.
 
-[简体中文](COMMANDS.md) | English | [日本語](COMMANDS_JP.md)
-
 ---
 
 ## Table of Contents
@@ -124,14 +122,22 @@ idealb50 -lv 13.5 14.0               # Ideal B50 with constant 13.5-14.0
 | `[Song]ってどんな曲` | `[Song]info`, `[Song]song-info` | Search song details | `ヒバナってどんな曲` |
 | `[Song]のレコード` | `[Song]record`, `[Song]song-record` | View personal score | `ヒバナのレコード` |
 
-### Level Score List
+### Level Score List & Constant List
 
 | Command Format | Aliases | Description | Example |
 |----------------|---------|-------------|---------|
 | `[Level]のレコードリスト` | `[Level]record-list`, `[Level]records` | View all scores for specified level | `13のレコードリスト` |
+| `[Constant]のレコードリスト` | `[Constant]record-list`, `[Constant]records` | View all scores for specified constant | `14.5のレコードリスト` |
 | `[Level]のレコードリスト [Page]` | `[Level]record-list [Page]`, `[Level]records [Page]` | View scores for level (page N) | `13のレコードリスト 2` |
 
-**Note**: Level can be an integer (1-15) or decimal. Integer shows level list, decimal shows constant list.
+**Notes**:
+- **Level List**: Enter an integer (1-15) to view all charts in that level
+  - Example: `13のレコードリスト` - View all Lv.13 chart scores
+- **Constant List**: Enter a decimal to view all charts with specified constant
+  - Example: `14.5のレコードリスト` - View all constant 14.5 chart scores
+  - Example: `13.7のレコードリスト` - View all constant 13.7 chart scores
+- Maximum 20 records per page, use page parameter to navigate
+- Automatically sorted by Rating in descending order
 
 ---
 
@@ -250,11 +256,21 @@ friend-b50 1234567890123456   # View friend's B50
 
 | Feature | Description |
 |---------|-------------|
-| Send Image | Automatically scan QR codes in images to identify friend invite links or other data |
+| Send Image (QR Code) | Automatically scan QR codes in images to identify friend invite links or other data |
+| Send Image (Cover Recognition) | Recognize song covers in images and return song information and personal scores |
 
-**Notes**:
+**QR Code Recognition**:
 - Send a screenshot of a friend's card to Bot, it will automatically recognize the friend invite link
 - Supports scanning any image containing QR codes
+
+**Cover Recognition**:
+- Send images containing song covers (game screenshots, promotional images, etc.)
+- Bot will automatically recognize covers and return corresponding song information
+- Hybrid recognition strategy:
+  - **Hash Matching**: Fast recognition of complete covers (high accuracy)
+  - **SIFT Feature Matching**: Recognize partial covers in scene images (high recall)
+- Supports multi-song recognition in one image (up to 5 songs)
+- Recognition rate: Nearly 100% for complete covers, varies for partial occlusion
 
 ### Location Service
 

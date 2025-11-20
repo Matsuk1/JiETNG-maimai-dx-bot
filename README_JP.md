@@ -1,4 +1,4 @@
-# JiETNG - Maimai DX LINE Bot
+# JiETNG - LINE Bot
 
 <div align="center">
 
@@ -15,7 +15,7 @@
 
 [简体中文](README.md) | [English](README_EN.md) | 日本語
 
-[機能](#機能) • [コマンドリスト](COMMANDS_JP.md) • [クイックスタート](#クイックスタート) • [管理パネル](#管理パネル) • [デプロイガイド](#デプロイガイド) • [開発ドキュメント](#開発ドキュメント)
+[機能](#機能) • [コマンドリスト](COMMANDS_JP.md) • [📚 オンラインドキュメント](https://jietng.matsuki.work/ja/) • [クイックスタート](#クイックスタート) • [管理パネル](#管理パネル) • [デプロイガイド](#デプロイガイド) • [開発ドキュメント](#開発ドキュメント)
 
 </div>
 
@@ -369,6 +369,7 @@ JiETNG/
 │   ├── song_generator.py      # 楽曲チャート生成
 │   ├── image_manager.py       # 画像処理
 │   ├── image_cache.py         # 画像キャッシュ
+│   ├── image_matcher.py       # 画像認識（カバーマッチング、ハッシュ+SIFT特徴点対応）
 │   ├── image_uploader.py      # 画像アップロード
 │   ├── token_manager.py       # トークン管理
 │   ├── friend_list.py         # フレンドインターフェース

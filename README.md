@@ -1,4 +1,4 @@
-# JiETNG - Maimai DX LINE Bot
+# JiETNG - LINE Bot
 
 <div align="center">
 
@@ -15,7 +15,7 @@
 
 简体中文 | [English](README_EN.md) | [日本語](README_JP.md)
 
-[功能特性](#功能特性) • [命令列表](COMMANDS.md) • [快速开始](#快速开始) • [管理后台](#管理后台) • [部署指南](#部署指南) • [开发文档](#开发文档)
+[功能特性](#功能特性) • [命令列表](COMMANDS.md) • [📚 在线文档](https://jietng.matsuki.work/) • [快速开始](#快速开始) • [管理后台](#管理后台) • [部署指南](#部署指南) • [开发文档](#开发文档)
 
 </div>
 
@@ -23,7 +23,7 @@
 
 ## 项目简介
 
-**JiETNG** 是一个功能完善的 Maimai DX LINE Bot 服务，为玩家提供成绩追踪、数据分析以及各种游戏辅助功能。支持日服（JP）和国际服（INTL）双版本。
+**JiETNG** 是一个功能完善的 LINE Bot 服务，为玩家提供成绩追踪、数据分析以及各种游戏辅助功能。支持日服（JP）和国际服（INTL）双版本。
 
 ### 核心特性
 
@@ -375,6 +375,7 @@ JiETNG/
 │   ├── song_generator.py      # 歌曲图生成
 │   ├── image_manager.py       # 图像处理
 │   ├── image_cache.py         # 图像缓存
+│   ├── image_matcher.py       # 图像识别（封面匹配，支持哈希+SIFT特征点）
 │   ├── image_uploader.py      # 图床上传（Imgur/uguu/0x0）
 │   ├── token_manager.py       # Token 管理
 │   ├── friendlist_generator.py # 好友列表生成（Flex Message）
