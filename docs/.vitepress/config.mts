@@ -55,6 +55,7 @@ export default withMermaid(defineConfig({
       {
         text: '命令参考',
         items: [
+          { text: '命令大全', link: '/commands/' },
           { text: '基础命令', link: '/commands/basic' },
           { text: '成绩命令', link: '/commands/record' }
         ]
@@ -140,6 +141,7 @@ export default withMermaid(defineConfig({
           {
             text: 'Commands',
             items: [
+              { text: 'Complete Reference', link: '/en/commands/' },
               { text: 'Basic Commands', link: '/en/commands/basic' },
               { text: 'Record Commands', link: '/en/commands/record' }
             ]
@@ -202,6 +204,7 @@ export default withMermaid(defineConfig({
           {
             text: 'コマンド',
             items: [
+              { text: 'コマンド一覧', link: '/ja/commands/' },
               { text: '基本コマンド', link: '/ja/commands/basic' },
               { text: 'レコードコマンド', link: '/ja/commands/record' }
             ]
