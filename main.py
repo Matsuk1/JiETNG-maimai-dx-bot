@@ -1285,6 +1285,7 @@ def _generate_level_cache_for_server(ver):
 
                     song_data_list.append({
                         "cover_url": song['cover_url'],
+                        "cover_name": song.get('cover_name'),
                         "type": song['type'],
                         "internal_level": sheet['internalLevelValue']
                     })
