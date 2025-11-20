@@ -112,7 +112,7 @@ RANDOM = random
 Most commands handle extra spaces gracefully:
 
 ```
-search  geki     # Works fine
+ヒバナ info       # Works fine
 b50              # No space needed
 ```
 
