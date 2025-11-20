@@ -1255,8 +1255,11 @@ def generate_internallevel_songs(user_id, level, ver="jp"):
     try:
         cached_img = Image.open(cache_path)
         original_url, preview_url = smart_upload(cached_img)
-        message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
-        return message
+        # 返回图片和提示消息
+        return [
+            ImageMessage(original_content_url=original_url, preview_image_url=preview_url),
+            level_list_hint(user_id)
+        ]
     except Exception as e:
         print(f"读取缓存失败: {e}")
         return cache_not_found(user_id)
@@ -2302,7 +2305,9 @@ def handle_sync_text_command(event):
             result = update_dxdata_with_comparison(DXDATA_URL, DXDATA_LIST)
             read_dxdata()  # 重新加载到内存
 
-            reply_message = TextMessage(text=result['message'])
+            # 使用多语言函数构建消息
+            message_text = build_dxdata_update_message(result, user_id)
+            reply_message = TextMessage(text=message_text)
 
             # 回复执行命令的管理员
             smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
@@ -2311,7 +2316,9 @@ def handle_sync_text_command(event):
             for admin_user_id in ADMIN_ID:
                 if admin_user_id != user_id:  # 不重复发送给执行命令的管理员
                     try:
-                        notification_message = dxdata_update_notification(result['message'], admin_user_id)
+                        # 为每个管理员构建对应语言的消息
+                        admin_message_text = build_dxdata_update_message(result, admin_user_id)
+                        notification_message = dxdata_update_notification(admin_message_text, admin_user_id)
                         smart_push(admin_user_id, notification_message, configuration)
                     except Exception as e:
                         logger.error(f"Failed to notify admin {admin_user_id}: {e}")

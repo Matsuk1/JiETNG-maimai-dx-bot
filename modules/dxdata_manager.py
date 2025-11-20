@@ -243,8 +243,7 @@ def update_dxdata_with_comparison(urls, save_to: str = None):
 
     if not new_data:
         return {
-            'success': False,
-            'message': '❌ データ取得失敗！'
+            'success': False
         }
 
 
@@ -257,8 +256,7 @@ def update_dxdata_with_comparison(urls, save_to: str = None):
 
     if not new_stats:
         return {
-            'success': False,
-            'message': '❌ データ解析失敗！'
+            'success': False
         }
 
     # 保存新版本信息
@@ -269,27 +267,6 @@ def update_dxdata_with_comparison(urls, save_to: str = None):
         songs_diff = new_stats['total_songs'] - old_version['total_songs']
         sheets_diff = new_stats['total_sheets'] - old_version['total_sheets']
 
-        # 构建消息
-        message_parts = ['✅ Dxdata Updated!', '']
-
-        if songs_diff > 0:
-            message_parts.append(f'🎵 新曲: +{songs_diff}首')
-        elif songs_diff < 0:
-            message_parts.append(f'🎵 楽曲: {songs_diff}首')
-        else:
-            message_parts.append('🎵 新曲: なし')
-
-        if sheets_diff > 0:
-            message_parts.append(f'📊 新譜面: +{sheets_diff}個')
-        elif sheets_diff < 0:
-            message_parts.append(f'📊 譜面: {sheets_diff}個')
-        else:
-            message_parts.append('📊 新譜面: なし')
-
-        message_parts.append('')
-        message_parts.append(f'📅 前回更新: {old_version["timestamp"]}')
-        message_parts.append(f'📈 現在: 楽曲{new_stats["total_songs"]}首 / 譜面{new_stats["total_sheets"]}個')
-
         return {
             'success': True,
             'new_stats': new_stats,
@@ -297,24 +274,13 @@ def update_dxdata_with_comparison(urls, save_to: str = None):
             'diff': {
                 'songs_added': songs_diff,
                 'sheets_added': sheets_diff
-            },
-            'message': '\n'.join(message_parts)
+            }
         }
     else:
         # 第一次更新
-        message_parts = [
-            '✅ Dxdata Updated!',
-            '',
-            f'📈 楽曲: {new_stats["total_songs"]}首',
-            f'📊 譜面: {new_stats["total_sheets"]}個',
-            '',
-            '(初回更新完了！)'
-        ]
-
         return {
             'success': True,
             'new_stats': new_stats,
             'old_stats': None,
-            'diff': None,
-            'message': '\n'.join(message_parts)
+            'diff': None
         }
