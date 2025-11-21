@@ -41,7 +41,7 @@ def merge_json(source, target):
 
                 # 类型不一致时以非空值为准
                 else:
-                    if tgt_val in (None, '', [], {}):
+                    if tgt_val in ('', [], {}):
                         target[key] = copy.deepcopy(src_val)
 
     # list 合并逻辑（顶层）

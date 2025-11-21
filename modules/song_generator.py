@@ -168,7 +168,7 @@ def _generate_song_table_image(song_json, scale_width=1.5, scale_height=2.0):
             notes["tap"],
             notes["hold"],
             notes["slide"],
-            notes["touch"],
+            notes["touch"] if notes["touch"] else "-",
             notes["break"],
             "✓" if regions.get("jp") else "✗",
             "✓" if regions.get("intl") else "✗",
