@@ -2663,6 +2663,7 @@ def admin_logout():
     return redirect("/linebot/admin")
 
 @app.route("/linebot/admin/trigger_update", methods=["POST"])
+@csrf.exempt
 def admin_trigger_update():
     """触发指定用户的maimai_update"""
     if not check_admin_auth():
@@ -2719,6 +2720,7 @@ def admin_trigger_update():
         }), 500
 
 @app.route("/linebot/admin/cancel_task", methods=["POST"])
+@csrf.exempt
 def admin_cancel_task():
     """取消排队中的任务"""
     if not check_admin_auth():
@@ -2784,6 +2786,7 @@ def admin_memory_stats():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route("/linebot/admin/trigger_cleanup", methods=["POST"])
+@csrf.exempt
 def admin_trigger_cleanup():
     """手动触发内存清理"""
     if not check_admin_auth():
@@ -2811,6 +2814,7 @@ def admin_get_notices():
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route("/linebot/admin/create_notice", methods=["POST"])
+@csrf.exempt
 def admin_create_notice():
     """创建新公告"""
     if not check_admin_auth():
@@ -2838,6 +2842,7 @@ def admin_create_notice():
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route("/linebot/admin/update_notice", methods=["POST"])
+@csrf.exempt
 def admin_update_notice():
     """更新公告"""
     if not check_admin_auth():
@@ -2876,6 +2881,7 @@ def admin_update_notice():
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route("/linebot/admin/delete_notice", methods=["POST"])
+@csrf.exempt
 def admin_delete_notice():
     """删除公告"""
     if not check_admin_auth():
@@ -2903,6 +2909,7 @@ def admin_delete_notice():
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route("/linebot/admin/edit_user", methods=["POST"])
+@csrf.exempt
 def admin_edit_user():
     """编辑用户数据"""
     if not check_admin_auth():
@@ -2949,6 +2956,7 @@ def admin_edit_user():
         }), 500
 
 @app.route("/linebot/admin/delete_user", methods=["POST"])
+@csrf.exempt
 def admin_delete_user():
     """删除用户"""
     if not check_admin_auth():
@@ -2991,6 +2999,7 @@ def admin_delete_user():
         }), 500
 
 @app.route("/linebot/admin/clear_cache", methods=["POST"])
+@csrf.exempt
 def admin_clear_cache():
     """清除昵称缓存"""
     if not check_admin_auth():
@@ -3016,6 +3025,7 @@ def admin_clear_cache():
         }), 500
 
 @app.route("/linebot/admin/get_user_data", methods=["POST"])
+@csrf.exempt
 def admin_get_user_data():
     """获取单个用户的最新数据"""
     if not check_admin_auth():
@@ -3063,6 +3073,7 @@ def admin_get_user_data():
         }), 500
 
 @app.route("/linebot/admin/load_nicknames", methods=["POST"])
+@csrf.exempt
 def admin_load_nicknames():
     """批量加载用户昵称"""
     if not check_admin_auth():
