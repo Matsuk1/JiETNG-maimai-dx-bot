@@ -2289,7 +2289,16 @@ def handle_sync_text_command(event):
 
             return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
 
-        # 用户已设置语言，显示绑定按钮
+        # 用户已设置语言，检查是否已经绑定账号
+        has_account = all(key in user_data for key in ['sega_id', 'pwd', 'version'])
+
+        if has_account:
+            # 已经绑定过账号，提示先解绑
+            from modules.message_manager import already_bound_text, get_multilingual_text
+            reply_message = TextMessage(text=get_multilingual_text(already_bound_text, user_id))
+            return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
+
+        # 用户已设置语言且未绑定账号，显示绑定按钮
         bind_url = f"https://{DOMAIN}/linebot/sega_bind?token={generate_token(user_id)}"
 
         # 使用多语言文本

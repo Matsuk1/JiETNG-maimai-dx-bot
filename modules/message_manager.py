@@ -456,6 +456,13 @@ language_set_success_text = {
     "zh": "✅ 语言已设置为中文！\n接下来请绑定你的 SEGA 账号。"
 }
 
+# 已绑定账号的提示
+already_bound_text = {
+    "ja": "⚠️ すでに SEGA アカウントが連携されています。\n再度連携する場合は、先に unbind コマンドで連携を解除してください。",
+    "en": "⚠️ A SEGA account is already linked.\nTo rebind, please use the unbind command first to unlink your account.",
+    "zh": "⚠️ 已绑定 SEGA 账号。\n如需重新绑定，请先使用 unbind 命令解除绑定。"
+}
+
 # 公告标题
 notice_header_text = {
     "ja": "📢 お知らせ",
