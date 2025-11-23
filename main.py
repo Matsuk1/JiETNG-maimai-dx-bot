@@ -573,8 +573,8 @@ def website_segaid_bind():
     token = request.args.get("token")
     if not token:
         # Token 未提供的错误消息（此时还没有 user_id，三语同时显示）
-        token_missing_message = """トークンが提供されていません。
-Token not provided.
+        token_missing_message = """トークンが提供されていません。<br />
+Token not provided. <br />
 未提供令牌。"""
         return render_template("error.html", message=token_missing_message, language="ja"), 400
 
@@ -583,8 +583,8 @@ Token not provided.
     except Exception as e:
         logger.error(f"Token verification failed: {e}")
         # Token 无效的错误消息（此时还没有 user_id，三语同时显示）
-        token_invalid_message = """トークンが無効です。
-Invalid token.
+        token_invalid_message = """トークンが無効です。<br />
+Invalid token. <br />
 令牌无效。"""
         return render_template("error.html", message=token_invalid_message, language="ja"), 400
 
@@ -598,7 +598,7 @@ Invalid token.
 
         # 检查用户是否已经绑定账号
         user_data = USERS.get(user_id, {})
-        has_account = all(key in user_data for key in ['sega_id', 'pwd', 'version'])
+        has_account = all(key in user_data for key in ['sega_id', 'sega_pwd', 'version'])
         if has_account:
             error_messages = {
                 "ja": "すでに SEGA アカウントが連携されています。再度連携する場合は、先に unbind コマンドで連携を解除してください。",
@@ -2292,14 +2292,14 @@ def handle_sync_text_command(event):
             reply_message = selgen_records(id_use, mode, rest_text, mai_ver_use)
             return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
 
-    # ====== SEGA ID 绑定逻辑 ======
-    BIND_COMMANDS = ["bind", "segaid bind", "バインド"]
+    # ====== SEGA ID 绑定和语言设置的统一入口 ======
+    BIND_COMMANDS = ["bind", "segaid bind", "バインド", "language"]
     if user_message.lower() in BIND_COMMANDS:
         # 检查用户是否已设置语言
         user_data = USERS.get(user_id, {})
         has_language = 'language' in user_data
 
-        # 如果用户还没有设置语言，先让用户选择语言
+        # 如果用户还没有设置语言，显示语言选择按钮
         if not has_language:
             from modules.message_manager import (
                 language_select_title, language_select_description,
@@ -2356,7 +2356,7 @@ def handle_sync_text_command(event):
 
         return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
 
-    # ====== language 命令 ======
+    # ====== language 命令（用户选择具体语言）======
     if user_message.startswith("language "):
         lang_code = user_message[9:].strip().lower()
 
@@ -2371,17 +2371,41 @@ def handle_sync_text_command(event):
         USERS[user_id]['language'] = lang_code
         save_users_data()
 
-        # 使用多语言成功消息
-        from modules.message_manager import language_set_success_text, get_multilingual_text
-        success_text = get_multilingual_text(language_set_success_text, user_id)
+        # 检查是否已绑定账号
+        user_data = USERS.get(user_id, {})
+        has_account = all(key in user_data for key in ['sega_id', 'pwd', 'version'])
 
-        # 添加快捷回复按钮
-        quick_reply = QuickReply(items=[
-            QuickReplyButton(action=MessageAction(label="bind", text="bind"))
-        ])
+        if has_account:
+            # 已绑定账号，只显示语言设置成功消息
+            from modules.message_manager import language_set_success_text, get_multilingual_text
+            success_text = get_multilingual_text(language_set_success_text, user_id)
+            # 移除绑定提示，因为已经绑定了
+            success_text = success_text.split('\n')[0]  # 只保留第一行成功消息
+            reply_message = TextMessage(text=success_text)
+            return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
+        else:
+            # 未绑定账号，自动显示绑定按钮
+            bind_url = f"https://{DOMAIN}/linebot/sega_bind?token={generate_token(user_id)}"
 
-        reply_message = TextMessage(text=success_text, quick_reply=quick_reply)
-        return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
+            from modules.message_manager import (
+                sega_bind_title_text, sega_bind_description_text,
+                sega_bind_button_text, sega_bind_alt_text, get_multilingual_text
+            )
+
+            buttons_template = ButtonsTemplate(
+                title=get_multilingual_text(sega_bind_title_text, user_id),
+                text=get_multilingual_text(sega_bind_description_text, user_id),
+                actions=[URIAction(
+                    label=get_multilingual_text(sega_bind_button_text, user_id),
+                    uri=bind_url
+                )]
+            )
+            reply_message = TemplateMessage(
+                alt_text=get_multilingual_text(sega_bind_alt_text, user_id),
+                template=buttons_template
+            )
+
+            return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
 
     # ====== calc 命令 ======
     if user_message.startswith("calc "):
