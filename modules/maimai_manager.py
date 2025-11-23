@@ -356,7 +356,7 @@ def get_recent_records(session: requests.Session, ver="jp"):
                 "dx_score": dx_score,
                 "score_icon": score_icon.replace("plus", "p"),
                 "combo_icon": combo_icon.replace("plus", "p"),
-                "sync_icon": sync_icon.replace("plus", "p")
+                "sync_icon": sync_icon.replace("fsd", "fdx").replace("plus", "p")
             })
 
     return recent_record
