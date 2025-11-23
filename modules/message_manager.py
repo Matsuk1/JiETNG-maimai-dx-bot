@@ -714,13 +714,28 @@ def get_support_quick_reply(user_id=None):
         ]
     )
 
-def get_bind_quick_reply(user_id=None):
-    """获取绑定相关的 QuickReply"""
+def get_update_quick_reply(user_id=None):
+    """获取更新相关的 QuickReply"""
     return QuickReply(
         items=[
             QuickReplyItem(action=MessageAction(
                 label=get_quick_reply_label("maimai_update", user_id),
                 text="maimai update"
+            )),
+            QuickReplyItem(action=URIAction(
+                label=get_quick_reply_label("support", user_id),
+                uri=SUPPORT_PAGE
+            ))
+        ]
+    )
+
+def get_bind_quick_reply(user_id=None):
+    """获取绑定相关的 QuickReply"""
+    return QuickReply(
+        items=[
+            QuickReplyItem(action=MessageAction(
+                label=get_quick_reply_label("bind", user_id),
+                text="bind"
             )),
             QuickReplyItem(action=URIAction(
                 label=get_quick_reply_label("support", user_id),
@@ -815,7 +830,7 @@ def get_record_error_quick_reply(user_id=None):
 
 def bind_msg(user_id=None):
     """生成 SEGA ID 绑定成功消息"""
-    return create_text_message(bind_msg_text, user_id, get_bind_quick_reply(user_id))
+    return create_text_message(bind_msg_text, user_id, get_update_quick_reply(user_id))
 
 def unbind_msg(user_id=None):
     """生成 SEGA ID 解绑成功消息"""

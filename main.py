@@ -573,8 +573,8 @@ def website_segaid_bind():
     token = request.args.get("token")
     if not token:
         # Token 未提供的错误消息（此时还没有 user_id，三语同时显示）
-        token_missing_message = """トークンが提供されていません。
-Token not provided.
+        token_missing_message = """トークンが提供されていません。<br />
+Token not provided. <br />
 未提供令牌。"""
         return render_template("error.html", message=token_missing_message, language="ja"), 400
 
@@ -583,8 +583,8 @@ Token not provided.
     except Exception as e:
         logger.error(f"Token verification failed: {e}")
         # Token 无效的错误消息（此时还没有 user_id，三语同时显示）
-        token_invalid_message = """トークンが無効です。
-Invalid token.
+        token_invalid_message = """トークンが無効です。<br />
+Invalid token. <br />
 令牌无效。"""
         return render_template("error.html", message=token_invalid_message, language="ja"), 400
 
@@ -598,7 +598,7 @@ Invalid token.
 
         # 检查用户是否已经绑定账号
         user_data = USERS.get(user_id, {})
-        has_account = all(key in user_data for key in ['sega_id', 'pwd', 'version'])
+        has_account = all(key in user_data for key in ['sega_id', 'sega_pwd', 'version'])
         if has_account:
             error_messages = {
                 "ja": "すでに SEGA アカウントが連携されています。再度連携する場合は、先に unbind コマンドで連携を解除してください。",
@@ -2324,7 +2324,7 @@ def handle_sync_text_command(event):
             return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
 
         # 用户已设置语言，检查是否已经绑定账号
-        has_account = all(key in user_data for key in ['sega_id', 'pwd', 'version'])
+        has_account = all(key in user_data for key in ['sega_id', 'sega_pwd', 'version'])
 
         if has_account:
             # 已经绑定过账号，提示先解绑
@@ -2366,19 +2366,14 @@ def handle_sync_text_command(event):
             return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
 
         # 设置用户语言
-        if user_id not in USERS:
-            USERS[user_id] = {}
-        USERS[user_id]['language'] = lang_code
-        save_users_data()
+        user_set_language(user_id, lang_code)
 
         # 使用多语言成功消息
-        from modules.message_manager import language_set_success_text, get_multilingual_text
+        from modules.message_manager import language_set_success_text, get_multilingual_text, get_bind_quick_reply
         success_text = get_multilingual_text(language_set_success_text, user_id)
 
         # 添加快捷回复按钮
-        quick_reply = QuickReply(items=[
-            QuickReplyButton(action=MessageAction(label="bind", text="bind"))
-        ])
+        quick_reply = get_bind_quick_reply(user_id)
 
         reply_message = TextMessage(text=success_text, quick_reply=quick_reply)
         return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
