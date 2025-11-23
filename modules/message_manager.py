@@ -436,6 +436,26 @@ sega_bind_alt_text = {
     "zh": "SEGA 账号绑定"
 }
 
+# 语言选择消息（用于首次绑定时）
+# 这些文本在用户未选择语言时显示，所以直接显示三语
+language_select_title = "言語選択 / Language Selection / 语言选择"
+
+language_select_description = """初回設定として、使用する言語を選択してください
+Please select your preferred language for the first-time setup
+请选择你的首选语言进行初始设置"""
+
+language_button_jp = "🇯🇵 日本語"
+language_button_en = "🇺🇸 English"
+language_button_zh = "🇨🇳 中文"
+
+language_select_alt = "Language Selection / 言語選択 / 语言选择"
+
+language_set_success_text = {
+    "ja": "✅ 言語を日本語に設定しました！\n次に SEGA アカウントを連携してください。",
+    "en": "✅ Language set to English!\nNext, please link your SEGA account.",
+    "zh": "✅ 语言已设置为中文！\n接下来请绑定你的 SEGA 账号。"
+}
+
 # 公告标题
 notice_header_text = {
     "ja": "📢 お知らせ",

@@ -275,12 +275,6 @@
     <h2 id="page-heading">SEGA アカウント連携</h2>
     <form method="POST">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-      <label for="language" id="label-language">言語</label>
-      <select id="language" name="language" required>
-        <option value="ja" selected>日本語</option>
-        <option value="en">English</option>
-        <option value="zh">中文</option>
-      </select>
 
       <label for="segaid" id="label-segaid">セガID</label>
       <input type="text" id="segaid" name="segaid" required />
@@ -324,7 +318,6 @@
         labelSegaid: 'セガID',
         labelPassword: 'パスワード',
         labelVersion: 'バージョン',
-        labelLanguage: '言語',
         optJp: '日本版「maimaidx.jp」',
         optIntl: '海外版「maimaidx-eng.com」',
         submitBtn: '連携',
@@ -336,7 +329,6 @@
         labelSegaid: 'SEGA ID',
         labelPassword: 'Password',
         labelVersion: 'Version',
-        labelLanguage: 'Language',
         optJp: 'JP Version「maimaidx.jp」',
         optIntl: 'INTL Version「maimaidx-eng.com」',
         submitBtn: 'Bind',
@@ -348,7 +340,6 @@
         labelSegaid: '世嘉ID',
         labelPassword: '密码',
         labelVersion: '版本',
-        labelLanguage: '语言',
         optJp: '日本版「maimaidx.jp」',
         optIntl: '国际版「maimaidx-eng.com」',
         submitBtn: '绑定',
@@ -369,7 +360,6 @@
       document.getElementById('label-segaid').textContent = t.labelSegaid;
       document.getElementById('label-password').textContent = t.labelPassword;
       document.getElementById('label-version').textContent = t.labelVersion;
-      document.getElementById('label-language').textContent = t.labelLanguage;
 
       // Update version options
       document.getElementById('opt-jp').textContent = t.optJp;
@@ -387,9 +377,10 @@
       document.getElementById('notice-zh').style.display = lang === 'zh' ? 'block' : 'none';
     }
 
-    // Listen for language changes
-    document.getElementById('language').addEventListener('change', function() {
-      updateLanguage(this.value);
+    // 页面加载时自动设置用户语言
+    window.addEventListener('DOMContentLoaded', function() {
+      const userLanguage = '{{ user_language }}' || 'ja';
+      updateLanguage(userLanguage);
     });
   </script>
 </body>

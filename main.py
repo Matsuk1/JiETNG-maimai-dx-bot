@@ -584,7 +584,9 @@ def website_segaid_bind():
         segaid = request.form.get("segaid")
         password = request.form.get("password")
         user_version = request.form.get("ver", "jp")
-        user_language = request.form.get("language", "ja")
+
+        # 从用户数据中获取语言设置，默认为 ja
+        user_language = USERS.get(user_id, {}).get("language", "ja")
 
         if not segaid or not password:
             return render_template("error.html", message="すべての項目を入力してください", language=user_language), 400
@@ -597,7 +599,9 @@ def website_segaid_bind():
         else:
             return render_template("error.html", message="SEGA ID と パスワード をもう一度確認してください", language=user_language), 500
 
-    return render_template("bind_form.html")
+    # GET 请求时，从用户数据中获取语言设置
+    user_language = USERS.get(user_id, {}).get("language", "ja")
+    return render_template("bind_form.html", user_language=user_language)
 
 
 def process_sega_credentials(user_id, segaid, password, ver="jp", language="ja"):
@@ -2257,6 +2261,35 @@ def handle_sync_text_command(event):
     # ====== SEGA ID 绑定逻辑 ======
     BIND_COMMANDS = ["bind", "segaid bind", "バインド"]
     if user_message.lower() in BIND_COMMANDS:
+        # 检查用户是否已有账号数据
+        user_data = USERS.get(user_id, {})
+        has_account = all(key in user_data for key in ['sega_id', 'pwd', 'version'])
+
+        # 如果用户没有绑定账号，先让用户选择语言
+        if not has_account:
+            from modules.message_manager import (
+                language_select_title, language_select_description,
+                language_button_jp, language_button_en, language_button_zh,
+                language_select_alt
+            )
+
+            buttons_template = ButtonsTemplate(
+                title=language_select_title,
+                text=language_select_description,
+                actions=[
+                    MessageAction(label=language_button_jp, text="language jp"),
+                    MessageAction(label=language_button_en, text="language en"),
+                    MessageAction(label=language_button_zh, text="language zh")
+                ]
+            )
+            reply_message = TemplateMessage(
+                alt_text=language_select_alt,
+                template=buttons_template
+            )
+
+            return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
+
+        # 用户已有账号数据，显示绑定按钮
         bind_url = f"https://{DOMAIN}/linebot/sega_bind?token={generate_token(user_id)}"
 
         # 使用多语言文本
@@ -2278,6 +2311,33 @@ def handle_sync_text_command(event):
             template=buttons_template
         )
 
+        return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
+
+    # ====== language 命令 ======
+    if user_message.startswith("language "):
+        lang_code = user_message[9:].strip().lower()
+
+        # 验证语言代码
+        if lang_code not in ["jp", "en", "zh"]:
+            reply_message = TextMessage(text="Invalid language code. Please use: jp, en, or zh")
+            return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
+
+        # 设置用户语言
+        if user_id not in USERS:
+            USERS[user_id] = {}
+        USERS[user_id]['language'] = lang_code
+        save_users_data()
+
+        # 使用多语言成功消息
+        from modules.message_manager import language_set_success_text, get_multilingual_text
+        success_text = get_multilingual_text(language_set_success_text, user_id)
+
+        # 添加快捷回复按钮
+        quick_reply = QuickReply(items=[
+            QuickReplyButton(action=MessageAction(label="bind", text="bind"))
+        ])
+
+        reply_message = TextMessage(text=success_text, quick_reply=quick_reply)
         return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
 
     # ====== calc 命令 ======
