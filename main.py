@@ -2261,12 +2261,12 @@ def handle_sync_text_command(event):
     # ====== SEGA ID 绑定逻辑 ======
     BIND_COMMANDS = ["bind", "segaid bind", "バインド"]
     if user_message.lower() in BIND_COMMANDS:
-        # 检查用户是否已有账号数据
+        # 检查用户是否已设置语言
         user_data = USERS.get(user_id, {})
-        has_account = all(key in user_data for key in ['sega_id', 'pwd', 'version'])
+        has_language = 'language' in user_data
 
-        # 如果用户没有绑定账号，先让用户选择语言
-        if not has_account:
+        # 如果用户还没有设置语言，先让用户选择语言
+        if not has_language:
             from modules.message_manager import (
                 language_select_title, language_select_description,
                 language_button_jp, language_button_en, language_button_zh,
@@ -2289,7 +2289,7 @@ def handle_sync_text_command(event):
 
             return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
 
-        # 用户已有账号数据，显示绑定按钮
+        # 用户已设置语言，显示绑定按钮
         bind_url = f"https://{DOMAIN}/linebot/sega_bind?token={generate_token(user_id)}"
 
         # 使用多语言文本
