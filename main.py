@@ -572,25 +572,21 @@ def website_segaid_bind():
     """
     token = request.args.get("token")
     if not token:
-        # Token 未提供的错误消息（此时还没有 user_id，默认使用日语）
-        token_missing_messages = {
-            "ja": "トークンが提供されていません。",
-            "en": "Token not provided.",
-            "zh": "未提供令牌。"
-        }
-        return render_template("error.html", message=token_missing_messages["ja"], language="ja"), 400
+        # Token 未提供的错误消息（此时还没有 user_id，三语同时显示）
+        token_missing_message = """トークンが提供されていません。
+Token not provided.
+未提供令牌。"""
+        return render_template("error.html", message=token_missing_message, language="ja"), 400
 
     try:
         user_id = get_user_id_from_token(token)
     except Exception as e:
         logger.error(f"Token verification failed: {e}")
-        # Token 无效的错误消息（此时还没有 user_id，默认使用日语）
-        token_invalid_messages = {
-            "ja": "トークンが無効です。",
-            "en": "Invalid token.",
-            "zh": "令牌无效。"
-        }
-        return render_template("error.html", message=token_invalid_messages["ja"], language="ja"), 400
+        # Token 无效的错误消息（此时还没有 user_id，三语同时显示）
+        token_invalid_message = """トークンが無効です。
+Invalid token.
+令牌无效。"""
+        return render_template("error.html", message=token_invalid_message, language="ja"), 400
 
     if request.method == "POST":
         segaid = request.form.get("segaid")
