@@ -440,9 +440,7 @@ sega_bind_alt_text = {
 # 这些文本在用户未选择语言时显示，所以直接显示三语
 language_select_title = "言語選択 / Language Selection / 语言选择"
 
-language_select_description = """初回設定として、使用する言語を選択してください
-Please select your preferred language for the first-time setup
-请选择你的首选语言进行初始设置"""
+language_select_description = """言語を選択 / Select language / 选择语言"""
 
 language_button_jp = "🇯🇵 日本語"
 language_button_en = "🇺🇸 English"
