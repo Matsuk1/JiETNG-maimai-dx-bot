@@ -411,6 +411,31 @@ level_list_hint_text = {
     "zh": "💡 想要更精确的定数查询？请访问 https://dxrating.net！"
 }
 
+# SEGA 账号绑定消息
+sega_bind_title_text = {
+    "ja": "SEGA アカウント連携",
+    "en": "SEGA Account Link",
+    "zh": "SEGA 账号绑定"
+}
+
+sega_bind_description_text = {
+    "ja": "SEGA アカウントと連携されます\n有効期限は発行から2分間です",
+    "en": "Link your SEGA account\nValid for 2 minutes from issuance",
+    "zh": "将绑定你的 SEGA 账号\n有效期为发行后2分钟"
+}
+
+sega_bind_button_text = {
+    "ja": "押しで連携",
+    "en": "Tap to Link",
+    "zh": "点击绑定"
+}
+
+sega_bind_alt_text = {
+    "ja": "SEGA アカウント連携",
+    "en": "SEGA Account Link",
+    "zh": "SEGA 账号绑定"
+}
+
 # 公告标题
 notice_header_text = {
     "ja": "📢 お知らせ",

@@ -2259,13 +2259,22 @@ def handle_sync_text_command(event):
     if user_message.lower() in BIND_COMMANDS:
         bind_url = f"https://{DOMAIN}/linebot/sega_bind?token={generate_token(user_id)}"
 
+        # 使用多语言文本
+        from modules.message_manager import (
+            sega_bind_title_text, sega_bind_description_text,
+            sega_bind_button_text, sega_bind_alt_text, get_multilingual_text
+        )
+
         buttons_template = ButtonsTemplate(
-            title='SEGA アカウント連携',
-            text='SEGA アカウントと連携されます\n有効期限は発行から2分間です',
-            actions=[URIAction(label='押しで連携', uri=bind_url)]
+            title=get_multilingual_text(sega_bind_title_text, user_id),
+            text=get_multilingual_text(sega_bind_description_text, user_id),
+            actions=[URIAction(
+                label=get_multilingual_text(sega_bind_button_text, user_id),
+                uri=bind_url
+            )]
         )
         reply_message = TemplateMessage(
-            alt_text='SEGA アカウント連携',
+            alt_text=get_multilingual_text(sega_bind_alt_text, user_id),
             template=buttons_template
         )
 
