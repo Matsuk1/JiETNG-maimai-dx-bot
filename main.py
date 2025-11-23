@@ -588,6 +588,17 @@ def website_segaid_bind():
         # 从用户数据中获取语言设置，默认为 ja
         user_language = USERS.get(user_id, {}).get("language", "ja")
 
+        # 检查用户是否已经绑定账号
+        user_data = USERS.get(user_id, {})
+        has_account = all(key in user_data for key in ['sega_id', 'pwd', 'version'])
+        if has_account:
+            error_messages = {
+                "ja": "すでに SEGA アカウントが連携されています。再度連携する場合は、先に unbind コマンドで連携を解除してください。",
+                "en": "A SEGA account is already linked. To rebind, please use the unbind command first to unlink your account.",
+                "zh": "已绑定 SEGA 账号。如需重新绑定，请先使用 unbind 命令解除绑定。"
+            }
+            return render_template("error.html", message=error_messages.get(user_language, error_messages["ja"]), language=user_language), 400
+
         if not segaid or not password:
             return render_template("error.html", message="すべての項目を入力してください", language=user_language), 400
 
