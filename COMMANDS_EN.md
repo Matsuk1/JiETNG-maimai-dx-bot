@@ -67,10 +67,10 @@ This document lists all available commands for the JiETNG LINE Bot.
 
 | Command | Aliases | Description |
 |---------|---------|-------------|
+| `ab35` | `allb35`, `all best 35`, `オールベスト35` | Mixed version Best 35 |
 | `ab50` | `allb50`, `all best 50`, `オールベスト50` | Mixed version Best 50 |
 | `ab100` | `allb100`, `all best 100`, `オールベスト100` | Mixed version Best 100 |
 | `ab200` | `allb200`, `all best 200`, `オールベスト200` | Mixed version Best 200 |
-| `ab35` | `allb35`, `all best 35`, `オールベスト35` | Mixed version Best 35 |
 | `ap50` | `apb50`, `all perfect 50`, `オールパーフェクト50` | AP/APP only Best 50 |
 | `rct50` | `r50`, `recent50`, `recent 50` | Recent 50 plays |
 | `idealb50` | `idlb50`, `ideal best 50`, `理想的ベスト50` | Ideal Best 50 (auto-upgrade to next rank) |

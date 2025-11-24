@@ -108,7 +108,7 @@ abc123def456ghi789...
 
 ```bash
 curl -H "Authorization: Bearer abc123def456ghi789..." \
-     https://jietng.matsuki.work/api/v1/users
+     https://jietng.matsuki.top/api/v1/users
 ```
 
 ## 安全特性

@@ -808,16 +808,8 @@ def get_update_over_quick_reply(user_id=None):
                 text="b50"
             )),
             QuickReplyItem(action=MessageAction(
-                label=get_quick_reply_label("best_100", user_id),
-                text="b100"
-            )),
-            QuickReplyItem(action=MessageAction(
                 label=get_quick_reply_label("all_best_50", user_id),
                 text="ab50"
-            )),
-            QuickReplyItem(action=MessageAction(
-                label=get_quick_reply_label("all_best_35", user_id),
-                text="ab35"
             )),
             QuickReplyItem(action=MessageAction(
                 label=get_quick_reply_label("ap_best_50", user_id),

@@ -108,7 +108,7 @@ GET /api/v1/user/<user_id>
 
 **示例 / Example:**
 ```bash
-curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.work/api/v1/user/U123456
+curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/user/U123456
 ```
 
 **响应 / Response:**
@@ -133,7 +133,7 @@ GET /api/v1/users
 
 **示例 / Example:**
 ```bash
-curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.work/api/v1/users
+curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/users
 ```
 
 **响应 / Response:**
@@ -151,43 +151,6 @@ curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.work/api/v1/use
 }
 ```
 
-#### 3. 获取歌曲列表 / Get Song List
-
-```http
-GET /api/v1/songs?type=<type>&version=<version>
-```
-
-**参数 / Parameters:**
-- `type` (可选 / optional): `std` / `dx` / `utage`
-- `version` (可选 / optional): 版本名称 / version name
-
-**示例 / Example:**
-```bash
-# 获取所有 DX 歌曲
-curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.work/api/v1/songs?type=dx
-
-# 获取特定版本的歌曲
-curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.work/api/v1/songs?version=BUDDiES"
-```
-
-**响应 / Response:**
-```json
-{
-  "success": true,
-  "count": 500,
-  "songs": [
-    {
-      "id": "123",
-      "title": "曲名",
-      "artist": "アーティスト",
-      "type": "dx",
-      "version": ["BUDDiES"],
-      ...
-    },
-    ...
-  ]
-}
-```
 
 ---
 

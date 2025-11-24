@@ -29,8 +29,10 @@ best100      # b100 的替代命令
 ```
 best35       # 仅显示前 35 首旧曲
 best15       # 仅显示前 15 首新曲
-ab50         # All Best 50（忽略歌曲版本）
-ab35         # All Best 35（忽略歌曲版本）
+ab35         # All Best 35 （忽略歌曲版本）
+ab50         # All Best 50 （忽略歌曲版本）
+ab100        # All Best 100（忽略歌曲版本）
+ab200        # All Best 200（忽略歌曲版本）
 apb50        # All Perfect Best 50（仅 AP/AP+ 成绩）
 idlb50       # Ideal Best 50（模拟最好成绩）
 ```
