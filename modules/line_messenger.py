@@ -111,7 +111,7 @@ def smart_reply(user_id: str, reply_token: str, messages, configuration: Configu
                     edit_user_value(user_id, "notice_read", True)
 
         # 优先级3: Tips 消息（只在还有空间时添加）
-        if len(messages) < 5 and random.random() < 0.25:
+        if len(messages) < 5 and random.random() < 0.10:
             tip_msg = get_random_tip(user_id)
             if tip_msg:
                 messages.append(tip_msg)

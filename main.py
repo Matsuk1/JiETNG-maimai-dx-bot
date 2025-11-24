@@ -471,6 +471,60 @@ def cancel_if_timeout(task_done: threading.Event) -> None:
 configuration = Configuration(access_token=LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
+# ==================== API 认证装饰器 ====================
+
+def require_dev_token(f):
+    """
+    验证开发者 token 的装饰器
+
+    使用方法:
+    @app.route('/api/endpoint')
+    @require_dev_token
+    def endpoint():
+        # token_info 会被添加到 request 对象中
+        token_info = request.token_info
+        return jsonify({"status": "success"})
+    """
+    from functools import wraps
+
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        from modules.devtoken_manager import verify_dev_token
+
+        # 从 Authorization header 获取 token
+        auth_header = request.headers.get('Authorization')
+
+        if not auth_header:
+            return jsonify({
+                "error": "No authorization header",
+                "message": "Authorization header is required"
+            }), 401
+
+        # 检查 Bearer token 格式
+        parts = auth_header.split()
+        if len(parts) != 2 or parts[0].lower() != 'bearer':
+            return jsonify({
+                "error": "Invalid authorization header",
+                "message": "Authorization header must be in format: Bearer <token>"
+            }), 401
+
+        token = parts[1]
+
+        # 验证 token
+        token_info = verify_dev_token(token)
+        if not token_info:
+            return jsonify({
+                "error": "Invalid token",
+                "message": "Token is invalid or has been revoked"
+            }), 401
+
+        # 将 token 信息添加到 request 对象中
+        request.token_info = token_info
+
+        return f(*args, **kwargs)
+
+    return decorated_function
+
 # ==================== Flask 路由 ====================
 
 @app.route("/linebot/webhook", methods=['POST'])
@@ -1566,7 +1620,7 @@ def generate_maipass(user_id):
     message = [img_msg, share_msg(user_id)]
     return message
 
-def selgen_records(user_id, type="best50", command="", ver="jp"):
+def select_records(user_id, type, command, ver):
     read_user()
 
     if user_id not in USERS:
@@ -1616,6 +1670,17 @@ def selgen_records(user_id, type="best50", command="", ver="jp"):
                     scr_start = float(re.sub(r"[^0-9.]", "", parts[0]))
                     scr_stop = float(re.sub(r"[^0-9.]", "", parts[1]))
                     song_record = list(filter(lambda x: scr_start <= eval(x['score'].replace("%", "")) <= scr_stop, song_record))
+            elif cmd == "ver":
+                # 处理版本筛选：-ver [version1] [version2] ...
+                raw_versions = cmd_num.split()
+                versions = []
+                for v in raw_versions:
+                    if v.strip():
+                        # 将 + 替换为 " PLUS"（注意前面有空格）
+                        processed = v.strip().replace("+", " PLUS").upper()
+                        versions.append(processed)
+                # 筛选歌曲版本在指定列表中的记录（忽略大小写）
+                song_record = list(filter(lambda x: (x.get('version') or '').upper() in versions, song_record))
 
     up_songs = down_songs = []
 
@@ -1669,6 +1734,10 @@ def selgen_records(user_id, type="best50", command="", ver="jp"):
         up_songs = sorted(up_songs_data, key=lambda x: -x["ra"])[:35]
         down_songs = sorted(down_songs_data, key=lambda x: -x["ra"])[:15]
 
+    return up_songs, down_songs;
+
+def generate_records(user_id, type="best50", command="", ver="jp"):
+    up_songs, down_songs = select_records(user_id, type, command, ver)
     if not up_songs and not down_songs:
         return picture_error(user_id)
 
@@ -2289,7 +2358,7 @@ def handle_sync_text_command(event):
 
     for aliases, mode in RANK_COMMANDS.items():
         if first_word in aliases:
-            reply_message = selgen_records(id_use, mode, rest_text, mai_ver_use)
+            reply_message = generate_records(id_use, mode, rest_text, mai_ver_use)
             return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
 
     # ====== SEGA ID 绑定逻辑 ======
@@ -2438,6 +2507,100 @@ def handle_sync_text_command(event):
                 logger.warning("Cache queue is full, task not queued")
 
             return
+
+        if user_message.startswith("devtoken "):
+            from modules.devtoken_manager import (
+                create_dev_token, list_dev_tokens, revoke_dev_token, get_token_info
+            )
+            from modules.message_manager import (
+                devtoken_create_success_text, devtoken_create_failed_text,
+                devtoken_list_header_text, devtoken_list_empty_text,
+                devtoken_revoke_success_text, devtoken_revoke_failed_text,
+                devtoken_info_text, devtoken_info_not_found_text,
+                devtoken_usage_text, get_multilingual_text
+            )
+
+            # Parse command
+            parts = user_message.split(maxsplit=2)
+
+            if len(parts) < 2:
+                # Show usage
+                reply_message = TextMessage(text=get_multilingual_text(devtoken_usage_text, user_id))
+                return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
+
+            subcommand = parts[1]
+
+            if subcommand == "create" and len(parts) >= 3:
+                note = parts[2]
+                result = create_dev_token(note, user_id)
+                if result:
+                    text = get_multilingual_text(devtoken_create_success_text, user_id)
+                    text = text.format(
+                        token_id=result["token_id"],
+                        note=result["note"],
+                        token=result["token"],
+                        created_at=result["created_at"]
+                    )
+                    reply_message = TextMessage(text=text)
+                else:
+                    reply_message = TextMessage(text=get_multilingual_text(devtoken_create_failed_text, user_id))
+                return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
+
+            elif subcommand == "list":
+                tokens = list_dev_tokens()
+                if not tokens:
+                    text = get_multilingual_text(devtoken_list_empty_text, user_id)
+                else:
+                    header = get_multilingual_text(devtoken_list_header_text, user_id)
+                    token_lines = []
+                    for t in tokens:
+                        status = "❌ Revoked" if t["revoked"] else "✅ Active"
+                        token_lines.append(
+                            f"• {t['token_id']}\n"
+                            f"  Note: {t['note']}\n"
+                            f"  Status: {status}\n"
+                            f"  Created: {t['created_at']}\n"
+                            f"  Last used: {t['last_used']}"
+                        )
+                    text = header + "\n\n" + "\n\n".join(token_lines)
+                reply_message = TextMessage(text=text)
+                return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
+
+            elif subcommand == "revoke" and len(parts) >= 3:
+                token_id = parts[2]
+                success = revoke_dev_token(token_id)
+                if success:
+                    text = get_multilingual_text(devtoken_revoke_success_text, user_id)
+                    text = text.format(token_id=token_id)
+                    reply_message = TextMessage(text=text)
+                else:
+                    reply_message = TextMessage(text=get_multilingual_text(devtoken_revoke_failed_text, user_id))
+                return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
+
+            elif subcommand == "info" and len(parts) >= 3:
+                token_id = parts[2]
+                info = get_token_info(token_id=token_id)
+                if info:
+                    text = get_multilingual_text(devtoken_info_text, user_id)
+                    status = "❌ Revoked" if info["revoked"] else "✅ Active"
+                    text = text.format(
+                        token_id=info["token_id"],
+                        note=info["note"],
+                        status=status,
+                        created_at=info["created_at"],
+                        created_by=info["created_by"],
+                        last_used=info["last_used"],
+                        token=info["token"]
+                    )
+                    reply_message = TextMessage(text=text)
+                else:
+                    reply_message = TextMessage(text=get_multilingual_text(devtoken_info_not_found_text, user_id))
+                return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
+
+            else:
+                # Invalid subcommand or missing arguments
+                reply_message = TextMessage(text=get_multilingual_text(devtoken_usage_text, user_id))
+                return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
 
     # ====== 默认：不匹配任何命令 ======
     return
@@ -3270,6 +3433,360 @@ def admin_dxdata_status():
         logger.error(f"Admin DXData status error: {e}", exc_info=True)
         return jsonify({
             'error': str(e)
+        }), 500
+
+# ==================== 开发者 API ====================
+
+@app.route("/api/v1/user/<user_id>", methods=["GET"])
+@csrf.exempt
+@require_dev_token
+def api_get_user(user_id):
+    """
+    获取用户信息 API
+
+    需要 Bearer Token 认证
+
+    示例:
+    curl -H "Authorization: Bearer <your_token>" https://your-domain.com/api/v1/user/<user_id>
+    """
+    try:
+        read_user()
+
+        if user_id not in USERS:
+            return jsonify({
+                "error": "User not found",
+                "message": f"User {user_id} does not exist"
+            }), 404
+
+        user_data = USERS[user_id]
+        nickname = get_user_nickname_wrapper(user_id, use_cache=True)
+
+        # 记录 API 访问日志
+        token_info = request.token_info
+        logger.info(f"API: Get user {user_id} via token {token_info['token_id']} ({token_info['note']})")
+
+        return jsonify({
+            "success": True,
+            "user_id": user_id,
+            "nickname": nickname,
+            "data": user_data
+        })
+
+    except Exception as e:
+        logger.error(f"API get user error: {e}", exc_info=True)
+        return jsonify({
+            "error": "Internal server error",
+            "message": str(e)
+        }), 500
+
+@app.route("/api/v1/users", methods=["GET"])
+@csrf.exempt
+@require_dev_token
+def api_list_users():
+    """
+    获取所有用户列表 API
+
+    需要 Bearer Token 认证
+
+    示例:
+    curl -H "Authorization: Bearer <your_token>" https://your-domain.com/api/v1/users
+    """
+    try:
+        read_user()
+
+        users_list = []
+        for user_id in USERS.keys():
+            nickname = get_user_nickname_wrapper(user_id, use_cache=True)
+            users_list.append({
+                "user_id": user_id,
+                "nickname": nickname
+            })
+
+        # 记录 API 访问日志
+        token_info = request.token_info
+        logger.info(f"API: List users via token {token_info['token_id']} ({token_info['note']})")
+
+        return jsonify({
+            "success": True,
+            "count": len(users_list),
+            "users": users_list
+        })
+
+    except Exception as e:
+        logger.error(f"API list users error: {e}", exc_info=True)
+        return jsonify({
+            "error": "Internal server error",
+            "message": str(e)
+        }), 500
+
+@app.route("/api/v1/update/<user_id>", methods=["GET"])
+@csrf.exempt
+@require_dev_token
+def api_update_user(user_id):
+    """
+    触发用户数据更新 API
+
+    需要 Bearer Token 认证
+
+    将用户加入更新队列，异步执行数据更新
+
+    示例:
+    curl -H "Authorization: Bearer <your_token>" https://your-domain.com/api/v1/update/<user_id>
+    """
+    try:
+        read_user()
+
+        # 检查用户是否存在
+        if user_id not in USERS:
+            return jsonify({
+                "error": "User not found",
+                "message": f"User {user_id} does not exist"
+            }), 404
+
+        # 检查用户是否已绑定账号
+        if 'sega_id' not in USERS[user_id] or 'sega_pwd' not in USERS[user_id]:
+            return jsonify({
+                "error": "Account not bound",
+                "message": f"User {user_id} has not bound a SEGA account"
+            }), 400
+
+        # 创建模拟事件对象用于更新任务
+        class MockEvent:
+            def __init__(self, user_id):
+                self.source = type('obj', (object,), {'user_id': user_id})()
+                self.reply_token = None  # API 调用不需要回复
+
+        mock_event = MockEvent(user_id)
+
+        # 生成任务ID
+        import secrets
+        task_id = f"api_update_{secrets.token_hex(8)}"
+
+        # 将更新任务加入队列
+        try:
+            webtask_queue.put_nowait((async_admin_maimai_update_task, (mock_event,), task_id))
+
+            # 记录 API 访问日志
+            token_info = request.token_info
+            logger.info(f"API: Triggered update for user {user_id} via token {token_info['token_id']} ({token_info['note']})")
+
+            return jsonify({
+                "success": True,
+                "message": "Update task queued successfully",
+                "user_id": user_id,
+                "task_id": task_id,
+                "queue_size": webtask_queue.qsize()
+            })
+
+        except queue.Full:
+            return jsonify({
+                "error": "Queue full",
+                "message": "Update queue is full, please try again later",
+                "queue_size": webtask_queue.qsize()
+            }), 503
+
+    except Exception as e:
+        logger.error(f"API update user error: {e}", exc_info=True)
+        return jsonify({
+            "error": "Internal server error",
+            "message": str(e)
+        }), 500
+
+@app.route("/api/v1/records/<user_id>", methods=["GET"])
+@csrf.exempt
+@require_dev_token
+def api_get_records(user_id):
+    """
+    获取用户成绩记录 API
+
+    需要 Bearer Token 认证
+
+    参数:
+    - type: 可选，记录类型，默认为 best50
+      可选值: best50, best100, best35, best15, allb50, allb35, apb50, rct50, idealb50, UNKNOWN
+    - command: 可选，过滤命令，如 "-lv 14 15 -ra 100 200"
+
+    示例:
+    curl -H "Authorization: Bearer <your_token>" "https://your-domain.com/api/v1/records/<user_id>?type=best50"
+    curl -H "Authorization: Bearer <your_token>" "https://your-domain.com/api/v1/records/<user_id>?type=best35&command=-lv 14 15"
+    """
+    try:
+        # 获取查询参数
+        record_type = request.args.get('type', 'best50')
+        command = request.args.get('command', '')
+
+        # 记录 API 访问日志
+        token_info = request.token_info
+        logger.info(f"API: Get records for user {user_id} (type={record_type}) via token {token_info['token_id']} ({token_info['note']})")
+
+        # 验证 record_type
+        valid_types = ["best50", "best100", "best35", "best15", "allb50", "allb35", "apb50", "rct50", "idealb50", "UNKNOWN"]
+        if record_type not in valid_types:
+            return jsonify({
+                "error": "Invalid type",
+                "message": f"Invalid record type: {record_type}. Valid types: {', '.join(valid_types)}"
+            }), 400
+
+        read_user()
+
+        # 检查用户是否存在
+        if user_id not in USERS:
+            return jsonify({
+                "error": "User not found",
+                "message": f"User {user_id} does not exist"
+            }), 404
+
+        # 检查是否有个人信息
+        if "personal_info" not in USERS[user_id]:
+            return jsonify({
+                "error": "User info not found",
+                "message": f"User {user_id} has no personal info, please update first"
+            }), 400
+
+        # 获取用户版本
+        ver = USERS[user_id].get('version', 'jp')
+
+        # 读取用户记录
+        song_record = read_record(user_id)
+        if not len(song_record):
+            return jsonify({
+                "error": "No records found",
+                "message": f"User {user_id} has no score records"
+            }), 404
+
+        # 调用 select_records 函数获取筛选后的记录
+        up_songs, down_songs = select_records(user_id, record_type, command, ver)
+
+        if not up_songs and not down_songs:
+            return jsonify({
+                "success": True,
+                "count": 0,
+                "old_songs": [],
+                "new_songs": [],
+                "message": "No records match the criteria"
+            })
+
+        return jsonify({
+            "success": True,
+            "user_id": user_id,
+            "type": record_type,
+            "count": len(up_songs) + len(down_songs),
+            "old_songs": up_songs,
+            "new_songs": down_songs
+        })
+
+    except Exception as e:
+        logger.error(f"API get records error: {e}", exc_info=True)
+        return jsonify({
+            "error": "Internal server error",
+            "message": str(e)
+        }), 500
+
+@app.route("/api/v1/versions", methods=["GET"])
+@csrf.exempt
+@require_dev_token
+def api_get_versions():
+    """
+    获取版本信息 API
+
+    需要 Bearer Token 认证
+
+    返回 maimai DX 的版本信息
+
+    示例:
+    curl -H "Authorization: Bearer <your_token>" https://your-domain.com/api/v1/versions
+    """
+    try:
+        # 记录 API 访问日志
+        token_info = request.token_info
+        logger.info(f"API: Get versions info via token {token_info['token_id']} ({token_info['note']})")
+
+        return jsonify({
+            "success": True,
+            "versions": MAIMAI_VERSION
+        })
+
+    except Exception as e:
+        logger.error(f"API get versions error: {e}", exc_info=True)
+        return jsonify({
+            "error": "Internal server error",
+            "message": str(e)
+        }), 500
+
+@app.route("/api/v1/search", methods=["GET"])
+@csrf.exempt
+@require_dev_token
+def api_search_songs():
+    """
+    搜索歌曲 API
+
+    需要 Bearer Token 认证
+
+    参数:
+    - q: 必需，搜索关键词
+    - ver: 可选，服务器版本 (jp/intl)，默认为 jp
+    - max_results: 可选，最大结果数，默认为 6
+
+    示例:
+    curl -H "Authorization: Bearer <your_token>" "https://your-domain.com/api/v1/search?q=freedom&ver=jp"
+    """
+    try:
+        # 获取查询参数
+        query = request.args.get('q')
+        ver = request.args.get('ver', 'jp')
+        max_results = request.args.get('max_results', 6, type=int)
+
+        if not query:
+            return jsonify({
+                "error": "Missing parameter",
+                "message": "Query parameter 'q' is required"
+            }), 400
+
+        if ver not in ['jp', 'intl']:
+            return jsonify({
+                "error": "Invalid parameter",
+                "message": "Parameter 'ver' must be 'jp' or 'intl'"
+            }), 400
+
+        # 记录 API 访问日志
+        token_info = request.token_info
+        logger.info(f"API: Search songs with query '{query}' via token {token_info['token_id']} ({token_info['note']})")
+
+        # 读取歌曲数据
+        read_dxdata(ver)
+
+        # 使用优化的歌曲匹配函数
+        matching_songs = find_matching_songs(query, SONGS, max_results=max_results, threshold=0.85)
+
+        # 检查结果
+        if not matching_songs:
+            return jsonify({
+                "success": True,
+                "count": 0,
+                "songs": [],
+                "message": "No songs found"
+            })
+
+        if len(matching_songs) > MAX_SEARCH_RESULTS:
+            return jsonify({
+                "error": "Too many results",
+                "message": f"Found {len(matching_songs)} songs, please refine your search (max: {MAX_SEARCH_RESULTS})",
+                "count": len(matching_songs)
+            }), 400
+
+        return jsonify({
+            "success": True,
+            "count": len(matching_songs),
+            "query": query,
+            "ver": ver,
+            "songs": matching_songs
+        })
+
+    except Exception as e:
+        logger.error(f"API search songs error: {e}", exc_info=True)
+        return jsonify({
+            "error": "Internal server error",
+            "message": str(e)
         }), 500
 
 if __name__ == "__main__":

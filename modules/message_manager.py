@@ -468,6 +468,61 @@ notice_header_text = {
     "zh": "📢 公告"
 }
 
+# 开发者 Token 相关消息
+devtoken_create_success_text = {
+    "ja": "✅ 開発者トークンを作成しました！\n\nToken ID: {token_id}\nToken: {token}\n備考: {note}\n作成日時: {created_at}\n\n⚠️ このトークンは一度しか表示されません。安全な場所に保管してください。",
+    "en": "✅ Developer token created successfully!\n\nToken ID: {token_id}\nToken: {token}\nNote: {note}\nCreated: {created_at}\n\n⚠️ This token will only be shown once. Please store it securely.",
+    "zh": "✅ 开发者 Token 创建成功！\n\nToken ID: {token_id}\nToken: {token}\n备注: {note}\n创建时间: {created_at}\n\n⚠️ 此 Token 仅显示一次，请妥善保管。"
+}
+
+devtoken_create_failed_text = {
+    "ja": "❌ トークンの作成に失敗しました。",
+    "en": "❌ Failed to create token.",
+    "zh": "❌ Token 创建失败。"
+}
+
+devtoken_list_header_text = {
+    "ja": "📋 開発者トークン一覧",
+    "en": "📋 Developer Tokens List",
+    "zh": "📋 开发者 Token 列表"
+}
+
+devtoken_list_empty_text = {
+    "ja": "トークンはまだ作成されていません。",
+    "en": "No tokens created yet.",
+    "zh": "还没有创建任何 Token。"
+}
+
+devtoken_revoke_success_text = {
+    "ja": "✅ トークン {token_id} を無効化しました。",
+    "en": "✅ Token {token_id} has been revoked.",
+    "zh": "✅ 已撤销 Token {token_id}。"
+}
+
+devtoken_revoke_failed_text = {
+    "ja": "❌ トークン {token_id} が見つかりません。",
+    "en": "❌ Token {token_id} not found.",
+    "zh": "❌ 找不到 Token {token_id}。"
+}
+
+devtoken_info_text = {
+    "ja": "📝 トークン詳細情報\n\nToken ID: {token_id}\nToken: {token}\n備考: {note}\n作成者: {created_by}\n作成日時: {created_at}\n最終使用: {last_used}\nステータス: {status}",
+    "en": "📝 Token Details\n\nToken ID: {token_id}\nToken: {token}\nNote: {note}\nCreated by: {created_by}\nCreated: {created_at}\nLast used: {last_used}\nStatus: {status}",
+    "zh": "📝 Token 详细信息\n\nToken ID: {token_id}\nToken: {token}\n备注: {note}\n创建者: {created_by}\n创建时间: {created_at}\n最后使用: {last_used}\n状态: {status}"
+}
+
+devtoken_info_not_found_text = {
+    "ja": "❌ トークンが見つかりません。",
+    "en": "❌ Token not found.",
+    "zh": "❌ 找不到 Token。"
+}
+
+devtoken_usage_text = {
+    "ja": "📚 開発者トークン管理\n\ndevtoken create <備考> - 新しいトークンを作成\ndevtoken list - トークン一覧を表示\ndevtoken revoke <token_id> - トークンを無効化\ndevtoken info <token_id> - トークンの詳細を表示",
+    "en": "📚 Developer Token Management\n\ndevtoken create <note> - Create a new token\ndevtoken list - List all tokens\ndevtoken revoke <token_id> - Revoke a token\ndevtoken info <token_id> - Show token details",
+    "zh": "📚 开发者 Token 管理\n\ndevtoken create <备注> - 创建新 Token\ndevtoken list - 显示所有 Token\ndevtoken revoke <token_id> - 撤销 Token\ndevtoken info <token_id> - 显示 Token 详情"
+}
+
 # 好友列表 alt_text
 friend_list_alt_text = {
     "ja": "フレンドリスト",
