@@ -1623,19 +1623,7 @@ def generate_maipass(user_id):
     message = [img_msg, share_msg(user_id)]
     return message
 
-def select_records(user_id, type, command, ver):
-    read_user()
-
-    if user_id not in USERS:
-        return segaid_error(user_id)
-
-    song_record = read_record(user_id)
-    if not len(song_record):
-        return record_error(user_id)
-
-    if "personal_info" not in USERS[user_id]:
-        return info_error(user_id)
-
+def select_records(song_record, type, command, ver):
     if not command == "":
         cmds = re.findall(r"-(\w+)\s+([^ -][^-]*)", command)
         for cmd, cmd_num in cmds:
@@ -1746,7 +1734,19 @@ def select_records(user_id, type, command, ver):
     return up_songs, down_songs;
 
 def generate_records(user_id, type="best50", command="", ver="jp"):
-    up_songs, down_songs = select_records(user_id, type, command, ver)
+    read_user()
+
+    if user_id not in USERS:
+        return segaid_error(user_id)
+
+    song_record = read_record(user_id)
+    if not len(song_record):
+        return record_error(user_id)
+
+    if "personal_info" not in USERS[user_id]:
+        return info_error(user_id)
+
+    up_songs, down_songs = select_records(song_record, type, command, ver)
     if not up_songs and not down_songs:
         return picture_error(user_id)
 
@@ -3668,7 +3668,7 @@ def api_get_records(user_id):
             }), 404
 
         # 调用 select_records 函数获取筛选后的记录
-        up_songs, down_songs = select_records(user_id, record_type, command, ver)
+        up_songs, down_songs = select_records(song_record, record_type, command, ver)
 
         if not up_songs and not down_songs:
             return jsonify({
