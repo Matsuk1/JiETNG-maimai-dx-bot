@@ -1134,6 +1134,9 @@ def get_friend_list(user_id):
                     "is_favorite": True  # 标记为收藏好友以便显示
                 }
                 friends_list.append(friend_entry)
+            else:
+                USERS[user_id]['line_friends'].remove(friend_id)
+                write_user()
 
     return generate_friend_buttons(user_id, get_friend_list_alt_text(user_id), format_favorite_friends(friends_list))
 
@@ -1704,6 +1707,12 @@ def select_records(user_id, type, command, ver):
     elif type == "allb50":
         up_songs = sorted(song_record, key=lambda x: -x["ra"])[:50]
 
+    elif type == "allb100":
+        up_songs = sorted(song_record, key=lambda x: -x["ra"])[:100]
+
+    elif type == "allb200":
+        up_songs = sorted(song_record, key=lambda x: -x["ra"])[:200]
+
     elif type == "allb35":
         up_songs = sorted(song_record, key=lambda x: -x["ra"])[:35]
 
@@ -2023,6 +2032,8 @@ IMAGE_TASK_ROUTES = {
         "b35", "best35", "best 35", "ベスト35",
         "b15", "best15", "best 15", "ベスト15",
         "ab50", "allb50", "all best 50", "オールベスト50",
+        "ab100", "allb100", "all best 100", "オールベスト100",
+        "ab200", "allb200", "all best 200", "オールベスト200",
         "ab35", "allb35", "all best 35", "オールベスト35",
         "ap50", "apb50", "all perfect 50", "オールパーフェクト50",
         "rct50", "r50", "recent50", "recent 50",
@@ -2349,6 +2360,8 @@ def handle_sync_text_command(event):
         ("b35", "best35", "best 35", "ベスト35"): "best35",
         ("b15", "best15", "best 15", "ベスト15"): "best15",
         ("ab50", "allb50", "all best 50", "オールベスト50"): "allb50",
+        ("ab100", "allb100", "all best 100", "オールベスト100"): "allb100",
+        ("ab200", "allb200", "all best 200", "オールベスト200"): "allb200",
         ("ab35", "allb35", "all best 35", "オールベスト35"): "allb35",
         ("ap50", "apb50", "all perfect 50", "オールパーフェクト50"): "apb50",
         ("rct50", "r50", "recent50", "recent 50"): "rct50",
@@ -3603,7 +3616,7 @@ def api_get_records(user_id):
 
     参数:
     - type: 可选，记录类型，默认为 best50
-      可选值: best50, best100, best35, best15, allb50, allb35, apb50, rct50, idealb50, UNKNOWN
+      可选值: best50, best100, best35, best15, allb50, allb100, allb200, allb35, apb50, rct50, idealb50, UNKNOWN
     - command: 可选，过滤命令，如 "-lv 14 15 -ra 100 200"
 
     示例:
@@ -3620,7 +3633,7 @@ def api_get_records(user_id):
         logger.info(f"API: Get records for user {user_id} (type={record_type}) via token {token_info['token_id']} ({token_info['note']})")
 
         # 验证 record_type
-        valid_types = ["best50", "best100", "best35", "best15", "allb50", "allb35", "apb50", "rct50", "idealb50", "UNKNOWN"]
+        valid_types = ["best50", "best100", "best35", "best15", "allb50", "allb100", "allb200", "allb35", "apb50", "rct50", "idealb50", "UNKNOWN"]
         if record_type not in valid_types:
             return jsonify({
                 "error": "Invalid type",
@@ -3701,9 +3714,11 @@ def api_get_versions():
         token_info = request.token_info
         logger.info(f"API: Get versions info via token {token_info['token_id']} ({token_info['note']})")
 
+        read_dxdata()
+
         return jsonify({
             "success": True,
-            "versions": MAIMAI_VERSION
+            "versions": VERSIONS
         })
 
     except Exception as e:
@@ -3723,24 +3738,24 @@ def api_search_songs():
     需要 Bearer Token 认证
 
     参数:
-    - q: 必需，搜索关键词
+    - q: 可选，搜索关键词，如果不提供或使用 __empty__ 则搜索空字符串
     - ver: 可选，服务器版本 (jp/intl)，默认为 jp
     - max_results: 可选，最大结果数，默认为 6
 
     示例:
     curl -H "Authorization: Bearer <your_token>" "https://your-domain.com/api/v1/search?q=freedom&ver=jp"
+    curl -H "Authorization: Bearer <your_token>" "https://your-domain.com/api/v1/search?q=__empty__&ver=jp"
     """
     try:
-        # 获取查询参数
-        query = request.args.get('q')
+        # 获取查询参数，允许空字符串
+        query = request.args.get('q', '')
+
+        # 处理特殊占位符
+        if query == '__empty__':
+            query = ''
+
         ver = request.args.get('ver', 'jp')
         max_results = request.args.get('max_results', 6, type=int)
-
-        if not query:
-            return jsonify({
-                "error": "Missing parameter",
-                "message": "Query parameter 'q' is required"
-            }), 400
 
         if ver not in ['jp', 'intl']:
             return jsonify({
