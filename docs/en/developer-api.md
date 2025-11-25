@@ -214,12 +214,12 @@ curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/sea
 #### 4. Queue User Update
 
 ```http
-GET /api/v1/update/<user_id>
+POST /api/v1/update/<user_id>
 ```
 
 **Example:**
 ```bash
-curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/update/U123456
+curl -X POST -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/update/U123456
 ```
 
 **Response:**
@@ -287,10 +287,10 @@ curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/vers
 #### 7. Register User
 
 ```http
-GET /api/v1/register/<user_id>?nickname=<name>&language=<lang>
+POST /api/v1/register/<user_id>
 ```
 
-**Parameters:**
+**Request Body (JSON):**
 - `nickname`: **Required**, user nickname (automatically fetched from LINE API for LINE users, otherwise use this parameter)
 - `language`: Language setting (ja/en/zh, optional, defaults to en)
 
@@ -304,7 +304,7 @@ GET /api/v1/register/<user_id>?nickname=<name>&language=<lang>
 
 **Example:**
 ```bash
-curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/register/U123456?nickname=TestUser&language=en"
+curl -X POST -H "Authorization: Bearer abc123..." -H "Content-Type: application/json" -d '{"nickname":"TestUser","language":"en"}' https://jietng.matsuki.top/api/v1/register/U123456
 ```
 
 **Response:**
@@ -398,9 +398,9 @@ New users registered via API will automatically track:
 | Endpoint | Method | Description |
 |----------------|--------------|-------------------|
 | `/users` | GET | Get all users |
-| `/register/<user_id>` | GET | Register user and generate bind URL |
+| `/register/<user_id>` | POST | Register user and generate bind URL |
 | `/user/<user_id>` | GET | Get user info |
-| `/update/<user_id>` | GET | Queue user update |
+| `/update/<user_id>` | POST | Queue user update |
 | `/records/<user_id>` | GET | Get user records |
 | `/search` | GET | Search songs |
 | `/versions` | GET | Get version list |

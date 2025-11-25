@@ -211,12 +211,12 @@ curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/sea
 #### 4. 队列用户更新
 
 ```http
-GET /api/v1/update/<user_id>
+POST /api/v1/update/<user_id>
 ```
 
 **示例:**
 ```bash
-curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/update/U123456
+curl -X POST -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/update/U123456
 ```
 
 **响应:**
@@ -284,10 +284,10 @@ curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/vers
 #### 7. 注册用户
 
 ```http
-GET /api/v1/register/<user_id>?nickname=<name>&language=<lang>
+POST /api/v1/register/<user_id>
 ```
 
-**参数:**
+**请求体 (JSON):**
 - `nickname`: **必需**，用户昵称（如果是LINE用户会自动从LINE API获取，非LINE用户则使用此参数）
 - `language`: 语言设置 (ja/en/zh，可选，默认 en)
 
@@ -301,7 +301,7 @@ GET /api/v1/register/<user_id>?nickname=<name>&language=<lang>
 
 **示例:**
 ```bash
-curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/register/U123456?nickname=TestUser&language=en"
+curl -X POST -H "Authorization: Bearer abc123..." -H "Content-Type: application/json" -d '{"nickname":"TestUser","language":"en"}' https://jietng.matsuki.top/api/v1/register/U123456
 ```
 
 **响应:**
@@ -393,9 +393,9 @@ curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/reg
 | 端点 | 方法 | 说明 |
 |----------------|--------------|-------------------|
 | `/users` | GET | 获取所有用户列表 |
-| `/register/<user_id>` | GET | 注册用户并生成绑定链接 |
+| `/register/<user_id>` | POST | 注册用户并生成绑定链接 |
 | `/user/<user_id>` | GET | 获取用户信息 |
-| `/update/<user_id>` | GET | 队列用户数据更新 |
+| `/update/<user_id>` | POST | 队列用户数据更新 |
 | `/records/<user_id>` | GET | 获取用户成绩记录 |
 | `/search` | GET | 搜索歌曲 |
 | `/versions` | GET | 获取版本列表 |

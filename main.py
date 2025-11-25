@@ -3532,7 +3532,7 @@ def api_list_users():
             "message": str(e)
         }), 500
 
-@app.route("/api/v1/update/<user_id>", methods=["GET"])
+@app.route("/api/v1/update/<user_id>", methods=["POST"])
 @csrf.exempt
 @require_dev_token
 def api_update_user(user_id):
@@ -3544,7 +3544,7 @@ def api_update_user(user_id):
     将用户加入更新队列，异步执行数据更新
 
     示例:
-    curl -H "Authorization: Bearer <your_token>" https://your-domain.com/api/v1/update/<user_id>
+    curl -X POST -H "Authorization: Bearer <your_token>" https://your-domain.com/api/v1/update/<user_id>
     """
     try:
         read_user()
@@ -3804,7 +3804,7 @@ def api_search_songs():
             "message": str(e)
         }), 500
 
-@app.route("/api/v1/register/<user_id>", methods=["GET"])
+@app.route("/api/v1/register/<user_id>", methods=["POST"])
 @csrf.exempt
 @require_dev_token
 def api_register_user(user_id):
@@ -3813,7 +3813,7 @@ def api_register_user(user_id):
 
     需要 Bearer Token 认证
 
-    参数:
+    请求体 (JSON):
     - nickname: 必需，用户昵称（如果是LINE用户会自动从LINE API获取，非LINE用户则使用此参数）
     - language: 可选，语言设置 (ja/en/zh)，默认为 en
 
@@ -3824,7 +3824,7 @@ def api_register_user(user_id):
     - nickname: 实际使用的昵称
 
     示例:
-    curl -H "Authorization: Bearer <your_token>" "https://your-domain.com/api/v1/register/U1234567890abcdef?nickname=TestUser&language=en"
+    curl -X POST -H "Authorization: Bearer <your_token>" -H "Content-Type: application/json" -d '{"nickname":"TestUser","language":"en"}' https://your-domain.com/api/v1/register/U1234567890abcdef
     """
     try:
         from modules.token_manager import generate_token as generate_bind_token
@@ -3837,9 +3837,10 @@ def api_register_user(user_id):
                 "message": "user_id must start with 'U'"
             }), 400
 
-        # 获取参数
-        nickname_param = request.args.get('nickname', '')
-        language = request.args.get('language', 'en')
+        # 获取 JSON 数据
+        data = request.get_json() or {}
+        nickname_param = data.get('nickname', '')
+        language = data.get('language', 'en')
 
         # nickname 是必需参数
         if not nickname_param:

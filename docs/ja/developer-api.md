@@ -211,12 +211,12 @@ curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/sea
 #### 4. ユーザー更新キュー
 
 ```http
-GET /api/v1/update/<user_id>
+POST /api/v1/update/<user_id>
 ```
 
 **例:**
 ```bash
-curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/update/U123456
+curl -X POST -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/update/U123456
 ```
 
 **レスポンス:**
@@ -284,10 +284,10 @@ curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/vers
 #### 7. ユーザー登録
 
 ```http
-GET /api/v1/register/<user_id>?nickname=<name>&language=<lang>
+POST /api/v1/register/<user_id>
 ```
 
-**パラメータ:**
+**リクエストボディ (JSON):**
 - `nickname`: **必須**、ユーザーのニックネーム（LINEユーザーの場合はLINE APIから自動取得、それ以外の場合はこのパラメータを使用）
 - `language`: 言語設定 (ja/en/zh、オプション、デフォルトはen)
 
@@ -301,7 +301,7 @@ GET /api/v1/register/<user_id>?nickname=<name>&language=<lang>
 
 **例:**
 ```bash
-curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/register/U123456?nickname=TestUser&language=en"
+curl -X POST -H "Authorization: Bearer abc123..." -H "Content-Type: application/json" -d '{"nickname":"TestUser","language":"en"}' https://jietng.matsuki.top/api/v1/register/U123456
 ```
 
 **レスポンス:**
@@ -393,9 +393,9 @@ API経由で登録された新規ユーザーは以下の情報を自動的に�
 | エンドポイント | メソッド | 説明 |
 |----------------|--------------|-------------------|
 | `/users` | GET | すべてのユーザーを取得 |
-| `/register/<user_id>` | GET | ユーザーを登録し連携URLを生成 |
+| `/register/<user_id>` | POST | ユーザーを登録し連携URLを生成 |
 | `/user/<user_id>` | GET | ユーザー情報を取得 |
-| `/update/<user_id>` | GET | ユーザー更新をキュー |
+| `/update/<user_id>` | POST | ユーザー更新をキュー |
 | `/records/<user_id>` | GET | ユーザーレコードを取得 |
 | `/search` | GET | 楽曲を検索 |
 | `/versions` | GET | バージョン一覧を取得 |
