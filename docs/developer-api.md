@@ -121,32 +121,7 @@ curl -H "Authorization: Bearer <your_token>" https://jietng.matsuki.top/api/v1/.
 
 以下所有端点的完整 URL 为 `https://jietng.matsuki.top/api/v1/` + 端点路径。
 
-#### 1. 获取用户信息
-
-```http
-GET /api/v1/user/<user_id>
-```
-
-**示例:**
-```bash
-curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/user/U123456
-```
-
-**响应:**
-```json
-{
-  "success": true,
-  "user_id": "U123456",
-  "nickname": "ユーザー名",
-  "data": {
-    "language": "ja",
-    "sega_id": "...",
-    ...
-  }
-}
-```
-
-#### 2. 获取用户列表
+#### 1. 获取用户列表
 
 ```http
 GET /api/v1/users
@@ -172,39 +147,70 @@ curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/user
 }
 ```
 
-#### 3. 搜索歌曲
+#### 2. 注册用户
 
 ```http
-GET /api/v1/search?q=<query>&ver=<version>&max_results=<limit>
+POST /api/v1/register/<user_id>
 ```
 
-**参数:**
-- `q`: 搜索关键词（可选，默认空字符串；使用 `__empty__` 表示显式空字符串）
-- `ver`: 版本 (jp/intl，可选，默认 jp)
-- `max_results`: 最大返回结果数（可选，默认 6）
+**请求体 (JSON):**
+- `nickname`: **必需**，用户昵称（如果是LINE用户会自动从LINE API获取，非LINE用户则使用此参数）
+- `language`: 语言设置 (ja/en/zh，可选，默认 en)
+
+**要求:**
+- `user_id` 必须以 `U` 开头（LINE用户ID格式）
+
+**昵称获取优先级:**
+1. 从 LINE API 自动获取（如果是 LINE 用户）
+2. 从用户数据中的 nickname 字段获取
+3. 使用参数提供的 nickname
 
 **示例:**
 ```bash
-# 搜索日文歌曲
-curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/search?q=%E3%83%92%E3%83%90%E3%83%8A&ver=jp"
-
-# 搜索空字符串歌名
-curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/search?q=__empty__&ver=jp"
+curl -X POST -H "Authorization: Bearer abc123..." -H "Content-Type: application/json" -d '{"nickname":"TestUser","language":"en"}' https://jietng.matsuki.top/api/v1/register/U123456
 ```
 
 **响应:**
 ```json
 {
   "success": true,
-  "count": 2,
-  "songs": [
-    {
-      "id": 123,
-      "title": "ヒバナ",
-      "artist": "Artist Name",
-      ...
-    }
-  ]
+  "user_id": "U123456",
+  "nickname": "TestUser",
+  "bind_url": "https://jietng.matsuki.top/linebot/sega_bind?token=xxx&nickname=TestUser&language=en",
+  "token": "xxx",
+  "expires_in": 120,
+  "message": "Bind URL generated successfully. Token expires in 2 minutes."
+}
+```
+
+**注册记录:**
+
+通过 API 注册的新用户会自动记录以下信息：
+- `registered_via_token`: 注册时使用的 token ID
+- `registered_at`: 注册时间（格式：YYYY-MM-DD HH:MM:SS）
+
+#### 3. 获取用户信息
+
+```http
+GET /api/v1/user/<user_id>
+```
+
+**示例:**
+```bash
+curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/user/U123456
+```
+
+**响应:**
+```json
+{
+  "success": true,
+  "user_id": "U123456",
+  "nickname": "ユーザー名",
+  "data": {
+    "language": "ja",
+    "sega_id": "...",
+    ...
+  }
 }
 ```
 
@@ -258,7 +264,43 @@ curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/rec
 }
 ```
 
-#### 6. 获取版本列表
+#### 6. 搜索歌曲
+
+```http
+GET /api/v1/search?q=<query>&ver=<version>&max_results=<limit>
+```
+
+**参数:**
+- `q`: 搜索关键词（可选，默认空字符串；使用 `__empty__` 表示显式空字符串）
+- `ver`: 版本 (jp/intl，可选，默认 jp)
+- `max_results`: 最大返回结果数（可选，默认 6）
+
+**示例:**
+```bash
+# 搜索日文歌曲
+curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/search?q=%E3%83%92%E3%83%90%E3%83%8A&ver=jp"
+
+# 搜索空字符串歌名
+curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/search?q=__empty__&ver=jp"
+```
+
+**响应:**
+```json
+{
+  "success": true,
+  "count": 2,
+  "songs": [
+    {
+      "id": 123,
+      "title": "ヒバナ",
+      "artist": "Artist Name",
+      ...
+    }
+  ]
+}
+```
+
+#### 7. 获取版本列表
 
 ```http
 GET /api/v1/versions
@@ -280,48 +322,6 @@ curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/vers
   ]
 }
 ```
-
-#### 7. 注册用户
-
-```http
-POST /api/v1/register/<user_id>
-```
-
-**请求体 (JSON):**
-- `nickname`: **必需**，用户昵称（如果是LINE用户会自动从LINE API获取，非LINE用户则使用此参数）
-- `language`: 语言设置 (ja/en/zh，可选，默认 en)
-
-**要求:**
-- `user_id` 必须以 `U` 开头（LINE用户ID格式）
-
-**昵称获取优先级:**
-1. 从 LINE API 自动获取（如果是 LINE 用户）
-2. 从用户数据中的 nickname 字段获取
-3. 使用参数提供的 nickname
-
-**示例:**
-```bash
-curl -X POST -H "Authorization: Bearer abc123..." -H "Content-Type: application/json" -d '{"nickname":"TestUser","language":"en"}' https://jietng.matsuki.top/api/v1/register/U123456
-```
-
-**响应:**
-```json
-{
-  "success": true,
-  "user_id": "U123456",
-  "nickname": "TestUser",
-  "bind_url": "https://jietng.matsuki.top/linebot/sega_bind?token=xxx&nickname=TestUser&language=en",
-  "token": "xxx",
-  "expires_in": 120,
-  "message": "Bind URL generated successfully. Token expires in 2 minutes."
-}
-```
-
-**注册记录:**
-
-通过 API 注册的新用户会自动记录以下信息：
-- `registered_via_token`: 注册时使用的 token ID
-- `registered_at`: 注册时间（格式：YYYY-MM-DD HH:MM:SS）
 
 ## 错误处理
 

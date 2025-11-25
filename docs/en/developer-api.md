@@ -124,32 +124,7 @@ curl -H "Authorization: Bearer <your_token>" https://jietng.matsuki.top/api/v1/.
 
 All endpoints below should be prefixed with `https://jietng.matsuki.top/api/v1/`.
 
-#### 1. Get User Info
-
-```http
-GET /api/v1/user/<user_id>
-```
-
-**Example:**
-```bash
-curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/user/U123456
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "user_id": "U123456",
-  "nickname": "ユーザー名",
-  "data": {
-    "language": "ja",
-    "sega_id": "...",
-    ...
-  }
-}
-```
-
-#### 2. Get User List
+#### 1. Get User List
 
 ```http
 GET /api/v1/users
@@ -175,39 +150,70 @@ curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/user
 }
 ```
 
-#### 3. Search Songs
+#### 2. Register User
 
 ```http
-GET /api/v1/search?q=<query>&ver=<version>&max_results=<limit>
+POST /api/v1/register/<user_id>
 ```
 
-**Parameters:**
-- `q`: Search query (optional, defaults to empty string; use `__empty__` for explicit empty string)
-- `ver`: Version (jp/intl, optional, defaults to jp)
-- `max_results`: Maximum number of results (optional, defaults to 6)
+**Request Body (JSON):**
+- `nickname`: **Required**, user nickname (automatically fetched from LINE API for LINE users, otherwise use this parameter)
+- `language`: Language setting (ja/en/zh, optional, defaults to en)
+
+**Requirements:**
+- `user_id` must start with `U` (LINE user ID format)
+
+**Nickname Priority:**
+1. Automatically fetch from LINE API (if LINE user)
+2. Get from user data's nickname field
+3. Use the provided nickname parameter
 
 **Example:**
 ```bash
-# Search Japanese songs
-curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/search?q=%E3%83%92%E3%83%90%E3%83%8A&ver=jp"
-
-# Search empty string song names
-curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/search?q=__empty__&ver=jp"
+curl -X POST -H "Authorization: Bearer abc123..." -H "Content-Type: application/json" -d '{"nickname":"TestUser","language":"en"}' https://jietng.matsuki.top/api/v1/register/U123456
 ```
 
 **Response:**
 ```json
 {
   "success": true,
-  "count": 2,
-  "songs": [
-    {
-      "id": 123,
-      "title": "ヒバナ",
-      "artist": "Artist Name",
-      ...
-    }
-  ]
+  "user_id": "U123456",
+  "nickname": "TestUser",
+  "bind_url": "https://jietng.matsuki.top/linebot/sega_bind?token=xxx&nickname=TestUser&language=en",
+  "token": "xxx",
+  "expires_in": 120,
+  "message": "Bind URL generated successfully. Token expires in 2 minutes."
+}
+```
+
+**Registration Tracking:**
+
+New users registered via API will automatically track:
+- `registered_via_token`: The token ID used for registration
+- `registered_at`: Registration timestamp (format: YYYY-MM-DD HH:MM:SS)
+
+#### 3. Get User Info
+
+```http
+GET /api/v1/user/<user_id>
+```
+
+**Example:**
+```bash
+curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/user/U123456
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "user_id": "U123456",
+  "nickname": "ユーザー名",
+  "data": {
+    "language": "ja",
+    "sega_id": "...",
+    ...
+  }
 }
 ```
 
@@ -261,7 +267,43 @@ curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/rec
 }
 ```
 
-#### 6. Get Version List
+#### 6. Search Songs
+
+```http
+GET /api/v1/search?q=<query>&ver=<version>&max_results=<limit>
+```
+
+**Parameters:**
+- `q`: Search query (optional, defaults to empty string; use `__empty__` for explicit empty string)
+- `ver`: Version (jp/intl, optional, defaults to jp)
+- `max_results`: Maximum number of results (optional, defaults to 6)
+
+**Example:**
+```bash
+# Search Japanese songs
+curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/search?q=%E3%83%92%E3%83%90%E3%83%8A&ver=jp"
+
+# Search empty string song names
+curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/search?q=__empty__&ver=jp"
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "count": 2,
+  "songs": [
+    {
+      "id": 123,
+      "title": "ヒバナ",
+      "artist": "Artist Name",
+      ...
+    }
+  ]
+}
+```
+
+#### 7. Get Version List
 
 ```http
 GET /api/v1/versions
@@ -283,48 +325,6 @@ curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/vers
   ]
 }
 ```
-
-#### 7. Register User
-
-```http
-POST /api/v1/register/<user_id>
-```
-
-**Request Body (JSON):**
-- `nickname`: **Required**, user nickname (automatically fetched from LINE API for LINE users, otherwise use this parameter)
-- `language`: Language setting (ja/en/zh, optional, defaults to en)
-
-**Requirements:**
-- `user_id` must start with `U` (LINE user ID format)
-
-**Nickname Priority:**
-1. Automatically fetch from LINE API (if LINE user)
-2. Get from user data's nickname field
-3. Use the provided nickname parameter
-
-**Example:**
-```bash
-curl -X POST -H "Authorization: Bearer abc123..." -H "Content-Type: application/json" -d '{"nickname":"TestUser","language":"en"}' https://jietng.matsuki.top/api/v1/register/U123456
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "user_id": "U123456",
-  "nickname": "TestUser",
-  "bind_url": "https://jietng.matsuki.top/linebot/sega_bind?token=xxx&nickname=TestUser&language=en",
-  "token": "xxx",
-  "expires_in": 120,
-  "message": "Bind URL generated successfully. Token expires in 2 minutes."
-}
-```
-
-**Registration Tracking:**
-
-New users registered via API will automatically track:
-- `registered_via_token`: The token ID used for registration
-- `registered_at`: Registration timestamp (format: YYYY-MM-DD HH:MM:SS)
 
 
 ## Error Handling

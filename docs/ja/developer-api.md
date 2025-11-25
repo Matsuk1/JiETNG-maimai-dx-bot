@@ -121,32 +121,7 @@ curl -H "Authorization: Bearer <your_token>" https://jietng.matsuki.top/api/v1/.
 
 以下のすべてのエンドポイントは `https://jietng.matsuki.top/api/v1/` をプレフィックスとして使用します。
 
-#### 1. ユーザー情報取得
-
-```http
-GET /api/v1/user/<user_id>
-```
-
-**例:**
-```bash
-curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/user/U123456
-```
-
-**レスポンス:**
-```json
-{
-  "success": true,
-  "user_id": "U123456",
-  "nickname": "ユーザー名",
-  "data": {
-    "language": "ja",
-    "sega_id": "...",
-    ...
-  }
-}
-```
-
-#### 2. ユーザー一覧取得
+#### 1. ユーザー一覧取得
 
 ```http
 GET /api/v1/users
@@ -172,39 +147,70 @@ curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/user
 }
 ```
 
-#### 3. 楽曲検索
+#### 2. ユーザー登録
 
 ```http
-GET /api/v1/search?q=<query>&ver=<version>&max_results=<limit>
+POST /api/v1/register/<user_id>
 ```
 
-**パラメータ:**
-- `q`: 検索キーワード（オプション、デフォルトは空文字列；明示的な空文字列には `__empty__` を使用）
-- `ver`: バージョン (jp/intl、オプション、デフォルトはjp)
-- `max_results`: 最大結果数（オプション、デフォルトは6）
+**リクエストボディ (JSON):**
+- `nickname`: **必須**、ユーザーのニックネーム（LINEユーザーの場合はLINE APIから自動取得、それ以外の場合はこのパラメータを使用）
+- `language`: 言語設定 (ja/en/zh、オプション、デフォルトはen)
+
+**要件:**
+- `user_id` は `U` で始まる必要があります（LINE ユーザーID形式）
+
+**ニックネーム取得の優先順位:**
+1. LINE APIから自動取得（LINEユーザーの場合）
+2. ユーザーデータのnicknameフィールドから取得
+3. 提供されたnicknameパラメータを使用
 
 **例:**
 ```bash
-# 日本語楽曲を検索
-curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/search?q=%E3%83%92%E3%83%90%E3%83%8A&ver=jp"
-
-# 空文字列の曲名を検索
-curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/search?q=__empty__&ver=jp"
+curl -X POST -H "Authorization: Bearer abc123..." -H "Content-Type: application/json" -d '{"nickname":"TestUser","language":"en"}' https://jietng.matsuki.top/api/v1/register/U123456
 ```
 
 **レスポンス:**
 ```json
 {
   "success": true,
-  "count": 2,
-  "songs": [
-    {
-      "id": 123,
-      "title": "ヒバナ",
-      "artist": "Artist Name",
-      ...
-    }
-  ]
+  "user_id": "U123456",
+  "nickname": "TestUser",
+  "bind_url": "https://jietng.matsuki.top/linebot/sega_bind?token=xxx&nickname=TestUser&language=en",
+  "token": "xxx",
+  "expires_in": 120,
+  "message": "Bind URL generated successfully. Token expires in 2 minutes."
+}
+```
+
+**登録記録:**
+
+API経由で登録された新規ユーザーは以下の情報を自動的に記録します:
+- `registered_via_token`: 登録時に使用されたトークンID
+- `registered_at`: 登録タイムスタンプ（形式: YYYY-MM-DD HH:MM:SS）
+
+#### 3. ユーザー情報取得
+
+```http
+GET /api/v1/user/<user_id>
+```
+
+**例:**
+```bash
+curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/user/U123456
+```
+
+**レスポンス:**
+```json
+{
+  "success": true,
+  "user_id": "U123456",
+  "nickname": "ユーザー名",
+  "data": {
+    "language": "ja",
+    "sega_id": "...",
+    ...
+  }
 }
 ```
 
@@ -258,7 +264,43 @@ curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/rec
 }
 ```
 
-#### 6. バージョン一覧取得
+#### 6. 楽曲検索
+
+```http
+GET /api/v1/search?q=<query>&ver=<version>&max_results=<limit>
+```
+
+**パラメータ:**
+- `q`: 検索キーワード（オプション、デフォルトは空文字列；明示的な空文字列には `__empty__` を使用）
+- `ver`: バージョン (jp/intl、オプション、デフォルトはjp)
+- `max_results`: 最大結果数（オプション、デフォルトは6）
+
+**例:**
+```bash
+# 日本語楽曲を検索
+curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/search?q=%E3%83%92%E3%83%90%E3%83%8A&ver=jp"
+
+# 空文字列の曲名を検索
+curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/search?q=__empty__&ver=jp"
+```
+
+**レスポンス:**
+```json
+{
+  "success": true,
+  "count": 2,
+  "songs": [
+    {
+      "id": 123,
+      "title": "ヒバナ",
+      "artist": "Artist Name",
+      ...
+    }
+  ]
+}
+```
+
+#### 7. バージョン一覧取得
 
 ```http
 GET /api/v1/versions
@@ -280,48 +322,6 @@ curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/vers
   ]
 }
 ```
-
-#### 7. ユーザー登録
-
-```http
-POST /api/v1/register/<user_id>
-```
-
-**リクエストボディ (JSON):**
-- `nickname`: **必須**、ユーザーのニックネーム（LINEユーザーの場合はLINE APIから自動取得、それ以外の場合はこのパラメータを使用）
-- `language`: 言語設定 (ja/en/zh、オプション、デフォルトはen)
-
-**要件:**
-- `user_id` は `U` で始まる必要があります（LINE ユーザーID形式）
-
-**ニックネーム取得の優先順位:**
-1. LINE APIから自動取得（LINEユーザーの場合）
-2. ユーザーデータのnicknameフィールドから取得
-3. 提供されたnicknameパラメータを使用
-
-**例:**
-```bash
-curl -X POST -H "Authorization: Bearer abc123..." -H "Content-Type: application/json" -d '{"nickname":"TestUser","language":"en"}' https://jietng.matsuki.top/api/v1/register/U123456
-```
-
-**レスポンス:**
-```json
-{
-  "success": true,
-  "user_id": "U123456",
-  "nickname": "TestUser",
-  "bind_url": "https://jietng.matsuki.top/linebot/sega_bind?token=xxx&nickname=TestUser&language=en",
-  "token": "xxx",
-  "expires_in": 120,
-  "message": "Bind URL generated successfully. Token expires in 2 minutes."
-}
-```
-
-**登録記録:**
-
-API経由で登録された新規ユーザーは以下の情報を自動的に記録します:
-- `registered_via_token`: 登録時に使用されたトークンID
-- `registered_at`: 登録タイムスタンプ（形式: YYYY-MM-DD HH:MM:SS）
 
 ## エラー処理
 
