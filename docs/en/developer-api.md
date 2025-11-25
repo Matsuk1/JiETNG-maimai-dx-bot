@@ -4,7 +4,6 @@
 
 The Developer Token system allows administrators to create and manage API access tokens for third-party applications or scripts to access JiETNG's API endpoints.
 
----
 
 ## Quick Start
 
@@ -25,7 +24,7 @@ If you want to use the JiETNG API, follow these steps to get an access token:
 
 3. **Receive Token**
    - You will receive the Token ID and complete token string via email
-   - **Keep your token secure, it will only be shown once!**
+   - **Keep your token secure!**
 
 ### API Base Information
 
@@ -42,20 +41,6 @@ curl -H "Authorization: Bearer YOUR_TOKEN_HERE" \
      "https://jietng.matsuki.top/api/v1/users"
 ```
 
----
-
-## Features
-
-- ✅ Create secure API tokens (using `secrets.token_urlsafe(32)`)
-- ✅ Add notes to each token
-- ✅ List all tokens and their status
-- ✅ Revoke tokens that are no longer needed
-- ✅ View token details
-- ✅ Automatically track token last usage time
-- ✅ Bearer Token authentication decorator
-- ✅ Trilingual support (Japanese/English/Chinese)
-
----
 
 ## Command Usage
 
@@ -118,7 +103,6 @@ devtoken info <token_id>
 - Created at
 - Last used
 
----
 
 ## API Usage
 
@@ -342,7 +326,6 @@ New users registered via API will automatically track:
 - `registered_via_token`: The token ID used for registration
 - `registered_at`: Registration timestamp (format: YYYY-MM-DD HH:MM:SS)
 
----
 
 ## Error Handling
 
@@ -409,7 +392,6 @@ New users registered via API will automatically track:
 }
 ```
 
----
 
 ## API Endpoints Summary
 
@@ -448,7 +430,6 @@ New users registered via API will automatically track:
    - Only create tokens for necessary applications
    - Revoke access permissions promptly when no longer needed
 
----
 
 ## Technical Implementation
 
@@ -553,7 +534,6 @@ curl -H "Authorization: Bearer $TOKEN" "$BASE_URL/user/$USER_ID"
 curl -H "Authorization: Bearer $TOKEN" "$BASE_URL/search?q=ヒバナ&ver=jp"
 ```
 
----
 
 ## FAQ
 
@@ -569,13 +549,11 @@ curl -H "Authorization: Bearer $TOKEN" "$BASE_URL/search?q=ヒバナ&ver=jp"
 ### Q: What are the permission scopes of tokens?
 **A:** All authenticated tokens have the same API access permissions. Fine-grained permission control is not currently supported.
 
----
 
 ## Version History
 
 - **v1.0** (2025-01-24): Initial release with basic token management and API authentication
 
----
 
 ## Related Files
 
@@ -586,7 +564,6 @@ curl -H "Authorization: Bearer $TOKEN" "$BASE_URL/search?q=ヒバナ&ver=jp"
 - `main.py` - API endpoints and command handling
 - `data/dev_tokens.json` - Token data storage (default location)
 
----
 
 ## Support
 

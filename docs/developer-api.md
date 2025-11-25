@@ -4,8 +4,6 @@
 
 开发者 Token 系统允许管理员创建和管理 API 访问令牌，用于第三方应用或脚本访问 JiETNG 的 API 端点。
 
----
-
 ## 快速开始
 
 ### 获取 API Token
@@ -25,7 +23,7 @@
 
 3. **接收 Token**
    - 您将通过邮件收到 Token ID 和完整的 Token 字符串
-   - **请妥善保管 Token，它只会显示一次！**
+   - **请妥善保管 Token！**
 
 ### API 基础信息
 
@@ -41,21 +39,6 @@
 curl -H "Authorization: Bearer YOUR_TOKEN_HERE" \
      "https://jietng.matsuki.top/api/v1/users"
 ```
-
----
-
-## 功能特性
-
-- ✅ 创建安全的 API Token（使用 `secrets.token_urlsafe(32)`）
-- ✅ 为每个 Token 添加备注说明
-- ✅ 列出所有 Token 及其状态
-- ✅ 撤销不再需要的 Token
-- ✅ 查看 Token 详细信息
-- ✅ 自动记录 Token 最后使用时间
-- ✅ Bearer Token 认证装饰器
-- ✅ 三语支持（日语/英语/中文）
-
----
 
 ## 命令使用
 
@@ -117,8 +100,6 @@ devtoken info <token_id>
 - 创建者
 - 创建时间
 - 最后使用时间
-
----
 
 ## API 使用
 
@@ -342,8 +323,6 @@ curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/reg
 - `registered_via_token`: 注册时使用的 token ID
 - `registered_at`: 注册时间（格式：YYYY-MM-DD HH:MM:SS）
 
----
-
 ## 错误处理
 
 ### 401 Unauthorized
@@ -409,8 +388,6 @@ curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/reg
 }
 ```
 
----
-
 ## API 端点汇总
 
 | 端点 | 方法 | 说明 |
@@ -422,8 +399,6 @@ curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/reg
 | `/records/<user_id>` | GET | 获取用户成绩记录 |
 | `/versions` | GET | 获取版本列表 |
 | `/register/<user_id>` | GET | 注册用户并生成绑定链接 |
-
----
 
 ## 安全建议
 
@@ -447,8 +422,6 @@ curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/reg
 5. **最小权限原则**
    - 只为需要的应用创建 Token
    - 及时撤销不再需要的访问权限
-
----
 
 ## 技术实现
 
@@ -484,8 +457,6 @@ def my_api_endpoint():
 
     return jsonify({"success": True})
 ```
-
----
 
 ## 示例代码
 
@@ -553,8 +524,6 @@ curl -H "Authorization: Bearer $TOKEN" "$BASE_URL/user/$USER_ID"
 curl -H "Authorization: Bearer $TOKEN" "$BASE_URL/search?q=ヒバナ&ver=jp"
 ```
 
----
-
 ## 常见问题
 
 ### Q: Token 会过期吗？
@@ -569,13 +538,9 @@ curl -H "Authorization: Bearer $TOKEN" "$BASE_URL/search?q=ヒバナ&ver=jp"
 ### Q: Token 的权限范围是什么？
 **A:** 所有通过认证的 Token 具有相同的 API 访问权限。目前不支持细粒度的权限控制。
 
----
-
 ## 版本历史
 
 - **v1.0** (2025-01-24): 初始版本，支持基本的 Token 管理和 API 认证
-
----
 
 ## 相关文件
 
@@ -585,8 +550,6 @@ curl -H "Authorization: Bearer $TOKEN" "$BASE_URL/search?q=ヒバナ&ver=jp"
 - `modules/message_manager.py` - 三语消息定义
 - `main.py` - API 端点和命令处理
 - `data/dev_tokens.json` - Token 数据存储（默认位置）
-
----
 
 ## 支持
 
