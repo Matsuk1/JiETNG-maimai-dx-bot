@@ -217,7 +217,27 @@ curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/user
 }
 ```
 
-#### 4. Queue User Update
+#### 4. Delete User
+
+```http
+DELETE /api/v1/user/<user_id>
+```
+
+**Example:**
+```bash
+curl -X DELETE -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/user/U123456
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "user_id": "U123456",
+  "message": "User U123456 has been deleted successfully"
+}
+```
+
+#### 5. Queue User Update
 
 ```http
 POST /api/v1/update/<user_id>
@@ -239,7 +259,7 @@ curl -X POST -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api
 }
 ```
 
-#### 5. Get User Records
+#### 6. Get User Records
 
 ```http
 GET /api/v1/records/<user_id>?type=<record_type>&command=<filter>
@@ -267,7 +287,7 @@ curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/rec
 }
 ```
 
-#### 6. Search Songs
+#### 7. Search Songs
 
 ```http
 GET /api/v1/search?q=<query>&ver=<version>&max_results=<limit>
@@ -303,7 +323,7 @@ curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/sea
 }
 ```
 
-#### 7. Get Version List
+#### 8. Get Version List
 
 ```http
 GET /api/v1/versions
@@ -400,6 +420,7 @@ curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/vers
 | `/users` | GET | Get all users |
 | `/register/<user_id>` | POST | Register user and generate bind URL |
 | `/user/<user_id>` | GET | Get user info |
+| `/user/<user_id>` | DELETE | Delete user |
 | `/update/<user_id>` | POST | Queue user update |
 | `/records/<user_id>` | GET | Get user records |
 | `/search` | GET | Search songs |

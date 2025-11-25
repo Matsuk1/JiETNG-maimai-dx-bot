@@ -709,7 +709,7 @@ def process_sega_credentials(user_id, segaid, password, ver="jp", language="ja")
     user_bind_sega_pwd(user_id, password)
     user_set_version(user_id, ver)
     user_set_language(user_id, language)
-    if not USERS[user_id]['api_user']:
+    if "registered_via_token" not in USERS[user_id]:
         smart_push(user_id, bind_msg(user_id), configuration)
     return True
 
@@ -905,7 +905,8 @@ def async_maimai_update_task(event):
         ver = USERS[user_id]['version']
 
     reply_msg = maimai_update(user_id, ver)
-    smart_reply(user_id, reply_token, reply_msg, configuration, DIVIDER)
+    if reply_token:
+        smart_reply(user_id, reply_token, reply_msg, configuration, DIVIDER)
 
 def async_generate_friend_b50_task(event):
     """异步生成好友B50任务 - 在webtask_queue中执行"""
@@ -3570,7 +3571,6 @@ def api_register_user(user_id):
             add_user(user_id)
             user_set_language(user_id, language)
             edit_user_value(user_id, "nickname", nickname)
-            edit_user_value(user_id, "api_user", True)
             edit_user_value(user_id, "registered_via_token", token_info['token_id'])
             edit_user_value(user_id, "registered_at", datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
             logger.info(f"Created new user {user_id} via API token {token_info['token_id']}")
@@ -3655,12 +3655,18 @@ def api_delete_user(user_id):
 
         # 获取用户信息用于日志
         nickname = get_user_nickname_wrapper(user_id, use_cache=True)
+        
+        token_info = request.token_info
+        if not ('registered_via_token' in USERS[user_id] and USERS[user_id]['registered_via_token'] == token_info['token_id']):
+            return jsonify({
+                "error": "Permission denied",
+                "message": f"User {user_id} was not created by this token"
+            }), 403
 
         # 删除用户
         delete_user(user_id)
 
         # 记录 API 访问日志
-        token_info = request.token_info
         logger.info(f"API: Delete user {user_id} ({nickname}) via token {token_info['token_id']} ({token_info['note']})")
 
         return jsonify({
@@ -3719,7 +3725,7 @@ def api_update_user(user_id):
 
         # 将更新任务加入队列
         try:
-            webtask_queue.put_nowait((async_admin_maimai_update_task, (mock_event,), task_id))
+            webtask_queue.put_nowait((async_maimai_update_task, (mock_event,), task_id))
 
             # 记录 API 访问日志
             token_info = request.token_info

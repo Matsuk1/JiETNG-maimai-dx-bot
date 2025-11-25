@@ -214,7 +214,27 @@ curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/user
 }
 ```
 
-#### 4. 队列用户更新
+#### 4. 删除用户
+
+```http
+DELETE /api/v1/user/<user_id>
+```
+
+**示例:**
+```bash
+curl -X DELETE -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/user/U123456
+```
+
+**响应:**
+```json
+{
+  "success": true,
+  "user_id": "U123456",
+  "message": "User U123456 has been deleted successfully"
+}
+```
+
+#### 5. 队列用户更新
 
 ```http
 POST /api/v1/update/<user_id>
@@ -236,7 +256,7 @@ curl -X POST -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api
 }
 ```
 
-#### 5. 获取用户记录
+#### 6. 获取用户记录
 
 ```http
 GET /api/v1/records/<user_id>?type=<record_type>&command=<filter>
@@ -264,7 +284,7 @@ curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/rec
 }
 ```
 
-#### 6. 搜索歌曲
+#### 7. 搜索歌曲
 
 ```http
 GET /api/v1/search?q=<query>&ver=<version>&max_results=<limit>
@@ -300,7 +320,7 @@ curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/sea
 }
 ```
 
-#### 7. 获取版本列表
+#### 8. 获取版本列表
 
 ```http
 GET /api/v1/versions
@@ -395,6 +415,7 @@ curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/vers
 | `/users` | GET | 获取所有用户列表 |
 | `/register/<user_id>` | POST | 注册用户并生成绑定链接 |
 | `/user/<user_id>` | GET | 获取用户信息 |
+| `/user/<user_id>` | DELETE | 删除用户 |
 | `/update/<user_id>` | POST | 队列用户数据更新 |
 | `/records/<user_id>` | GET | 获取用户成绩记录 |
 | `/search` | GET | 搜索歌曲 |

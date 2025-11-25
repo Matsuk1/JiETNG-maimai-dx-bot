@@ -214,7 +214,28 @@ curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/user
 }
 ```
 
-#### 4. ユーザー更新キュー
+#### 4. ユーザーを削除
+
+```http
+DELETE /api/v1/user/<user_id>
+```
+
+**例:**
+```bash
+curl -X DELETE -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/user/U123456
+```
+
+**レスポンス:**
+```json
+{
+  "success": true,
+  "user_id": "U123456",
+  "message": "User U123456 has been deleted successfully"
+}
+```
+
+
+#### 5. ユーザー更新キュー
 
 ```http
 POST /api/v1/update/<user_id>
@@ -236,7 +257,7 @@ curl -X POST -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api
 }
 ```
 
-#### 5. ユーザーレコード取得
+#### 6. ユーザーレコード取得
 
 ```http
 GET /api/v1/records/<user_id>?type=<record_type>&command=<filter>
@@ -264,7 +285,7 @@ curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/rec
 }
 ```
 
-#### 6. 楽曲検索
+#### 7. 楽曲検索
 
 ```http
 GET /api/v1/search?q=<query>&ver=<version>&max_results=<limit>
@@ -300,7 +321,7 @@ curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/sea
 }
 ```
 
-#### 7. バージョン一覧取得
+#### 8. バージョン一覧取得
 
 ```http
 GET /api/v1/versions
@@ -395,6 +416,7 @@ curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/vers
 | `/users` | GET | すべてのユーザーを取得 |
 | `/register/<user_id>` | POST | ユーザーを登録し連携URLを生成 |
 | `/user/<user_id>` | GET | ユーザー情報を取得 |
+| `/user/<user_id>` | DELETE | ユーザーを削除 |
 | `/update/<user_id>` | POST | ユーザー更新をキュー |
 | `/records/<user_id>` | GET | ユーザーレコードを取得 |
 | `/search` | GET | 楽曲を検索 |
