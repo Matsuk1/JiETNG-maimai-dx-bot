@@ -709,7 +709,8 @@ def process_sega_credentials(user_id, segaid, password, ver="jp", language="ja")
     user_bind_sega_pwd(user_id, password)
     user_set_version(user_id, ver)
     user_set_language(user_id, language)
-    smart_push(user_id, bind_msg(user_id), configuration)
+    if not USERS[user_id]['api_user']:
+        smart_push(user_id, bind_msg(user_id), configuration)
     return True
 
 
@@ -2809,11 +2810,31 @@ def get_user_nickname_wrapper(user_id, use_cache=True):
     """
     获取用户昵称的wrapper函数
     在main.py中使用,自动传递line_bot_api
+    若无法通过LINE API获取昵称,则从用户数据中获取nickname字段
     """
-    with ApiClient(configuration) as api_client:
-        line_bot_api = MessagingApi(api_client)
-        from modules.user_manager import get_user_nickname
-        return get_user_nickname(user_id, line_bot_api, use_cache)
+    nickname = None
+
+    # 尝试从LINE API获取昵称
+    try:
+        with ApiClient(configuration) as api_client:
+            line_bot_api = MessagingApi(api_client)
+            from modules.user_manager import get_user_nickname
+            nickname = get_user_nickname(user_id, line_bot_api, use_cache)
+
+            # 检查是否为错误消息
+            if nickname and ("Unknown" in nickname or "API Error" in nickname or "Blocked" in nickname):
+                nickname = None
+    except Exception as e:
+        logger.debug(f"Failed to get LINE nickname for {user_id}: {e}")
+        nickname = None
+
+    # 如果LINE API失败,尝试从用户数据获取
+    if not nickname:
+        read_user()
+        if user_id in USERS and USERS[user_id].get('nickname'):
+            nickname = USERS[user_id].get('nickname')
+
+    return nickname if nickname else f"User {user_id[:8]}..."
 
 @app.route("/linebot/admin", methods=["GET", "POST"])
 def admin_panel():
@@ -3450,6 +3471,128 @@ def admin_dxdata_status():
 
 # ==================== 开发者 API ====================
 
+@app.route("/api/v1/users", methods=["GET"])
+@csrf.exempt
+@require_dev_token
+def api_list_users():
+    """
+    获取所有用户列表 API
+
+    需要 Bearer Token 认证
+    """
+    try:
+        read_user()
+
+        users_list = []
+        for user_id in USERS.keys():
+            nickname = get_user_nickname_wrapper(user_id, use_cache=True)
+            users_list.append({
+                "user_id": user_id,
+                "nickname": nickname
+            })
+
+        # 记录 API 访问日志
+        token_info = request.token_info
+        logger.info(f"API: List users via token {token_info['token_id']} ({token_info['note']})")
+
+        return jsonify({
+            "success": True,
+            "count": len(users_list),
+            "users": users_list
+        })
+
+    except Exception as e:
+        logger.error(f"API list users error: {e}", exc_info=True)
+        return jsonify({
+            "error": "Internal server error",
+            "message": str(e)
+        }), 500
+
+
+@app.route("/api/v1/register/<user_id>", methods=["POST"])
+@csrf.exempt
+@require_dev_token
+def api_register_user(user_id):
+    """
+    用户注册 API - 生成绑定链接
+
+    需要 Bearer Token 认证
+
+    请求体 (JSON):
+    - nickname: 必需，用户昵称（如果是LINE用户会自动从LINE API获取，非LINE用户则使用此参数）
+    - language: 可选，语言设置 (ja/en/zh)，默认为 en
+
+    返回:
+    - bind_url: 绑定页面链接
+    - token: 绑定 token（2分钟有效）
+    - expires_in: token 过期时间（秒）
+    - nickname: 实际使用的昵称
+    """
+    try:
+        from modules.token_manager import generate_token as generate_bind_token
+        from modules.user_manager import get_user_nickname
+
+        # 获取 JSON 数据
+        data = request.get_json() or {}
+        nickname = data.get('nickname', '')
+        language = data.get('language', 'en')
+
+        # nickname 是必需参数
+        if not nickname:
+            return jsonify({
+                "error": "Missing parameter",
+                "message": "Parameter 'nickname' is required"
+            }), 400
+
+        # 验证 language 参数
+        if language not in ['ja', 'en', 'zh']:
+            return jsonify({
+                "error": "Invalid parameter",
+                "message": "Parameter 'language' must be 'ja', 'en', or 'zh'"
+            }), 400
+
+        # 记录 API 访问日志
+        token_info = request.token_info
+        logger.info(f"API: Register user {user_id} (nickname={nickname}, language={language}) via token {token_info['token_id']} ({token_info['note']})")
+
+        # 读取用户数据
+        read_user()
+
+        # 生成绑定 token
+        bind_token = generate_bind_token(user_id)
+
+        # 构建绑定 URL
+        bind_url = f"{DOMAIN}/linebot/sega_bind?token={bind_token}"
+
+        # 初始化用户数据（如果不存在）
+        from datetime import datetime
+        if user_id not in USERS:
+            add_user(user_id)
+            user_set_language(user_id, language)
+            edit_user_value(user_id, "nickname", nickname)
+            edit_user_value(user_id, "api_user", True)
+            edit_user_value(user_id, "registered_via_token", token_info['token_id'])
+            edit_user_value(user_id, "registered_at", datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+            logger.info(f"Created new user {user_id} via API token {token_info['token_id']}")
+
+        return jsonify({
+            "success": True,
+            "user_id": user_id,
+            "nickname": nickname,
+            "bind_url": bind_url,
+            "token": bind_token,
+            "expires_in": 120,
+            "message": "Bind URL generated successfully. Token expires in 2 minutes."
+        })
+
+    except Exception as e:
+        logger.error(f"API register user error: {e}", exc_info=True)
+        return jsonify({
+            "error": "Internal server error",
+            "message": str(e)
+        }), 500
+
+
 @app.route("/api/v1/user/<user_id>", methods=["GET"])
 @csrf.exempt
 @require_dev_token
@@ -3458,9 +3601,6 @@ def api_get_user(user_id):
     获取用户信息 API
 
     需要 Bearer Token 认证
-
-    示例:
-    curl -H "Authorization: Bearer <your_token>" https://your-domain.com/api/v1/user/<user_id>
     """
     try:
         read_user()
@@ -3492,45 +3632,50 @@ def api_get_user(user_id):
             "message": str(e)
         }), 500
 
-@app.route("/api/v1/users", methods=["GET"])
+
+@app.route("/api/v1/user/<user_id>", methods=["DELETE"])
 @csrf.exempt
 @require_dev_token
-def api_list_users():
+def api_delete_user(user_id):
     """
-    获取所有用户列表 API
+    删除用户 API
 
     需要 Bearer Token 认证
-
-    示例:
-    curl -H "Authorization: Bearer <your_token>" https://your-domain.com/api/v1/users
     """
     try:
+        from modules.user_manager import delete_user
+
         read_user()
 
-        users_list = []
-        for user_id in USERS.keys():
-            nickname = get_user_nickname_wrapper(user_id, use_cache=True)
-            users_list.append({
-                "user_id": user_id,
-                "nickname": nickname
-            })
+        if user_id not in USERS:
+            return jsonify({
+                "error": "User not found",
+                "message": f"User {user_id} does not exist"
+            }), 404
+
+        # 获取用户信息用于日志
+        nickname = get_user_nickname_wrapper(user_id, use_cache=True)
+
+        # 删除用户
+        delete_user(user_id)
 
         # 记录 API 访问日志
         token_info = request.token_info
-        logger.info(f"API: List users via token {token_info['token_id']} ({token_info['note']})")
+        logger.info(f"API: Delete user {user_id} ({nickname}) via token {token_info['token_id']} ({token_info['note']})")
 
         return jsonify({
             "success": True,
-            "count": len(users_list),
-            "users": users_list
+            "user_id": user_id,
+            "message": f"User {user_id} has been deleted successfully"
         })
 
     except Exception as e:
-        logger.error(f"API list users error: {e}", exc_info=True)
+        logger.error(f"API delete user error: {e}", exc_info=True)
         return jsonify({
             "error": "Internal server error",
             "message": str(e)
         }), 500
+
 
 @app.route("/api/v1/update/<user_id>", methods=["POST"])
 @csrf.exempt
@@ -3542,9 +3687,6 @@ def api_update_user(user_id):
     需要 Bearer Token 认证
 
     将用户加入更新队列，异步执行数据更新
-
-    示例:
-    curl -X POST -H "Authorization: Bearer <your_token>" https://your-domain.com/api/v1/update/<user_id>
     """
     try:
         read_user()
@@ -3618,10 +3760,6 @@ def api_get_records(user_id):
     - type: 可选，记录类型，默认为 best50
       可选值: best50, best100, best35, best15, allb50, allb100, allb200, allb35, apb50, rct50, idealb50, UNKNOWN
     - command: 可选，过滤命令，如 "-lv 14 15 -ra 100 200"
-
-    示例:
-    curl -H "Authorization: Bearer <your_token>" "https://your-domain.com/api/v1/records/<user_id>?type=best50"
-    curl -H "Authorization: Bearer <your_token>" "https://your-domain.com/api/v1/records/<user_id>?type=best35&command=-lv 14 15"
     """
     try:
         # 获取查询参数
@@ -3695,38 +3833,6 @@ def api_get_records(user_id):
             "message": str(e)
         }), 500
 
-@app.route("/api/v1/versions", methods=["GET"])
-@csrf.exempt
-@require_dev_token
-def api_get_versions():
-    """
-    获取版本信息 API
-
-    需要 Bearer Token 认证
-
-    返回 maimai DX 的版本信息
-
-    示例:
-    curl -H "Authorization: Bearer <your_token>" https://your-domain.com/api/v1/versions
-    """
-    try:
-        # 记录 API 访问日志
-        token_info = request.token_info
-        logger.info(f"API: Get versions info via token {token_info['token_id']} ({token_info['note']})")
-
-        read_dxdata()
-
-        return jsonify({
-            "success": True,
-            "versions": VERSIONS
-        })
-
-    except Exception as e:
-        logger.error(f"API get versions error: {e}", exc_info=True)
-        return jsonify({
-            "error": "Internal server error",
-            "message": str(e)
-        }), 500
 
 @app.route("/api/v1/search", methods=["GET"])
 @csrf.exempt
@@ -3741,10 +3847,6 @@ def api_search_songs():
     - q: 可选，搜索关键词，如果不提供或使用 __empty__ 则搜索空字符串
     - ver: 可选，服务器版本 (jp/intl)，默认为 jp
     - max_results: 可选，最大结果数，默认为 6
-
-    示例:
-    curl -H "Authorization: Bearer <your_token>" "https://your-domain.com/api/v1/search?q=freedom&ver=jp"
-    curl -H "Authorization: Bearer <your_token>" "https://your-domain.com/api/v1/search?q=__empty__&ver=jp"
     """
     try:
         # 获取查询参数，允许空字符串
@@ -3804,122 +3906,35 @@ def api_search_songs():
             "message": str(e)
         }), 500
 
-@app.route("/api/v1/register/<user_id>", methods=["POST"])
+
+@app.route("/api/v1/versions", methods=["GET"])
 @csrf.exempt
 @require_dev_token
-def api_register_user(user_id):
+def api_get_versions():
     """
-    用户注册 API - 生成绑定链接
+    获取版本信息 API
 
     需要 Bearer Token 认证
 
-    请求体 (JSON):
-    - nickname: 必需，用户昵称（如果是LINE用户会自动从LINE API获取，非LINE用户则使用此参数）
-    - language: 可选，语言设置 (ja/en/zh)，默认为 en
-
-    返回:
-    - bind_url: 绑定页面链接
-    - token: 绑定 token（2分钟有效）
-    - expires_in: token 过期时间（秒）
-    - nickname: 实际使用的昵称
+    返回 maimai DX 的版本信息
 
     示例:
-    curl -X POST -H "Authorization: Bearer <your_token>" -H "Content-Type: application/json" -d '{"nickname":"TestUser","language":"en"}' https://your-domain.com/api/v1/register/U1234567890abcdef
+    curl -H "Authorization: Bearer <your_token>" https://your-domain.com/api/v1/versions
     """
     try:
-        from modules.token_manager import generate_token as generate_bind_token
-        from modules.user_manager import get_user_nickname
-
-        # 验证 user_id 必须以 'U' 开头（LINE用户ID格式）
-        if not user_id.startswith('U'):
-            return jsonify({
-                "error": "Invalid user_id",
-                "message": "user_id must start with 'U'"
-            }), 400
-
-        # 获取 JSON 数据
-        data = request.get_json() or {}
-        nickname_param = data.get('nickname', '')
-        language = data.get('language', 'en')
-
-        # nickname 是必需参数
-        if not nickname_param:
-            return jsonify({
-                "error": "Missing parameter",
-                "message": "Parameter 'nickname' is required"
-            }), 400
-
-        # 验证 language 参数
-        if language not in ['ja', 'en', 'zh']:
-            return jsonify({
-                "error": "Invalid parameter",
-                "message": "Parameter 'language' must be 'ja', 'en', or 'zh'"
-            }), 400
-
-        # 读取用户数据
-        read_user()
-
-        # 尝试从 LINE API 获取用户昵称
-        nickname = None
-        try:
-            # 尝试从 LINE API 获取（如果是 LINE 用户）
-            nickname = get_user_nickname(user_id, line_bot_api, use_cache=False)
-            # 如果返回错误消息（"Unknown (Blocked/Deleted)" 或 "Unknown (API Error)"），则不使用
-            if nickname and ("Unknown" in nickname or "API Error" in nickname or "Blocked" in nickname):
-                nickname = None
-        except Exception as e:
-            logger.debug(f"Failed to get LINE nickname for {user_id}: {e}")
-            nickname = None
-
-        # 如果无法从 LINE API 获取，尝试从用户数据获取
-        if not nickname:
-            if user_id in USERS and USERS[user_id].get('nickname'):
-                nickname = USERS[user_id].get('nickname')
-            else:
-                # 都没有，使用参数提供的昵称
-                nickname = nickname_param
-
         # 记录 API 访问日志
         token_info = request.token_info
-        logger.info(f"API: Register user {user_id} (nickname={nickname}, language={language}) via token {token_info['token_id']} ({token_info['note']})")
+        logger.info(f"API: Get versions info via token {token_info['token_id']} ({token_info['note']})")
 
-        # 生成绑定 token
-        bind_token = generate_bind_token(user_id)
-
-        # 构建绑定 URL
-        from urllib.parse import quote
-        bind_url = f"{DOMAIN}/linebot/sega_bind?token={bind_token}"
-        if nickname:
-            bind_url += f"&nickname={quote(nickname)}"
-        if language:
-            bind_url += f"&language={language}"
-
-        # 初始化用户数据（如果不存在）
-        from datetime import datetime
-        if user_id not in USERS:
-            USERS[user_id] = {
-                "language": language,
-                "registered_via_token": token_info['token_id'],
-                "registered_at": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            }
-            if nickname:
-                USERS[user_id]["nickname"] = nickname
-            mark_user_dirty()
-            write_user()
-            logger.info(f"Created new user {user_id} via API token {token_info['token_id']}")
+        read_dxdata()
 
         return jsonify({
             "success": True,
-            "user_id": user_id,
-            "nickname": nickname,
-            "bind_url": bind_url,
-            "token": bind_token,
-            "expires_in": 120,
-            "message": "Bind URL generated successfully. Token expires in 2 minutes."
+            "versions": VERSIONS
         })
 
     except Exception as e:
-        logger.error(f"API register user error: {e}", exc_info=True)
+        logger.error(f"API get versions error: {e}", exc_info=True)
         return jsonify({
             "error": "Internal server error",
             "message": str(e)
@@ -3940,7 +3955,12 @@ if __name__ == "__main__":
             # 清理频率限制追踪数据
             cleaned_rate_limits = cleanup_rate_limiter_tracking(rate_limiter_module)
 
-            logger.debug(f"Custom cleanup: {cleaned_nicknames} nicknames, {cleaned_rate_limits} rate limit entries")
+            # 清理未绑定的用户（没有 sega_id 或 sega_pwd）
+            from modules.system_checker import clean_unbound_users
+            cleanup_result = clean_unbound_users()
+            cleaned_unbound_users = cleanup_result.get('deleted_count', 0)
+
+            logger.debug(f"Custom cleanup: {cleaned_nicknames} nicknames, {cleaned_rate_limits} rate limit entries, {cleaned_unbound_users} unbound users")
         except Exception as e:
             logger.error(f"Custom cleanup error: {e}", exc_info=True)
 

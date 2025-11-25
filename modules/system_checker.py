@@ -11,13 +11,18 @@ logger = logging.getLogger(__name__)
 
 
 def clean_unbound_users() -> Dict[str, Any]:
+    """
+    清理未完成绑定的用户
+    删除没有 sega_id 或 sega_pwd 字段的账户
+    """
     read_user()
     deleted_users = []
 
     # 遍历所有用户
     for user_id, value in USERS.items():
-        if "version" not in value:
-            logger.info(f"Deleting unbound user: {user_id}")
+        # 检查是否缺少 sega_id 或 sega_pwd
+        if "sega_id" not in value or "sega_pwd" not in value:
+            logger.info(f"Deleting unbound user: {user_id} (missing sega_id or sega_pwd)")
             delete_user(user_id)
             deleted_users.append(user_id)
 
