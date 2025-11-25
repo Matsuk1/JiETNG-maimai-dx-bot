@@ -392,13 +392,13 @@ curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/reg
 
 | 端点 | 方法 | 说明 |
 |----------------|--------------|-------------------|
-| `/user/<user_id>` | GET | 获取用户信息 |
 | `/users` | GET | 获取所有用户列表 |
-| `/search` | GET | 搜索歌曲 |
+| `/register/<user_id>` | GET | 注册用户并生成绑定链接 |
+| `/user/<user_id>` | GET | 获取用户信息 |
 | `/update/<user_id>` | GET | 队列用户数据更新 |
 | `/records/<user_id>` | GET | 获取用户成绩记录 |
+| `/search` | GET | 搜索歌曲 |
 | `/versions` | GET | 获取版本列表 |
-| `/register/<user_id>` | GET | 注册用户并生成绑定链接 |
 
 ## 安全建议
 

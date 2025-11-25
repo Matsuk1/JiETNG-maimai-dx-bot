@@ -397,14 +397,13 @@ New users registered via API will automatically track:
 
 | Endpoint | Method | Description |
 |----------------|--------------|-------------------|
-| `/user/<user_id>` | GET | Get user info |
 | `/users` | GET | Get all users |
-| `/search` | GET | Search songs |
+| `/register/<user_id>` | GET | Register user and generate bind URL |
+| `/user/<user_id>` | GET | Get user info |
 | `/update/<user_id>` | GET | Queue user update |
 | `/records/<user_id>` | GET | Get user records |
+| `/search` | GET | Search songs |
 | `/versions` | GET | Get version list |
-| `/register/<user_id>` | GET | Register user and generate bind URL |
-
 ---
 
 ## Security Recommendations
