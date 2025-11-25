@@ -1,0 +1,593 @@
+# 开发者 API 文档
+
+## 概述
+
+开发者 Token 系统允许管理员创建和管理 API 访问令牌，用于第三方应用或脚本访问 JiETNG 的 API 端点。
+
+---
+
+## 快速开始
+
+### 获取 API Token
+
+如果您想使用 JiETNG API，请按照以下步骤获取访问令牌：
+
+1. **发送邮件**
+   - 收件人: `matsuk1@proton.me`
+   - 主题: `JiETNG API Token Request`
+   - 内容:
+     - 您的姓名或组织名称
+     - 使用目的说明
+     - 预计使用频率
+
+2. **等待审核**
+   - 管理员会审核您的申请并创建专属 Token
+
+3. **接收 Token**
+   - 您将通过邮件收到 Token ID 和完整的 Token 字符串
+   - **请妥善保管 Token，它只会显示一次！**
+
+### API 基础信息
+
+- **Base URL**: `https://jietng.matsuki.top/api/v1/`
+- **认证方式**: Bearer Token
+- **请求格式**: GET 请求，参数通过 URL query string 传递
+- **响应格式**: JSON
+
+### 使用示例
+
+```bash
+# 使用您的 Token 访问 API
+curl -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+     "https://jietng.matsuki.top/api/v1/users"
+```
+
+---
+
+## 功能特性
+
+- ✅ 创建安全的 API Token（使用 `secrets.token_urlsafe(32)`）
+- ✅ 为每个 Token 添加备注说明
+- ✅ 列出所有 Token 及其状态
+- ✅ 撤销不再需要的 Token
+- ✅ 查看 Token 详细信息
+- ✅ 自动记录 Token 最后使用时间
+- ✅ Bearer Token 认证装饰器
+- ✅ 三语支持（日语/英语/中文）
+
+---
+
+## 命令使用
+
+### 管理员命令
+
+仅管理员可在 LINE Bot 中使用以下命令：
+
+#### 1. 创建 Token
+
+```
+devtoken create <备注说明>
+```
+
+**示例:**
+```
+devtoken create MyApp API Integration
+```
+
+**返回:**
+- Token ID（用于管理）
+- 完整的 Token 字符串（请妥善保管）
+- 备注说明
+
+#### 2. 列出所有 Token
+
+```
+devtoken list
+```
+
+**显示内容:**
+- Token ID
+- 备注
+- 状态（Active/Revoked）
+- 创建时间
+- 最后使用时间
+
+#### 3. 撤销 Token
+
+```
+devtoken revoke <token_id>
+```
+
+**示例:**
+```
+devtoken revoke jt_abc123def456
+```
+
+#### 4. 查看 Token 详情
+
+```
+devtoken info <token_id>
+```
+
+**显示内容:**
+- Token ID
+- 完整 Token 字符串
+- 备注
+- 状态
+- 创建者
+- 创建时间
+- 最后使用时间
+
+---
+
+## API 使用
+
+### Base URL
+
+```
+https://jietng.matsuki.top/api/v1/
+```
+
+### 认证
+
+所有 API 端点都需要 Bearer Token 认证：
+
+```bash
+curl -H "Authorization: Bearer <your_token>" https://jietng.matsuki.top/api/v1/...
+```
+
+### 可用端点
+
+以下所有端点的完整 URL 为 `https://jietng.matsuki.top/api/v1/` + 端点路径。
+
+#### 1. 获取用户信息
+
+```http
+GET /api/v1/user/<user_id>
+```
+
+**示例:**
+```bash
+curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/user/U123456
+```
+
+**响应:**
+```json
+{
+  "success": true,
+  "user_id": "U123456",
+  "nickname": "ユーザー名",
+  "data": {
+    "language": "ja",
+    "sega_id": "...",
+    ...
+  }
+}
+```
+
+#### 2. 获取用户列表
+
+```http
+GET /api/v1/users
+```
+
+**示例:**
+```bash
+curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/users
+```
+
+**响应:**
+```json
+{
+  "success": true,
+  "count": 100,
+  "users": [
+    {
+      "user_id": "U123456",
+      "nickname": "ユーザー名"
+    },
+    ...
+  ]
+}
+```
+
+#### 3. 搜索歌曲
+
+```http
+GET /api/v1/search?q=<query>&ver=<version>&max_results=<limit>
+```
+
+**参数:**
+- `q`: 搜索关键词（可选，默认空字符串；使用 `__empty__` 表示显式空字符串）
+- `ver`: 版本 (jp/intl，可选，默认 jp)
+- `max_results`: 最大返回结果数（可选，默认 6）
+
+**示例:**
+```bash
+# 搜索日文歌曲
+curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/search?q=%E3%83%92%E3%83%90%E3%83%8A&ver=jp"
+
+# 搜索空字符串歌名
+curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/search?q=__empty__&ver=jp"
+```
+
+**响应:**
+```json
+{
+  "success": true,
+  "count": 2,
+  "songs": [
+    {
+      "id": 123,
+      "title": "ヒバナ",
+      "artist": "Artist Name",
+      ...
+    }
+  ]
+}
+```
+
+#### 4. 队列用户更新
+
+```http
+GET /api/v1/update/<user_id>
+```
+
+**示例:**
+```bash
+curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/update/U123456
+```
+
+**响应:**
+```json
+{
+  "success": true,
+  "user_id": "U123456",
+  "task_id": "task_xxx",
+  "queue_size": 5,
+  "message": "User update task queued successfully"
+}
+```
+
+#### 5. 获取用户记录
+
+```http
+GET /api/v1/records/<user_id>?type=<record_type>&command=<filter>
+```
+
+**参数:**
+- `type`: 记录类型 (best50/best100/best35/best15/allb50/allb35/apb50/rct50/idealb50，可选，默认 best50)
+- `command`: 筛选命令（可选，支持 -ver、-fc、-rate 等）
+
+**示例:**
+```bash
+# 获取 best50
+curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/records/U123456?type=best50"
+
+# 筛选特定版本
+curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/records/U123456?type=best50&command=-ver%20DX%20FESTiVAL%20PLUS"
+```
+
+**响应:**
+```json
+{
+  "success": true,
+  "old_songs": [...],
+  "new_songs": [...]
+}
+```
+
+#### 6. 获取版本列表
+
+```http
+GET /api/v1/versions
+```
+
+**示例:**
+```bash
+curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/versions
+```
+
+**响应:**
+```json
+{
+  "success": true,
+  "versions": [
+    {"id": 0, "name": "maimai"},
+    {"id": 1, "name": "maimai PLUS"},
+    ...
+  ]
+}
+```
+
+#### 7. 注册用户
+
+```http
+GET /api/v1/register/<user_id>?nickname=<name>&language=<lang>
+```
+
+**参数:**
+- `nickname`: **必需**，用户昵称（如果是LINE用户会自动从LINE API获取，非LINE用户则使用此参数）
+- `language`: 语言设置 (ja/en/zh，可选，默认 en)
+
+**要求:**
+- `user_id` 必须以 `U` 开头（LINE用户ID格式）
+
+**昵称获取优先级:**
+1. 从 LINE API 自动获取（如果是 LINE 用户）
+2. 从用户数据中的 nickname 字段获取
+3. 使用参数提供的 nickname
+
+**示例:**
+```bash
+curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/register/U123456?nickname=TestUser&language=en"
+```
+
+**响应:**
+```json
+{
+  "success": true,
+  "user_id": "U123456",
+  "nickname": "TestUser",
+  "bind_url": "https://jietng.matsuki.top/linebot/sega_bind?token=xxx&nickname=TestUser&language=en",
+  "token": "xxx",
+  "expires_in": 120,
+  "message": "Bind URL generated successfully. Token expires in 2 minutes."
+}
+```
+
+**注册记录:**
+
+通过 API 注册的新用户会自动记录以下信息：
+- `registered_via_token`: 注册时使用的 token ID
+- `registered_at`: 注册时间（格式：YYYY-MM-DD HH:MM:SS）
+
+---
+
+## 错误处理
+
+### 401 Unauthorized
+
+**情况:**
+- 未提供 Authorization header
+- Token 格式错误
+- Token 无效或已被撤销
+
+**响应示例:**
+```json
+{
+  "error": "Invalid token",
+  "message": "Token is invalid or has been revoked"
+}
+```
+
+### 400 Bad Request
+
+**情况:**
+- 缺少必需参数（例如：register 端点缺少 nickname）
+- 参数值无效（例如：language 不在允许列表中）
+- user_id 格式错误（例如：register 端点的 user_id 不以 'U' 开头）
+
+**响应示例:**
+```json
+{
+  "error": "Missing parameter",
+  "message": "Parameter 'nickname' is required"
+}
+```
+
+```json
+{
+  "error": "Invalid user_id",
+  "message": "user_id must start with 'U'"
+}
+```
+
+### 404 Not Found
+
+**情况:**
+- 请求的资源不存在（例如：用户不存在）
+
+**响应示例:**
+```json
+{
+  "error": "User not found",
+  "message": "User U123456 does not exist"
+}
+```
+
+### 500 Internal Server Error
+
+**情况:**
+- 服务器内部错误
+
+**响应示例:**
+```json
+{
+  "error": "Internal server error",
+  "message": "Error description"
+}
+```
+
+---
+
+## API 端点汇总
+
+| 端点 | 方法 | 说明 |
+|----------------|--------------|-------------------|
+| `/user/<user_id>` | GET | 获取用户信息 |
+| `/users` | GET | 获取所有用户列表 |
+| `/search` | GET | 搜索歌曲 |
+| `/update/<user_id>` | GET | 队列用户数据更新 |
+| `/records/<user_id>` | GET | 获取用户成绩记录 |
+| `/versions` | GET | 获取版本列表 |
+| `/register/<user_id>` | GET | 注册用户并生成绑定链接 |
+
+---
+
+## 安全建议
+
+1. **妥善保管 Token**
+   - Token 只在创建时显示一次
+   - 请将 Token 保存在安全的位置
+   - 不要在公共代码库中提交 Token
+
+2. **定期轮换 Token**
+   - 定期撤销旧 Token 并创建新 Token
+   - 为不同的应用使用不同的 Token
+
+3. **使用 HTTPS**
+   - 始终通过 HTTPS 传输 Token
+   - 避免在不安全的网络中使用 API
+
+4. **监控使用情况**
+   - 定期检查 Token 的最后使用时间
+   - 撤销不再使用的 Token
+
+5. **最小权限原则**
+   - 只为需要的应用创建 Token
+   - 及时撤销不再需要的访问权限
+
+---
+
+## 技术实现
+
+### 数据存储
+
+Token 数据存储位置由 `config.json` 中的 `file_path.dev_tokens` 配置项决定（默认：`./data/dev_tokens.json`）：
+
+```json
+{
+  "jt_abc123def456": {
+    "token": "actual_token_string",
+    "note": "MyApp API Integration",
+    "created_at": "2025-01-24 12:00:00",
+    "created_by": "U123456",
+    "last_used": "2025-01-24 15:30:00",
+    "revoked": false
+  }
+}
+```
+
+### 装饰器使用
+
+在新的 API 端点中使用 `@require_dev_token` 装饰器：
+
+```python
+@app.route("/api/v1/my_endpoint", methods=["GET"])
+@csrf.exempt
+@require_dev_token
+def my_api_endpoint():
+    # Token 信息会自动添加到 request.token_info
+    token_info = request.token_info
+    logger.info(f"API access via token {token_info['token_id']}")
+
+    return jsonify({"success": True})
+```
+
+---
+
+## 示例代码
+
+### Python
+
+```python
+import requests
+
+TOKEN = "your_token_here"
+BASE_URL = "https://jietng.matsuki.top/api/v1"
+
+headers = {
+    "Authorization": f"Bearer {TOKEN}"
+}
+
+# 获取用户列表
+response = requests.get(f"{BASE_URL}/users", headers=headers)
+users = response.json()
+
+print(f"Total users: {users['count']}")
+for user in users['users']:
+    print(f"  - {user['nickname']} ({user['user_id']})")
+```
+
+### JavaScript
+
+```javascript
+const TOKEN = 'your_token_here';
+const BASE_URL = 'https://jietng.matsuki.top/api/v1';
+
+async function getUsers() {
+  const response = await fetch(`${BASE_URL}/users`, {
+    headers: {
+      'Authorization': `Bearer ${TOKEN}`
+    }
+  });
+
+  const data = await response.json();
+  console.log(`Total users: ${data.count}`);
+
+  data.users.forEach(user => {
+    console.log(`  - ${user.nickname} (${user.user_id})`);
+  });
+}
+
+getUsers();
+```
+
+### cURL
+
+```bash
+#!/bin/bash
+
+TOKEN="your_token_here"
+BASE_URL="https://jietng.matsuki.top/api/v1"
+
+# 获取用户列表
+curl -H "Authorization: Bearer $TOKEN" "$BASE_URL/users"
+
+# 获取特定用户信息
+USER_ID="U123456"
+curl -H "Authorization: Bearer $TOKEN" "$BASE_URL/user/$USER_ID"
+
+# 搜索歌曲
+curl -H "Authorization: Bearer $TOKEN" "$BASE_URL/search?q=ヒバナ&ver=jp"
+```
+
+---
+
+## 常见问题
+
+### Q: Token 会过期吗？
+**A:** 目前 Token 不会自动过期，但可以被管理员手动撤销。
+
+### Q: 丢失 Token 怎么办？
+**A:** Token 只在创建时显示一次。如果丢失，需要撤销旧 Token 并创建新的。
+
+### Q: 一个应用可以有多个 Token 吗？
+**A:** 可以。建议为不同的用途创建不同的 Token，便于管理和撤销。
+
+### Q: Token 的权限范围是什么？
+**A:** 所有通过认证的 Token 具有相同的 API 访问权限。目前不支持细粒度的权限控制。
+
+---
+
+## 版本历史
+
+- **v1.0** (2025-01-24): 初始版本，支持基本的 Token 管理和 API 认证
+
+---
+
+## 相关文件
+
+- `config.json` - 配置文件（包含 Token 文件路径）
+- `modules/config_loader.py` - 配置加载器
+- `modules/devtoken_manager.py` - Token 管理核心逻辑
+- `modules/message_manager.py` - 三语消息定义
+- `main.py` - API 端点和命令处理
+- `data/dev_tokens.json` - Token 数据存储（默认位置）
+
+---
+
+## 支持
+
+如有问题或建议，请联系系统管理员（邮箱：matsuk1@proton.me）。

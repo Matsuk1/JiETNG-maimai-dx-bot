@@ -3804,6 +3804,126 @@ def api_search_songs():
             "message": str(e)
         }), 500
 
+@app.route("/api/v1/register/<user_id>", methods=["GET"])
+@csrf.exempt
+@require_dev_token
+def api_register_user(user_id):
+    """
+    用户注册 API - 生成绑定链接
+
+    需要 Bearer Token 认证
+
+    参数:
+    - nickname: 必需，用户昵称（如果是LINE用户会自动从LINE API获取，非LINE用户则使用此参数）
+    - language: 可选，语言设置 (ja/en/zh)，默认为 en
+
+    返回:
+    - bind_url: 绑定页面链接
+    - token: 绑定 token（2分钟有效）
+    - expires_in: token 过期时间（秒）
+    - nickname: 实际使用的昵称
+
+    示例:
+    curl -H "Authorization: Bearer <your_token>" "https://your-domain.com/api/v1/register/U1234567890abcdef?nickname=TestUser&language=en"
+    """
+    try:
+        from modules.token_manager import generate_token as generate_bind_token
+        from modules.user_manager import get_user_nickname
+
+        # 验证 user_id 必须以 'U' 开头（LINE用户ID格式）
+        if not user_id.startswith('U'):
+            return jsonify({
+                "error": "Invalid user_id",
+                "message": "user_id must start with 'U'"
+            }), 400
+
+        # 获取参数
+        nickname_param = request.args.get('nickname', '')
+        language = request.args.get('language', 'en')
+
+        # nickname 是必需参数
+        if not nickname_param:
+            return jsonify({
+                "error": "Missing parameter",
+                "message": "Parameter 'nickname' is required"
+            }), 400
+
+        # 验证 language 参数
+        if language not in ['ja', 'en', 'zh']:
+            return jsonify({
+                "error": "Invalid parameter",
+                "message": "Parameter 'language' must be 'ja', 'en', or 'zh'"
+            }), 400
+
+        # 读取用户数据
+        read_user()
+
+        # 尝试从 LINE API 获取用户昵称
+        nickname = None
+        try:
+            # 尝试从 LINE API 获取（如果是 LINE 用户）
+            nickname = get_user_nickname(user_id, line_bot_api, use_cache=False)
+            # 如果返回错误消息（"Unknown (Blocked/Deleted)" 或 "Unknown (API Error)"），则不使用
+            if nickname and ("Unknown" in nickname or "API Error" in nickname or "Blocked" in nickname):
+                nickname = None
+        except Exception as e:
+            logger.debug(f"Failed to get LINE nickname for {user_id}: {e}")
+            nickname = None
+
+        # 如果无法从 LINE API 获取，尝试从用户数据获取
+        if not nickname:
+            if user_id in USERS and USERS[user_id].get('nickname'):
+                nickname = USERS[user_id].get('nickname')
+            else:
+                # 都没有，使用参数提供的昵称
+                nickname = nickname_param
+
+        # 记录 API 访问日志
+        token_info = request.token_info
+        logger.info(f"API: Register user {user_id} (nickname={nickname}, language={language}) via token {token_info['token_id']} ({token_info['note']})")
+
+        # 生成绑定 token
+        bind_token = generate_bind_token(user_id)
+
+        # 构建绑定 URL
+        from urllib.parse import quote
+        bind_url = f"{DOMAIN}/linebot/sega_bind?token={bind_token}"
+        if nickname:
+            bind_url += f"&nickname={quote(nickname)}"
+        if language:
+            bind_url += f"&language={language}"
+
+        # 初始化用户数据（如果不存在）
+        from datetime import datetime
+        if user_id not in USERS:
+            USERS[user_id] = {
+                "language": language,
+                "registered_via_token": token_info['token_id'],
+                "registered_at": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            }
+            if nickname:
+                USERS[user_id]["nickname"] = nickname
+            mark_user_dirty()
+            write_user()
+            logger.info(f"Created new user {user_id} via API token {token_info['token_id']}")
+
+        return jsonify({
+            "success": True,
+            "user_id": user_id,
+            "nickname": nickname,
+            "bind_url": bind_url,
+            "token": bind_token,
+            "expires_in": 120,
+            "message": "Bind URL generated successfully. Token expires in 2 minutes."
+        })
+
+    except Exception as e:
+        logger.error(f"API register user error: {e}", exc_info=True)
+        return jsonify({
+            "error": "Internal server error",
+            "message": str(e)
+        }), 500
+
 if __name__ == "__main__":
     # 启动内存管理器
     memory_manager.start()

@@ -99,37 +99,6 @@ def check_required_files() -> Dict[str, bool]:
 
     return results
 
-
-def clean_user_status_fields() -> Dict[str, Any]:
-    """
-    清理用户 status 字段
-    保留 notice_read 字段
-
-    Returns:
-        清理结果
-    """
-    read_user()
-
-    cleaned_count = 0
-
-    for user_id, user_data in USERS.items():
-        # 删除 status 字段
-        if "status" in user_data:
-            cleaned_count += 1
-            del user_data["status"]
-            user_data["notice_read"] = True
-            logger.debug(f"Removed status from {user_id}")
-
-    if cleaned_count > 0:
-        write_user()
-        logger.info(f"✓ Cleaned status fields for {cleaned_count} users")
-    else:
-        logger.info("✓ No status fields need cleaning")
-
-    return {
-        "cleaned_count": cleaned_count
-    }
-
 def run_system_check() -> Dict[str, Any]:
     """
     运行完整的系统自检
@@ -147,19 +116,15 @@ def run_system_check() -> Dict[str, Any]:
     }
 
     # 1. 数据库连接检查
-    logger.info("\n[1/4] Checking database connection...")
+    logger.info("\n[1/3] Checking database connection...")
     results["checks"]["database"] = check_database_connection()
 
     # 2. 必要文件检查
-    logger.info("\n[2/4] Checking required files...")
+    logger.info("\n[2/3] Checking required files...")
     results["checks"]["files"] = check_required_files()
 
-    # 3. 清理用户 status 字段
-    logger.info("\n[3/4] Cleaning user status fields...")
-    results["checks"]["status_cleanup"] = clean_user_status_fields()
-
-    # 4. 清理未绑定的代理用户
-    logger.info("\n[4/4] Cleaning unbound users...")
+    # 3. 清理未绑定的代理用户
+    logger.info("\n[3/3] Cleaning unbound users...")
     results["checks"]["cleanup"] = clean_unbound_users()
 
     # 生成报告
@@ -168,10 +133,6 @@ def run_system_check() -> Dict[str, Any]:
     logger.info("=" * 60)
 
     # 统计结果
-    status_cleanup = results["checks"]["status_cleanup"]
-    if status_cleanup["cleaned_count"] > 0:
-        logger.info(f"• Cleaned status fields for {status_cleanup['cleaned_count']} users")
-
     cleanup = results["checks"]["cleanup"]
     if cleanup["deleted_count"] > 0:
         logger.info(f"• Deleted {cleanup['deleted_count']} unbound users")

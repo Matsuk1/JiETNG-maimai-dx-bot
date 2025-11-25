@@ -73,7 +73,8 @@ export default withMermaid(defineConfig({
           { text: '常见问题', link: '/more/faq' },
           { text: '隐私政策', link: '/more/privacy' },
           { text: '支持', link: '/more/support' },
-          { text: '许可证', link: '/more/license' }
+          { text: '许可证', link: '/more/license' },
+          { text: '开发者 API', link: '/developer-api' }
         ]
       }
     ],
@@ -159,7 +160,8 @@ export default withMermaid(defineConfig({
               { text: 'FAQ', link: '/en/more/faq' },
               { text: 'Privacy', link: '/en/more/privacy' },
               { text: 'Support', link: '/en/more/support' },
-              { text: 'License', link: '/en/more/license' }
+              { text: 'License', link: '/en/more/license' },
+              { text: 'Developer API', link: '/en/developer-api' }
             ]
           }
         ],
@@ -222,7 +224,8 @@ export default withMermaid(defineConfig({
               { text: 'よくある質問', link: '/ja/more/faq' },
               { text: 'プライバシー', link: '/ja/more/privacy' },
               { text: 'サポート', link: '/ja/more/support' },
-              { text: 'ライセンス', link: '/ja/more/license' }
+              { text: 'ライセンス', link: '/ja/more/license' },
+              { text: '開発者 API', link: '/ja/developer-api' }
             ]
           }
         ],
