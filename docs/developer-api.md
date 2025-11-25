@@ -23,13 +23,12 @@
 
 3. **接收 Token**
    - 您将通过邮件收到 Token ID 和完整的 Token 字符串
-   - **请妥善保管 Token！**
+   - **请妥善保管好您的 Token！**
 
 ### API 基础信息
 
 - **Base URL**: `https://jietng.matsuki.top/api/v1/`
 - **认证方式**: Bearer Token
-- **请求格式**: GET 请求，参数通过 URL query string 传递
 - **响应格式**: JSON
 
 ### 使用示例

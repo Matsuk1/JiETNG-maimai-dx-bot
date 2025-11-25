@@ -30,7 +30,6 @@ If you want to use the JiETNG API, follow these steps to get an access token:
 
 - **Base URL**: `https://jietng.matsuki.top/api/v1/`
 - **Authentication**: Bearer Token
-- **Request Format**: GET requests with parameters passed via URL query string
 - **Response Format**: JSON
 
 ### Usage Example
