@@ -3484,16 +3484,19 @@ def api_list_users():
     try:
         read_user()
 
+        token_info = request.token_info
+
         users_list = []
         for user_id in USERS.keys():
-            nickname = get_user_nickname_wrapper(user_id, use_cache=True)
-            users_list.append({
-                "user_id": user_id,
-                "nickname": nickname
-            })
+            # 检查是否有访问权限
+            if 'registered_via_token' in USERS[user_id] and USERS[user_id]['registered_via_token'] == token_info['token_id']:
+                nickname = get_user_nickname_wrapper(user_id, use_cache=True)
+                users_list.append({
+                    "user_id": user_id,
+                    "nickname": nickname
+                })
 
         # 记录 API 访问日志
-        token_info = request.token_info
         logger.info(f"API: List users via token {token_info['token_id']} ({token_info['note']})")
 
         return jsonify({
@@ -3611,11 +3614,18 @@ def api_get_user(user_id):
                 "message": f"User {user_id} does not exist"
             }), 404
 
+        # 检查是否有访问权限
+        token_info = request.token_info
+        if not ('registered_via_token' in USERS[user_id] and USERS[user_id]['registered_via_token'] == token_info['token_id']):
+            return jsonify({
+                "error": "Permission denied",
+                "message": f"User {user_id} was not created by this token"
+            }), 403
+
         user_data = USERS[user_id]
         nickname = get_user_nickname_wrapper(user_id, use_cache=True)
 
         # 记录 API 访问日志
-        token_info = request.token_info
         logger.info(f"API: Get user {user_id} via token {token_info['token_id']} ({token_info['note']})")
 
         return jsonify({
@@ -3653,15 +3663,16 @@ def api_delete_user(user_id):
                 "message": f"User {user_id} does not exist"
             }), 404
 
-        # 获取用户信息用于日志
-        nickname = get_user_nickname_wrapper(user_id, use_cache=True)
-        
+        # 检查是否有访问权限
         token_info = request.token_info
         if not ('registered_via_token' in USERS[user_id] and USERS[user_id]['registered_via_token'] == token_info['token_id']):
             return jsonify({
                 "error": "Permission denied",
                 "message": f"User {user_id} was not created by this token"
             }), 403
+
+        # 获取用户信息用于日志
+        nickname = get_user_nickname_wrapper(user_id, use_cache=True)
 
         # 删除用户
         delete_user(user_id)
@@ -3704,6 +3715,14 @@ def api_update_user(user_id):
                 "message": f"User {user_id} does not exist"
             }), 404
 
+        # 检查是否有访问权限
+        token_info = request.token_info
+        if not ('registered_via_token' in USERS[user_id] and USERS[user_id]['registered_via_token'] == token_info['token_id']):
+            return jsonify({
+                "error": "Permission denied",
+                "message": f"User {user_id} was not created by this token"
+            }), 403
+
         # 检查用户是否已绑定账号
         if 'sega_id' not in USERS[user_id] or 'sega_pwd' not in USERS[user_id]:
             return jsonify({
@@ -3728,7 +3747,6 @@ def api_update_user(user_id):
             webtask_queue.put_nowait((async_maimai_update_task, (mock_event,), task_id))
 
             # 记录 API 访问日志
-            token_info = request.token_info
             logger.info(f"API: Triggered update for user {user_id} via token {token_info['token_id']} ({token_info['note']})")
 
             return jsonify({
@@ -3792,6 +3810,13 @@ def api_get_records(user_id):
                 "error": "User not found",
                 "message": f"User {user_id} does not exist"
             }), 404
+
+        # 检查是否有访问权限
+        if not ('registered_via_token' in USERS[user_id] and USERS[user_id]['registered_via_token'] == token_info['token_id']):
+            return jsonify({
+                "error": "Permission denied",
+                "message": f"User {user_id} was not created by this token"
+            }), 403
 
         # 检查是否有个人信息
         if "personal_info" not in USERS[user_id]:
@@ -3857,13 +3882,41 @@ def api_search_songs():
     try:
         # 获取查询参数，允许空字符串
         query = request.args.get('q', '')
+        user_id = request.args.get('user_id')
+        max_results = request.args.get('max_results', 6, type=int)
 
         # 处理特殊占位符
         if query == '__empty__':
             query = ''
+        
+        token_info = request.token_info
 
-        ver = request.args.get('ver', 'jp')
-        max_results = request.args.get('max_results', 6, type=int)
+        if not user_id:
+            ver = request.args.get('ver', 'jp')
+        else:
+            read_user()
+            # 检查用户是否存在
+            if user_id not in USERS:
+                return jsonify({
+                    "error": "User not found",
+                    "message": f"User {user_id} does not exist"
+                }), 404
+
+            # 检查是否有访问权限
+            if not ('registered_via_token' in USERS[user_id] and USERS[user_id]['registered_via_token'] == token_info['token_id']):
+                return jsonify({
+                    "error": "Permission denied",
+                    "message": f"User {user_id} was not created by this token"
+                }), 403
+
+            # 检查是否有个人信息
+            if "personal_info" not in USERS[user_id]:
+                return jsonify({
+                    "error": "User info not found",
+                    "message": f"User {user_id} has no personal info, please update first"
+                }), 400
+
+            ver = get_user_value(user_id, "version")
 
         if ver not in ['jp', 'intl']:
             return jsonify({
@@ -3872,7 +3925,6 @@ def api_search_songs():
             }), 400
 
         # 记录 API 访问日志
-        token_info = request.token_info
         logger.info(f"API: Search songs with query '{query}' via token {token_info['token_id']} ({token_info['note']})")
 
         # 读取歌曲数据
@@ -3897,13 +3949,55 @@ def api_search_songs():
                 "count": len(matching_songs)
             }), 400
 
+        if not user_id:
+            return jsonify({
+                "success": True,
+                "count": len(matching_songs),
+                "query": query,
+                "ver": ver,
+                "songs": matching_songs
+            })
+
+
+        song_record = read_record(user_id)
+        result = []
+        
+        # 对每首匹配的歌曲,查找用户的游玩记录
+        for song in matching_songs:
+            played_data = []
+
+            # 使用优化的精确匹配函数
+            for rcd in song_record:
+                if is_exact_song_title_match(rcd['name'], song['title']) and rcd['type'] == song['type']:
+                    rcd['rank'] = ""
+                    played_data.append(rcd)
+
+            if played_data:
+                result.append(played_data)
+                
+        if not result:
+            return jsonify({
+                "success": True,
+                "count": 0,
+                "records": [],
+                "message": "No records found"
+            })
+
+        if len(result) > MAX_SEARCH_RESULTS:
+            return jsonify({
+                "error": "Too many results",
+                "message": f"Found {len(result)} songs, please refine your search (max: {MAX_SEARCH_RESULTS})",
+                "count": len(result)
+            }), 400
+
         return jsonify({
             "success": True,
-            "count": len(matching_songs),
+            "count": len(result),
             "query": query,
             "ver": ver,
-            "songs": matching_songs
+            "records": result
         })
+
 
     except Exception as e:
         logger.error(f"API search songs error: {e}", exc_info=True)

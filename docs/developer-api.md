@@ -287,12 +287,13 @@ curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/rec
 #### 7. 搜索歌曲
 
 ```http
-GET /api/v1/search?q=<query>&ver=<version>&max_results=<limit>
+GET /api/v1/search?q=<query>&user_id=<user_id>&ver=<version>&max_results=<limit>
 ```
 
 **参数:**
 - `q`: 搜索关键词（可选，默认空字符串；使用 `__empty__` 表示显式空字符串）
-- `ver`: 版本 (jp/intl，可选，默认 jp)
+- `user_id`: 在指定用户的成绩数据库内匹配歌曲（默认为空，不匹配）
+- `ver`: 版本 (jp/intl，可选，默认 jp，填写 user_id 后可省略)
 - `max_results`: 最大返回结果数（可选，默认 6）
 
 **示例:**
@@ -302,6 +303,9 @@ curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/sea
 
 # 搜索空字符串歌名
 curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/search?q=__empty__&ver=jp"
+
+# 在用户的成绩数据库内匹配
+curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/search?q=%E3%83%92%E3%83%90%E3%83%8A&user_id=U123456"
 ```
 
 **响应:**
@@ -311,11 +315,29 @@ curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/sea
   "count": 2,
   "songs": [
     {
-      "id": 123,
       "title": "ヒバナ",
       "artist": "Artist Name",
       ...
-    }
+    },
+    ...
+  ]
+}
+```
+
+```json
+{
+  "success": true,
+  "count": 2,
+  "records": [
+    [
+      {
+        "name": "ヒバナ",
+        "score": "100.8828%",
+        ...
+      },
+      ...
+    ],
+    ...
   ]
 }
 ```
@@ -365,7 +387,6 @@ curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/vers
 **情况:**
 - 缺少必需参数（例如：register 端点缺少 nickname）
 - 参数值无效（例如：language 不在允许列表中）
-- user_id 格式错误（例如：register 端点的 user_id 不以 'U' 开头）
 
 **响应示例:**
 ```json
@@ -379,6 +400,19 @@ curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/vers
 {
   "error": "Invalid user_id",
   "message": "user_id must start with 'U'"
+}
+```
+
+### 403 Forbidden
+
+**情况:**
+- 当前 token 无法访问该 user_id (该用户并非以此 token 创建)
+
+**响应示例:**
+```json
+{
+  "error": "Forbidden",
+  "message": "User U123456 was not created by this token"
 }
 ```
 

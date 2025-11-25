@@ -288,12 +288,13 @@ curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/rec
 #### 7. 楽曲検索
 
 ```http
-GET /api/v1/search?q=<query>&ver=<version>&max_results=<limit>
+GET /api/v1/search?q=<query>&user_id=<user_id>&ver=<version>&max_results=<limit>
 ```
 
 **パラメータ:**
 - `q`: 検索キーワード（オプション、デフォルトは空文字列；明示的な空文字列には `__empty__` を使用）
-- `ver`: バージョン (jp/intl、オプション、デフォルトはjp)
+- `user_id`: 指定ユーザーのスコアデータベース内で楽曲を照合します（デフォルトは空で、照合しません）
+- `ver`: バージョン (jp/intl、オプション、デフォルトはjp、user_id を指定すると、この項目は省略できます)
 - `max_results`: 最大結果数（オプション、デフォルトは6）
 
 **例:**
@@ -303,6 +304,9 @@ curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/sea
 
 # 空文字列の曲名を検索
 curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/search?q=__empty__&ver=jp"
+
+# ユーザーのスコアデータベース内で照合
+curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/search?q=%E3%83%92%E3%83%90%E3%83%8A&user_id=U123456"
 ```
 
 **レスポンス:**
@@ -312,11 +316,29 @@ curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/sea
   "count": 2,
   "songs": [
     {
-      "id": 123,
       "title": "ヒバナ",
       "artist": "Artist Name",
       ...
-    }
+    },
+    ...
+  ]
+}
+```
+
+```json
+{
+  "success": true,
+  "count": 2,
+  "records": [
+    [
+      {
+        "name": "ヒバナ",
+        "score": "100.8828%",
+        ...
+      },
+      ...
+    ],
+    ...
   ]
 }
 ```
@@ -366,7 +388,6 @@ curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/vers
 **ケース:**
 - 必須パラメータが不足（例: registerエンドポイントでnicknameが欠けている）
 - パラメータ値が無効（例: languageが許可リストにない）
-- user_id形式が無効（例: registerエンドポイントのuser_idが'U'で始まらない）
 
 **レスポンス例:**
 ```json
@@ -380,6 +401,19 @@ curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/vers
 {
   "error": "Invalid user_id",
   "message": "user_id must start with 'U'"
+}
+```
+
+### 403 Forbidden
+
+**ケース:**
+- 現在のトークンでは、この user_id にアクセスする権限がありません
+
+**レスポンス例:**
+```json
+{
+  "error": "Forbidden",
+  "message": "User U123456 was not created by this token"
 }
 ```
 

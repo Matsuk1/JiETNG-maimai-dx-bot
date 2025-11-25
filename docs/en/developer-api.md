@@ -290,12 +290,13 @@ curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/rec
 #### 7. Search Songs
 
 ```http
-GET /api/v1/search?q=<query>&ver=<version>&max_results=<limit>
+GET /api/v1/search?q=<query>&user_id=<user_id>&ver=<version>&max_results=<limit>
 ```
 
 **Parameters:**
 - `q`: Search query (optional, defaults to empty string; use `__empty__` for explicit empty string)
-- `ver`: Version (jp/intl, optional, defaults to jp)
+- `user_id`: Match songs in the specified user's score database (default is empty, no matching)
+- `ver`: Version (jp/intl, optional, defaults to jp, after specifying the user_id, this field can be omitted.)
 - `max_results`: Maximum number of results (optional, defaults to 6)
 
 **Example:**
@@ -305,6 +306,9 @@ curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/sea
 
 # Search empty string song names
 curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/search?q=__empty__&ver=jp"
+
+# Match within the user's score database
+curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/search?q=%E3%83%92%E3%83%90%E3%83%8A&user_id=U123456"
 ```
 
 **Response:**
@@ -314,11 +318,29 @@ curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/sea
   "count": 2,
   "songs": [
     {
-      "id": 123,
       "title": "ヒバナ",
       "artist": "Artist Name",
       ...
-    }
+    },
+    ...
+  ]
+}
+```
+
+```json
+{
+  "success": true,
+  "count": 2,
+  "records": [
+    [
+      {
+        "name": "ヒバナ",
+        "score": "100.8828%",
+        ...
+      },
+      ...
+    ],
+    ...
   ]
 }
 ```
@@ -383,6 +405,19 @@ curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/vers
 {
   "error": "Invalid user_id",
   "message": "user_id must start with 'U'"
+}
+```
+
+### 403 Forbidden
+
+**Cases:**
+- The current token is not authorized to access this user_id
+
+**Response Example:**
+```json
+{
+  "error": "Forbidden",
+  "message": "User U123456 was not created by this token"
 }
 ```
 
