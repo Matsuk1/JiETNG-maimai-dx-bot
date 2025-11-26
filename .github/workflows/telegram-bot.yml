@@ -5,9 +5,10 @@ on:
     branches: [ telegram ]
   workflow_dispatch:
   schedule:
-    # Run daily at 03:00 UTC (12:00 JST/UTC+9) for 1 hour
-    # Monthly usage: 30 days × 1 hour = 1800 minutes (within 2000 min free tier)
-    - cron: '0 3 * * *'
+    # Run daily at 07:30 UTC (16:30 JST/UTC+9) for 2.5 hours
+    # Only runs on even-numbered weeks (bi-weekly)
+    # Monthly usage: ~15 days × 2.5 hours × 60 min = 2250 minutes
+    - cron: '30 7 * * *'
 
 jobs:
   run-bot:
@@ -42,7 +43,18 @@ jobs:
         }
         EOF
 
+    - name: Check if even week
+      id: check_week
+      run: |
+        WEEK_NUMBER=$(date +%V)
+        if [ $((WEEK_NUMBER % 2)) -eq 0 ]; then
+          echo "is_even_week=true" >> $GITHUB_OUTPUT
+        else
+          echo "is_even_week=false" >> $GITHUB_OUTPUT
+        fi
+
     - name: Run Telegram Bot
-      timeout-minutes: 60  # 1 hour timeout
+      if: steps.check_week.outputs.is_even_week == 'true'
+      timeout-minutes: 150  # 2.5 hours timeout (16:30-19:00 JST)
       run: |
         python3 bot.py
