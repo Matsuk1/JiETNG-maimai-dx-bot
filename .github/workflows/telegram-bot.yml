@@ -5,8 +5,8 @@ on:
     branches: [ telegram ]
   workflow_dispatch:
   schedule:
-    # Run daily at 04:00 UTC (12:00 Beijing time)
-    - cron: '0 4 * * *'
+    # Run daily at 03:00 UTC (12:00 JST/UTC+9)
+    - cron: '0 3 * * *'
 
 jobs:
   run-bot:
@@ -42,6 +42,6 @@ jobs:
         EOF
 
     - name: Run Telegram Bot
-      timeout-minutes: 360  # 6 hours timeout (12:00-18:00 Beijing time)
+      timeout-minutes: 360  # 6 hours timeout (12:00-18:00 JST)
       run: |
         python3 bot.py
