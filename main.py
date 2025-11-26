@@ -634,12 +634,14 @@ Token not provided. <br />
 
     try:
         user_id = get_user_id_from_token(token)
+        if user_id not in USERS or "language" not in USERS[user_id]:
+            token_invalid_message = "トークンが無効です。<br />Invalid token. <br />令牌无效。"
+            return render_template("error.html", message=token_invalid_message, language="ja"), 400
+        
     except Exception as e:
         logger.error(f"Token verification failed: {e}")
         # Token 无效的错误消息（此时还没有 user_id，三语同时显示）
-        token_invalid_message = """トークンが無効です。<br />
-Invalid token. <br />
-令牌无效。"""
+        token_invalid_message = "トークンが無効です。<br />Invalid token. <br />令牌无效。"
         return render_template("error.html", message=token_invalid_message, language="ja"), 400
 
     if request.method == "POST":
@@ -921,10 +923,13 @@ def async_generate_friend_b50_task(event):
     if user_id in USERS and 'version' in USERS[user_id]:
         ver = USERS[user_id]['version']
 
-    if friend_code.startswith("U"):
+    if "line_friends" in USERS[user_id] and friend_code in USERS[user_id]['line_friends']:
         if friend_code in USERS and "personal_info" in USERS[friend_code]:
-            edit_user_value(user_id, "id_use", friend_code)
-            reply_msg = friend_use_once(USERS[friend_code]['personal_info']['name'], user_id)
+            if "line_friends" in USERS[friend_code] and user_id in USERS[friend_code]['line_friends']:
+                edit_user_value(user_id, "id_use", friend_code)
+                reply_msg = friend_use_once(USERS[friend_code]['personal_info']['name'], user_id)
+            else:
+                reply_msg = friendid_error(user_id)
         else:
             reply_msg = friendid_error(user_id)
 
@@ -1126,7 +1131,7 @@ def get_friend_list(user_id):
     # 获取 USERS[user_id]['line_friends'] 列表并添加到好友列表
     if 'line_friends' in USERS[user_id] and USERS[user_id]['line_friends']:
         for friend_id in USERS[user_id]['line_friends']:
-            if friend_id in USERS and 'personal_info' in USERS[friend_id]:
+            if friend_id in USERS and 'personal_info' in USERS[friend_id] and 'line_friends' in USERS[friend_id] and user_id in USERS[friend_id]['line_friends']:
                 friend_info = USERS[friend_id]['personal_info']
                 # 构造与 maimai 好友列表相同格式的好友信息
                 friend_entry = {
@@ -3693,6 +3698,79 @@ def api_delete_user(user_id):
             "message": str(e)
         }), 500
 
+
+@app.route("/api/v1/task/<task_id>", methods=["GET"])
+@csrf.exempt
+@require_dev_token
+def api_get_task_status(task_id):
+    """
+    查询任务状态 API
+
+    需要 Bearer Token 认证
+
+    返回指定任务的状态信息（running, queued, completed, 或 not_found）
+    """
+    try:
+        with task_tracking_lock:
+            # 检查任务是否在运行中
+            for task in task_tracking['running']:
+                if task.get('id') == task_id:
+                    return jsonify({
+                        "success": True,
+                        "task_id": task_id,
+                        "status": "running",
+                        "start_time": task.get('start_time'),
+                        "task_type": task.get('type', 'unknown')
+                    })
+
+            # 检查任务是否在队列中
+            for task in task_tracking['queued']:
+                if task.get('id') == task_id:
+                    return jsonify({
+                        "success": True,
+                        "task_id": task_id,
+                        "status": "queued",
+                        "queued_time": task.get('queued_time'),
+                        "task_type": task.get('type', 'unknown'),
+                        "queue_position": task_tracking['queued'].index(task) + 1
+                    })
+
+            # 检查任务是否已完成
+            for task in task_tracking['completed']:
+                if task.get('id') == task_id:
+                    return jsonify({
+                        "success": True,
+                        "task_id": task_id,
+                        "status": "completed",
+                        "start_time": task.get('start_time'),
+                        "end_time": task.get('end_time'),
+                        "duration": task.get('duration'),
+                        "task_type": task.get('type', 'unknown'),
+                        "result": task.get('result', 'success')
+                    })
+
+            # 检查任务是否已被取消
+            if task_id in task_tracking['cancelled']:
+                return jsonify({
+                    "success": True,
+                    "task_id": task_id,
+                    "status": "cancelled"
+                })
+
+        # 任务不存在
+        return jsonify({
+            "success": False,
+            "task_id": task_id,
+            "status": "not_found",
+            "message": "Task not found or expired"
+        }), 404
+
+    except Exception as e:
+        logger.error(f"API get task status error: {e}", exc_info=True)
+        return jsonify({
+            "error": "Internal server error",
+            "message": str(e)
+        }), 500
 
 @app.route("/api/v1/update/<user_id>", methods=["POST"])
 @csrf.exempt
