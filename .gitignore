@@ -4,72 +4,27 @@ __pycache__/
 *$py.class
 *.so
 .Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-venv/
 env/
+venv/
 ENV/
+build/
+dist/
+*.egg-info/
 
-# 敏感数据文件
-data/user.json.enc
-data/user.json
-data/dxdata.json
-data/dxdata_version.json
+# Config
 config.json
-*.enc
+user_mappings.json
 
-# 数据库
-*.db
-*.sqlite
-*.sqlite3
-
-# 日志文件
+# Logs
 *.log
-logs/
-
-# 临时文件
-*.tmp
-*.temp
-*.swp
-*.swo
-*~
-.DS_Store
 
 # IDE
 .vscode/
 .idea/
-*.sublime-project
-*.sublime-workspace
+*.swp
+*.swo
+*~
 
-# 测试
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
-test_api.py
-
-# 环境变量
-.env
-.env.local
-
-# 上传的图片缓存
-uploads/
-temp/
-cache/
-
-# 编译的 Python 文件
-*.pyc
+# OS
+.DS_Store
+Thumbs.db
