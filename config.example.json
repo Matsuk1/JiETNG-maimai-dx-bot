@@ -1,0 +1,10 @@
+{
+  "telegram": {
+    "bot_token": "YOUR_TELEGRAM_BOT_TOKEN",
+    "admin_user_ids": [123456789]
+  },
+  "api": {
+    "base_url": "https://jietng.matsuki.top/api/v1",
+    "token": "YOUR_API_TOKEN"
+  }
+}
