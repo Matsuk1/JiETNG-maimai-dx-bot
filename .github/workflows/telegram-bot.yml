@@ -4,6 +4,9 @@ on:
   push:
     branches: [ telegram ]
   workflow_dispatch:
+  schedule:
+    # Run every 5 hours (UTC time)
+    - cron: '0 */5 * * *'
 
 jobs:
   run-bot:
@@ -39,5 +42,6 @@ jobs:
         EOF
 
     - name: Run Telegram Bot
+      timeout-minutes: 300  # 5 hours timeout
       run: |
         python3 bot.py
