@@ -1,40 +1,41 @@
 # JiETNG Telegram Bot
 
-通过 Telegram Bot 调用 JiETNG API 来管理 maimai 账户。
+A Telegram Bot that calls JiETNG API to manage maimai accounts.
 
-## 功能特性
+## Features
 
-### 用户命令
-- `/start` - 显示欢迎信息和帮助
-- `/register` - 注册新用户并获取绑定链接
-- `/myinfo` - 查看个人信息
-- `/update` - 更新个人数据
-- `/b50 [筛选参数]` - 生成 Best 50 图片（支持筛选参数，如 `-lv 14 15`）
-- `/search <歌名>` - 搜索歌曲（生成图片展示封面）
-- `/versions` - 查看所有 maimai 版本
+### User Commands
+- `/start` - Show welcome message and help
+- `/bind` - Register new user and get bind URL
+- `/unbind` - Delete user account
+- `/myinfo` - View personal information
+- `/update` - Update user data
+- `/b50 [filters]` - Generate Best 50 image (supports filters like `-lv 14 15`)
+- `/search <song name>` - Search songs (generates image with covers)
+- `/versions` - View all maimai versions
 
-### 管理员命令
-- `/users` - 查看所有用户列表
-- `/deleteuser <user_id>` - 删除指定用户
+### Admin Commands
+- `/users` - View all users
+- `/deleteuser <user_id>` - Delete specified user
 
-### 图片生成
+### Image Generation
 
-本项目使用 JiETNG 的图片生成模块，支持：
-- Best 50/Best 35/Best 15 等成绩图片（详细卡片展示）
-- 搜索结果图片（封面网格展示）
-- 自动下载和缓存图标、封面等资源
+This project uses JiETNG's image generation modules:
+- Best 50/Best 35/Best 15 score images (detailed card display)
+- Search result images (cover grid display)
+- Automatic download and caching of icons and covers
 
-## 快速开始
+## Quick Start
 
-### 1. 安装依赖
+### 1. Install Dependencies
 
 ```bash
 pip3 install -r requirements.txt
 ```
 
-### 2. 配置
+### 2. Configuration
 
-编辑 `config.json` 文件：
+Create `config.json` file:
 
 ```json
 {
@@ -49,146 +50,152 @@ pip3 install -r requirements.txt
 }
 ```
 
-**配置说明：**
-- `bot_token`: 从 [@BotFather](https://t.me/BotFather) 获取的 Telegram Bot Token
-- `admin_user_ids`: 管理员的 Telegram User ID 列表（可以使用 [@userinfobot](https://t.me/userinfobot) 获取）
-- `base_url`: JiETNG API 的基础 URL
-- `token`: JiETNG API Token
+**Configuration:**
+- `bot_token`: Get from [@BotFather](https://t.me/BotFather)
+- `admin_user_ids`: Admin Telegram User IDs (use [@userinfobot](https://t.me/userinfobot) to get your ID)
+- `base_url`: JiETNG API base URL
+- `token`: JiETNG API token (request from matsuk1@proton.me)
 
-### 3. 运行 Bot
+### 3. Run Bot
 
 ```bash
 python3 bot.py
 ```
 
-## 文件结构
+## Project Structure
 
 ```
-JiETNG-Telegram-Bot/
-├── bot.py                  # 主程序（Bot 逻辑）
-├── api_client.py           # API 客户端（封装所有 API 调用）
-├── image_generator.py      # 图片生成（b50, 搜索结果）
-├── modules/                # JiETNG 图片生成模块
-│   ├── config_loader.py    # 配置加载（路径定义）
-│   ├── image_cache.py      # 图片缓存和下载
-│   ├── image_manager.py    # 图片管理工具
-│   └── record_generator.py # 成绩图片生成
-├── assets/                 # 资源文件
-│   ├── fonts/              # 字体文件
-│   ├── pics/               # 图片（Logo等）
-│   └── icon/               # 图标缓存目录
-├── data/                   # 数据目录
-│   └── covers/             # 封面缓存目录
-├── config.json             # 配置文件
-├── requirements.txt        # Python 依赖
-└── README.md              # 说明文档
+telegram/
+├── bot.py                  # Main bot logic
+├── api_client.py           # API client wrapper
+├── image_generator.py      # Image generation (b50, search results)
+├── modules/                # JiETNG image generation modules
+│   ├── config_loader.py    # Config loader
+│   ├── image_cache.py      # Image caching and downloading
+│   ├── image_manager.py    # Image management utilities
+│   ├── record_generator.py # Score image generation
+│   └── song_generator.py   # Song card generation
+├── assets/                 # Assets
+│   ├── fonts/              # Font files
+│   ├── pics/               # Images (logo, etc.)
+│   └── icon/               # Icon cache directory
+├── data/                   # Data directory
+│   └── covers/             # Cover cache directory (auto-created)
+├── config.json             # Configuration file
+├── requirements.txt        # Python dependencies
+└── README.md               # This file
 ```
 
-## 使用示例
+## Usage Examples
 
-### 注册账户
+### Bind Account
 ```
-/register
+/bind
 ```
-Bot 会自动创建账户并返回绑定链接，点击链接完成 SEGA 账户绑定。
+Bot will create account and return bind URL. Click the link to complete SEGA account binding.
 
-### 查看信息
+### View Info
 ```
 /myinfo
 ```
 
-### 查看 Best 50
+### View Best 50
 ```
-/best50
+/b50
 ```
 
-### 带筛选的 Best 50
+### Filtered Best 50
 ```
-/best50 -lv 14 15
+/b50 -lv 14 15
 ```
-只显示 14 和 15 级的歌曲。
+Only show level 14 and 15 songs.
 
-### 搜索歌曲
+### Search Songs
 ```
 /search freedom
 ```
 
-### 管理员查看所有用户
+### Admin: View All Users
 ```
 /users
 ```
 
-### 管理员删除用户
+### Admin: Delete User
 ```
 /deleteuser U123456789
 ```
 
-## API 调用示例
+## API Usage Example
 
-Bot 使用 `api_client.py` 来调用 JiETNG API：
+The bot uses `api_client.py` to call JiETNG API:
 
 ```python
 from api_client import JiETNGAPIClient
 
-# 初始化客户端
+# Initialize client
 api_client = JiETNGAPIClient(
     base_url="https://jietng.matsuki.top/api/v1",
     token="YOUR_TOKEN"
 )
 
-# 创建用户
+# Create user
 result = api_client.create_user(
     user_id="U123456789",
     nickname="Test User",
-    language="zh"
+    language="en"
 )
 
-# 获取用户信息
+# Get user info
 result = api_client.get_user("U123456789")
 
-# 搜索歌曲
+# Search songs
 result = api_client.search_songs(query="freedom", ver="jp")
 ```
 
-## 注意事项
+## Notes
 
-1. **User ID 格式**：Telegram Bot 会自动将 Telegram User ID 转换为 JiETNG 格式（添加 `U` 前缀）
-2. **管理员权限**：需要在 `config.json` 中配置管理员 User ID 才能使用管理员命令
-3. **API Token**：确保使用有效的 JiETNG API Token
-4. **绑定链接有效期**：绑定链接在 2 分钟后过期，请尽快完成绑定
+1. **User ID Format**: Telegram Bot automatically converts Telegram User ID to JiETNG format (adds `U` prefix)
+2. **Admin Permissions**: Admin user IDs must be configured in `config.json` to use admin commands
+3. **API Token**: Ensure you have a valid JiETNG API Token (request from matsuk1@proton.me)
+4. **Bind URL Expiration**: Bind URLs expire after 2 minutes
 
-## 开发说明
+## Development
 
-### API 客户端 (api_client.py)
+### API Client (api_client.py)
 
-封装了所有 JiETNG API 调用：
-- 用户管理（创建、查询、删除、更新）
-- 记录管理（获取成绩）
-- 歌曲搜索
-- 版本查询
+Wraps all JiETNG API calls:
+- User management (create, query, delete, update)
+- Records management (get scores)
+- Song search
+- Version queries
 
-### Bot 逻辑 (bot.py)
+### Bot Logic (bot.py)
 
-使用 `python-telegram-bot` 库实现：
-- 命令处理器
-- 权限控制
-- 错误处理
-- 交互式回复
+Built with `python-telegram-bot`:
+- Command handlers
+- Permission control
+- Error handling
+- Interactive replies
 
-## 故障排除
+## Troubleshooting
 
-### Bot 无法启动
-- 检查 `config.json` 中的 `bot_token` 是否正确
-- 确保安装了所有依赖：`pip3 install -r requirements.txt`
+### Bot Won't Start
+- Check `bot_token` in `config.json`
+- Ensure all dependencies are installed: `pip3 install -r requirements.txt`
 
-### API 调用失败
-- 检查 `config.json` 中的 API `token` 是否有效
-- 检查 `base_url` 是否正确
-- 查看 Bot 日志中的错误信息
+### API Calls Fail
+- Check API `token` in `config.json` is valid
+- Check `base_url` is correct
+- Review bot logs for error messages
 
-### 用户注册失败
-- 确保 API Token 有 `/users` 端点的访问权限
-- 检查网络连接
+### User Registration Fails
+- Ensure API token has access to `/register` endpoint
+- Check network connection
+
+## Related Projects
+
+- [JiETNG](https://github.com/Matsuk1/JiETNG) - Main JiETNG LINE Bot project
+- [JiETNG Docs](https://jietng.matsuki.work) - Documentation
 
 ## License
 
