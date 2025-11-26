@@ -25,7 +25,8 @@ class JiETNGAPIClient:
         self.token = token
         self.headers = {
             "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         }
 
     def _request(self, method: str, endpoint: str, **kwargs) -> Dict[str, Any]:
