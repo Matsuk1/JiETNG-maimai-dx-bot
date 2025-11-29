@@ -2,6 +2,8 @@ import json
 import requests
 import random
 import logging
+import asyncio
+import aiohttp
 from lxml import etree
 from modules.record_manager import get_detailed_info
 from modules.rate_limiter import maimai_limiter
@@ -148,106 +150,6 @@ def login_to_maimai(sega_id: str, password: str, ver="jp"):
             aime_choose = session.get("https://maimaidx.jp/maimai-mobile/aimeList/submit/?idx=0")
             return session
 
-def get_maimai_records(session: requests.Session, ver="jp"):
-    base = "https://maimaidx-eng.com/maimai-mobile" if ver == "intl" else "https://maimaidx.jp/maimai-mobile"
-    difficulty = ['basic', 'advanced', 'expert', 'master', 'remaster']
-    music_record = []
-
-    for page_num in range(5):
-        url = f"{base}/record/musicGenre/search/?genre=99&diff={page_num}"
-        dom = fetch_dom(session, url)
-        if dom is None:
-            return []
-        if dom == "MAINTENANCE":
-            return "MAINTENANCE"  # 传递维护状态
-
-        music_blocks = dom.xpath('//div[contains(@class, "w_450")]')
-
-        for block in music_blocks:
-            name_div = block.xpath('.//div[contains(@class, "music_name_block")]/text()')
-            if not name_div:
-                continue
-            name = name_div[0]
-
-            score_div = block.xpath('.//div[contains(@class, "music_score_block") and contains(@class, "w_112")]/text()')
-            if not score_div:
-                continue
-            score = score_div[0].strip()
-
-            img_nodes = block.xpath('.//div[contains(@class, "music_score_block") and contains(@class, "w_190")]/img')
-            if img_nodes:
-                dx_score = img_nodes[0].tail.strip() if img_nodes[0].tail else "N/A"
-            else:
-                dx_score = "N/A"
-
-            type_icon = block.xpath('.//img[contains(@class, "music_kind_icon")]/@src')
-            if type_icon:
-                if "standard.png" in type_icon[0]:
-                    type = "std"
-                elif "dx.png" in type_icon[0]:
-                    type = "dx"
-                else:
-                    type = "N/A"
-            else:
-                type = "N/A"
-
-            icons = block.xpath('.//img[contains(@class, "h_30")]/@src')
-            sync_icon = combo_icon = score_icon = ""
-            for index, icon in enumerate(icons):
-                icon_tag = icon.split('/')[-1].split('.')[0].replace("music_icon_", "")
-                if index == 0:
-                    sync_icon = icon_tag
-                elif index == 1:
-                    combo_icon = icon_tag
-                elif index == 2:
-                    score_icon = icon_tag
-
-            music_record.append({
-                "name": name,
-                "difficulty": difficulty[page_num],
-                "type": type,
-                "score": score,
-                "dx_score": dx_score,
-                "score_icon": score_icon,
-                "combo_icon": combo_icon,
-                "sync_icon": sync_icon
-            })
-
-    return music_record
-
-def get_friends_list(session: requests.Session, ver="jp"):
-    base = "https://maimaidx-eng.com/maimai-mobile" if ver == "intl" else "https://maimaidx.jp/maimai-mobile"
-    url = f"{base}/friend/"
-    dom = fetch_dom(session, url)
-    if dom is None:
-        return []
-    if dom == "MAINTENANCE":
-        return "MAINTENANCE"
-
-    friends = []
-    blocks = dom.xpath('//div[contains(@class, "see_through_block")]')
-
-    for block in blocks:
-        try:
-            name = block.xpath('.//div[@class="name_block t_l f_l f_16 underline"]/text()')[0].strip()
-            rating = block.xpath('.//div[@class="rating_block"]/text()')[0].strip()
-            user_id = block.xpath('.//form/input[@name="idx"]/@value')[0].strip()
-            is_favorite = bool(
-                block.xpath(f'.//form[@action="{base}/friend/favoriteOff/"]')
-            )
-
-            friends.append({
-                "name": name,
-                "rating": rating,
-                "user_id": user_id,
-                "is_favorite": is_favorite
-            })
-
-        except Exception as e:
-            print(f"[get_friends_list] Error parsing block: {e}")
-
-    return friends
-
 def format_favorite_friends(friends):
     return [
         {
@@ -283,83 +185,6 @@ def parse_level_value(input_str):
             return [round(base + i * 0.1, 1) for i in range(6)]
         except ValueError:
             raise ValueError(f"无法解析整数: {input_str}")
-
-def get_recent_records(session: requests.Session, ver="jp"):
-    base = "https://maimaidx-eng.com/maimai-mobile" if ver == "intl" else "https://maimaidx.jp/maimai-mobile"
-    recent_record = []
-
-    url = f"{base}/record/"
-    dom = fetch_dom(session, url)
-    if dom is None:
-        return []
-    if dom == "MAINTENANCE":
-        return "MAINTENANCE"
-
-    music_blocks = dom.xpath('//div[contains(@class, "p_10") and contains(@class, "t_l")]')
-
-    if music_blocks:
-        for block in music_blocks:
-            name_div = block.xpath('.//div[contains(@class, "basic_block") and contains(@class, "break")]/text()')
-            if not name_div:
-                continue
-            name = name_div[1].strip()
-
-            score_div = block.xpath('.//div[contains(@class, "playlog_achievement_txt")]')
-            if not score_div:
-                continue
-            score = ''.join(score_div[0].xpath('.//text()')).strip()
-
-            score_icon = block.xpath('.//img[contains(@class, "playlog_scorerank")]/@src')
-            score_icon = score_icon[0].split("/")[-1].split(".")[0] if score_icon else "?"
-
-            dx_score = block.xpath('.//div[contains(@class, "playlog_score_block")]//div[contains(@class, "white")]/text()')
-            dx_score = dx_score[0].strip() if dx_score else "?"
-
-            type_icon = block.xpath('.//img[contains(@class, "playlog_music_kind_icon")]/@src')
-            if type_icon:
-                if "standard.png" in type_icon[0]:
-                    type = "std"
-                elif "dx.png" in type_icon[0]:
-                    type = "dx"
-                else:
-                    type = "N/A"
-            else:
-                type = "N/A"
-
-            diff_img = block.xpath('.//img[contains(@class, "playlog_diff")]/@src')
-            if diff_img:
-                diff_raw = diff_img[0].split("/")[-1]  # "diff_master.png"
-                if diff_raw.startswith("diff_") and diff_raw.endswith(".png"):
-                    difficulty = diff_raw[len("diff_"):-len(".png")]
-                else:
-                    difficulty = "unknown"
-            else:
-                difficulty = "unknown"
-
-            icons = block.xpath('.//img[contains(@class, "h_35") and contains(@class, "m_5") and contains(@class, "f_l")]/@src')
-
-            combo_icon = sync_icon = "none"
-
-            if len(icons) >= 1:
-                combo_icon = icons[0].split('/')[-1].split('.')[0]
-                combo_icon = combo_icon.replace("fc_dummy", "back")
-
-            if len(icons) >= 2:
-                sync_icon = icons[1].split('/')[-1].split('.')[0]
-                sync_icon = sync_icon.replace("sync_dummy", "back")
-
-            recent_record.append({
-                "name": name,
-                "difficulty": difficulty,
-                "type": type,
-                "score": score,
-                "dx_score": dx_score,
-                "score_icon": score_icon.replace("plus", "p"),
-                "combo_icon": combo_icon.replace("plus", "p"),
-                "sync_icon": sync_icon.replace("fsd", "fdx").replace("plus", "p")
-            })
-
-    return recent_record
 
 def get_friend_records(session: requests.Session, user_id: str, ver="jp"):
     base = "https://maimaidx-eng.com/maimai-mobile" if ver == "intl" else "https://maimaidx.jp/maimai-mobile"
@@ -439,68 +264,6 @@ def get_friend_records(session: requests.Session, user_id: str, ver="jp"):
     friend_name = friend_name[0].strip() if friend_name else "Unknown"
 
     return friend_name, music_record
-
-def get_maimai_info(session: requests.Session, ver="jp"):
-    base = "https://maimaidx-eng.com/maimai-mobile" if ver == "intl" else "https://maimaidx.jp/maimai-mobile"
-    user_info = {}
-
-    # 主信息
-    dom = fetch_dom(session, f"{base}/playerData/")
-    if dom is None:
-        return {}
-    if dom == "MAINTENANCE":
-        return {"error": "MAINTENANCE"}
-
-    user_name = dom.xpath('//div[contains(@class, "name_block")]/text()')
-    rating_block_url = dom.xpath('//img[contains(@class, "h_30") and contains(@class, "f_r")]/@src')
-    rating = dom.xpath('//div[@class="rating_block"]/text()')
-    cource_rank_url = dom.xpath('//img[contains(@class, "h_35") and contains(@class, "f_l")]/@src')
-    class_rank_url = dom.xpath('//img[contains(@class, "p_l_10") and contains(@class, "h_35") and contains(@class, "f_l")]/@src')
-
-    # 头像
-    dom = fetch_dom(session, f"{base}/collection/")
-    if dom is None:
-        return {}
-    if dom == "MAINTENANCE":
-        return {"error": "MAINTENANCE"}
-    icon_url = dom.xpath('//img[contains(@class, "w_80") and contains(@class, "m_r_10") and contains(@class, "f_l")]/@src')
-
-    # 姓名框
-    dom = fetch_dom(session, f"{base}/collection/nameplate/")
-    if dom is None:
-        return {}
-    if dom == "MAINTENANCE":
-        return {"error": "MAINTENANCE"}
-    nameplate_url = dom.xpath('//img[contains(@class, "w_396") and contains(@class, "m_r_10")]/@src')
-
-    # 称号
-    dom = fetch_dom(session, f"{base}/collection/trophy/")
-    if dom is None:
-        return {}
-    if dom == "MAINTENANCE":
-        return {"error": "MAINTENANCE"}
-    trophy_type = dom.xpath('//div[contains(@class, "block_info") and contains(@class, "f_11") and contains(@class, "orange")]/text()')
-    trophy_blocks = dom.xpath('//div[contains(@class, "trophy_inner_block") and contains(@class, "f_13")]')
-    if trophy_blocks:
-        trophy_block = trophy_blocks[0]
-        trophy_texts = trophy_block.xpath('.//text()')
-        trophy_content = trophy_texts[1]
-    else:
-        return {}
-
-    user_info = {
-        "name": user_name[0].strip() if user_name else "N/A",
-        "rating_block_url": rating_block_url[0] if rating_block_url else "N/A",
-        "rating": rating[0].strip() if rating else "N/A",
-        "cource_rank_url": cource_rank_url[0] if cource_rank_url else "N/A",
-        "class_rank_url": class_rank_url[0] if class_rank_url else "N/A",
-        "icon_url": icon_url[0] if icon_url else "N/A",
-        "nameplate_url": nameplate_url[0] if nameplate_url else "N/A",
-        "trophy_type": trophy_type[0].strip().lower() if trophy_type else "N/A",
-        "trophy_content": trophy_content.strip() if trophy_content else "N/A"
-    }
-
-    return user_info
 
 def extract_onclick_url_from_button(li, keyword):
     btn = li.xpath(f'.//button[contains(@class, "{keyword}")]/@onclick')
@@ -648,3 +411,469 @@ def calc_score(notes, judgements):
         if k in scores:
             total_deduction += scores[k] * v
     return round(101 - total_deduction, 4)
+
+# ==================== 异步版本函数 ====================
+# 使用示例：
+#
+# from modules.maimai_manager import get_maimai_records_async, get_maimai_info_async, get_friend_records_async
+# import asyncio
+#
+# # 1. 先登录获取 session
+# session = login_to_maimai(sega_id, password, ver="jp")
+# cookies = session.cookies.get_dict()
+#
+# # 2. 使用异步函数（比同步版本快5倍）
+# records = asyncio.run(get_maimai_records_async(cookies, ver="jp"))
+# info = asyncio.run(get_maimai_info_async(cookies, ver="jp"))
+# friend_name, friend_records = asyncio.run(get_friend_records_async(cookies, user_id="12345", ver="jp"))
+#
+# # 3. 或者同时获取多个数据（更快）
+# async def get_all_data(cookies, user_id):
+#     records, info, (friend_name, friend_records) = await asyncio.gather(
+#         get_maimai_records_async(cookies),
+#         get_maimai_info_async(cookies),
+#         get_friend_records_async(cookies, user_id)
+#     )
+#     return records, info, friend_name, friend_records
+#
+# results = asyncio.run(get_all_data(cookies, "12345"))
+
+async def fetch_dom_async(session: aiohttp.ClientSession, url: str, session_id: str, ver="jp") -> etree._Element:
+    """异步版本的 fetch_dom，支持并发请求"""
+    # 限速保护
+    maimai_limiter.wait_if_needed(session_id)
+
+    # 随机 User-Agent
+    user_agent = _get_random_user_agent()
+
+    if url.startswith("https://maimaidx-eng.com"):
+        headers = {
+            "Referer": "https://lng-tgk-aime-gw.am-all.net/common_auth/login?site_id=maimaidxex&redirect_url=https://maimaidx-eng.com/maimai-mobile/&back_url=https://maimai.sega.com/",
+            "User-Agent": user_agent,
+            "Host": "maimaidx-eng.com"
+        }
+    else:
+        headers = {
+            "Referer": "https://maimaidx.jp/maimai-mobile/login/",
+            "User-Agent": user_agent,
+            "Host": "maimaidx.jp"
+        }
+
+    try:
+        async with session.get(url, headers=headers, ssl=False) as resp:
+            if resp.status == 503:
+                logger.warning(f"Maimai server is under maintenance (503): {url}")
+                return "MAINTENANCE"
+            resp.raise_for_status()
+            html = await resp.text()
+
+            if ("Please agree to the following terms of service before log in." in html or
+                "再度ログインしてください" in html):
+                return None
+
+            return etree.HTML(html)
+    except Exception as e:
+        logger.error(f"Error fetching {url}: {e}")
+        return None
+
+async def get_maimai_records_async(cookies: dict, ver="jp"):
+    """异步版本的 get_maimai_records，5个难度并发请求
+
+    Args:
+        cookies: 登录后的 cookies 字典
+        ver: 版本 (jp/intl)
+
+    Returns:
+        list: 成绩记录列表
+    """
+    base = "https://maimaidx-eng.com/maimai-mobile" if ver == "intl" else "https://maimaidx.jp/maimai-mobile"
+    difficulty = ['basic', 'advanced', 'expert', 'master', 'remaster']
+
+    session_id = id(cookies)  # 使用 cookies 对象 id 作为限速键
+
+    connector = aiohttp.TCPConnector(ssl=False)
+    async with aiohttp.ClientSession(cookies=cookies, connector=connector) as session:
+        # 并发请求所有难度
+        tasks = []
+        for page_num in range(5):
+            url = f"{base}/record/musicGenre/search/?genre=99&diff={page_num}"
+            tasks.append(fetch_dom_async(session, url, session_id, ver))
+
+        doms = await asyncio.gather(*tasks)
+
+        # 解析结果
+        music_record = []
+        for page_num, dom in enumerate(doms):
+            if dom is None:
+                return []
+            if dom == "MAINTENANCE":
+                return "MAINTENANCE"
+
+            music_blocks = dom.xpath('//div[contains(@class, "w_450")]')
+
+            for block in music_blocks:
+                name_div = block.xpath('.//div[contains(@class, "music_name_block")]/text()')
+                if not name_div:
+                    continue
+                name = name_div[0]
+
+                score_div = block.xpath('.//div[contains(@class, "music_score_block") and contains(@class, "w_112")]/text()')
+                if not score_div:
+                    continue
+                score = score_div[0].strip()
+
+                img_nodes = block.xpath('.//div[contains(@class, "music_score_block") and contains(@class, "w_190")]/img')
+                if img_nodes:
+                    dx_score = img_nodes[0].tail.strip() if img_nodes[0].tail else "N/A"
+                else:
+                    dx_score = "N/A"
+
+                type_icon = block.xpath('.//img[contains(@class, "music_kind_icon")]/@src')
+                if type_icon:
+                    if "standard.png" in type_icon[0]:
+                        type = "std"
+                    elif "dx.png" in type_icon[0]:
+                        type = "dx"
+                    else:
+                        type = "N/A"
+                else:
+                    type = "N/A"
+
+                icons = block.xpath('.//img[contains(@class, "h_30")]/@src')
+                sync_icon = combo_icon = score_icon = ""
+                for index, icon in enumerate(icons):
+                    icon_tag = icon.split('/')[-1].split('.')[0].replace("music_icon_", "")
+                    if index == 0:
+                        sync_icon = icon_tag
+                    elif index == 1:
+                        combo_icon = icon_tag
+                    elif index == 2:
+                        score_icon = icon_tag
+
+                music_record.append({
+                    "name": name,
+                    "difficulty": difficulty[page_num],
+                    "type": type,
+                    "score": score,
+                    "dx_score": dx_score,
+                    "score_icon": score_icon,
+                    "combo_icon": combo_icon,
+                    "sync_icon": sync_icon
+                })
+
+        return music_record
+
+async def get_maimai_info_async(cookies: dict, ver="jp"):
+    """异步版本的 get_maimai_info，4个页面并发请求
+
+    Args:
+        cookies: 登录后的 cookies 字典
+        ver: 版本 (jp/intl)
+
+    Returns:
+        dict: 用户信息
+    """
+    base = "https://maimaidx-eng.com/maimai-mobile" if ver == "intl" else "https://maimaidx.jp/maimai-mobile"
+    session_id = id(cookies)
+
+    connector = aiohttp.TCPConnector(ssl=False)
+    async with aiohttp.ClientSession(cookies=cookies, connector=connector) as session:
+        # 并发请求所有页面
+        urls = [
+            f"{base}/playerData/",
+            f"{base}/collection/",
+            f"{base}/collection/nameplate/",
+            f"{base}/collection/trophy/"
+        ]
+
+        tasks = [fetch_dom_async(session, url, session_id, ver) for url in urls]
+        doms = await asyncio.gather(*tasks)
+
+        # 检查维护状态
+        for dom in doms:
+            if dom == "MAINTENANCE":
+                return {"error": "MAINTENANCE"}
+            if dom is None:
+                return {}
+
+        player_dom, collection_dom, nameplate_dom, trophy_dom = doms
+
+        # 解析主信息
+        user_name = player_dom.xpath('//div[contains(@class, "name_block")]/text()')
+        rating_block_url = player_dom.xpath('//img[contains(@class, "h_30") and contains(@class, "f_r")]/@src')
+        rating = player_dom.xpath('//div[@class="rating_block"]/text()')
+        cource_rank_url = player_dom.xpath('//img[contains(@class, "h_35") and contains(@class, "f_l")]/@src')
+        class_rank_url = player_dom.xpath('//img[contains(@class, "p_l_10") and contains(@class, "h_35") and contains(@class, "f_l")]/@src')
+
+        # 头像
+        icon_url = collection_dom.xpath('//img[contains(@class, "w_80") and contains(@class, "m_r_10") and contains(@class, "f_l")]/@src')
+
+        # 姓名框
+        nameplate_url = nameplate_dom.xpath('//img[contains(@class, "w_396") and contains(@class, "m_r_10")]/@src')
+
+        # 称号
+        trophy_type = trophy_dom.xpath('//div[contains(@class, "block_info") and contains(@class, "f_11") and contains(@class, "orange")]/text()')
+        trophy_blocks = trophy_dom.xpath('//div[contains(@class, "trophy_inner_block") and contains(@class, "f_13")]')
+        if trophy_blocks:
+            trophy_block = trophy_blocks[0]
+            trophy_texts = trophy_block.xpath('.//text()')
+            trophy_content = trophy_texts[1] if len(trophy_texts) > 1 else ""
+        else:
+            trophy_content = ""
+
+        user_info = {
+            "name": user_name[0].strip() if user_name else "N/A",
+            "rating_block_url": rating_block_url[0] if rating_block_url else "N/A",
+            "rating": rating[0].strip() if rating else "N/A",
+            "cource_rank_url": cource_rank_url[0] if cource_rank_url else "N/A",
+            "class_rank_url": class_rank_url[0] if class_rank_url else "N/A",
+            "icon_url": icon_url[0] if icon_url else "N/A",
+            "nameplate_url": nameplate_url[0] if nameplate_url else "N/A",
+            "trophy_type": trophy_type[0].strip().lower() if trophy_type else "N/A",
+            "trophy_content": trophy_content.strip() if trophy_content else "N/A"
+        }
+
+        return user_info
+
+async def get_friend_records_async(cookies: dict, user_id: str, ver="jp"):
+    """异步版本的 get_friend_records，5个难度并发请求
+
+    Args:
+        cookies: 登录后的 cookies 字典
+        user_id: 好友 ID
+        ver: 版本 (jp/intl)
+
+    Returns:
+        tuple: (friend_name, music_record)
+    """
+    base = "https://maimaidx-eng.com/maimai-mobile" if ver == "intl" else "https://maimaidx.jp/maimai-mobile"
+    difficulty = ['basic', 'advanced', 'expert', 'master', 'remaster']
+    session_id = id(cookies)
+
+    connector = aiohttp.TCPConnector(ssl=False)
+    async with aiohttp.ClientSession(cookies=cookies, connector=connector) as session:
+        # 并发请求所有难度
+        tasks = []
+        for diff in range(5):
+            url = f"{base}/friend/friendGenreVs/battleStart/?scoreType=2&genre=99&diff={diff}&idx={user_id}"
+            tasks.append(fetch_dom_async(session, url, session_id, ver))
+
+        # 同时请求好友名称
+        name_url = f"{base}/friend/search/searchUser/?friendCode={user_id}"
+        tasks.append(fetch_dom_async(session, name_url, session_id, ver))
+
+        results = await asyncio.gather(*tasks)
+
+        # 最后一个是名称
+        name_dom = results[-1]
+        doms = results[:-1]
+
+        # 解析成绩
+        music_record = []
+        for diff, dom in enumerate(doms):
+            if dom is None:
+                continue
+            if dom == "MAINTENANCE":
+                return "MAINTENANCE", []
+
+            blocks = dom.xpath(f'//div[contains(@class, "music_{difficulty[diff]}_score_back")]')
+
+            for block in blocks:
+                try:
+                    name_node = block.xpath('.//div[contains(@class, "music_name_block")]/text()')
+                    if not name_node:
+                        continue
+                    name = name_node[0].strip()
+
+                    score_cells = block.xpath(f'.//td[contains(@class, "{difficulty[diff]}_score_label")]/text()')
+                    if len(score_cells) <= 1:
+                        continue
+                    score = score_cells[1].strip()
+                    if score in ("― %", "- %"):
+                        continue
+
+                    type_img = block.xpath('.//img[contains(@class, "music_kind_icon")]/@src')
+                    if type_img:
+                        if "standard.png" in type_img[0]:
+                            type = "std"
+                        elif "dx.png" in type_img[0]:
+                            type = "dx"
+                        else:
+                            type = "N/A"
+                    else:
+                        type = "N/A"
+
+                    icons = block.xpath('.//td[@class="t_r f_0"]/img/@src')
+                    sync_icon = combo_icon = score_icon = ""
+                    for index, icon in enumerate(icons):
+                        icon_tag = icon.split('/')[-1].split('.')[0].replace("music_icon_", "")
+                        if index == 0:
+                            sync_icon = icon_tag
+                        elif index == 1:
+                            combo_icon = icon_tag
+                        elif index == 2:
+                            score_icon = icon_tag
+
+                    music_record.append({
+                        "name": name,
+                        "difficulty": difficulty[diff],
+                        "type": type,
+                        "score": score,
+                        "dx_score": "0 / 1000",
+                        "score_icon": score_icon,
+                        "combo_icon": combo_icon,
+                        "sync_icon": sync_icon
+                    })
+
+                except Exception as e:
+                    print(f"[get_friend_records_async] Error parsing block: {e}")
+
+        # 解析好友名称
+        if name_dom is None:
+            return "Unknown", music_record
+        if name_dom == "MAINTENANCE":
+            return "MAINTENANCE", []
+
+        friend_name = name_dom.xpath('//div[contains(@class, "name_block")]/text()')
+        friend_name = friend_name[0].strip() if friend_name else "Unknown"
+
+        return friend_name, music_record
+
+
+async def get_friends_list_async(cookies: dict, ver="jp"):
+    """异步版本的 get_friends_list
+
+    Args:
+        cookies: 登录后的 cookies 字典
+        ver: 版本 (jp/intl)
+
+    Returns:
+        list: 好友列表
+    """
+    base = "https://maimaidx-eng.com/maimai-mobile" if ver == "intl" else "https://maimaidx.jp/maimai-mobile"
+    session_id = id(cookies)
+
+    connector = aiohttp.TCPConnector(ssl=False)
+    async with aiohttp.ClientSession(cookies=cookies, connector=connector) as session:
+        url = f"{base}/friend/"
+        dom = await fetch_dom_async(session, url, session_id, ver)
+
+        if dom is None:
+            return []
+        if dom == "MAINTENANCE":
+            return "MAINTENANCE"
+
+        friends = []
+        blocks = dom.xpath('//div[contains(@class, "see_through_block")]')
+
+        for block in blocks:
+            try:
+                name = block.xpath('.//div[@class="name_block t_l f_l f_16 underline"]/text()')[0].strip()
+                rating = block.xpath('.//div[@class="rating_block"]/text()')[0].strip()
+                user_id = block.xpath('.//form/input[@name="idx"]/@value')[0].strip()
+                is_favorite = bool(
+                    block.xpath(f'.//form[@action="{base}/friend/favoriteOff/"]')
+                )
+
+                friends.append({
+                    "name": name,
+                    "rating": rating,
+                    "user_id": user_id,
+                    "is_favorite": is_favorite
+                })
+
+            except Exception as e:
+                print(f"[get_friends_list_async] Error parsing block: {e}")
+
+        return friends
+
+
+async def get_recent_records_async(cookies: dict, ver="jp"):
+    """异步版本的 get_recent_records
+
+    Args:
+        cookies: 登录后的 cookies 字典
+        ver: 版本 (jp/intl)
+
+    Returns:
+        list: 最近游戏记录
+    """
+    base = "https://maimaidx-eng.com/maimai-mobile" if ver == "intl" else "https://maimaidx.jp/maimai-mobile"
+    session_id = id(cookies)
+
+    connector = aiohttp.TCPConnector(ssl=False)
+    async with aiohttp.ClientSession(cookies=cookies, connector=connector) as session:
+        url = f"{base}/record/"
+        dom = await fetch_dom_async(session, url, session_id, ver)
+
+        if dom is None:
+            return []
+        if dom == "MAINTENANCE":
+            return "MAINTENANCE"
+
+        recent_record = []
+        music_blocks = dom.xpath('//div[contains(@class, "p_10") and contains(@class, "t_l")]')
+
+        if music_blocks:
+            for block in music_blocks:
+                name_div = block.xpath('.//div[contains(@class, "basic_block") and contains(@class, "break")]/text()')
+                if not name_div:
+                    continue
+                name = name_div[1].strip()
+
+                score_div = block.xpath('.//div[contains(@class, "playlog_achievement_txt")]')
+                if not score_div:
+                    continue
+                score = ''.join(score_div[0].xpath('.//text()')).strip()
+
+                score_icon = block.xpath('.//img[contains(@class, "playlog_scorerank")]/@src')
+                score_icon = score_icon[0].split("/")[-1].split(".")[0] if score_icon else "?"
+
+                dx_score = block.xpath('.//div[contains(@class, "playlog_score_block")]//div[contains(@class, "white")]/text()')
+                dx_score = dx_score[0].strip() if dx_score else "?"
+
+                type_icon = block.xpath('.//img[contains(@class, "playlog_music_kind_icon")]/@src')
+                if type_icon:
+                    if "standard.png" in type_icon[0]:
+                        type = "std"
+                    elif "dx.png" in type_icon[0]:
+                        type = "dx"
+                    else:
+                        type = "N/A"
+                else:
+                    type = "N/A"
+
+                diff_img = block.xpath('.//img[contains(@class, "playlog_diff")]/@src')
+                if diff_img:
+                    diff_raw = diff_img[0].split("/")[-1]  # "diff_master.png"
+                    if diff_raw.startswith("diff_") and diff_raw.endswith(".png"):
+                        difficulty = diff_raw[len("diff_"):-len(".png")]
+                    else:
+                        difficulty = "unknown"
+                else:
+                    difficulty = "unknown"
+
+                icons = block.xpath('.//img[contains(@class, "h_35") and contains(@class, "m_5") and contains(@class, "f_l")]/@src')
+
+                combo_icon = sync_icon = "none"
+
+                if len(icons) >= 1:
+                    combo_icon = icons[0].split('/')[-1].split('.')[0]
+                    combo_icon = combo_icon.replace("fc_dummy", "back")
+
+                if len(icons) >= 2:
+                    sync_icon = icons[1].split('/')[-1].split('.')[0]
+                    sync_icon = sync_icon.replace("sync_dummy", "back")
+
+                recent_record.append({
+                    "name": name,
+                    "difficulty": difficulty,
+                    "type": type,
+                    "score": score,
+                    "dx_score": dx_score,
+                    "score_icon": score_icon.replace("plus", "p"),
+                    "combo_icon": combo_icon.replace("plus", "p"),
+                    "sync_icon": sync_icon.replace("fsd", "fdx").replace("plus", "p")
+                })
+
+        return recent_record

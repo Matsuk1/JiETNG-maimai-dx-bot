@@ -258,7 +258,55 @@ curl -X POST -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api
 }
 ```
 
-#### 6. Get User Records
+#### 6. Query Task Status
+
+```http
+GET /api/v1/task/<task_id>
+```
+
+**Description:**
+Query the status of an update task created via `/update/<user_id>`.
+
+**Example:**
+```bash
+curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/task/task_xxx
+```
+
+**Response:**
+
+**Task in progress:**
+```json
+{
+  "success": true,
+  "task_id": "task_xxx",
+  "status": "pending",
+  "message": "Task is still in queue or processing"
+}
+```
+
+**Task completed:**
+```json
+{
+  "success": true,
+  "task_id": "task_xxx",
+  "status": "completed",
+  "result": {
+    // Result data from the update task
+  }
+}
+```
+
+**Task not found or expired:**
+```json
+{
+  "success": false,
+  "task_id": "task_xxx",
+  "status": "not_found",
+  "message": "Task not found or has expired"
+}
+```
+
+#### 7. Get User Records
 
 ```http
 GET /api/v1/records/<user_id>?type=<record_type>&command=<filter>
@@ -286,7 +334,7 @@ curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/rec
 }
 ```
 
-#### 7. Search Songs
+#### 8. Search Songs
 
 ```http
 GET /api/v1/search?q=<query>&user_id=<user_id>&ver=<version>&max_results=<limit>
@@ -344,7 +392,7 @@ curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/sea
 }
 ```
 
-#### 8. Get Version List
+#### 9. Get Version List
 
 ```http
 GET /api/v1/versions
@@ -456,6 +504,7 @@ curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/vers
 | `/user/<user_id>` | GET | Get user info |
 | `/user/<user_id>` | DELETE | Delete user |
 | `/update/<user_id>` | POST | Queue user update |
+| `/task/<task_id>` | GET | Query task status |
 | `/records/<user_id>` | GET | Get user records |
 | `/search` | GET | Search songs |
 | `/versions` | GET | Get version list |

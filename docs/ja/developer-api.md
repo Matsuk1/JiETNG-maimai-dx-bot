@@ -256,7 +256,55 @@ curl -X POST -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api
 }
 ```
 
-#### 6. ユーザーレコード取得
+#### 6. タスク状態確認
+
+```http
+GET /api/v1/task/<task_id>
+```
+
+**説明:**
+`/update/<user_id>` で作成された更新タスクの実行状態を確認します。
+
+**例:**
+```bash
+curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/task/task_xxx
+```
+
+**レスポンス:**
+
+**タスク処理中:**
+```json
+{
+  "success": true,
+  "task_id": "task_xxx",
+  "status": "pending",
+  "message": "Task is still in queue or processing"
+}
+```
+
+**タスク完了:**
+```json
+{
+  "success": true,
+  "task_id": "task_xxx",
+  "status": "completed",
+  "result": {
+    // 更新タスクの結果データ
+  }
+}
+```
+
+**タスクが見つからない、または期限切れ:**
+```json
+{
+  "success": false,
+  "task_id": "task_xxx",
+  "status": "not_found",
+  "message": "Task not found or has expired"
+}
+```
+
+#### 7. ユーザーレコード取得
 
 ```http
 GET /api/v1/records/<user_id>?type=<record_type>&command=<filter>
@@ -284,7 +332,7 @@ curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/rec
 }
 ```
 
-#### 7. 楽曲検索
+#### 8. 楽曲検索
 
 ```http
 GET /api/v1/search?q=<query>&user_id=<user_id>&ver=<version>&max_results=<limit>
@@ -342,7 +390,7 @@ curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/sea
 }
 ```
 
-#### 8. バージョン一覧取得
+#### 9. バージョン一覧取得
 
 ```http
 GET /api/v1/versions
@@ -451,6 +499,7 @@ curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/vers
 | `/user/<user_id>` | GET | ユーザー情報を取得 |
 | `/user/<user_id>` | DELETE | ユーザーを削除 |
 | `/update/<user_id>` | POST | ユーザー更新をキュー |
+| `/task/<task_id>` | GET | タスク状態確認 |
 | `/records/<user_id>` | GET | ユーザーレコードを取得 |
 | `/search` | GET | 楽曲を検索 |
 | `/versions` | GET | バージョン一覧を取得 |

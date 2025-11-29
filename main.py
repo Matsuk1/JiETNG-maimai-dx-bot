@@ -21,6 +21,8 @@ import socket
 import secrets
 import hashlib
 import copy
+import asyncio
+
 from datetime import datetime, timedelta
 from typing import List, Optional, Any
 
@@ -992,10 +994,18 @@ def maimai_update(user_id, ver="jp"):
     if user_session == "MAINTENANCE":
         return maintenance_error(user_id)
 
-    user_info = get_maimai_info(user_session, ver)
-    maimai_records = get_maimai_records(user_session, ver)
-    recent_records = get_recent_records(user_session, ver)
-    friends_list = get_friends_list(user_session, ver)
+    # 使用异步函数并发获取所有数据
+    cookies = user_session.cookies.get_dict()
+
+    async def fetch_all_data():
+        return await asyncio.gather(
+            get_maimai_info_async(cookies, ver),
+            get_maimai_records_async(cookies, ver),
+            get_recent_records_async(cookies, ver),
+            get_friends_list_async(cookies, ver)
+        )
+
+    user_info, maimai_records, recent_records, friends_list = asyncio.run(fetch_all_data())
 
     if (user_info == "MAINTENANCE" or
         maimai_records == "MAINTENANCE" or
@@ -1582,9 +1592,9 @@ def create_user_info_img(user_id, scale=1.5):
     draw.rectangle([129, 51, 129 + 266, 51 + 33], fill=(255, 255, 255))
     draw.text((135, 54), user_info['name'], fill=(0, 0, 0), font=font_large)
 
-    paste_image("class_rank_url", (296, 10), (61, 37))
+    paste_image("class_rank_url", (296, 9), (61, 36))
 
-    paste_image("cource_rank_url", (322, 52), (75, 33))
+    paste_image("cource_rank_url", (322, 53), (77, 34))
 
     def trophy_color(type):
         return {
@@ -1722,7 +1732,7 @@ def select_records(song_record, type, command, ver):
         up_songs = list(filter(lambda x: x['version'] == "UNKNOWN", song_record))
 
     elif type == "rct50":
-        up_songs = read_record(user_id, recent=True)
+        up_songs = song_record
 
     elif type == "idealb50":
         for rcd in up_songs_data:
@@ -1746,12 +1756,13 @@ def generate_records(user_id, type="best50", command="", ver="jp"):
     if user_id not in USERS:
         return segaid_error(user_id)
 
-    song_record = read_record(user_id)
-    if not len(song_record):
-        return record_error(user_id)
-
     if "personal_info" not in USERS[user_id]:
         return info_error(user_id)
+
+    recent = (type == "rct50")
+    song_record = read_record(user_id, recent=recent)
+    if not len(song_record):
+        return record_error(user_id)
 
     up_songs, down_songs = select_records(song_record, type, command, ver)
     if not up_songs and not down_songs:
@@ -1815,7 +1826,9 @@ def generate_friend_b50(user_id, friend_code, ver="jp"):
     if user_session == "MAINTENANCE":
         return maintenance_error(user_id)
 
-    friend_name, song_record = get_friend_records(user_session, friend_code, ver)
+    # 使用异步函数获取好友成绩（性能提升约5倍）
+    cookies = user_session.cookies.get_dict()
+    friend_name, song_record = asyncio.run(get_friend_records_async(cookies, friend_code, ver))
 
     if not friend_name or not song_record:
         return friend_rcd_error(user_id)
@@ -3567,13 +3580,19 @@ def api_register_user(user_id):
         # 读取用户数据
         read_user()
 
+        if user_id in USERS:
+            return jsonify({
+                "error": "Permission denied",
+                "message": f"User {user_id} was created already."
+            }), 403
+
         # 生成绑定 token
         bind_token = generate_bind_token(user_id)
 
         # 构建绑定 URL
         bind_url = f"{DOMAIN}/linebot/sega_bind?token={bind_token}"
 
-        # 初始化用户数据（如果不存在）
+        # 初始化用户数据
         from datetime import datetime
         if user_id not in USERS:
             add_user(user_id)
@@ -3907,7 +3926,8 @@ def api_get_records(user_id):
         ver = USERS[user_id].get('version', 'jp')
 
         # 读取用户记录
-        song_record = read_record(user_id)
+        recent = (record_type == "rct50")
+        song_record = read_record(user_id, recent=recent)
         if not len(song_record):
             return jsonify({
                 "error": "No records found",

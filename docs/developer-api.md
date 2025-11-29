@@ -255,7 +255,55 @@ curl -X POST -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api
 }
 ```
 
-#### 6. 获取用户记录
+#### 6. 查询任务状态
+
+```http
+GET /api/v1/task/<task_id>
+```
+
+**说明:**
+查询通过 `/update/<user_id>` 创建的更新任务的执行状态。
+
+**示例:**
+```bash
+curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/task/task_xxx
+```
+
+**响应:**
+
+**任务进行中:**
+```json
+{
+  "success": true,
+  "task_id": "task_xxx",
+  "status": "pending",
+  "message": "Task is still in queue or processing"
+}
+```
+
+**任务已完成:**
+```json
+{
+  "success": true,
+  "task_id": "task_xxx",
+  "status": "completed",
+  "result": {
+    // 更新任务的结果数据
+  }
+}
+```
+
+**任务不存在或已过期:**
+```json
+{
+  "success": false,
+  "task_id": "task_xxx",
+  "status": "not_found",
+  "message": "Task not found or has expired"
+}
+```
+
+#### 7. 获取用户记录
 
 ```http
 GET /api/v1/records/<user_id>?type=<record_type>&command=<filter>
@@ -283,7 +331,7 @@ curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/rec
 }
 ```
 
-#### 7. 搜索歌曲
+#### 8. 搜索歌曲
 
 ```http
 GET /api/v1/search?q=<query>&user_id=<user_id>&ver=<version>&max_results=<limit>
@@ -341,7 +389,7 @@ curl -H "Authorization: Bearer abc123..." "https://jietng.matsuki.top/api/v1/sea
 }
 ```
 
-#### 8. 获取版本列表
+#### 9. 获取版本列表
 
 ```http
 GET /api/v1/versions
@@ -450,6 +498,7 @@ curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/vers
 | `/user/<user_id>` | GET | 获取用户信息 |
 | `/user/<user_id>` | DELETE | 删除用户 |
 | `/update/<user_id>` | POST | 队列用户数据更新 |
+| `/task/<task_id>` | GET | 查询任务状态 |
 | `/records/<user_id>` | GET | 获取用户成绩记录 |
 | `/search` | GET | 搜索歌曲 |
 | `/versions` | GET | 获取版本列表 |
