@@ -86,6 +86,7 @@ All score chart commands support the following filters:
 | `-ra [min] [max]` | Filter by Rating (max optional, unlimited if omitted) | `b50 -ra 301 312` or `b50 -ra 301` |
 | `-scr [min] [max]` | Filter by achievement (max optional, unlimited if omitted) | `b50 -scr 100.3 100.8` or `b50 -scr 100.3` |
 | `-dx [min] [max]` | Filter by DX score percentage (max optional, unlimited if omitted) | `b50 -dx 92 95` or `b50 -dx 92` |
+| `-ver [version...]` | Filter by game version (multiple versions allowed) | `b50 -ver splash splash+` or `b50 -ver buddies` |
 
 **Note**: All filter parameters support single-parameter mode (minimum only, no upper limit):
 - `-lv 13.2` means chart constant ≥13.2 (no upper limit)
@@ -104,9 +105,12 @@ b50 -scr 100.3 100.8                 # B50 with achievement 100.3%-100.8%
 b50 -scr 100.3                       # B50 with achievement ≥100.3% (no limit)
 b50 -dx 92 95                        # B50 with DX score 92%-95%
 b50 -dx 92                           # B50 with DX score ≥92% (no limit)
+b50 -ver buddies                     # B50 with Buddies version only
+b50 -ver splash splash+              # B50 with Splash and Splash PLUS versions
 b50 -lv 13.2 13.8 -scr 100.0         # B50 with constant 13.2-13.8 and achievement ≥100%
 b100 -lv 13.0 14.9 -dx 92 95         # B100 with constant 13.0-14.9 and DX 92%-95%
 idealb50 -lv 13.5 14.0               # Ideal B50 with constant 13.5-14.0
+b50 -ver buddies -lv 14.0            # B50 with Buddies version and constant ≥14.0
 ```
 
 ### Yang Rating (Past Version Rating)

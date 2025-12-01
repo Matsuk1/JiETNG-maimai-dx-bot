@@ -97,14 +97,30 @@ b50 -dx 95              # DX score 95%+
 b50 -dx 90 95           # DX score 90-95%
 ```
 
+#### 按版本过滤
+
+```
+b50 -ver buddies                   # 仅 Buddies 版本
+b50 -ver splash splash+            # Splash 和 Splash PLUS 版本
+b50 -ver festival+ buddies         # FESTiVAL PLUS 和 Buddies 版本
+```
+
+::: tip 版本名称说明
+- 版本名称不区分大小写
+- 使用 `+` 表示 PLUS 版本（如 `splash+`）
+- 可以同时指定多个版本，用空格分隔
+:::
+
 ### 组合过滤器
 
 您可以组合多个过滤器：
 
 ```
-b50 -lv 15 -scr 100.5            # 等级 15 且达成率 100.5%+ 的歌曲
-b50 -ra 200 -dx 95               # Rating 200+ 且 DX score 95%+
-b50 -lv 14 15 -scr 99.5 -dx 90   # 复杂过滤
+b50 -lv 15 -scr 100.5                    # 等级 15 且达成率 100.5%+ 的歌曲
+b50 -ra 200 -dx 95                       # Rating 200+ 且 DX score 95%+
+b50 -ver buddies -lv 14                  # Buddies 版本且等级 ≥14 的歌曲
+b50 -ver splash splash+ -scr 100         # Splash/Splash+ 且达成率 ≥100% 的歌曲
+b50 -lv 14 15 -scr 99.5 -dx 90           # 复杂过滤
 ```
 
 ## 图表类型说明

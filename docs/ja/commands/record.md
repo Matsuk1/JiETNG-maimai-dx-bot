@@ -97,14 +97,30 @@ b50 -dx 95              # でらっくす score 95%+
 b50 -dx 90 95           # でらっくす score 90-95%
 ```
 
+#### バージョンでフィルター
+
+```
+b50 -ver buddies                   # Buddies バージョンのみ
+b50 -ver splash splash+            # Splash と Splash PLUS バージョン
+b50 -ver festival+ buddies         # FESTiVAL PLUS と Buddies バージョン
+```
+
+::: tip バージョン名の注意事項
+- バージョン名は大文字小文字を区別しません
+- PLUS バージョンを示すには `+` を使用します（例：`splash+`）
+- 複数のバージョンをスペースで区切って指定できます
+:::
+
 ### フィルターの組み合わせ
 
 複数のフィルターを組み合わせることができます：
 
 ```
-b50 -lv 15 -scr 100.5            # レベル 15 かつ達成率 100.5%+ の楽曲
-b50 -ra 200 -dx 95               # Rating 200+ かつ でらっくす score 95%+
-b50 -lv 14 15 -scr 99.5 -dx 90   # 複雑なフィルター
+b50 -lv 15 -scr 100.5                    # レベル 15 かつ達成率 100.5%+ の楽曲
+b50 -ra 200 -dx 95                       # Rating 200+ かつ でらっくす score 95%+
+b50 -ver buddies -lv 14                  # Buddies バージョンかつレベル ≥14 の楽曲
+b50 -ver splash splash+ -scr 100         # Splash/Splash+ かつ達成率 ≥100% の楽曲
+b50 -lv 14 15 -scr 99.5 -dx 90           # 複雑なフィルター
 ```
 
 ## チャートタイプの説明

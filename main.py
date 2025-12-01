@@ -95,7 +95,7 @@ from modules.image_matcher import find_song_by_cover
 from modules.system_checker import run_system_check
 from modules.rate_limiter import check_rate_limit
 from modules.line_messenger import smart_reply, smart_push, notify_admins_error
-from modules.song_matcher import find_matching_songs, is_exact_song_title_match
+from modules.song_matcher import find_matching_songs, is_exact_song_match
 from modules.memory_manager import memory_manager, cleanup_user_caches, cleanup_rate_limiter_tracking
 from modules.friend_request_handler import (
     send_friend_request,
@@ -1190,7 +1190,7 @@ def get_song_record(user_id, acronym, ver="jp"):
 
         # 使用优化的精确匹配函数
         for rcd in song_record:
-            if is_exact_song_title_match(rcd['name'], song['title']) and rcd['type'] == song['type']:
+            if is_exact_song_match(rcd['cover_name'], song['cover_name']) and rcd['type'] == song['type']:
                 rcd['rank'] = ""
                 played_data.append(rcd)
 
@@ -1269,7 +1269,7 @@ def generate_plate_rcd(user_id, title, ver="jp"):
     }
 
     # 优化：构建用户记录的哈希表，避免嵌套循环 O(n*m*p) -> O(n*m)
-    # 使用多个key策略保持与 is_exact_song_title_match 的兼容性
+    # 使用多个key策略保持与 is_exact_song_match 的兼容性
     from modules.song_matcher import normalize_text
 
     rcd_map = {}
@@ -4066,7 +4066,7 @@ def api_search_songs():
 
             # 使用优化的精确匹配函数
             for rcd in song_record:
-                if is_exact_song_title_match(rcd['name'], song['title']) and rcd['type'] == song['type']:
+                if is_exact_song_match(rcd['cover_name'], song['cover_name']) and rcd['type'] == song['type']:
                     rcd['rank'] = ""
                     played_data.append(rcd)
 

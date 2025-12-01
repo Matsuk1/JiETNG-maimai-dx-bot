@@ -368,6 +368,7 @@ JiETNG/
 ├── modules/                   # 功能模块
 │   ├── config_loader.py       # 配置加载器
 │   ├── dbpool_manager.py      # 数据库连接池
+│   ├── devtoken_manager.py    # 开发者 Token 管理
 │   ├── user_manager.py        # 用户管理 + 昵称缓存
 │   ├── maimai_manager.py      # Maimai API 接口
 │   ├── record_manager.py      # 数据库操作

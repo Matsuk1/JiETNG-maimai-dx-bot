@@ -163,7 +163,7 @@ def read_record(user_id: str, recent: bool = False, yang: bool = False) -> List[
             item.pop("user_id", None)
             records.append(item)
 
-        return get_detailed_info(records, USERS[user_id]['version'], yang)
+        return get_detailed_info(records, USERS[user_id].get('version', "jp"), yang)
 
     finally:
         conn.close()

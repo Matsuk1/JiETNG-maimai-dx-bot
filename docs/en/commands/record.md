@@ -97,14 +97,30 @@ b50 -dx 95              # DX score 95%+
 b50 -dx 90 95           # DX score 90-95%
 ```
 
+#### Filter by Version
+
+```
+b50 -ver buddies                   # Buddies version only
+b50 -ver splash splash+            # Splash and Splash PLUS versions
+b50 -ver festival+ buddies         # FESTiVAL PLUS and Buddies versions
+```
+
+::: tip Version Name Notes
+- Version names are case-insensitive
+- Use `+` to indicate PLUS versions (e.g., `splash+`)
+- Multiple versions can be specified, separated by spaces
+:::
+
 ### Combining Filters
 
 You can combine multiple filters:
 
 ```
-b50 -lv 15 -scr 100.5            # Level 15 with achievement rate 100.5%+
-b50 -ra 200 -dx 95               # Rating 200+ with DX score 95%+
-b50 -lv 14 15 -scr 99.5 -dx 90   # Complex filtering
+b50 -lv 15 -scr 100.5                    # Level 15 with achievement rate 100.5%+
+b50 -ra 200 -dx 95                       # Rating 200+ with DX score 95%+
+b50 -ver buddies -lv 14                  # Buddies version with level ≥14
+b50 -ver splash splash+ -scr 100         # Splash/Splash+ with achievement ≥100%
+b50 -lv 14 15 -scr 99.5 -dx 90           # Complex filtering
 ```
 
 ## Chart Type Explanations

@@ -86,6 +86,7 @@
 | `-ra [min] [max]` | 按 Rating 范围筛选（max 可省略，默认无上限） | `b50 -ra 301 312` 或 `b50 -ra 301` |
 | `-scr [min] [max]` | 按达成率筛选（max 可省略，默认无上限） | `b50 -scr 100.3 100.8` 或 `b50 -scr 100.3` |
 | `-dx [min] [max]` | 按 DX 分数百分比筛选（max 可省略，默认无上限） | `b50 -dx 92 95` 或 `b50 -dx 92` |
+| `-ver [version...]` | 按游戏版本筛选（可指定多个版本） | `b50 -ver splash splash+` 或 `b50 -ver buddies` |
 
 **注意**：所有筛选参数均支持单参数模式（仅指定下限，无上限）：
 - `-lv 13.2` 表示定数 ≥13.2（无上限）
@@ -104,9 +105,12 @@ b50 -scr 100.3 100.8                 # 达成率 100.3%-100.8% 的 B50
 b50 -scr 100.3                       # 达成率 ≥100.3% 的 B50（无上限）
 b50 -dx 92 95                        # DX 分数 92%-95% 的 B50
 b50 -dx 92                           # DX 分数 ≥92% 的 B50（无上限）
+b50 -ver buddies                     # 仅显示 Buddies 版本的 B50
+b50 -ver splash splash+              # 仅显示 Splash 和 Splash PLUS 版本的 B50
 b50 -lv 13.2 13.8 -scr 100.0         # 定数 13.2-13.8 且达成率 ≥100% 的 B50
 b100 -lv 13.0 14.9 -dx 92 95         # 定数 13.0-14.9 且 DX 92%-95% 的 B100
 idealb50 -lv 13.5 14.0               # 定数 13.5-14.0 的理论分 B50
+b50 -ver buddies -lv 14.0            # Buddies 版本且定数 ≥14.0 的 B50
 ```
 
 ### Yang Rating（过去版本 Rating）
