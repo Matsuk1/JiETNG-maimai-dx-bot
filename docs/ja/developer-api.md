@@ -413,6 +413,124 @@ curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/vers
 }
 ```
 
+## 権限リクエスト API
+
+権限リクエストシステムにより、開発者トークンは自分が作成していないユーザーデータへのアクセスをリクエストできます。ユーザーはこれらのリクエストを承認または拒否できます。
+
+### 権限モデル
+
+JiETNG は2層の権限モデルを使用しています：
+
+1. **所有者権限（Owner）**: ユーザーを作成したトークン（`registered_via_token` フィールドで識別）
+   - すべての操作を実行可能：読み取り、更新、ユーザー削除
+   - 権限リクエストの管理：表示、承認、拒否、取り消し
+
+2. **付与されたアクセス権限（Granted）**: ユーザーに承認されたトークン（トークンの `allowed_users` リストに含まれる）
+   - ユーザーデータの読み取り
+   - ユーザーデータ更新のトリガー
+   - ユーザー削除や権限管理は**不可**
+
+### デコレーターの説明
+
+API は2種類のデコレーターを使用してアクセス権限を制御します：
+
+- **`@require_user_permission`**: 所有者と承認された両方のトークンを許可（読み取り操作用）
+- **`@require_owner_permission`**: 所有者のみを許可（機密操作用）
+
+#### 10. アクセス権限のリクエスト
+
+```http
+POST /api/v1/perm/<user_id>
+```
+
+**説明:** 指定されたユーザーのデータにアクセスするための権限リクエストを送信します。
+
+**必要な権限:** 有効な開発者トークン
+
+**リクエストボディ (JSON):**
+- `requester_name`: オプション、リクエスト者名（通知に表示、デフォルトはトークンのノート）
+
+**例:**
+```bash
+curl -X POST -H "Authorization: Bearer abc123..." \
+     -H "Content-Type: application/json" \
+     -d '{"requester_name":"MyApp"}' \
+     https://jietng.matsuki.top/api/v1/perm/U123456
+```
+
+**レスポンス:**
+```json
+{
+  "success": true,
+  "request_id": "20250203120000_jt_abc123",
+  "user_id": "U123456",
+  "message": "Permission request sent to user U123456"
+}
+```
+
+#### 11. 権限リクエスト一覧の表示
+
+```http
+GET /api/v1/perm/<user_id>/requests
+```
+
+**説明:** ユーザーの保留中の権限リクエスト一覧を取得します。
+
+**必要な権限:** 所有者トークンのみ（`@require_owner_permission`）
+
+**例:**
+```bash
+curl -H "Authorization: Bearer abc123..." \
+     https://jietng.matsuki.top/api/v1/perm/U123456/requests
+```
+
+#### 12. 権限リクエストの承認
+
+```http
+POST /api/v1/perm/<user_id>/accept
+```
+
+**説明:** 指定された権限リクエストを承認し、リクエストしたトークンを承認リストに追加します。
+
+**必要な権限:** 所有者トークンのみ（`@require_owner_permission`）
+
+**リクエストボディ (JSON):**
+- `request_id`: **必須**、承認する権限リクエストID
+
+#### 13. 権限リクエストの拒否
+
+```http
+POST /api/v1/perm/<user_id>/reject
+```
+
+**説明:** 指定された権限リクエストを拒否します。
+
+**必要な権限:** 所有者トークンのみ（`@require_owner_permission`）
+
+**リクエストボディ (JSON):**
+- `request_id`: **必須**、拒否する権限リクエストID
+
+#### 14. 付与された権限の取り消し
+
+```http
+POST /api/v1/perm/<user_id>/revoke
+```
+
+**説明:** 指定されたトークンに以前付与されたアクセス権限を取り消します。
+
+**必要な権限:** 所有者トークンのみ（`@require_owner_permission`）
+
+**リクエストボディ (JSON):**
+- `token_id`: **必須**、権限を取り消すトークンID
+
+### LINE ユーザーの権限管理
+
+LINE ユーザーは権限リクエストの FlexMessage 通知を受け取り、LINE 内で直接承認または拒否できます：
+
+1. 新しい権限リクエストが到着すると、ユーザーは通知メッセージを受け取ります
+2. メッセージにはリクエスト者情報と2つのボタンが含まれます：「承認」と「拒否」
+3. ボタンをクリックすると、システムが自動的にリクエストを処理します
+
 ## エラー処理
 
 ### 401 Unauthorized
@@ -454,13 +572,22 @@ curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/vers
 ### 403 Forbidden
 
 **ケース:**
-- 現在のトークンでは、この user_id にアクセスする権限がありません
+- 現在のトークンではこの user_id にアクセスできません
+- トークンがユーザーの所有者ではありません（所有者権限が必要な操作の場合）
+- トークンが所有者でも承認されてもいません
 
 **レスポンス例:**
 ```json
 {
   "error": "Forbidden",
-  "message": "User U123456 was not created by this token"
+  "message": "Only the owner token (creator) can perform this operation"
+}
+```
+
+```json
+{
+  "error": "Permission denied",
+  "message": "Token does not have permission to access user U123456"
 }
 ```
 
@@ -492,17 +619,29 @@ curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/vers
 
 ## API エンドポイント一覧
 
-| エンドポイント | メソッド | 説明 |
-|----------------|--------------|-------------------|
-| `/users` | GET | すべてのユーザーを取得 |
-| `/register/<user_id>` | POST | ユーザーを登録し連携URLを生成 |
-| `/user/<user_id>` | GET | ユーザー情報を取得 |
-| `/user/<user_id>` | DELETE | ユーザーを削除 |
-| `/update/<user_id>` | POST | ユーザー更新をキュー |
-| `/task/<task_id>` | GET | タスク状態確認 |
-| `/records/<user_id>` | GET | ユーザーレコードを取得 |
-| `/search` | GET | 楽曲を検索 |
-| `/versions` | GET | バージョン一覧を取得 |
+### 基本エンドポイント
+
+| エンドポイント | メソッド | 説明 | 必要な権限 |
+|----------------|--------------|-------------------|----------|
+| `/users` | GET | すべてのユーザーを取得 | 任意のトークン |
+| `/register/<user_id>` | POST | ユーザーを登録し連携URLを生成 | 任意のトークン |
+| `/user/<user_id>` | GET | ユーザー情報を取得 | 所有者または承認済み |
+| `/user/<user_id>` | DELETE | ユーザーを削除 | **所有者のみ** |
+| `/update/<user_id>` | POST | ユーザー更新をキュー | 所有者または承認済み |
+| `/task/<task_id>` | GET | タスク状態確認 | 任意のトークン |
+| `/records/<user_id>` | GET | ユーザーレコードを取得 | 所有者または承認済み |
+| `/search` | GET | 楽曲を検索 | 任意のトークン |
+| `/versions` | GET | バージョン一覧を取得 | 任意のトークン |
+
+### 権限管理エンドポイント
+
+| エンドポイント | メソッド | 説明 | 必要な権限 |
+|----------------|--------------|-------------------|----------|
+| `/perm/<user_id>` | POST | アクセス権限をリクエスト | 任意のトークン |
+| `/perm/<user_id>/requests` | GET | 権限リクエスト一覧を表示 | **所有者のみ** |
+| `/perm/<user_id>/accept` | POST | 権限リクエストを承認 | **所有者のみ** |
+| `/perm/<user_id>/reject` | POST | 権限リクエストを拒否 | **所有者のみ** |
+| `/perm/<user_id>/revoke` | POST | 付与された権限を取り消し | **所有者のみ** |
 
 ## セキュリティ推奨事項
 
@@ -644,6 +783,11 @@ curl -H "Authorization: Bearer $TOKEN" "$BASE_URL/search?q=ヒバナ&ver=jp"
 
 ## バージョン履歴
 
+- **v1.1** (2025-02-03): 権限リクエストシステムを追加
+  - 5つの権限管理APIエンドポイントを追加
+  - 2層権限モデル（所有者 vs 承認済み）を実装
+  - `@require_owner_permission` デコレーターを追加
+  - LINE ユーザーに FlexMessage 権限リクエスト通知機能を追加
 - **v1.0** (2025-01-24): 基本的なトークン管理とAPI認証をサポートする初回リリース
 
 ## 関連ファイル
@@ -651,6 +795,8 @@ curl -H "Authorization: Bearer $TOKEN" "$BASE_URL/search?q=ヒバナ&ver=jp"
 - `config.json` - 設定ファイル（トークンファイルパスを含む）
 - `modules/config_loader.py` - 設定ローダー
 - `modules/devtoken_manager.py` - トークン管理のコアロジック
+- `modules/perm_request_handler.py` - 権限リクエスト処理ロジック
+- `modules/perm_request_generator.py` - 権限リクエスト FlexMessage ジェネレーター
 - `modules/message_manager.py` - 三ヶ国語メッセージ定義
 - `main.py` - APIエンドポイントとコマンド処理
 - `data/dev_tokens.json` - トークンデータストレージ（デフォルト位置）

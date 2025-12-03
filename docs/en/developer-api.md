@@ -415,6 +415,242 @@ curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/vers
 }
 ```
 
+## Permission Request API
+
+The permission request system allows developer tokens to request access to user data not created by that token. Users can approve or reject these requests.
+
+### Permission Model
+
+JiETNG uses a two-tier permission model:
+
+1. **Owner Permission**: The token that created the user (identified by `registered_via_token` field)
+   - Can perform all operations: read, update, delete user
+   - Can manage permission requests: view, approve, reject, revoke
+
+2. **Granted Access Permission**: Tokens authorized by the user (in token's `allowed_users` list)
+   - Can read user data
+   - Can trigger user data updates
+   - **Cannot** delete users or manage permissions
+
+### Decorator Description
+
+The API uses two decorators to control access permissions:
+
+- **`@require_user_permission`**: Allows both owners and authorized tokens (for read operations)
+- **`@require_owner_permission`**: Only allows owners (for sensitive operations)
+
+#### 10. Request Access Permission
+
+```http
+POST /api/v1/perm/<user_id>
+```
+
+**Description:** Send a permission request to access the specified user's data.
+
+**Permission Required:** Any valid developer token
+
+**Request Body (JSON):**
+- `requester_name`: Optional, requester name (displayed in notifications, defaults to token note)
+
+**Example:**
+```bash
+curl -X POST -H "Authorization: Bearer abc123..." \
+     -H "Content-Type: application/json" \
+     -d '{"requester_name":"MyApp"}' \
+     https://jietng.matsuki.top/api/v1/perm/U123456
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "request_id": "20250203120000_jt_abc123",
+  "user_id": "U123456",
+  "message": "Permission request sent to user U123456"
+}
+```
+
+**Error Responses:**
+```json
+{
+  "error": "Permission already granted",
+  "message": "Token already has access to user U123456"
+}
+```
+
+```json
+{
+  "error": "Request already sent",
+  "message": "Permission request already sent, waiting for approval"
+}
+```
+
+#### 11. View Permission Requests
+
+```http
+GET /api/v1/perm/<user_id>/requests
+```
+
+**Description:** Get the list of pending permission requests for a user.
+
+**Permission Required:** Owner token only (`@require_owner_permission`)
+
+**Example:**
+```bash
+curl -H "Authorization: Bearer abc123..." \
+     https://jietng.matsuki.top/api/v1/perm/U123456/requests
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "user_id": "U123456",
+  "count": 2,
+  "requests": [
+    {
+      "request_id": "20250203120000_jt_abc123",
+      "token_id": "jt_abc123",
+      "token_note": "MyApp",
+      "requester_name": "MyApp",
+      "timestamp": "2025-02-03 12:00:00"
+    }
+  ]
+}
+```
+
+#### 12. Approve Permission Request
+
+```http
+POST /api/v1/perm/<user_id>/accept
+```
+
+**Description:** Approve the specified permission request, adding the requesting token to the authorized list.
+
+**Permission Required:** Owner token only (`@require_owner_permission`)
+
+**Request Body (JSON):**
+- `request_id`: **Required**, the permission request ID to approve
+
+**Example:**
+```bash
+curl -X POST -H "Authorization: Bearer abc123..." \
+     -H "Content-Type: application/json" \
+     -d '{"request_id":"20250203120000_jt_abc123"}' \
+     https://jietng.matsuki.top/api/v1/perm/U123456/accept
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "user_id": "U123456",
+  "token_id": "jt_abc123",
+  "token_note": "MyApp",
+  "message": "Permission granted to token jt_abc123"
+}
+```
+
+#### 13. Reject Permission Request
+
+```http
+POST /api/v1/perm/<user_id>/reject
+```
+
+**Description:** Reject the specified permission request.
+
+**Permission Required:** Owner token only (`@require_owner_permission`)
+
+**Request Body (JSON):**
+- `request_id`: **Required**, the permission request ID to reject
+
+**Example:**
+```bash
+curl -X POST -H "Authorization: Bearer abc123..." \
+     -H "Content-Type: application/json" \
+     -d '{"request_id":"20250203120000_jt_abc123"}' \
+     https://jietng.matsuki.top/api/v1/perm/U123456/reject
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "user_id": "U123456",
+  "token_id": "jt_abc123",
+  "token_note": "MyApp",
+  "message": "Permission request from token jt_abc123 rejected"
+}
+```
+
+#### 14. Revoke Granted Permission
+
+```http
+POST /api/v1/perm/<user_id>/revoke
+```
+
+**Description:** Revoke access permission previously granted to a specific token.
+
+**Permission Required:** Owner token only (`@require_owner_permission`)
+
+**Request Body (JSON):**
+- `token_id`: **Required**, the token ID whose permission to revoke
+
+**Example:**
+```bash
+curl -X POST -H "Authorization: Bearer abc123..." \
+     -H "Content-Type: application/json" \
+     -d '{"token_id":"jt_abc123"}' \
+     https://jietng.matsuki.top/api/v1/perm/U123456/revoke
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "user_id": "U123456",
+  "token_id": "jt_abc123",
+  "message": "Permission revoked for token jt_abc123"
+}
+```
+
+### Permission Request Workflow Example
+
+```bash
+# 1. Token B requests access to User1 created by Token A
+curl -X POST -H "Authorization: Bearer TOKEN_B" \
+     -H "Content-Type: application/json" \
+     -d '{"requester_name":"MyApp"}' \
+     https://jietng.matsuki.top/api/v1/perm/U123456
+
+# 2. Token A (owner) views pending requests
+curl -H "Authorization: Bearer TOKEN_A" \
+     https://jietng.matsuki.top/api/v1/perm/U123456/requests
+
+# 3. Token A approves the request
+curl -X POST -H "Authorization: Bearer TOKEN_A" \
+     -H "Content-Type: application/json" \
+     -d '{"request_id":"20250203120000_jt_tokenb"}' \
+     https://jietng.matsuki.top/api/v1/perm/U123456/accept
+
+# 4. Now Token B can access User1's data
+curl -H "Authorization: Bearer TOKEN_B" \
+     https://jietng.matsuki.top/api/v1/user/U123456
+
+# 5. (Optional) Token A revokes Token B's access
+curl -X POST -H "Authorization: Bearer TOKEN_A" \
+     -H "Content-Type: application/json" \
+     -d '{"token_id":"jt_tokenb"}' \
+     https://jietng.matsuki.top/api/v1/perm/U123456/revoke
+```
+
+### LINE User Permission Management
+
+LINE users receive FlexMessage notifications for permission requests and can approve or reject directly in LINE:
+
+1. When a new permission request arrives, users receive a notification message
+2. The message includes requester information and two buttons: "Accept" and "Reject"
+3. Clicking a button automatically processes the request
 
 ## Error Handling
 
@@ -458,13 +694,22 @@ curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/vers
 ### 403 Forbidden
 
 **Cases:**
-- The current token is not authorized to access this user_id
+- The current token cannot access this user_id
+- Token is not the user's owner (for operations requiring owner permission)
+- Token is neither the owner nor authorized
 
-**Response Example:**
+**Response Examples:**
 ```json
 {
   "error": "Forbidden",
-  "message": "User U123456 was not created by this token"
+  "message": "Only the owner token (creator) can perform this operation"
+}
+```
+
+```json
+{
+  "error": "Permission denied",
+  "message": "Token does not have permission to access user U123456"
 }
 ```
 
@@ -497,18 +742,29 @@ curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/vers
 
 ## API Endpoints Summary
 
-| Endpoint | Method | Description |
-|----------------|--------------|-------------------|
-| `/users` | GET | Get all users |
-| `/register/<user_id>` | POST | Register user and generate bind URL |
-| `/user/<user_id>` | GET | Get user info |
-| `/user/<user_id>` | DELETE | Delete user |
-| `/update/<user_id>` | POST | Queue user update |
-| `/task/<task_id>` | GET | Query task status |
-| `/records/<user_id>` | GET | Get user records |
-| `/search` | GET | Search songs |
-| `/versions` | GET | Get version list |
----
+### Basic Endpoints
+
+| Endpoint | Method | Description | Permission Required |
+|----------------|--------------|-------------------|----------|
+| `/users` | GET | Get all users | Any Token |
+| `/register/<user_id>` | POST | Register user and generate bind URL | Any Token |
+| `/user/<user_id>` | GET | Get user info | Owner or Granted |
+| `/user/<user_id>` | DELETE | Delete user | **Owner Only** |
+| `/update/<user_id>` | POST | Queue user update | Owner or Granted |
+| `/task/<task_id>` | GET | Query task status | Any Token |
+| `/records/<user_id>` | GET | Get user records | Owner or Granted |
+| `/search` | GET | Search songs | Any Token |
+| `/versions` | GET | Get version list | Any Token |
+
+### Permission Management Endpoints
+
+| Endpoint | Method | Description | Permission Required |
+|----------------|--------------|-------------------|----------|
+| `/perm/<user_id>` | POST | Request access permission | Any Token |
+| `/perm/<user_id>/requests` | GET | View permission requests | **Owner Only** |
+| `/perm/<user_id>/accept` | POST | Approve permission request | **Owner Only** |
+| `/perm/<user_id>/reject` | POST | Reject permission request | **Owner Only** |
+| `/perm/<user_id>/revoke` | POST | Revoke granted permission | **Owner Only** |
 
 ## Security Recommendations
 
@@ -655,6 +911,11 @@ curl -H "Authorization: Bearer $TOKEN" "$BASE_URL/search?q=ヒバナ&ver=jp"
 
 ## Version History
 
+- **v1.1** (2025-02-03): Added permission request system
+  - Added 5 permission management API endpoints
+  - Implemented two-tier permission model (owner vs granted)
+  - Added `@require_owner_permission` decorator
+  - LINE users receive FlexMessage notifications for permission requests
 - **v1.0** (2025-01-24): Initial release with basic token management and API authentication
 
 
@@ -663,6 +924,8 @@ curl -H "Authorization: Bearer $TOKEN" "$BASE_URL/search?q=ヒバナ&ver=jp"
 - `config.json` - Configuration file (contains token file path)
 - `modules/config_loader.py` - Configuration loader
 - `modules/devtoken_manager.py` - Token management core logic
+- `modules/perm_request_handler.py` - Permission request handling logic
+- `modules/perm_request_generator.py` - Permission request FlexMessage generator
 - `modules/message_manager.py` - Trilingual message definitions
 - `main.py` - API endpoints and command handling
 - `data/dev_tokens.json` - Token data storage (default location)

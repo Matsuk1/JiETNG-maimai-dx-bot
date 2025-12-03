@@ -527,6 +527,151 @@ def require_dev_token(f):
 
     return decorated_function
 
+
+def require_user_permission(f):
+    """
+    验证 token 是否有权限访问指定用户的装饰器
+
+    必须在 @require_dev_token 之后使用
+
+    使用方法:
+    @app.route('/api/endpoint/<user_id>')
+    @csrf.exempt
+    @require_dev_token
+    @require_user_permission
+    def endpoint(user_id):
+        # 此时已验证 token 有权限访问 user_id
+        return jsonify({"status": "success"})
+
+    权限检查逻辑:
+    1. 如果用户是通过该 token 创建的 (registered_via_token) - 允许访问
+    2. 如果 token 的 allowed_users 列表包含该用户 - 允许访问
+    3. 否则拒绝访问
+    """
+    from functools import wraps
+
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # 获取 user_id 参数
+        user_id = kwargs.get('user_id')
+        if not user_id:
+            return jsonify({
+                "error": "Missing parameter",
+                "message": "user_id is required"
+            }), 400
+
+        # 检查用户是否存在
+        read_user()
+
+        # 获取 token 信息（由 require_dev_token 装饰器提供）
+        token_info = request.token_info
+        token_id = token_info['token_id']
+
+        # 使用辅助函数检查权限
+        has_permission, error_response = check_user_permission(user_id, token_id)
+        if not has_permission:
+            return error_response
+
+        return f(*args, **kwargs)
+
+    return decorated_function
+
+
+def require_owner_permission(f):
+    """
+    验证 token 是否为用户的所有者（创建者）的装饰器
+
+    只允许创建该用户的 token 访问，不允许被授权的 token 访问
+    用于敏感操作如：删除用户、管理权限等
+
+    必须在 @require_dev_token 之后使用
+
+    使用方法:
+    @app.route('/api/endpoint/<user_id>')
+    @csrf.exempt
+    @require_dev_token
+    @require_owner_permission
+    def endpoint(user_id):
+        # 此时已验证 token 是 user_id 的所有者（创建者）
+        return jsonify({"status": "success"})
+
+    权限检查逻辑:
+    只检查用户是否通过该 token 创建 (registered_via_token)
+    不检查 allowed_users 列表
+    """
+    from functools import wraps
+
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # 获取 user_id 参数
+        user_id = kwargs.get('user_id')
+        if not user_id:
+            return jsonify({
+                "error": "Missing parameter",
+                "message": "user_id is required"
+            }), 400
+
+        # 检查用户是否存在
+        read_user()
+        if user_id not in USERS:
+            return jsonify({
+                "error": "User not found",
+                "message": f"User {user_id} does not exist"
+            }), 404
+
+        # 获取 token 信息（由 require_dev_token 装饰器提供）
+        token_info = request.token_info
+        token_id = token_info['token_id']
+
+        # 只检查是否为所有者（创建者）
+        if USERS[user_id].get('registered_via_token') != token_id:
+            return jsonify({
+                "error": "Forbidden",
+                "message": "Only the owner token (creator) can perform this operation"
+            }), 403
+
+        return f(*args, **kwargs)
+
+    return decorated_function
+
+
+def check_user_permission(user_id, token_id):
+    """
+    检查 token 是否有权限访问指定用户的辅助函数
+
+    Args:
+        user_id: 用户ID
+        token_id: Token ID
+
+    Returns:
+        tuple: (has_permission: bool, error_response: dict or None)
+    """
+    from modules.devtoken_manager import load_dev_tokens
+
+    # 检查用户是否存在
+    if user_id not in USERS:
+        return False, jsonify({
+            "error": "User not found",
+            "message": f"User {user_id} does not exist"
+        }), 404
+
+    # 检查权限：方式1 - 用户是通过该 token 创建的
+    if 'registered_via_token' in USERS[user_id] and USERS[user_id]['registered_via_token'] == token_id:
+        return True, None
+
+    # 检查权限：方式2 - token 的 allowed_users 列表包含该用户
+    dev_tokens = load_dev_tokens()
+    if token_id in dev_tokens:
+        allowed_users = dev_tokens[token_id].get('allowed_users', [])
+        if user_id in allowed_users:
+            return True, None
+
+    # 没有权限
+    return False, jsonify({
+        "error": "Permission denied",
+        "message": f"Token does not have permission to access user {user_id}"
+    }), 403
+
 # ==================== Flask 路由 ====================
 
 @app.route("/linebot/webhook", methods=['POST'])
@@ -1578,23 +1723,35 @@ def create_user_info_img(user_id, scale=1.5):
                     img = img.convert("RGBA")
                 img_resized = img.resize(size)
                 info_img.paste(img_resized, position, img_resized)
+                return True
 
             except Exception as e:
                 print(f"加载图片失败 {user_info[key]}: {e}")
+                return None
+        return None
 
     paste_image("nameplate_url", (0, 0), (802, 128))
 
     paste_image("icon_url", (15, 13), (100, 100))
 
     paste_image("rating_block_url", (129, 13), (131, 34))
-    draw.text((188, 17), f"{user_info['rating']}", fill=(255, 255, 255), font=font_large)
 
-    draw.rectangle([129, 51, 129 + 266, 51 + 33], fill=(255, 255, 255))
-    draw.text((135, 54), user_info['name'], fill=(0, 0, 0), font=font_large)
+    # 使用等宽方式绘制 rating 数字
+    rating_text = f"{user_info['rating']}"
+    char_width = 13  # 每个字符的固定宽度
+    start_x = 188
+    for i, char in enumerate(rating_text):
+        draw.text((start_x + i * char_width, 17), char, fill=(255, 255, 255), font=font_large)
 
-    paste_image("class_rank_url", (296, 9), (61, 36))
+    # 绘制带灰色边框的圆角矩形
+    draw.rounded_rectangle([129, 51, 129 + 266, 51 + 33], radius=10, fill=(255, 255, 255), outline=(180, 180, 180), width=2)
+    draw.text((138, 54), user_info['name'], fill=(0, 0, 0), font=font_large)
 
-    paste_image("cource_rank_url", (322, 53), (77, 34))
+    paste_image("class_rank_url", (296, 9), (70, 40))
+
+    paste_image("cource_rank_url", (322, 54), (69, 28))
+
+    _if_trophy = paste_image("trophy_url", (129, 92), (266, 21))
 
     def trophy_color(type):
         return {
@@ -1604,9 +1761,19 @@ def create_user_info_img(user_id, scale=1.5):
             "gold": (255, 243, 122),
             "rainbow": (233, 83, 106),
         }.get(type, (255, 255, 255))
+    trophy_content = truncate_text(draw, user_info['trophy_content'], font_small, 253)
 
-    draw.rectangle([129, 92, 129 + 266, 92 + 21], fill=trophy_color(user_info['trophy_type']))
-    draw.text((135, 93), user_info['trophy_content'], fill=(0, 0, 0), font=font_small)
+    # 计算文本居中位置
+    bbox = draw.textbbox((0, 0), trophy_content, font=font_small)
+    text_width = bbox[2] - bbox[0]
+    rect_width = 266
+    center_x = 129 + (rect_width - text_width) // 2
+
+    if not _if_trophy:
+        draw.rectangle([129, 92, 129 + 266, 92 + 21], fill=trophy_color(user_info['trophy_type']))
+        draw.text((center_x, 93), trophy_content, fill=(0, 0, 0), font=font_small)
+    else:
+        draw.text((center_x, 90), trophy_content, fill=(0, 0, 0), font=font_small)
 
     info_img = info_img.resize((int(img_width * scale), int(img_height * scale)), Image.Resampling.LANCZOS)
     return info_img
@@ -2196,6 +2363,75 @@ def route_to_image_queue(event):
     # 不是图片生成任务
     return False
 
+
+def handle_accept_perm_request(user_id: str, request_id: str) -> TextMessage:
+    """
+    处理接受权限请求的命令
+
+    Args:
+        user_id: 用户ID
+        request_id: 请求ID
+
+    Returns:
+        TextMessage对象
+    """
+    from modules.perm_request_handler import accept_perm_request
+    from modules.message_manager import (
+        get_multilingual_text,
+        perm_request_accept_success_text,
+        perm_request_error_text
+    )
+
+    result = accept_perm_request(user_id, request_id)
+
+    if result['success']:
+        text = get_multilingual_text(perm_request_accept_success_text, user_id).format(
+            token_id=result['token_id'],
+            requester_name=result.get('requester_name', result['token_id'])
+        )
+    else:
+        text = get_multilingual_text(perm_request_error_text, user_id).format(
+            error=result['error'],
+            message=result['message']
+        )
+
+    return TextMessage(text=text)
+
+
+def handle_reject_perm_request(user_id: str, request_id: str) -> TextMessage:
+    """
+    处理拒绝权限请求的命令
+
+    Args:
+        user_id: 用户ID
+        request_id: 请求ID
+
+    Returns:
+        TextMessage对象
+    """
+    from modules.perm_request_handler import reject_perm_request
+    from modules.message_manager import (
+        get_multilingual_text,
+        perm_request_reject_success_text,
+        perm_request_error_text
+    )
+
+    result = reject_perm_request(user_id, request_id)
+
+    if result['success']:
+        text = get_multilingual_text(perm_request_reject_success_text, user_id).format(
+            token_id=result['token_id'],
+            requester_name=result.get('requester_name', result['token_id'])
+        )
+    else:
+        text = get_multilingual_text(perm_request_error_text, user_id).format(
+            error=result['error'],
+            message=result['message']
+        )
+
+    return TextMessage(text=text)
+
+
 @handler.add(MessageEvent, message=TextMessageContent)
 def handle_text_message(event):
     """
@@ -2352,16 +2588,29 @@ def handle_sync_text_command(event):
             re.sub(r"^(add-friend|フレンド申請|friend request)", "", msg).strip()
         )),
 
-        (lambda msg: msg.startswith("accept-request "),
+        (lambda msg: msg.startswith("accept-friend-request "),
         lambda msg: accept_friend_request(
             user_id,
-            re.sub(r"^accept-request ", "", msg).strip()
+            re.sub(r"^accept-friend-request ", "", msg).strip()
         )),
 
-        (lambda msg: msg.startswith("reject-request "),
+        (lambda msg: msg.startswith("reject-friend-request "),
         lambda msg: reject_friend_request(
             user_id,
-            re.sub(r"^reject-request ", "", msg).strip()
+            re.sub(r"^reject-friend-request ", "", msg).strip()
+        )),
+
+        # 权限请求管理
+        (lambda msg: msg.startswith("accept-perm-request "),
+        lambda msg: handle_accept_perm_request(
+            user_id,
+            re.sub(r"^accept-perm-request ", "", msg).strip()
+        )),
+
+        (lambda msg: msg.startswith("reject-perm-request "),
+        lambda msg: handle_reject_perm_request(
+            user_id,
+            re.sub(r"^reject-perm-request ", "", msg).strip()
         ))
     ]
 
@@ -2635,6 +2884,7 @@ def handle_sync_text_command(event):
                 reply_message = TextMessage(text=get_multilingual_text(devtoken_usage_text, user_id))
                 return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
 
+
     # ====== 默认：不匹配任何命令 ======
     return
 
@@ -2702,7 +2952,7 @@ def handle_image_message(event):
                         DIVIDER
                     )
             except Exception as e:
-                logger.error(f"生成歌曲图片失败: {e}")
+                logger.error(f"Loading level cache error: {e}")
                 smart_reply(
                     event.source.user_id,
                     event.reply_token,
@@ -3498,24 +3748,44 @@ def api_list_users():
     获取所有用户列表 API
 
     需要 Bearer Token 认证
+
+    返回该 token 有权限访问的所有用户（包括创建的用户和授权访问的用户）
     """
     try:
+        from modules.devtoken_manager import load_dev_tokens
+
         read_user()
 
         token_info = request.token_info
+        token_id = token_info['token_id']
+
+        # 获取 token 的 allowed_users 列表
+        dev_tokens = load_dev_tokens()
+        allowed_users = dev_tokens.get(token_id, {}).get('allowed_users', [])
 
         users_list = []
         for user_id in USERS.keys():
-            # 检查是否有访问权限
-            if 'registered_via_token' in USERS[user_id] and USERS[user_id]['registered_via_token'] == token_info['token_id']:
+            # 检查是否有访问权限（创建的用户或授权访问的用户）
+            has_access = False
+            access_type = None
+
+            if 'registered_via_token' in USERS[user_id] and USERS[user_id]['registered_via_token'] == token_id:
+                has_access = True
+                access_type = "owner"
+            elif user_id in allowed_users:
+                has_access = True
+                access_type = "granted"
+
+            if has_access:
                 nickname = get_user_nickname_wrapper(user_id, use_cache=True)
                 users_list.append({
                     "user_id": user_id,
-                    "nickname": nickname
+                    "nickname": nickname,
+                    "access_type": access_type
                 })
 
         # 记录 API 访问日志
-        logger.info(f"API: List users via token {token_info['token_id']} ({token_info['note']})")
+        logger.info(f"API: List users via token {token_id} ({token_info['note']})")
 
         return jsonify({
             "success": True,
@@ -3582,9 +3852,9 @@ def api_register_user(user_id):
 
         if user_id in USERS:
             return jsonify({
-                "error": "Permission denied",
+                "error": "User already exists",
                 "message": f"User {user_id} was created already."
-            }), 403
+            }), 409  # 409 Conflict 更合适
 
         # 生成绑定 token
         bind_token = generate_bind_token(user_id)
@@ -3594,13 +3864,12 @@ def api_register_user(user_id):
 
         # 初始化用户数据
         from datetime import datetime
-        if user_id not in USERS:
-            add_user(user_id)
-            user_set_language(user_id, language)
-            edit_user_value(user_id, "nickname", nickname)
-            edit_user_value(user_id, "registered_via_token", token_info['token_id'])
-            edit_user_value(user_id, "registered_at", datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-            logger.info(f"Created new user {user_id} via API token {token_info['token_id']}")
+        add_user(user_id)
+        user_set_language(user_id, language)
+        edit_user_value(user_id, "nickname", nickname)
+        edit_user_value(user_id, "registered_via_token", token_info['token_id'])
+        edit_user_value(user_id, "registered_at", datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+        logger.info(f"Created new user {user_id} via API token {token_info['token_id']}")
 
         return jsonify({
             "success": True,
@@ -3623,33 +3892,19 @@ def api_register_user(user_id):
 @app.route("/api/v1/user/<user_id>", methods=["GET"])
 @csrf.exempt
 @require_dev_token
+@require_user_permission
 def api_get_user(user_id):
     """
     获取用户信息 API
 
-    需要 Bearer Token 认证
+    需要 Bearer Token 认证并拥有该用户的访问权限
     """
     try:
-        read_user()
-
-        if user_id not in USERS:
-            return jsonify({
-                "error": "User not found",
-                "message": f"User {user_id} does not exist"
-            }), 404
-
-        # 检查是否有访问权限
-        token_info = request.token_info
-        if not ('registered_via_token' in USERS[user_id] and USERS[user_id]['registered_via_token'] == token_info['token_id']):
-            return jsonify({
-                "error": "Permission denied",
-                "message": f"User {user_id} was not created by this token"
-            }), 403
-
         user_data = USERS[user_id]
         nickname = get_user_nickname_wrapper(user_id, use_cache=True)
 
         # 记录 API 访问日志
+        token_info = request.token_info
         logger.info(f"API: Get user {user_id} via token {token_info['token_id']} ({token_info['note']})")
 
         return jsonify({
@@ -3670,30 +3925,15 @@ def api_get_user(user_id):
 @app.route("/api/v1/user/<user_id>", methods=["DELETE"])
 @csrf.exempt
 @require_dev_token
+@require_owner_permission
 def api_delete_user(user_id):
     """
     删除用户 API
 
-    需要 Bearer Token 认证
+    需要 Bearer Token 认证（该 token 必须是用户的创建者）
     """
     try:
         from modules.user_manager import delete_user
-
-        read_user()
-
-        if user_id not in USERS:
-            return jsonify({
-                "error": "User not found",
-                "message": f"User {user_id} does not exist"
-            }), 404
-
-        # 检查是否有访问权限
-        token_info = request.token_info
-        if not ('registered_via_token' in USERS[user_id] and USERS[user_id]['registered_via_token'] == token_info['token_id']):
-            return jsonify({
-                "error": "Permission denied",
-                "message": f"User {user_id} was not created by this token"
-            }), 403
 
         # 获取用户信息用于日志
         nickname = get_user_nickname_wrapper(user_id, use_cache=True)
@@ -3702,6 +3942,7 @@ def api_delete_user(user_id):
         delete_user(user_id)
 
         # 记录 API 访问日志
+        token_info = request.token_info
         logger.info(f"API: Delete user {user_id} ({nickname}) via token {token_info['token_id']} ({token_info['note']})")
 
         return jsonify({
@@ -3712,6 +3953,303 @@ def api_delete_user(user_id):
 
     except Exception as e:
         logger.error(f"API delete user error: {e}", exc_info=True)
+        return jsonify({
+            "error": "Internal server error",
+            "message": str(e)
+        }), 500
+
+
+@app.route("/api/v1/perm/<user_id>", methods=["POST"])
+@csrf.exempt
+@require_dev_token
+def api_request_permission(user_id):
+    """
+    请求访问用户的权限 API
+
+    需要 Bearer Token 认证
+
+    类似好友请求机制，token 发送权限请求后，需要用户同意才能获取访问权限
+
+    请求体 (JSON):
+    - requester_name: 可选，请求者名称（用于在通知中显示）
+
+    返回:
+    - success: 是否成功发送请求
+    - request_id: 请求ID（用于后续接受/拒绝操作）
+    - message: 状态信息
+    """
+    try:
+        from modules.perm_request_handler import send_perm_request
+
+        # 获取 JSON 数据
+        data = request.get_json() or {}
+        requester_name = data.get('requester_name', '')
+
+        # 获取 token 信息
+        token_info = request.token_info
+        token_id = token_info['token_id']
+
+        # 如果没有提供 requester_name，使用 token 的 note
+        if not requester_name:
+            requester_name = token_info.get('note', token_id)
+
+        # 记录 API 访问日志
+        logger.info(f"API: Request permission to user {user_id} via token {token_id} ({token_info['note']})")
+
+        # 发送权限请求
+        result = send_perm_request(token_id, user_id, requester_name)
+
+        if result['success']:
+            return jsonify({
+                "success": True,
+                "request_id": result['request_id'],
+                "user_id": user_id,
+                "message": result['message']
+            })
+        else:
+            # 根据错误类型返回不同的 HTTP 状态码
+            status_code = 404 if result['error'] == "User not found" else 400
+            return jsonify({
+                "error": result['error'],
+                "message": result['message']
+            }), status_code
+
+    except Exception as e:
+        logger.error(f"API request permission error: {e}", exc_info=True)
+        return jsonify({
+            "error": "Internal server error",
+            "message": str(e)
+        }), 500
+
+
+@app.route("/api/v1/perm/<user_id>/requests", methods=["GET"])
+@csrf.exempt
+@require_dev_token
+@require_owner_permission
+def api_get_perm_requests(user_id):
+    """
+    获取用户的待处理权限请求列表 API
+
+    需要 Bearer Token 认证（该 token 必须是用户的所有者）
+
+    返回:
+    - requests: 权限请求列表，包含 request_id, token_id, requester_name, timestamp
+    """
+    try:
+        from modules.perm_request_handler import get_pending_perm_requests
+
+        # 获取待处理的权限请求
+        requests = get_pending_perm_requests(user_id)
+
+        # 记录 API 访问日志
+        token_info = request.token_info
+        logger.info(f"API: Get permission requests for user {user_id} via token {token_info['token_id']} ({token_info['note']})")
+
+        return jsonify({
+            "success": True,
+            "user_id": user_id,
+            "count": len(requests),
+            "requests": requests
+        })
+
+    except Exception as e:
+        logger.error(f"API get permission requests error: {e}", exc_info=True)
+        return jsonify({
+            "error": "Internal server error",
+            "message": str(e)
+        }), 500
+
+
+@app.route("/api/v1/perm/<user_id>/accept", methods=["POST"])
+@csrf.exempt
+@require_dev_token
+@require_owner_permission
+def api_accept_perm_request(user_id):
+    """
+    接受权限请求 API
+
+    需要 Bearer Token 认证（该 token 必须是用户的所有者 token）
+
+    请求体 (JSON):
+    - request_id: 必需，要接受的权限请求ID
+
+    返回:
+    - success: 是否成功接受
+    - token_id: 被授权的 token ID
+    - message: 状态信息
+    """
+    try:
+        from modules.perm_request_handler import accept_perm_request
+
+        # 获取 JSON 数据
+        data = request.get_json() or {}
+        request_id = data.get('request_id', '')
+
+        # request_id 是必需参数
+        if not request_id:
+            return jsonify({
+                "error": "Missing parameter",
+                "message": "Parameter 'request_id' is required"
+            }), 400
+
+        # 记录 API 访问日志
+        token_info = request.token_info
+        logger.info(f"API: Accept permission request {request_id} for user {user_id} via token {token_info['token_id']} ({token_info['note']})")
+
+        # 接受权限请求
+        result = accept_perm_request(user_id, request_id)
+
+        if result['success']:
+            return jsonify({
+                "success": True,
+                "user_id": user_id,
+                "token_id": result['token_id'],
+                "token_note": result['token_note'],
+                "message": result['message']
+            })
+        else:
+            # 根据错误类型返回不同的 HTTP 状态码
+            status_code = 404 if result['error'] in ["User not found", "Request not found", "Invalid token"] else 400
+            return jsonify({
+                "error": result['error'],
+                "message": result['message']
+            }), status_code
+
+    except Exception as e:
+        logger.error(f"API accept permission request error: {e}", exc_info=True)
+        return jsonify({
+            "error": "Internal server error",
+            "message": str(e)
+        }), 500
+
+
+@app.route("/api/v1/perm/<user_id>/reject", methods=["POST"])
+@csrf.exempt
+@require_dev_token
+@require_owner_permission
+def api_reject_perm_request(user_id):
+    """
+    拒绝权限请求 API
+
+    需要 Bearer Token 认证（该 token 必须是用户的所有者 token）
+
+    请求体 (JSON):
+    - request_id: 必需，要拒绝的权限请求ID
+
+    返回:
+    - success: 是否成功拒绝
+    - message: 状态信息
+    """
+    try:
+        from modules.perm_request_handler import reject_perm_request
+
+        # 获取 JSON 数据
+        data = request.get_json() or {}
+        request_id = data.get('request_id', '')
+
+        # request_id 是必需参数
+        if not request_id:
+            return jsonify({
+                "error": "Missing parameter",
+                "message": "Parameter 'request_id' is required"
+            }), 400
+
+        # 记录 API 访问日志
+        token_info = request.token_info
+        logger.info(f"API: Reject permission request {request_id} for user {user_id} via token {token_info['token_id']} ({token_info['note']})")
+
+        # 拒绝权限请求
+        result = reject_perm_request(user_id, request_id)
+
+        if result['success']:
+            return jsonify({
+                "success": True,
+                "user_id": user_id,
+                "token_id": result['token_id'],
+                "token_note": result['token_note'],
+                "message": result['message']
+            })
+        else:
+            # 根据错误类型返回不同的 HTTP 状态码
+            status_code = 404 if result['error'] in ["User not found", "Request not found"] else 400
+            return jsonify({
+                "error": result['error'],
+                "message": result['message']
+            }), status_code
+
+    except Exception as e:
+        logger.error(f"API reject permission request error: {e}", exc_info=True)
+        return jsonify({
+            "error": "Internal server error",
+            "message": str(e)
+        }), 500
+
+
+@app.route("/api/v1/perm/<user_id>/revoke", methods=["POST"])
+@csrf.exempt
+@require_dev_token
+@require_owner_permission
+def api_revoke_perm(user_id):
+    """
+    撤销已授予的权限 API
+
+    需要 Bearer Token 认证（该 token 必须是用户的所有者）
+
+    请求体 (JSON):
+    - token_id: 必需，要撤销权限的 token ID
+
+    返回:
+    - success: 是否成功撤销
+    - message: 状态信息
+    """
+    try:
+        from modules.devtoken_manager import load_dev_tokens, save_dev_tokens
+
+        # 获取 JSON 数据
+        data = request.get_json() or {}
+        target_token_id = data.get('token_id', '')
+
+        # token_id 是必需参数
+        if not target_token_id:
+            return jsonify({
+                "error": "Missing parameter",
+                "message": "Parameter 'token_id' is required"
+            }), 400
+
+        # 记录 API 访问日志
+        token_info = request.token_info
+        logger.info(f"API: Revoke permission for token {target_token_id} from user {user_id} via token {token_info['token_id']} ({token_info['note']})")
+
+        # 加载 dev tokens
+        dev_tokens = load_dev_tokens()
+
+        if target_token_id not in dev_tokens:
+            return jsonify({
+                "error": "Token not found",
+                "message": f"Token {target_token_id} does not exist"
+            }), 404
+
+        # 从 allowed_users 列表中移除该用户
+        allowed_users = dev_tokens[target_token_id].get('allowed_users', [])
+        if user_id in allowed_users:
+            allowed_users.remove(user_id)
+            dev_tokens[target_token_id]['allowed_users'] = allowed_users
+            save_dev_tokens(dev_tokens)
+
+            return jsonify({
+                "success": True,
+                "user_id": user_id,
+                "token_id": target_token_id,
+                "message": f"Permission revoked for token {target_token_id}"
+            })
+        else:
+            return jsonify({
+                "error": "Permission not found",
+                "message": f"Token {target_token_id} does not have permission to access user {user_id}"
+            }), 404
+
+    except Exception as e:
+        logger.error(f"API revoke permission error: {e}", exc_info=True)
         return jsonify({
             "error": "Internal server error",
             "message": str(e)
@@ -3794,32 +4332,16 @@ def api_get_task_status(task_id):
 @app.route("/api/v1/update/<user_id>", methods=["POST"])
 @csrf.exempt
 @require_dev_token
+@require_user_permission
 def api_update_user(user_id):
     """
     触发用户数据更新 API
 
-    需要 Bearer Token 认证
+    需要 Bearer Token 认证并拥有该用户的访问权限
 
     将用户加入更新队列，异步执行数据更新
     """
     try:
-        read_user()
-
-        # 检查用户是否存在
-        if user_id not in USERS:
-            return jsonify({
-                "error": "User not found",
-                "message": f"User {user_id} does not exist"
-            }), 404
-
-        # 检查是否有访问权限
-        token_info = request.token_info
-        if not ('registered_via_token' in USERS[user_id] and USERS[user_id]['registered_via_token'] == token_info['token_id']):
-            return jsonify({
-                "error": "Permission denied",
-                "message": f"User {user_id} was not created by this token"
-            }), 403
-
         # 检查用户是否已绑定账号
         if 'sega_id' not in USERS[user_id] or 'sega_pwd' not in USERS[user_id]:
             return jsonify({
@@ -3844,6 +4366,7 @@ def api_update_user(user_id):
             webtask_queue.put_nowait((async_maimai_update_task, (mock_event,), task_id))
 
             # 记录 API 访问日志
+            token_info = request.token_info
             logger.info(f"API: Triggered update for user {user_id} via token {token_info['token_id']} ({token_info['note']})")
 
             return jsonify({
@@ -3871,11 +4394,12 @@ def api_update_user(user_id):
 @app.route("/api/v1/records/<user_id>", methods=["GET"])
 @csrf.exempt
 @require_dev_token
+@require_user_permission
 def api_get_records(user_id):
     """
     获取用户成绩记录 API
 
-    需要 Bearer Token 认证
+    需要 Bearer Token 认证并拥有该用户的访问权限
 
     参数:
     - type: 可选，记录类型，默认为 best50
@@ -3898,22 +4422,6 @@ def api_get_records(user_id):
                 "error": "Invalid type",
                 "message": f"Invalid record type: {record_type}. Valid types: {', '.join(valid_types)}"
             }), 400
-
-        read_user()
-
-        # 检查用户是否存在
-        if user_id not in USERS:
-            return jsonify({
-                "error": "User not found",
-                "message": f"User {user_id} does not exist"
-            }), 404
-
-        # 检查是否有访问权限
-        if not ('registered_via_token' in USERS[user_id] and USERS[user_id]['registered_via_token'] == token_info['token_id']):
-            return jsonify({
-                "error": "Permission denied",
-                "message": f"User {user_id} was not created by this token"
-            }), 403
 
         # 检查是否有个人信息
         if "personal_info" not in USERS[user_id]:
@@ -3993,19 +4501,11 @@ def api_search_songs():
             ver = request.args.get('ver', 'jp')
         else:
             read_user()
-            # 检查用户是否存在
-            if user_id not in USERS:
-                return jsonify({
-                    "error": "User not found",
-                    "message": f"User {user_id} does not exist"
-                }), 404
 
-            # 检查是否有访问权限
-            if not ('registered_via_token' in USERS[user_id] and USERS[user_id]['registered_via_token'] == token_info['token_id']):
-                return jsonify({
-                    "error": "Permission denied",
-                    "message": f"User {user_id} was not created by this token"
-                }), 403
+            # 使用辅助函数检查权限
+            has_permission, error_response = check_user_permission(user_id, token_info['token_id'])
+            if not has_permission:
+                return error_response
 
             # 检查是否有个人信息
             if "personal_info" not in USERS[user_id]:

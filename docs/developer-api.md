@@ -412,6 +412,266 @@ curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/vers
 }
 ```
 
+## 权限请求 API
+
+权限请求系统允许开发者 Token 请求访问不是由该 Token 创建的用户数据。用户可以批准或拒绝这些请求。
+
+### 权限模型
+
+JiETNG 使用两层权限模型：
+
+1. **所有者权限（Owner）**：创建用户的 Token（通过 `registered_via_token` 字段标识）
+   - 可以执行所有操作：读取、更新、删除用户
+   - 可以管理权限请求：查看、批准、拒绝、撤销
+
+2. **授权访问权限（Granted）**：被用户授权的 Token（在 Token 的 `allowed_users` 列表中）
+   - 可以读取用户数据
+   - 可以触发用户数据更新
+   - **不能**删除用户或管理权限
+
+### 装饰器说明
+
+API 使用两种装饰器来控制访问权限：
+
+- **`@require_user_permission`**：允许所有者和被授权者访问（用于读取操作）
+- **`@require_owner_permission`**：只允许所有者访问（用于敏感操作）
+
+#### 10. 请求访问权限
+
+```http
+POST /api/v1/perm/<user_id>
+```
+
+**说明：** 向指定用户发送权限请求，请求访问该用户的数据。
+
+**权限要求：** 任何有效的开发者 Token
+
+**请求体 (JSON):**
+- `requester_name`: 可选，请求者名称（用于在通知中显示，默认使用 Token 的备注）
+
+**示例:**
+```bash
+curl -X POST -H "Authorization: Bearer abc123..." \
+     -H "Content-Type: application/json" \
+     -d '{"requester_name":"MyApp"}' \
+     https://jietng.matsuki.top/api/v1/perm/U123456
+```
+
+**响应:**
+```json
+{
+  "success": true,
+  "request_id": "20250203120000_jt_abc123",
+  "user_id": "U123456",
+  "message": "Permission request sent to user U123456"
+}
+```
+
+**错误响应：**
+```json
+{
+  "error": "Permission already granted",
+  "message": "Token already has access to user U123456"
+}
+```
+
+```json
+{
+  "error": "Request already sent",
+  "message": "Permission request already sent, waiting for approval"
+}
+```
+
+#### 11. 查看权限请求列表
+
+```http
+GET /api/v1/perm/<user_id>/requests
+```
+
+**说明：** 获取用户的待处理权限请求列表。
+
+**权限要求：** 只有所有者 Token（`@require_owner_permission`）
+
+**示例:**
+```bash
+curl -H "Authorization: Bearer abc123..." \
+     https://jietng.matsuki.top/api/v1/perm/U123456/requests
+```
+
+**响应:**
+```json
+{
+  "success": true,
+  "user_id": "U123456",
+  "count": 2,
+  "requests": [
+    {
+      "request_id": "20250203120000_jt_abc123",
+      "token_id": "jt_abc123",
+      "token_note": "MyApp",
+      "requester_name": "MyApp",
+      "timestamp": "2025-02-03 12:00:00"
+    },
+    {
+      "request_id": "20250203130000_jt_def456",
+      "token_id": "jt_def456",
+      "token_note": "AnotherApp",
+      "requester_name": "AnotherApp",
+      "timestamp": "2025-02-03 13:00:00"
+    }
+  ]
+}
+```
+
+#### 12. 批准权限请求
+
+```http
+POST /api/v1/perm/<user_id>/accept
+```
+
+**说明：** 批准指定的权限请求，将请求的 Token 添加到授权列表。
+
+**权限要求：** 只有所有者 Token（`@require_owner_permission`）
+
+**请求体 (JSON):**
+- `request_id`: **必需**，要批准的权限请求ID
+
+**示例:**
+```bash
+curl -X POST -H "Authorization: Bearer abc123..." \
+     -H "Content-Type: application/json" \
+     -d '{"request_id":"20250203120000_jt_abc123"}' \
+     https://jietng.matsuki.top/api/v1/perm/U123456/accept
+```
+
+**响应:**
+```json
+{
+  "success": true,
+  "user_id": "U123456",
+  "token_id": "jt_abc123",
+  "token_note": "MyApp",
+  "message": "Permission granted to token jt_abc123"
+}
+```
+
+**错误响应：**
+```json
+{
+  "error": "Request not found",
+  "message": "Permission request not found or already processed"
+}
+```
+
+#### 13. 拒绝权限请求
+
+```http
+POST /api/v1/perm/<user_id>/reject
+```
+
+**说明：** 拒绝指定的权限请求。
+
+**权限要求：** 只有所有者 Token（`@require_owner_permission`）
+
+**请求体 (JSON):**
+- `request_id`: **必需**，要拒绝的权限请求ID
+
+**示例:**
+```bash
+curl -X POST -H "Authorization: Bearer abc123..." \
+     -H "Content-Type: application/json" \
+     -d '{"request_id":"20250203120000_jt_abc123"}' \
+     https://jietng.matsuki.top/api/v1/perm/U123456/reject
+```
+
+**响应:**
+```json
+{
+  "success": true,
+  "user_id": "U123456",
+  "token_id": "jt_abc123",
+  "token_note": "MyApp",
+  "message": "Permission request from token jt_abc123 rejected"
+}
+```
+
+#### 14. 撤销已授予的权限
+
+```http
+POST /api/v1/perm/<user_id>/revoke
+```
+
+**说明：** 撤销已授予给指定 Token 的访问权限。
+
+**权限要求：** 只有所有者 Token（`@require_owner_permission`）
+
+**请求体 (JSON):**
+- `token_id`: **必需**，要撤销权限的 Token ID
+
+**示例:**
+```bash
+curl -X POST -H "Authorization: Bearer abc123..." \
+     -H "Content-Type: application/json" \
+     -d '{"token_id":"jt_abc123"}' \
+     https://jietng.matsuki.top/api/v1/perm/U123456/revoke
+```
+
+**响应:**
+```json
+{
+  "success": true,
+  "user_id": "U123456",
+  "token_id": "jt_abc123",
+  "message": "Permission revoked for token jt_abc123"
+}
+```
+
+**错误响应：**
+```json
+{
+  "error": "Permission not found",
+  "message": "Token jt_abc123 does not have permission to access user U123456"
+}
+```
+
+### 权限请求工作流程示例
+
+```bash
+# 1. Token B 请求访问由 Token A 创建的 User1
+curl -X POST -H "Authorization: Bearer TOKEN_B" \
+     -H "Content-Type: application/json" \
+     -d '{"requester_name":"MyApp"}' \
+     https://jietng.matsuki.top/api/v1/perm/U123456
+
+# 2. Token A（所有者）查看待处理的权限请求
+curl -H "Authorization: Bearer TOKEN_A" \
+     https://jietng.matsuki.top/api/v1/perm/U123456/requests
+
+# 3. Token A 批准请求
+curl -X POST -H "Authorization: Bearer TOKEN_A" \
+     -H "Content-Type: application/json" \
+     -d '{"request_id":"20250203120000_jt_tokenb"}' \
+     https://jietng.matsuki.top/api/v1/perm/U123456/accept
+
+# 4. 现在 Token B 可以访问 User1 的数据
+curl -H "Authorization: Bearer TOKEN_B" \
+     https://jietng.matsuki.top/api/v1/user/U123456
+
+# 5. （可选）Token A 撤销 Token B 的访问权限
+curl -X POST -H "Authorization: Bearer TOKEN_A" \
+     -H "Content-Type: application/json" \
+     -d '{"token_id":"jt_tokenb"}' \
+     https://jietng.matsuki.top/api/v1/perm/U123456/revoke
+```
+
+### LINE 用户的权限管理
+
+LINE 用户会收到权限请求的 FlexMessage 通知，可以直接在 LINE 中批准或拒绝：
+
+1. 当有新的权限请求时，用户会收到通知消息
+2. 消息包含请求者信息和两个按钮："承認"（批准）和"拒否"（拒绝）
+3. 点击按钮后，系统会自动处理请求
+
 ## 错误处理
 
 ### 401 Unauthorized
@@ -453,13 +713,22 @@ curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/vers
 ### 403 Forbidden
 
 **情况:**
-- 当前 token 无法访问该 user_id (该用户并非以此 token 创建)
+- 当前 token 无法访问该 user_id
+- Token 不是用户的所有者（对于需要所有者权限的操作）
+- Token 既不是所有者也未被授权访问
 
 **响应示例:**
 ```json
 {
   "error": "Forbidden",
-  "message": "User U123456 was not created by this token"
+  "message": "Only the owner token (creator) can perform this operation"
+}
+```
+
+```json
+{
+  "error": "Permission denied",
+  "message": "Token does not have permission to access user U123456"
 }
 ```
 
@@ -491,17 +760,29 @@ curl -H "Authorization: Bearer abc123..." https://jietng.matsuki.top/api/v1/vers
 
 ## API 端点汇总
 
-| 端点 | 方法 | 说明 |
-|----------------|--------------|-------------------|
-| `/users` | GET | 获取所有用户列表 |
-| `/register/<user_id>` | POST | 注册用户并生成绑定链接 |
-| `/user/<user_id>` | GET | 获取用户信息 |
-| `/user/<user_id>` | DELETE | 删除用户 |
-| `/update/<user_id>` | POST | 队列用户数据更新 |
-| `/task/<task_id>` | GET | 查询任务状态 |
-| `/records/<user_id>` | GET | 获取用户成绩记录 |
-| `/search` | GET | 搜索歌曲 |
-| `/versions` | GET | 获取版本列表 |
+### 基础端点
+
+| 端点 | 方法 | 说明 | 权限要求 |
+|----------------|--------------|-------------------|----------|
+| `/users` | GET | 获取所有用户列表 | 任何 Token |
+| `/register/<user_id>` | POST | 注册用户并生成绑定链接 | 任何 Token |
+| `/user/<user_id>` | GET | 获取用户信息 | 所有者或被授权 |
+| `/user/<user_id>` | DELETE | 删除用户 | **仅所有者** |
+| `/update/<user_id>` | POST | 队列用户数据更新 | 所有者或被授权 |
+| `/task/<task_id>` | GET | 查询任务状态 | 任何 Token |
+| `/records/<user_id>` | GET | 获取用户成绩记录 | 所有者或被授权 |
+| `/search` | GET | 搜索歌曲 | 任何 Token |
+| `/versions` | GET | 获取版本列表 | 任何 Token |
+
+### 权限管理端点
+
+| 端点 | 方法 | 说明 | 权限要求 |
+|----------------|--------------|-------------------|----------|
+| `/perm/<user_id>` | POST | 请求访问权限 | 任何 Token |
+| `/perm/<user_id>/requests` | GET | 查看权限请求列表 | **仅所有者** |
+| `/perm/<user_id>/accept` | POST | 批准权限请求 | **仅所有者** |
+| `/perm/<user_id>/reject` | POST | 拒绝权限请求 | **仅所有者** |
+| `/perm/<user_id>/revoke` | POST | 撤销已授予的权限 | **仅所有者** |
 
 ## 安全建议
 
@@ -643,6 +924,11 @@ curl -H "Authorization: Bearer $TOKEN" "$BASE_URL/search?q=ヒバナ&ver=jp"
 
 ## 版本历史
 
+- **v1.1** (2025-02-03): 添加权限请求系统
+  - 新增 5 个权限管理 API 端点
+  - 实现两层权限模型（所有者 vs 被授权者）
+  - 添加 `@require_owner_permission` 装饰器
+  - LINE 用户支持 FlexMessage 权限请求通知
 - **v1.0** (2025-01-24): 初始版本，支持基本的 Token 管理和 API 认证
 
 ## 相关文件
@@ -650,6 +936,8 @@ curl -H "Authorization: Bearer $TOKEN" "$BASE_URL/search?q=ヒバナ&ver=jp"
 - `config.json` - 配置文件（包含 Token 文件路径）
 - `modules/config_loader.py` - 配置加载器
 - `modules/devtoken_manager.py` - Token 管理核心逻辑
+- `modules/perm_request_handler.py` - 权限请求处理逻辑
+- `modules/perm_request_generator.py` - 权限请求 FlexMessage 生成器
 - `modules/message_manager.py` - 三语消息定义
 - `main.py` - API 端点和命令处理
 - `data/dev_tokens.json` - Token 数据存储（默认位置）
