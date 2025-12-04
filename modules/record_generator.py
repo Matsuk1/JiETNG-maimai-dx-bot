@@ -203,7 +203,7 @@ def generate_records_picture(up_songs=[], down_songs=[], title="RECORD"):
     thumb_size = (300, 150)
     side_width = 20
     spacing = 10
-    header_height = 190
+    header_height = 220  # 增加header高度，拉开与下方元素的距离
 
     version_padding = 0 if not (up_songs and down_songs) else 20
 
@@ -224,11 +224,19 @@ def generate_records_picture(up_songs=[], down_songs=[], title="RECORD"):
     card_x = side_width + 10
     card_y = side_width - 5
 
-    # 计算文本高度
+    # 计算实际文本宽度和高度
+    max_text_width = 0
+    for line in header_text:
+        bbox = draw.textbbox((0, 0), line, font=font_huge)
+        text_width = bbox[2] - bbox[0]
+        if text_width > max_text_width:
+            max_text_width = text_width
+
     line_height = draw.textbbox((0, 0), "测试", font=font_huge)[3]
     text_total_height = len(header_text) * (line_height + 7)
 
-    card_width = 520
+    # 根据实际文本宽度设置卡片宽度
+    card_width = max_text_width + card_padding * 2 + 20  # 额外加20px留白
     card_height = text_total_height + card_padding * 2
 
     # 绘制带圆角的半透明背景框
