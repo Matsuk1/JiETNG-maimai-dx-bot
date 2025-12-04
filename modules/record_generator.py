@@ -213,19 +213,40 @@ def generate_records_picture(up_songs=[], down_songs=[], title="RECORD"):
     draw = ImageDraw.Draw(combined)
 
     header_text = [
-        f"でらっくすレーティング:  {all_ra} = {up_ra} + {down_ra}" if up_ra and down_ra else f"でらっくすレーティング:  {all_ra}",
-        f"平均レーティング:  {round(float(all_ra)/num, 2):.2f}",
-        f"平均レベル:  {round(float(all_level)/num, 2):.2f}",
-        f"平均達成率:  {round(all_score/num, 4):.4f}%"
+        f"でらっくす RATING:    {all_ra} = {up_ra} + {down_ra}" if up_ra and down_ra else f"でらっくす RATING:    {all_ra}",
+        f"平均レーティング:    {round(float(all_ra)/num, 2):.2f}",
+        f"平均レベル:    {round(float(all_level)/num, 2):.2f}",
+        f"平均達成率:    {round(all_score/num, 4):.4f}%"
     ]
+
+    # 绘制统计信息背景卡片
+    card_padding = 15
+    card_x = side_width + 10
+    card_y = side_width - 5
+
+    # 计算文本高度
+    line_height = draw.textbbox((0, 0), "测试", font=font_huge)[3]
+    text_total_height = len(header_text) * (line_height + 7)
+
+    card_width = 520
+    card_height = text_total_height + card_padding * 2
+
+    # 绘制带圆角的半透明背景框
+    draw.rounded_rectangle(
+        [card_x, card_y, card_x + card_width, card_y + card_height],
+        radius=12,
+        fill=(245, 248, 252),  # 淡蓝灰色背景
+        outline=(200, 210, 225),  # 浅蓝灰色边框
+        width=2
+    )
 
     draw_aligned_colon_text(
         draw,
         lines=header_text,
-        top_left=(side_width + 20, side_width),  # 左上角起始坐标
+        top_left=(card_x + card_padding, card_y + card_padding),
         font=font_huge,
         spacing=7,
-        fill=(0, 0, 0)
+        fill=(40, 40, 40)  # 深灰色文字，更柔和
     )
 
     bbox = draw.textbbox((0, 0), title, font=font_huge_huge)
