@@ -895,7 +895,9 @@ curl -H "Authorization: Bearer $TOKEN" "$BASE_URL/search?q=ヒバナ&ver=jp"
 **A:** Yes. It's recommended to create different tokens for different purposes for easier management and revocation.
 
 ### Q: What are the permission scopes of tokens?
-**A:** All authenticated tokens have the same API access permissions. Fine-grained permission control is not currently supported.
+**A:** JiETNG implements a two-tier permission model:
+- **Owner permissions**: Tokens that created the user have full access (read, update, delete user, manage permission requests)
+- **Granted permissions**: Tokens authorized by the user can only read and update user data, cannot delete users or manage permissions
 
 
 ## Version History
