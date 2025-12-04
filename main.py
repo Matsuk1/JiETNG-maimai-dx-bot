@@ -1903,14 +1903,22 @@ def select_records(song_record, type, command, ver):
 
     elif type == "idealb50":
         for rcd in up_songs_data:
-            ideal_score = get_ideal_score(float(rcd['score'][:-1]))
+            ideal_score, score_icon = get_ideal_score(float(rcd['score'][:-1]))
             rcd['score'] = f"{ideal_score:.4f}%"
-            rcd['ra'] = get_single_ra(rcd['internalLevelValue'], ideal_score)
+            if score_icon:
+                rcd['score_icon'] = score_icon
+            if ideal_score == 101:
+                rcd['combo_icon'] = "app"
+            rcd['ra'] = get_single_ra(rcd['internalLevelValue'], ideal_score, (ideal_score == 101 and ver == "jp"))
 
         for rcd in down_songs_data:
-            ideal_score = get_ideal_score(float(rcd['score'][:-1]))
+            ideal_score, score_icon = get_ideal_score(float(rcd['score'][:-1]))
             rcd['score'] = f"{ideal_score:.4f}%"
-            rcd['ra'] = get_single_ra(rcd['internalLevelValue'], ideal_score)
+            if score_icon:
+                rcd['score_icon'] = score_icon
+            if ideal_score == 101:
+                rcd['combo_icon'] = "app"
+            rcd['ra'] = get_single_ra(rcd['internalLevelValue'], ideal_score, (ideal_score == 101 and ver == "jp"))
 
         up_songs = sorted(up_songs_data, key=lambda x: -x["ra"])[:35]
         down_songs = sorted(down_songs_data, key=lambda x: -x["ra"])[:15]

@@ -121,13 +121,15 @@ def get_yang_single_ra(song_record, eight_adding=False):
 
 def get_ideal_score(score: float) -> float:
     if 99.0000 <= score < 99.5000:
-        return 99.5000
+        return 99.5000, "ssp"
     elif 99.5000 <= score < 100.0000:
-        return 100.0000
+        return 100.0000, "sss"
     elif 100.0000 <= score < 100.5000:
-        return 100.5000
+        return 100.5000, "sssp"
+    elif 100.5000 <= score <= 101.0000:
+        return 101.0000, "sssp"
     else:
-        return score
+        return score, None
 
 def read_record(user_id: str, recent: bool = False, yang: bool = False) -> List[Dict[str, Any]]:
     """

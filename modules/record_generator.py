@@ -203,40 +203,52 @@ def generate_records_picture(up_songs=[], down_songs=[], title="RECORD"):
     thumb_size = (300, 150)
     side_width = 20
     spacing = 10
-    header_height = 220  # 增加header高度，拉开与下方元素的距离
+    header_height = 245  # 增加header高度，拉开标题和上半部分的距离
 
-    version_padding = 0 if not (up_songs and down_songs) else 5  # 减少上下部分间距
+    version_padding = 0 if not (up_songs and down_songs) else 40
 
     img_width = grid_size[0] * (thumb_size[0] + spacing) - spacing + side_width * 2
-    img_height = header_height + grid_size[1] * (thumb_size[1] + spacing) + version_padding + 20
+    img_height = header_height + grid_size[1] * (thumb_size[1] + spacing) + version_padding + 13
     combined = Image.new("RGB", (img_width, img_height), (255, 255, 255))
     draw = ImageDraw.Draw(combined)
 
     header_text = [
-        f"でらっくす RATING:    {all_ra} = {up_ra} + {down_ra}" if up_ra and down_ra else f"でらっくす RATING:    {all_ra}",
-        f"平均レーティング:    {round(float(all_ra)/num, 2):.2f}",
-        f"平均レベル:    {round(float(all_level)/num, 2):.2f}",
-        f"平均達成率:    {round(all_score/num, 4):.4f}%"
+        f"でらっくす RATING: {all_ra} = {up_ra} + {down_ra}" if up_ra and down_ra else f"でらっくす RATING: {all_ra}",
+        f"平均レーティング: {round(float(all_ra)/num, 2):.2f}",
+        f"平均レベル: {round(float(all_level)/num, 2):.2f}",
+        f"平均達成率: {round(all_score/num, 4):.4f}%"
     ]
 
     # 绘制统计信息背景卡片
-    card_padding = 15
+    card_padding = 20
     card_x = side_width + 10
-    card_y = side_width - 5
+    card_y = side_width + 10  # 向下移动10px (从 side_width - 5 改为 side_width + 5)
 
-    # 计算实际文本宽度和高度
-    max_text_width = 0
+    # 计算实际文本宽度和高度（与 draw_aligned_colon_text 的对齐方式一致）
+    left_texts = []
+    right_texts = []
     for line in header_text:
-        bbox = draw.textbbox((0, 0), line, font=font_huge)
-        text_width = bbox[2] - bbox[0]
-        if text_width > max_text_width:
-            max_text_width = text_width
+        if ":" in line:
+            left, right = line.split(":", 1)
+            left_texts.append(left + ":")
+            right_texts.append(right.strip())
+        else:
+            left_texts.append(line)
+            right_texts.append("")
 
-    line_height = draw.textbbox((0, 0), "测试", font=font_huge)[3]
+    # 计算左侧最大宽度（+10px 间距，与 draw_aligned_colon_text 一致）
+    max_left_width = max(draw.textbbox((0, 0), text, font=font_huge)[2] for text in left_texts) + 10
+    # 计算右侧最大宽度
+    max_right_width = max(draw.textbbox((0, 0), text, font=font_huge)[2] for text in right_texts) if right_texts else 0
+
+    # 实际文本总宽度
+    max_text_width = max_left_width + max_right_width
+
+    line_height = draw.textbbox((0, 0), "TEST", font=font_huge)[3]
     text_total_height = len(header_text) * (line_height + 7)
 
     # 根据实际文本宽度设置卡片宽度
-    card_width = max_text_width + card_padding * 2 + 20  # 额外加20px留白
+    card_width = max_text_width + card_padding * 2
     card_height = text_total_height + card_padding * 2
 
     # 绘制带圆角的半透明背景框
@@ -251,15 +263,37 @@ def generate_records_picture(up_songs=[], down_songs=[], title="RECORD"):
     draw_aligned_colon_text(
         draw,
         lines=header_text,
-        top_left=(card_x + card_padding, card_y + card_padding),
+        top_left=(card_x + card_padding, card_y + card_padding - 5),
         font=font_huge,
         spacing=7,
         fill=(40, 40, 40)  # 深灰色文字，更柔和
     )
 
+    # 绘制斜体标题
     bbox = draw.textbbox((0, 0), title, font=font_huge_huge)
     title_width = bbox[2] - bbox[0]
-    draw.text((img_width - side_width - title_width, -20), title, fill=(206, 206, 206), font=font_huge_huge)
+    title_height = bbox[3] - bbox[1]
+
+    # 创建临时图层用于绘制标题（留更多空间避免裁剪）
+    layer_width = title_width + 150
+    layer_height = title_height + 120
+    title_layer = Image.new('RGBA', (layer_width, layer_height), (255, 255, 255, 0))
+    title_draw = ImageDraw.Draw(title_layer)
+    # 文字绘制在图层中央偏上位置
+    title_draw.text((70, 15), title, fill=(206, 206, 206, 255), font=font_huge_huge)
+
+    # 应用斜体变换 (正向斜体 "/" 方向)
+    title_layer = title_layer.transform(
+        (layer_width, layer_height),
+        Image.AFFINE,
+        (1, 0.2, 0, 0, 1, 0),  # 正向斜切，斜度0.2
+        Image.BICUBIC
+    )
+
+    # 将斜体标题粘贴到主图层（继续往左上移动）
+    title_x = img_width - side_width - title_width - 70
+    title_y = card_y - 30
+    combined.paste(title_layer, (title_x, title_y), title_layer)
 
     up_thumbnails = [create_thumbnail(song, thumb_size) for song in up_songs[:grid_size[0] * grid_size[1]]]
     down_thumbnails = [create_thumbnail(song, thumb_size) for song in down_songs[:grid_size[0] * grid_size[1]]]
@@ -273,6 +307,31 @@ def generate_records_picture(up_songs=[], down_songs=[], title="RECORD"):
     # 计算up部分最后一行的底部位置
     up_rows = math.ceil(up_num / grid_size[0])
     total_up_y_offset = header_height + up_rows * (thumb_size[1] + spacing)
+
+    # 在上下部分中间绘制分隔线 (----·----) - 仅当同时有上下部分时显示
+    if up_songs and down_songs:
+        # 分隔线靠近上部，距离下部更远
+        divider_y = total_up_y_offset + version_padding // 3 + 2
+        divider_color = (140, 140, 140)  # 再加深颜色
+
+        # 计算中心点和线条长度（适中长度）
+        center_x = img_width // 2
+        line_half_length = (img_width - side_width * 2) // 2  # 线条长度为画布宽度的1/2
+
+        # 绘制左侧横线（更粗）
+        left_line_start = center_x - line_half_length // 2
+        left_line_end = center_x - 10
+        draw.line([(left_line_start, divider_y), (left_line_end, divider_y)], fill=divider_color, width=2)
+
+        # 绘制中心点（稍大）
+        dot_radius = 3
+        draw.ellipse([center_x - dot_radius, divider_y - dot_radius,
+                     center_x + dot_radius, divider_y + dot_radius], fill=divider_color)
+
+        # 绘制右侧横线（更粗）
+        right_line_start = center_x + 10
+        right_line_end = center_x + line_half_length // 2
+        draw.line([(right_line_start, divider_y), (right_line_end, divider_y)], fill=divider_color, width=2)
 
     for i, thumb in enumerate(down_thumbnails):
         x_offset = (i % grid_size[0]) * (thumb_size[0] + spacing) + side_width
