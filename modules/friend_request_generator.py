@@ -72,7 +72,7 @@ def generate_friend_request_message(requests: list, user_id: str = None) -> Flex
                     "action": {
                         "type": "message",
                         "label": "承認",
-                        "text": f"accept-request {req['request_id']}"
+                        "text": f"accept-friend-request {req['request_id']}"
                     }
                 },
                 {
@@ -82,7 +82,7 @@ def generate_friend_request_message(requests: list, user_id: str = None) -> Flex
                     "action": {
                         "type": "message",
                         "label": "拒否",
-                        "text": f"reject-request {req['request_id']}"
+                        "text": f"reject-friend-request {req['request_id']}"
                     }
                 }
             ]

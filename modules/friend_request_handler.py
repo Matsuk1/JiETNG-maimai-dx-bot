@@ -224,7 +224,7 @@ def reject_friend_request(user_id: str, request_id: str) -> TextMessage:
     return friend_request_rejected(from_user_name)
 
 
-def get_pending_requests(user_id: str) -> list:
+def get_pending_friend_requests(user_id: str) -> list:
     """
     获取待处理的好友申请列表
 

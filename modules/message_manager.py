@@ -258,6 +258,92 @@ friend_request_mutual_accepted_text = {
     "zh": "✅ 你们互相发送了申请，所以自动成为「{name}」的好友了！"
 }
 
+# 権限リクエスト関連 / Permission Request Related
+perm_request_sent_text = {
+    "ja": "✅ アクセス権限のリクエストを送信しました！\n「{name}」さんが承認するまでお待ちください〜",
+    "en": "✅ Access permission request sent!\nPlease wait for '{name}' to approve~",
+    "zh": "✅ 已发送访问权限请求！\n请等待「{name}」批准~"
+}
+
+perm_request_already_sent_text = {
+    "ja": "もうリクエスト送ったよ〜！承認を待っててね〜",
+    "en": "You've already sent a request~! Wait for approval~",
+    "zh": "你已经发送过请求了~！等待批准吧~"
+}
+
+perm_request_already_granted_text = {
+    "ja": "「{name}」さんへのアクセス権限はもう持ってるよ！",
+    "en": "You already have access permission to '{name}'!",
+    "zh": "你已经拥有「{name}」的访问权限了！"
+}
+
+perm_request_accepted_text = {
+    "ja": "✅ 「{name}」さん（{requester_name}）からのアクセス権限リクエストを承認しました！",
+    "en": "✅ Access permission granted to '{name}' ({requester_name})!",
+    "zh": "✅ 已批准来自「{name}」（{requester_name}）的访问权限请求！"
+}
+
+perm_request_rejected_text = {
+    "ja": "「{name}」さん（{requester_name}）からのアクセス権限リクエストを拒否しました",
+    "en": "Access permission request from '{name}' ({requester_name}) rejected",
+    "zh": "已拒绝来自「{name}」（{requester_name}）的访问权限请求"
+}
+
+perm_request_not_found_text = {
+    "ja": "あれ？そのリクエストもう処理しちゃったかも",
+    "en": "Hmm? That request might have been processed already",
+    "zh": "咦？那个请求可能已经处理过了"
+}
+
+# 权限请求通知相关文本
+perm_request_notification_title_text = {
+    "ja": "アクセス権限リクエスト • Permission Requests",
+    "en": "Access Permission Requests",
+    "zh": "访问权限请求"
+}
+
+perm_request_notification_subtitle_text = {
+    "ja": "{count} 件の新しいリクエスト",
+    "en": "{count} new requests",  # 简化处理，统一使用复数
+    "zh": "{count} 个新请求"
+}
+
+perm_request_accept_button_text = {
+    "ja": "承認",
+    "en": "Accept",
+    "zh": "接受"
+}
+
+perm_request_reject_button_text = {
+    "ja": "拒否",
+    "en": "Reject",
+    "zh": "拒绝"
+}
+
+perm_request_notification_alt_text = {
+    "ja": "{count} 件のアクセス権限リクエストがあります",
+    "en": "You have {count} access permission request(s)",
+    "zh": "你有 {count} 个访问权限请求"
+}
+
+perm_request_accept_success_text = {
+    "ja": "✅ アクセス権限リクエストを承認しました！\n\nToken ID: {token_id}\n申請者: {requester_name}\n\nこのトークンはあなたのアカウント情報にアクセスできるようになりました。",
+    "en": "✅ Access permission request accepted!\n\nToken ID: {token_id}\nRequester: {requester_name}\n\nThis token can now access your account information.",
+    "zh": "✅ 已接受访问权限请求！\n\nToken ID: {token_id}\n申请者: {requester_name}\n\n该 token 现在可以访问你的账户信息了。"
+}
+
+perm_request_reject_success_text = {
+    "ja": "✅ アクセス権限リクエストを拒否しました。\n\nToken ID: {token_id}\n申請者: {requester_name}",
+    "en": "✅ Access permission request rejected.\n\nToken ID: {token_id}\nRequester: {requester_name}",
+    "zh": "✅ 已拒绝访问权限请求。\n\nToken ID: {token_id}\n申请者: {requester_name}"
+}
+
+perm_request_error_text = {
+    "ja": "❌ エラー: {error}\n{message}",
+    "en": "❌ Error: {error}\n{message}",
+    "zh": "❌ 错误: {error}\n{message}"
+}
+
 # ============================================================
 # 管理者通知 / Admin Notifications
 # ============================================================
@@ -1003,6 +1089,38 @@ def friend_request_mutual_accepted(name, user_id=None):
     """生成互相添加好友的消息"""
     text = get_multilingual_text(friend_request_mutual_accepted_text, user_id).format(name=name)
     return TextMessage(text=text)
+
+def perm_request_sent(name, user_id=None):
+    """生成权限请求已发送消息"""
+    text = get_multilingual_text(perm_request_sent_text, user_id).format(name=name)
+    return TextMessage(text=text)
+
+def perm_request_already_sent(user_id=None):
+    """生成权限请求已发送消息"""
+    return create_text_message(perm_request_already_sent_text, user_id)
+
+def perm_request_already_granted(name, user_id=None):
+    """生成已拥有访问权限的消息"""
+    text = get_multilingual_text(perm_request_already_granted_text, user_id).format(name=name)
+    return TextMessage(text=text)
+
+def perm_request_accepted(name, requester_name, user_id=None):
+    """生成权限请求已接受消息"""
+    text = get_multilingual_text(perm_request_accepted_text, user_id).format(name=name, requester_name=requester_name)
+    return TextMessage(text=text)
+
+def perm_request_rejected(name, requester_name, user_id=None):
+    """生成权限请求已拒绝消息"""
+    text = get_multilingual_text(perm_request_rejected_text, user_id).format(name=name, requester_name=requester_name)
+    return TextMessage(text=text)
+
+def perm_request_not_found(user_id=None):
+    """生成权限请求未找到消息"""
+    return create_text_message(perm_request_not_found_text, user_id)
+
+def get_perm_request_notification_alt_text(count, user_id=None):
+    """获取权限请求通知的 alt text"""
+    return get_multilingual_text(perm_request_notification_alt_text, user_id).format(count=count)
 
 def notice_upload(user_id=None):
     """生成公告上传消息"""

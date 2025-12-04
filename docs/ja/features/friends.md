@@ -101,13 +101,13 @@ pending requests
 **コマンド形式：**
 
 ```
-accept-request [request_id]
+accept-friend-request [request_id]
 ```
 
 **例：**
 
 ```
-accept-request req_123456789
+accept-friend-request req_123456789
 ```
 
 :::tip Request ID について
@@ -119,13 +119,13 @@ Request ID はフレンドリクエスト通知に表示され、ユーザー ID
 **コマンド形式：**
 
 ```
-reject-request [request_id]
+reject-friend-request [request_id]
 ```
 
 **例：**
 
 ```
-reject-request req_123456789
+reject-friend-request req_123456789
 ```
 
 送信者にはリクエストを拒否したことは通知されません。
@@ -243,8 +243,8 @@ friend-b50 ABC123
 |------|------|
 | `friend list` | フレンドリストを表示 |
 | `add-friend [id]` | フレンドリクエストを送信 |
-| `accept-request [req_id]` | リクエストを承認 |
-| `reject-request [req_id]` | リクエストを拒否 |
+| `accept-friend-request [req_id]` | リクエストを承認 |
+| `reject-friend-request [req_id]` | リクエストを拒否 |
 | `friend-b50 [code]` | フレンドの Best 50 を表示 |
 
 ## 使用例
@@ -299,7 +299,7 @@ friend list
 add-friend U1234567890abcdef
 
 # 2. フレンドリクエストを承認
-accept-request req_123456789
+accept-friend-request req_123456789
 
 # 3. フレンドを表示
 friend list

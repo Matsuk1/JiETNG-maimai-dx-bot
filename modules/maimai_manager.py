@@ -612,25 +612,26 @@ async def get_maimai_info_async(cookies: dict, ver="jp"):
         nameplate_url = nameplate_dom.xpath('//img[contains(@class, "w_396") and contains(@class, "m_r_10")]/@src')
 
         # 称号
-        trophy_type = trophy_dom.xpath('//div[contains(@class, "block_info") and contains(@class, "f_11") and contains(@class, "orange")]/text()')
+        trophy_type_block = trophy_dom.xpath('//div[contains(@class, "block_info") and contains(@class, "f_11") and contains(@class, "orange")]/text()')
+        trophy_type = trophy_type_block[0].strip().lower() if trophy_type_block else "rainbow"
         trophy_blocks = trophy_dom.xpath('//div[contains(@class, "trophy_inner_block") and contains(@class, "f_13")]')
         if trophy_blocks:
             trophy_block = trophy_blocks[0]
             trophy_texts = trophy_block.xpath('.//text()')
-            trophy_content = trophy_texts[1] if len(trophy_texts) > 1 else ""
+            trophy_content = trophy_texts[1] if len(trophy_texts) > 1 else "ERROR"
         else:
-            trophy_content = ""
+            trophy_content = "ERROR"
 
         user_info = {
-            "name": user_name[0].strip() if user_name else "N/A",
-            "rating_block_url": rating_block_url[0] if rating_block_url else "N/A",
-            "rating": rating[0].strip() if rating else "N/A",
-            "cource_rank_url": cource_rank_url[0] if cource_rank_url else "N/A",
-            "class_rank_url": class_rank_url[0] if class_rank_url else "N/A",
-            "icon_url": icon_url[0] if icon_url else "N/A",
-            "nameplate_url": nameplate_url[0] if nameplate_url else "N/A",
-            "trophy_type": trophy_type[0].strip().lower() if trophy_type else "N/A",
-            "trophy_content": trophy_content.strip() if trophy_content else "N/A"
+            "name": user_name[0].strip() if user_name else "NAME_ERROR",
+            "rating_block_url": rating_block_url[0] if rating_block_url else "https://maimaidx.jp/maimai-mobile/img/rating_base_rainbow.png",
+            "rating": rating[0].strip() if rating else "17000",
+            "cource_rank_url": cource_rank_url[0] if cource_rank_url else "https://maimaidx.jp/maimai-mobile/img/course/course_rank_13KOI1uBwE.png",
+            "class_rank_url": class_rank_url[0] if class_rank_url else "https://maimaidx.jp/maimai-mobile/img/class/class_rank_s_01VFe8gl5z.png",
+            "icon_url": icon_url[0] if icon_url else "https://maimaidx.jp/maimai-mobile/img/Icon/c22d52b387e3f829.png",
+            "nameplate_url": nameplate_url[0] if nameplate_url else "https://maimaidx.jp/maimai-mobile/img/NamePlate/5b993ef9ee53b77e.png",
+            "trophy_url": f"https://maimaidx.jp/maimai-mobile/img/trophy_{trophy_type}.png",
+            "trophy_content": trophy_content.strip() if trophy_content else "TROPHY_ERROR"
         }
 
         return user_info

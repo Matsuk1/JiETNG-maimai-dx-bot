@@ -101,13 +101,13 @@ pending requests
 **命令格式：**
 
 ```
-accept-request [request_id]
+accept-friend-request [request_id]
 ```
 
 **示例：**
 
 ```
-accept-request req_123456789
+accept-friend-request req_123456789
 ```
 
 :::tip 关于 Request ID
@@ -119,13 +119,13 @@ Request ID 会显示在好友请求通知中，它不同于用户 ID，是该请
 **命令格式：**
 
 ```
-reject-request [request_id]
+reject-friend-request [request_id]
 ```
 
 **示例：**
 
 ```
-reject-request req_123456789
+reject-friend-request req_123456789
 ```
 
 发送方不会被告知你拒绝了请求。
@@ -243,8 +243,8 @@ friend-b50 ABC123
 |------|------|
 | `friend list` | 查看好友列表 |
 | `add-friend [id]` | 发送好友请求 |
-| `accept-request [req_id]` | 接受请求 |
-| `reject-request [req_id]` | 拒绝请求 |
+| `accept-friend-request [req_id]` | 接受请求 |
+| `reject-friend-request [req_id]` | 拒绝请求 |
 | `friend-b50 [code]` | 查看好友 Best 50 |
 
 ## 使用示例
@@ -299,7 +299,7 @@ friend list
 add-friend U1234567890abcdef
 
 # 2. 接受好友请求
-accept-request req_123456789
+accept-friend-request req_123456789
 
 # 3. 查看好友
 friend list

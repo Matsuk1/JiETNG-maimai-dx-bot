@@ -20,8 +20,10 @@ from linebot.v3.messaging import (
 from modules.config_loader import USERS
 from modules.user_manager import get_user_value, edit_user_value
 from modules.notice_manager import get_latest_notice
-from modules.friend_request_handler import get_pending_requests
+from modules.friend_request_handler import get_pending_friend_requests
 from modules.friend_request_generator import generate_friend_request_message
+from modules.perm_request_handler import get_pending_perm_requests
+from modules.perm_request_generator import generate_perm_request_message
 from modules.message_manager import tip_messages, get_notice_header
 
 logger = logging.getLogger(__name__)
@@ -87,9 +89,15 @@ def smart_reply(user_id: str, reply_token: str, messages, configuration: Configu
 
     # 只有当消息数量小于5时，才添加附加消息
     if len(messages) < 5:
-        # 优先级1: 好友申请消息
+        # 优先级1: 好友申请与权限申请消息
         if user_id in USERS:
-            pending_requests = get_pending_requests(user_id)
+            perm_requests = get_pending_perm_requests(user_id)
+            if perm_requests and len(messages) < 5:
+                perm_request_msg = generate_perm_request_message(perm_requests, user_id)
+                if perm_request_msg:
+                    messages.append(perm_request_msg)
+
+            pending_requests = get_pending_friend_requests(user_id)
             if pending_requests and len(messages) < 5:
                 friend_request_msg = generate_friend_request_message(pending_requests, user_id)
                 if friend_request_msg:

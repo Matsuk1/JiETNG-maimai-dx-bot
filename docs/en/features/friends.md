@@ -101,13 +101,13 @@ pending requests
 **Command Format:**
 
 ```
-accept-request [request_id]
+accept-friend-request [request_id]
 ```
 
 **Example:**
 
 ```
-accept-request req_123456789
+accept-friend-request req_123456789
 ```
 
 :::tip About Request ID
@@ -119,13 +119,13 @@ Request ID is displayed in the friend request notification. It's different from 
 **Command Format:**
 
 ```
-reject-request [request_id]
+reject-friend-request [request_id]
 ```
 
 **Example:**
 
 ```
-reject-request req_123456789
+reject-friend-request req_123456789
 ```
 
 The sender will not be notified that you rejected the request.
@@ -243,8 +243,8 @@ friend-b50 ABC123
 |------|------|
 | `friend list` | View friend list |
 | `add-friend [id]` | Send friend request |
-| `accept-request [req_id]` | Accept request |
-| `reject-request [req_id]` | Reject request |
+| `accept-friend-request [req_id]` | Accept request |
+| `reject-friend-request [req_id]` | Reject request |
 | `friend-b50 [code]` | View friend Best 50 |
 
 ## Usage Examples
@@ -299,7 +299,7 @@ Follow the [GitHub project page](https://github.com/Matsuk1/JiETNG) for latest u
 add-friend U1234567890abcdef
 
 # 2. Accept friend request
-accept-request req_123456789
+accept-friend-request req_123456789
 
 # 3. View friends
 friend list
