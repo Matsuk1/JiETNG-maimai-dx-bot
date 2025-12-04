@@ -159,9 +159,6 @@ POST /api/v1/register/<user_id>
 - `nickname`: **Required**, user nickname (automatically fetched from LINE API for LINE users, otherwise use this parameter)
 - `language`: Language setting (ja/en/zh, optional, defaults to en)
 
-**Requirements:**
-- `user_id` must start with `U` (LINE user ID format)
-
 **Nickname Priority:**
 1. Automatically fetch from LINE API (if LINE user)
 2. Get from user data's nickname field
@@ -674,20 +671,12 @@ LINE users receive FlexMessage notifications for permission requests and can app
 **Cases:**
 - Missing required parameters (e.g., register endpoint missing nickname)
 - Invalid parameter values (e.g., language not in allowed list)
-- Invalid user_id format (e.g., register endpoint user_id doesn't start with 'U')
 
 **Response Example:**
 ```json
 {
   "error": "Missing parameter",
   "message": "Parameter 'nickname' is required"
-}
-```
-
-```json
-{
-  "error": "Invalid user_id",
-  "message": "user_id must start with 'U'"
 }
 ```
 

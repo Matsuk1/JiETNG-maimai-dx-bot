@@ -156,9 +156,6 @@ POST /api/v1/register/<user_id>
 - `nickname`: **必需**，用户昵称（如果是LINE用户会自动从LINE API获取，非LINE用户则使用此参数）
 - `language`: 语言设置 (ja/en/zh，可选，默认 en)
 
-**要求:**
-- `user_id` 必须以 `U` 开头（LINE用户ID格式）
-
 **昵称获取优先级:**
 1. 从 LINE API 自动获取（如果是 LINE 用户）
 2. 从用户数据中的 nickname 字段获取
@@ -700,13 +697,6 @@ LINE 用户会收到权限请求的 FlexMessage 通知，可以直接在 LINE �
 {
   "error": "Missing parameter",
   "message": "Parameter 'nickname' is required"
-}
-```
-
-```json
-{
-  "error": "Invalid user_id",
-  "message": "user_id must start with 'U'"
 }
 ```
 

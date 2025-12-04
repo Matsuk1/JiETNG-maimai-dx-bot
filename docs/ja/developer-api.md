@@ -156,9 +156,6 @@ POST /api/v1/register/<user_id>
 - `nickname`: **必須**、ユーザーのニックネーム（LINEユーザーの場合はLINE APIから自動取得、それ以外の場合はこのパラメータを使用）
 - `language`: 言語設定 (ja/en/zh、オプション、デフォルトはen)
 
-**要件:**
-- `user_id` は `U` で始まる必要があります（LINE ユーザーID形式）
-
 **ニックネーム取得の優先順位:**
 1. LINE APIから自動取得（LINEユーザーの場合）
 2. ユーザーデータのnicknameフィールドから取得
@@ -559,13 +556,6 @@ LINE ユーザーは権限リクエストの FlexMessage 通知を受け取り�
 {
   "error": "Missing parameter",
   "message": "Parameter 'nickname' is required"
-}
-```
-
-```json
-{
-  "error": "Invalid user_id",
-  "message": "user_id must start with 'U'"
 }
 ```
 
