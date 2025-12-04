@@ -465,6 +465,21 @@ curl -X POST -H "Authorization: Bearer abc123..." \
 }
 ```
 
+**エラーレスポンス:**
+```json
+{
+  "error": "Permission already granted",
+  "message": "Token already has access to user U123456"
+}
+```
+
+```json
+{
+  "error": "Request already sent",
+  "message": "Permission request already sent, waiting for approval"
+}
+```
+
 #### 11. 権限リクエスト一覧の表示
 
 ```http
@@ -481,6 +496,31 @@ curl -H "Authorization: Bearer abc123..." \
      https://jietng.matsuki.top/api/v1/perm/U123456/requests
 ```
 
+**レスポンス:**
+```json
+{
+  "success": true,
+  "user_id": "U123456",
+  "count": 2,
+  "requests": [
+    {
+      "request_id": "20250203120000_jt_abc123",
+      "token_id": "jt_abc123",
+      "token_note": "MyApp",
+      "requester_name": "MyApp",
+      "timestamp": "2025-02-03 12:00:00"
+    },
+    {
+      "request_id": "20250203130000_jt_def456",
+      "token_id": "jt_def456",
+      "token_note": "AnotherApp",
+      "requester_name": "AnotherApp",
+      "timestamp": "2025-02-03 13:00:00"
+    }
+  ]
+}
+```
+
 #### 12. 権限リクエストの承認
 
 ```http
@@ -493,6 +533,33 @@ POST /api/v1/perm/<user_id>/accept
 
 **リクエストボディ (JSON):**
 - `request_id`: **必須**、承認する権限リクエストID
+
+**例:**
+```bash
+curl -X POST -H "Authorization: Bearer abc123..." \
+     -H "Content-Type: application/json" \
+     -d '{"request_id":"20250203120000_jt_abc123"}' \
+     https://jietng.matsuki.top/api/v1/perm/U123456/accept
+```
+
+**レスポンス:**
+```json
+{
+  "success": true,
+  "user_id": "U123456",
+  "token_id": "jt_abc123",
+  "token_note": "MyApp",
+  "message": "Permission granted to token jt_abc123"
+}
+```
+
+**エラーレスポンス:**
+```json
+{
+  "error": "Request not found",
+  "message": "Permission request not found or already processed"
+}
+```
 
 #### 13. 権限リクエストの拒否
 
@@ -507,6 +574,25 @@ POST /api/v1/perm/<user_id>/reject
 **リクエストボディ (JSON):**
 - `request_id`: **必須**、拒否する権限リクエストID
 
+**例:**
+```bash
+curl -X POST -H "Authorization: Bearer abc123..." \
+     -H "Content-Type: application/json" \
+     -d '{"request_id":"20250203120000_jt_abc123"}' \
+     https://jietng.matsuki.top/api/v1/perm/U123456/reject
+```
+
+**レスポンス:**
+```json
+{
+  "success": true,
+  "user_id": "U123456",
+  "token_id": "jt_abc123",
+  "token_note": "MyApp",
+  "message": "Permission request from token jt_abc123 rejected"
+}
+```
+
 #### 14. 付与された権限の取り消し
 
 ```http
@@ -519,6 +605,24 @@ POST /api/v1/perm/<user_id>/revoke
 
 **リクエストボディ (JSON):**
 - `token_id`: **必須**、権限を取り消すトークンID
+
+**例:**
+```bash
+curl -X POST -H "Authorization: Bearer abc123..." \
+     -H "Content-Type: application/json" \
+     -d '{"token_id":"jt_abc123"}' \
+     https://jietng.matsuki.top/api/v1/perm/U123456/revoke
+```
+
+**レスポンス:**
+```json
+{
+  "success": true,
+  "user_id": "U123456",
+  "token_id": "jt_abc123",
+  "message": "Permission revoked for token jt_abc123"
+}
+```
 
 ### LINE ユーザーの権限管理
 

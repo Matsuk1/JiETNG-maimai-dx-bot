@@ -548,6 +548,14 @@ curl -X POST -H "Authorization: Bearer abc123..." \
 }
 ```
 
+**Error Response:**
+```json
+{
+  "error": "Request not found",
+  "message": "Permission request not found or already processed"
+}
+```
+
 #### 13. Reject Permission Request
 
 ```http
