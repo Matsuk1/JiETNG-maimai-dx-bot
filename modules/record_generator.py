@@ -205,10 +205,10 @@ def generate_records_picture(up_songs=[], down_songs=[], title="RECORD"):
     spacing = 10
     header_height = 220  # 增加header高度，拉开与下方元素的距离
 
-    version_padding = 0 if not (up_songs and down_songs) else 20
+    version_padding = 0 if not (up_songs and down_songs) else 5  # 减少上下部分间距
 
     img_width = grid_size[0] * (thumb_size[0] + spacing) - spacing + side_width * 2
-    img_height = header_height + grid_size[1] * (thumb_size[1] + spacing) + version_padding + 30
+    img_height = header_height + grid_size[1] * (thumb_size[1] + spacing) + version_padding + 20
     combined = Image.new("RGB", (img_width, img_height), (255, 255, 255))
     draw = ImageDraw.Draw(combined)
 
@@ -270,11 +270,13 @@ def generate_records_picture(up_songs=[], down_songs=[], title="RECORD"):
         y_offset = header_height + (i // grid_size[0]) * (thumb_size[1] + spacing)
         combined.paste(thumb, (x_offset, y_offset))
 
-    total_up_y_offset = header_height + ((up_num - 1) // grid_size[0]) * (thumb_size[1] + spacing)
+    # 计算up部分最后一行的底部位置
+    up_rows = math.ceil(up_num / grid_size[0])
+    total_up_y_offset = header_height + up_rows * (thumb_size[1] + spacing)
 
     for i, thumb in enumerate(down_thumbnails):
         x_offset = (i % grid_size[0]) * (thumb_size[0] + spacing) + side_width
-        y_offset = header_height + (i // grid_size[0]) * (thumb_size[1] + spacing) + version_padding + total_up_y_offset - spacing
+        y_offset = total_up_y_offset + version_padding + (i // grid_size[0]) * (thumb_size[1] + spacing)
         combined.paste(thumb, (x_offset, y_offset))
 
     return combined
