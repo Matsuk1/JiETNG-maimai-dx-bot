@@ -21,11 +21,11 @@ def _upload_to_uguu(img):
             if data.get("success") and data.get("files"):
                 return data["files"][0]["url"]
             else:
-                logger.error(" 上传失败：", data)
+                logger.error(" Upload failed:", data)
         else:
-            logger.error(" 请求失败：", resp.status_code)
+            logger.error(" Request failed:", resp.status_code)
     except Exception as e:
-        logger.error(" 解析响应异常：", e)
+        logger.error(" Response parsing error:", e)
 
     return None
 
@@ -42,16 +42,16 @@ def _upload_to_0x0(img):
         if response.status_code == 200 and response.text.startswith("https://0x0.st/"):
             return response.text.strip()
         else:
-            logger.error(" 上传失败：", response.text)
+            logger.error(" Upload failed:", response.text)
     except Exception as e:
-        logger.error(" 异常：", e)
+        logger.error(" Exception:", e)
 
     return None
 
 def _upload_to_imgur(img):
     """上传图片到 Imgur"""
     if not IMGUR_CLIENT_ID:
-        logger.error(" Client ID 未配置")
+        logger.error(" Client ID not configured")
         return None
 
     url = "https://api.imgur.com/3/image"
@@ -70,11 +70,11 @@ def _upload_to_imgur(img):
             if data.get("success") and data.get("data"):
                 return data["data"]["link"]
             else:
-                logger.error(" 上传失败：", data)
+                logger.error(" Upload failed:", data)
         else:
-            logger.error(" 请求失败：", response.status_code, response.text)
+            logger.error(" Request failed:", response.status_code, response.text)
     except Exception as e:
-        logger.error(" 异常：", e)
+        logger.error(" Exception:", e)
 
     return None
 
@@ -94,12 +94,12 @@ def smart_upload(img):
     original_io.seek(0)
 
     # 上传原图
-    logger.info(" 上传原图...")
+    logger.info(" Uploading original image...")
     original_url = None
 
     # 优先尝试 imgur
     if IMGUR_CLIENT_ID:
-        logger.info(" 使用 imgur 上传原图")
+        logger.info(" Using imgur to upload original")
         url = "https://api.imgur.com/3/image"
         headers = {"Authorization": f"Client-ID {IMGUR_CLIENT_ID}"}
         files = {'image': original_io}
@@ -111,12 +111,12 @@ def smart_upload(img):
                 if data.get("success") and data.get("data"):
                     original_url = data["data"]["link"]
         except Exception as e:
-            logger.error(f" 异常: {e}")
+            logger.error(f" Exception: {e}")
 
         original_io.seek(0)  # 重置指针以供后续使用
 
     if not original_url:
-        logger.info(" 使用 uguu 上传原图")
+        logger.info(" Using uguu to upload original")
         files = {'files[]': ('image.png', original_io, 'image/png')}
         try:
             resp = requests.post("https://uguu.se/upload.php", files=files)
@@ -125,24 +125,24 @@ def smart_upload(img):
                 if data.get("success") and data.get("files"):
                     original_url = data["files"][0]["url"]
         except Exception as e:
-            logger.error(f" 异常: {e}")
+            logger.error(f" Exception: {e}")
 
         original_io.seek(0)
 
     if not original_url:
-        logger.info(" 使用 0x0 上传原图")
+        logger.info(" Using 0x0 to upload original")
         files = {'file': ('image.png', original_io, 'image/png')}
         try:
             response = requests.post("https://0x0.st", files=files)
             if response.status_code == 200 and response.text.startswith("https://0x0.st/"):
                 original_url = response.text.strip()
         except Exception as e:
-            logger.error(f" 异常: {e}")
+            logger.error(f" Exception: {e}")
 
     if not original_url:
-        logger.info(" 原图上传失败")
+        logger.info(" Original upload failed")
         return None, None
 
     # 不再上传预览图，直接使用原图
-    logger.info(f" 上传完成 - 原图: {original_url}")
+    logger.info(f" Upload complete - original: {original_url}")
     return original_url, original_url

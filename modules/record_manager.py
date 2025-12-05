@@ -4,6 +4,7 @@
 提供数据库操作、Rating计算、成绩数据处理等功能
 """
 
+import logging
 from typing import List, Dict, Any, Optional
 from modules.config_loader import (
     MAIMAI_VERSION,
@@ -14,6 +15,8 @@ from modules.config_loader import (
 )
 from modules.dbpool_manager import get_connection
 
+# 获取logger
+logger = logging.getLogger(__name__)
 
 def get_single_ra(level: float, score: float, ap_clear: bool = False) -> int:
     """
@@ -172,7 +175,7 @@ def read_record(user_id: str, recent: bool = False, yang: bool = False) -> List[
 
 def write_record(user_id, record_json, recent=False):
     table = "recent_records" if recent else "best_records"
-    print(f"[*] Writing to DB table {table} for user_id = {user_id}\n")
+    logger.warning(f"[*] Writing to DB table {table} for user_id = {user_id}\n")
 
     conn = get_connection()
 
@@ -212,7 +215,7 @@ def write_record(user_id, record_json, recent=False):
 
 def delete_record(user_id, recent=False):
     table = "recent_records" if recent else "best_records"
-    print(f"[*] Deleting from DB table {table} for user_id = {user_id}\n")
+    logger.warning(f"[*] Deleting from DB table {table} for user_id = {user_id}\n")
 
     conn = get_connection()
 

@@ -20,7 +20,7 @@ def song_info_generate(song_json, played_data = []):
     else:
         cover_img = cover_img.convert("RGBA")
 
-    img1 = _render_basic_info_image(song_json, cover_img)
+    img1 = _render_basic_info_image(song_json, round_corner(cover_img))
 
     if not played_data:
         img2 = resize_by_width(_generate_song_table_image(song_json), 1200)
@@ -31,28 +31,6 @@ def song_info_generate(song_json, played_data = []):
     song_img = compose_images([img1, img2])
 
     return song_img
-
-def _makeup_played_data(played_data, gap=20):
-    rcd_imgs = []
-    for rcd in played_data:
-        rcd_imgs.append(create_thumbnail(rcd))
-
-    widths = [img.width for img in rcd_imgs]
-    heights = [img.height for img in rcd_imgs]
-
-    max_width = max(widths)
-    total_height = sum(heights) + gap * (len(rcd_imgs) - 1)
-
-    # 创建新图片
-    new_img = Image.new("RGB", (max_width, total_height), color=(255, 255, 255))
-
-    # 逐张粘贴
-    current_y = 0
-    for img in rcd_imgs:
-        new_img.paste(img, (0, current_y))
-        current_y += img.height + gap
-
-    return new_img
 
 def _render_basic_info_image(song_json, cover_img):
     # 参数设定
@@ -91,24 +69,21 @@ def _render_basic_info_image(song_json, cover_img):
     version = song_json.get("version", "バージョン不明")
 
     info_text = [
-        f"アーティスト: {artist}",
+        truncate_text(draw, f"アーティスト: {artist}", font_info, canvas_width - text_x - margin),
         f"類別: {category}",
         f"BPM: {bpm}",
         f"バージョン: {version}"
     ]
 
     # 标题
+    title = truncate_text(draw, title, font_title, canvas_width - text_x - margin)
     draw.text((text_x, text_y), title, font=font_title, fill=(0, 0, 0))
     title_width = draw.textlength(title, font=font_title)
-
-    # 横线
-    line_y = text_y + 45
-    draw.line([(text_x, line_y), (text_x + max(title_width+10, 600), line_y)], fill=(100, 100, 100), width=2)
 
     draw_aligned_colon_text(
         draw,
         lines=info_text,
-        top_left=(text_x, line_y + 15),  # 左上角起始坐标
+        top_left=(text_x, text_y + 60),
         font=font_info,
         spacing=8,
         fill=(0, 0, 0)
@@ -192,6 +167,28 @@ def _generate_song_table_image(song_json, scale_width=1.5, scale_height=2.0):
 
     return image
 
+def _makeup_played_data(played_data, gap=20):
+    rcd_imgs = []
+    for rcd in played_data:
+        rcd_imgs.append(create_thumbnail(rcd))
+
+    widths = [img.width for img in rcd_imgs]
+    heights = [img.height for img in rcd_imgs]
+
+    max_width = max(widths)
+    total_height = sum(heights) + gap * (len(rcd_imgs) - 1)
+
+    # 创建新图片
+    new_img = Image.new("RGB", (max_width, total_height), color=(255, 255, 255))
+
+    # 逐张粘贴
+    current_y = 0
+    for img in rcd_imgs:
+        new_img.paste(img, (0, current_y))
+        current_y += img.height + gap
+
+    return new_img
+
 def _render_song_info_small_img(song_json, cover_img):
     # 参数设定
     canvas_width = 1000
@@ -271,7 +268,9 @@ def generate_version_list(songs_json):
         else:
             cover_img = cover_img.convert("RGBA")
 
-        song_imgs.append(wrap_in_rounded_background(_render_song_info_small_img(song, cover_img)))
+        song_img = _render_song_info_small_img(song, round_corner(cover_img))
+        song_img = wrap_in_rounded_background(song_img)
+        song_imgs.append(song_img)
 
     return _concat_images_grid(song_imgs)
 

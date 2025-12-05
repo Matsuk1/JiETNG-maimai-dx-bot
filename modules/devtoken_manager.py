@@ -32,7 +32,7 @@ def save_dev_tokens(tokens):
     except Exception:
         return False
 
-def generate_token():
+def generate_dev_token():
     """生成一个安全的随机 token"""
     return secrets.token_urlsafe(32)
 
@@ -55,7 +55,7 @@ def create_dev_token(note, created_by):
         token_id = f"jt_{secrets.token_hex(8)}"
 
     # 生成实际的 token
-    token = generate_token()
+    token = generate_dev_token()
 
     # 创建 token 数据
     created_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')

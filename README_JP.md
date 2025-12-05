@@ -36,7 +36,7 @@
 - **データセキュリティ**: SEGA アカウント情報を Fernet 暗号化で保存
 - **管理パネル**: 完全な Web 管理インターフェース
 - **パフォーマンス最適化**: デュアルキューアーキテクチャ（画像キュー/ネットワークキュー）と頻度制限
-- **多言語対応**: 日本語インターフェース、中英文ドキュメント
+- **多言語対応**: 日本語/英語/中国語インターフェース、多言語ドキュメント
 
 ---
 
@@ -178,6 +178,7 @@ mysql -u jietng -p records < records_db.sql
     },
     "urls": {
         "line_adding": "https://line.me/R/ti/p/@yourlineid",
+        "support_page": "https://github.com/Matsuk1/JiETNG/blob/main/COMMANDS.md",
         "dxdata": [
             "https://raw.githubusercontent.com/gekichumai/dxrating/refs/heads/main/packages/dxdata/dxdata.json",
             "https://dp4p6x0xfi5o9.cloudfront.net/maimai/data.json"
@@ -362,6 +363,7 @@ JiETNG/
 ├── modules/                   # 機能モジュール
 │   ├── config_loader.py       # 設定ローダー
 │   ├── dbpool_manager.py      # データベース接続プール
+│   ├── devtoken_manager.py    # 開発者トークン管理
 │   ├── user_manager.py        # ユーザー管理 + ニックネームキャッシュ
 │   ├── maimai_manager.py      # Maimai API インターフェース
 │   ├── record_manager.py      # データベース操作
@@ -370,22 +372,21 @@ JiETNG/
 │   ├── image_manager.py       # 画像処理
 │   ├── image_cache.py         # 画像キャッシュ
 │   ├── image_matcher.py       # 画像認識（カバーマッチング、ハッシュ+SIFT特徴点対応）
-│   ├── image_uploader.py      # 画像アップロード
-│   ├── token_manager.py       # トークン管理
-│   ├── friend_list.py         # フレンドインターフェース
+│   ├── image_uploader.py      # 画像アップロード（Imgur/uguu/0x0）
+│   ├── bindtoken_manager.py   # バインドトークン管理
+│   ├── friendlist_generator.py # フレンドリスト生成（Flex Message）
 │   ├── notice_manager.py      # お知らせシステム
 │   ├── dxdata_manager.py      # 楽曲データ管理
-│   ├── note_score.py          # スコア計算
 │   ├── json_encrypt.py        # 暗号化ツール
 │   ├── rate_limiter.py        # 頻度制限 + リクエスト追跡
 │   ├── line_messenger.py      # LINE メッセージ送信
 │   ├── song_matcher.py        # 楽曲検索（あいまい一致対応）
 │   ├── memory_manager.py      # メモリ管理とクリーンアップ
 │   ├── system_checker.py      # システム自己診断
-│   ├── store_list.py          # 設置店舗リスト生成（Flex Message）
-│   ├── friend_request.py      # フレンド申請生成
+│   ├── storelist_generator.py # 設置店舗リスト生成（Flex Message）
+│   ├── friend_request_generator.py # フレンド申請生成（Flex Message）
 │   ├── friend_request_handler.py  # フレンド申請処理
-│   └── reply_text.py          # メッセージテンプレート（寄付情報と Tips 含む）
+│   └── message_manager.py     # 多言語メッセージ管理（お知らせと Tips 含む）
 ├── templates/                 # HTML テンプレート
 │   ├── bind_form.html         # アカウント連携フォーム
 │   ├── success.html           # 成功ページ
@@ -402,6 +403,121 @@ JiETNG/
     ├── fonts/                 # フォントファイル
     ├── pics/                  # 画像
     └── icon/                  # アイコンリソース
+```
+
+### データベース構造
+
+#### best_records テーブル
+
+```sql
+CREATE TABLE best_records (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id VARCHAR(64),
+    name VARCHAR(255),
+    difficulty VARCHAR(20),
+    type VARCHAR(10),
+    score VARCHAR(20),
+    dx_score VARCHAR(20),
+    score_icon VARCHAR(10),
+    combo_icon VARCHAR(10),
+    sync_icon VARCHAR(10),
+    INDEX(user_id)
+);
+```
+
+#### recent_records テーブル
+
+`best_records` と同じ構造で、最近のプレイ記録を保存します。
+
+### API エンドポイント
+
+#### Webhook 受信
+
+```
+POST /linebot/webhook
+Headers:
+  X-Line-Signature: <signature>
+Body: LINE webhook event JSON
+```
+
+#### SEGA アカウント連携
+
+```
+GET/POST /linebot/sega_bind?token=<token>
+```
+
+#### フレンド追加
+
+```
+GET /linebot/add_friend?id=<friend_id>
+```
+
+#### 管理パネル API
+
+```
+GET/POST /linebot/admin                    # 管理者ログイン/ダッシュボード
+GET      /linebot/admin/logout             # ログアウト
+POST     /linebot/admin/trigger_update     # ユーザー更新トリガー
+POST     /linebot/admin/edit_user          # ユーザーデータ編集
+POST     /linebot/admin/delete_user        # ユーザー削除
+POST     /linebot/admin/get_user_data      # ユーザーデータ取得
+POST     /linebot/admin/load_nicknames     # ニックネーム一括読み込み
+POST     /linebot/admin/clear_cache        # ニックネームキャッシュクリア
+POST     /linebot/admin/cancel_task        # タスクキャンセル
+GET      /linebot/admin/task_status        # タスク状態取得
+GET      /linebot/admin/get_logs           # ログ取得
+GET      /linebot/admin/memory_stats       # メモリ統計取得
+POST     /linebot/admin/trigger_cleanup    # 手動メモリクリーンアップ
+```
+
+### 設定リファレンス
+
+#### 完全な config.json
+
+```json
+{
+    "admin_id": ["U0123..."],              // LINE 管理者ユーザー ID
+    "admin_password": "secure_pwd",        // 管理パネルパスワード
+    "maimai_version": {
+        "jp": ["PRiSM PLUS", "CiRCLE"],    // 日本版バージョン
+        "intl": ["PRiSM PLUS"]             // 国際版バージョン
+    },
+    "domain": "jietng.example.com",        // サービスドメイン
+    "port": 5100,                          // サービスポート
+    "file_path": {
+        "dxdata_list": "./data/dxdata.json",
+        "dxdata_version": "./data/dxdata_version.json",
+        "re_dxdata_list": "./data/re_dxdata.csv",
+        "user_list": "./data/user.json.enc",
+        "notice_file": "./data/notice.json",
+        "font": "./assets/fonts/mplus-jietng.ttf",
+        "logo": "./assets/pics/logo.jpg"
+    },
+    "record_database": {
+        "host": "localhost",
+        "user": "jietng",
+        "password": "your_password",
+        "database": "records"
+    },
+    "urls": {
+        "line_adding": "https://line.me/R/ti/p/@yourlineid",
+        "support_page": "https://github.com/Matsuk1/JiETNG/blob/main/COMMANDS.md",
+        "dxdata": [
+            "https://raw.githubusercontent.com/gekichumai/dxrating/refs/heads/main/packages/dxdata/dxdata.json",
+            "https://dp4p6x0xfi5o9.cloudfront.net/maimai/data.json"
+        ]
+    },
+    "line_channel": {
+        "account_id": "@yourlineid",
+        "access_token": "YOUR_TOKEN",
+        "secret": "YOUR_SECRET"
+    },
+    "keys": {
+        "user_data": "AUTO_GENERATED_KEY",     // 自動生成 Fernet キー
+        "bind_token": "AUTO_GENERATED_TOKEN",  // 自動生成バインドトークン
+        "imgur_client_id": "YOUR_IMGUR_CLIENT_ID"  // Imgur API Client ID（オプション）
+    }
+}
 ```
 
 ---
@@ -442,6 +558,47 @@ SHOW GRANTS FOR 'jietng'@'localhost';
 - LINE Developers Console の Webhook URL が正しいか確認
 - HTTPS が有効になっているか確認（LINE が要求）
 
+#### 画像生成失敗
+
+**問題**: フォントやアイコンの欠落
+
+**解決方法**:
+```bash
+# フォントファイルを確認
+ls assets/fonts/mplus-jietng.ttf
+
+# アイコンディレクトリを確認
+ls assets/icon/combo/
+ls assets/icon/score/
+```
+
+#### 管理パネルログイン失敗
+
+**問題**: パスワードが間違っているか未設定
+
+**解決方法**:
+```json
+// config.json に admin_password が存在するか確認
+{
+    "admin_password": "your_password"
+}
+```
+
+```bash
+# サービスを再起動して設定を反映
+sudo systemctl restart jietng
+```
+
+### ログ表示
+
+```bash
+# リアルタイムログを表示
+tail -f jietng.log
+
+# systemd を使用
+journalctl -u jietng -f
+```
+
 ---
 
 ## コントリビューション
@@ -455,6 +612,13 @@ Issue と Pull Request の提出を歓迎します！
 3. 変更をコミット：`git commit -am 'Add some feature'`
 4. ブランチをプッシュ：`git push origin feature/your-feature`
 5. Pull Request を提出
+
+### コード規約
+
+- PEP 8 コーディング規約に従う
+- 型アノテーションを追加
+- docstring を記述
+- 提出前にテストを実行（利用可能な場合）
 
 ---
 

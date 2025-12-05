@@ -3,6 +3,7 @@ import re
 import sys
 import os
 import math
+import logging
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -17,6 +18,9 @@ from modules.config_loader import (
 )
 from modules.image_cache import *
 from modules.image_manager import *
+
+# 获取logger
+logger = logging.getLogger(__name__)
 
 def _get_difficulty_color(difficulty):
     colors = {
@@ -48,10 +52,11 @@ def create_thumbnail(song, thumb_size=(300, 150), padding=15):
             )
             if cover_img:
                 # 使用 LANCZOS 高质量重采样
+                cover_img = round_corner(cover_img)
                 cover_img = cover_img.resize((cover_size, cover_size), Image.Resampling.LANCZOS)
-                img.paste(cover_img, (padding, padding))
+                img.paste(cover_img, (padding, padding), cover_img)
         except Exception as e:
-            print(f"Error loading cover image: {e}")
+            logger.error(f"Error loading cover image: {e}")
 
     # --- type 图标 ---
     # 根据封面尺寸动态计算图标大小
@@ -136,7 +141,7 @@ def create_thumbnail(song, thumb_size=(300, 150), padding=15):
             )
 
         except Exception as e:
-            print(f"Error calculating dx_star: {e}")
+            logger.error(f"Error calculating dx_star: {e}")
 
     # --- combo_icon 图标 ---
     # 根据缩略图尺寸动态计算图标大小
@@ -497,7 +502,7 @@ def generate_cover(cover, type, icon=None, icon_type=None, size=150, cover_name=
                 record_img.paste(resized_img, (x_offset, y_offset), resized_img.convert("RGBA"))
 
         except Exception as e:
-            print(f"Error loading icon {icon}: {e}")
+            logger.error(f"Error loading icon {icon}: {e}")
 
     return record_img.convert("RGB")
 

@@ -36,7 +36,7 @@ Supports Japanese and International servers
 - **Data Security**: SEGA account information encrypted using Fernet encryption
 - **Admin Dashboard**: Comprehensive web-based management interface
 - **Performance Optimization**: Dual-queue architecture (image/network queues) with rate limiting
-- **Multi-language Support**: Japanese interface with English documentation
+- **Multi-language Support**: Japanese/English/Chinese interface with multilingual documentation
 
 ---
 
@@ -239,6 +239,7 @@ Edit `config.json` with your settings:
     },
     "urls": {
         "line_adding": "https://line.me/R/ti/p/@yourlineid",
+        "support_page": "https://github.com/Matsuk1/JiETNG/blob/main/COMMANDS.md",
         "dxdata": [
             "https://raw.githubusercontent.com/gekichumai/dxrating/refs/heads/main/packages/dxdata/dxdata.json",
             "https://dp4p6x0xfi5o9.cloudfront.net/maimai/data.json"
@@ -423,6 +424,7 @@ JiETNG/
 ├── modules/                   # Functional modules
 │   ├── config_loader.py       # Configuration loader
 │   ├── dbpool_manager.py      # Database connection pool
+│   ├── devtoken_manager.py    # Developer token management
 │   ├── user_manager.py        # User management + nickname cache
 │   ├── maimai_manager.py      # Maimai API interface
 │   ├── record_manager.py      # Database operations
@@ -430,23 +432,22 @@ JiETNG/
 │   ├── song_generator.py      # Song chart generation
 │   ├── image_manager.py       # Image processing
 │   ├── image_cache.py         # Image caching
-│   ├── image_matcher.py       # Image recognition (cover matching, hash + SIFT features)
-│   ├── image_uploader.py      # Image hosting upload
-│   ├── token_manager.py       # Token management
-│   ├── friend_list.py         # Friend interface
-│   ├── notice_manager.py      # Notification system
+│   ├── image_matcher.py       # Image recognition (cover matching with hash + SIFT features)
+│   ├── image_uploader.py      # Image hosting upload (Imgur/uguu/0x0)
+│   ├── bindtoken_manager.py   # Bind token management
+│   ├── friendlist_generator.py # Friend list generation (Flex Message)
+│   ├── notice_manager.py      # Announcement system
 │   ├── dxdata_manager.py      # Song data management
-│   ├── note_score.py          # Score calculation
 │   ├── json_encrypt.py        # Encryption utilities
 │   ├── rate_limiter.py        # Rate limiting + request tracking
 │   ├── line_messenger.py      # LINE message sending
 │   ├── song_matcher.py        # Song search with fuzzy matching
 │   ├── memory_manager.py      # Memory management and cleanup
 │   ├── system_checker.py      # System self-check
-│   ├── store_list.py          # Arcade store list generation (Flex Message)
-│   ├── friend_request.py      # Friend request generation
+│   ├── storelist_generator.py # Arcade store list generation (Flex Message)
+│   ├── friend_request_generator.py # Friend request generation (Flex Message)
 │   ├── friend_request_handler.py  # Friend request handling
-│   └── reply_text.py          # Message templates (with donation info and tips)
+│   └── message_manager.py     # Multi-language message management (with announcements and tips)
 ├── templates/                 # HTML templates
 │   ├── bind_form.html         # Account binding form
 │   ├── success.html           # Success page
@@ -561,6 +562,7 @@ POST     /linebot/admin/trigger_cleanup    # Manual memory cleanup
     },
     "urls": {
         "line_adding": "https://line.me/R/ti/p/@yourlineid",
+        "support_page": "https://github.com/Matsuk1/JiETNG/blob/main/COMMANDS.md",
         "dxdata": [
             "https://raw.githubusercontent.com/gekichumai/dxrating/refs/heads/main/packages/dxdata/dxdata.json",
             "https://dp4p6x0xfi5o9.cloudfront.net/maimai/data.json"
@@ -573,7 +575,8 @@ POST     /linebot/admin/trigger_cleanup    # Manual memory cleanup
     },
     "keys": {
         "user_data": "AUTO_GENERATED_KEY",     // Auto-generated Fernet key
-        "bind_token": "AUTO_GENERATED_TOKEN"   // Auto-generated bind token
+        "bind_token": "AUTO_GENERATED_TOKEN",  // Auto-generated bind token
+        "imgur_client_id": "YOUR_IMGUR_CLIENT_ID"  // Imgur API Client ID (optional)
     }
 }
 ```

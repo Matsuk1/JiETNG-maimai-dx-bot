@@ -1,9 +1,9 @@
 import os
 import io
 import qrcode
+import logging
 from PIL import Image, ImageDraw, ImageFont
 from modules.config_loader import FONT_PATH, LOGO_PATH
-from modules.image_cache import get_cached_image
 
 # 全局字体对象（一次性加载）
 font_title = ImageFont.truetype(FONT_PATH, 34)
@@ -14,6 +14,9 @@ font_huge  = ImageFont.truetype(FONT_PATH, 28)
 font_large = ImageFont.truetype(FONT_PATH, 19)
 font_small = ImageFont.truetype(FONT_PATH, 14)
 font_tiny = ImageFont.truetype(FONT_PATH, 6)
+
+# 获取logger
+logger = logging.getLogger(__name__)
 
 def draw_aligned_colon_text(draw, lines, top_left, font, spacing=10, fill=(0, 0, 0)):
     """
@@ -165,7 +168,10 @@ def compose_images(images, spacing=40, outer_margin=30,
     y_offset = 0
     for img in images_with_bg:
         x_offset = (inner_width - img.width) // 2  # 居中
-        combined.paste(img.convert("RGB"), (x_offset, y_offset))
+        if img.mode == "RGB":
+            combined.paste(img, (x_offset, y_offset))
+        else:
+            combined.paste(img, (x_offset, y_offset), img)
         y_offset += img.height + spacing
 
     # 7. 添加页脚
@@ -185,7 +191,7 @@ def compose_images(images, spacing=40, outer_margin=30,
         logo_y = footer_y_start + int(10 * scale_factor)
         combined.paste(logo_img, (logo_x, logo_y))
     except Exception as e:
-        print(f"无法加载 Logo: {e}")
+        logger.error(f"无法加载 Logo: {e}")
 
     # 8. 添加外层灰色背景
     final_width = combined.width + 2 * outer_margin
@@ -258,5 +264,27 @@ def generate_qr_with_title(data: str, title_list: list[str]) -> Image.Image:
     for (text, (w, h)) in zip(title_list, line_sizes):
         draw.text((text_start_x, text_start_y), text, font=font_title, fill=(0, 0, 0))
         text_start_y += h + line_spacing
+
+    return img
+
+
+def round_corner(img, radius=20):
+    # 打开原图，并确保有 alpha 通道（RGBA）
+    img = img.convert("RGBA")
+    w, h = img.size
+
+    # 创建同尺寸蒙版，初始全透明（0）
+    mask = Image.new("L", (w, h), 0)
+    draw = ImageDraw.Draw(mask)
+
+    # 在蒙版上画白色圆角矩形（255 不透明）
+    draw.rounded_rectangle(
+        [(0, 0), (w, h)],
+        radius=radius,
+        fill=255
+    )
+
+    # 应用蒙版到原图
+    img.putalpha(mask)
 
     return img

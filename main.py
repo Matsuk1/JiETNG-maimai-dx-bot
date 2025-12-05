@@ -3,6 +3,7 @@ JiETNG Maimai DX LINE Bot 主程序
 """
 
 import gc
+import os
 import random
 import requests
 import json
@@ -23,6 +24,8 @@ import hashlib
 import copy
 import asyncio
 import aiohttp
+
+from functools import wraps
 
 from datetime import datetime, timedelta
 from typing import List, Optional, Any
@@ -74,11 +77,27 @@ from modules.record_generator import *
 
 # User and data managers
 from modules.user_manager import *
-from modules.token_manager import generate_token, get_user_id_from_token
+from modules.bindtoken_manager import generate_bind_token, get_user_id_from_token
 from modules.notice_manager import *
 from modules.maimai_manager import *
 from modules.dxdata_manager import update_dxdata_with_comparison
 from modules.record_manager import *
+from modules.devtoken_manager import (
+    verify_dev_token,
+    load_dev_tokens,
+    create_dev_token,
+    save_dev_tokens,
+    list_dev_tokens,
+    revoke_dev_token,
+    get_token_info
+)
+
+from modules.perm_request_handler import (
+    send_perm_request,
+    accept_perm_request,
+    reject_perm_request,
+    get_pending_perm_requests
+)
 
 # Config loader
 from modules.config_loader import *
@@ -91,17 +110,20 @@ from modules.friendlist_generator import generate_friend_buttons
 from modules.image_uploader import smart_upload
 from modules.image_manager import *
 from modules.image_matcher import find_song_by_cover
+from modules.image_cache import batch_download_images
 
 # System utilities
-from modules.system_checker import run_system_check
+from modules.system_checker import run_system_check, clean_unbound_users
 from modules.rate_limiter import check_rate_limit
 from modules.line_messenger import smart_reply, smart_push, notify_admins_error
-from modules.song_matcher import find_matching_songs, is_exact_song_match
+from modules.song_matcher import find_matching_songs, is_exact_song_match, normalize_text
 from modules.memory_manager import memory_manager, cleanup_user_caches, cleanup_rate_limiter_tracking
 
 # Module aliases for specific use cases
 import modules.user_manager as user_manager_module
 import modules.rate_limiter as rate_limiter_module
+
+from modules.storelist_generator import generate_store_buttons
 
 # ==================== 常量定义 ====================
 
@@ -117,12 +139,8 @@ TASK_TIMEOUT_SECONDS = 120
 # 搜索结果限制
 MAX_SEARCH_RESULTS = 5
 
-# Rating计算范围
-RC_SCORE_MIN = 97.0000
-RC_SCORE_MAX = 100.5001
-RC_SCORE_STEP = 0.0001
-
-ERROR_NOTIFICATION_ENABLED = True  # 是否启用错误通知
+# 是否启用错误通知
+ERROR_NOTIFICATION_ENABLED = True
 
 # ==================== 日志配置 ====================
 
@@ -165,7 +183,7 @@ console_handler.setFormatter(ColoredFormatter(
 ))
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     handlers=[file_handler, console_handler]
 )
 
@@ -270,11 +288,19 @@ def run_task_with_limit(func: callable, args: tuple, sem: threading.Semaphore,
             # 从排队中移除
             task_tracking['queued'] = [t for t in task_tracking['queued'] if t.get('id') != task_id]
             # 添加到运行中
+            # 智能提取 user_id：尝试多种方式
+            user_id_for_tracking = 'Unknown'
+            if args:
+                if hasattr(args[0], 'source'):  # Event 对象
+                    user_id_for_tracking = args[0].source.user_id
+                elif isinstance(args[0], str) and args[0].startswith('U'):  # 直接传入的 user_id 字符串
+                    user_id_for_tracking = args[0]
+
             task_info = {
                 'id': task_id,
                 'function': func.__name__,
                 'start_time': start_time.strftime('%Y-%m-%d %H:%M:%S'),
-                'user_id': args[0].source.user_id if hasattr(args[0], 'source') else 'Unknown'
+                'user_id': user_id_for_tracking
             }
             task_tracking['running'].append(task_info)
 
@@ -290,9 +316,17 @@ def run_task_with_limit(func: callable, args: tuple, sem: threading.Semaphore,
                 # 尝试获取用户信息以便回复
                 user_id = None
                 reply_token = None
-                if args and hasattr(args[0], 'source') and hasattr(args[0], 'reply_token'):
-                    user_id = args[0].source.user_id
-                    reply_token = args[0].reply_token
+                if args:
+                    if hasattr(args[0], 'source') and hasattr(args[0], 'reply_token'):
+                        # Event 对象
+                        user_id = args[0].source.user_id
+                        reply_token = args[0].reply_token
+                    elif isinstance(args[0], str) and args[0].startswith('U'):
+                        # 直接传入的 user_id 字符串
+                        user_id = args[0]
+                        # reply_token 可能在 args[1]
+                        if len(args) > 1 and isinstance(args[1], str):
+                            reply_token = args[1]
 
                 # 通知管理员并回复用户
                 notify_admins_error(
@@ -422,40 +456,6 @@ def cache_worker() -> None:
             cache_queue.task_done()
 
 
-# ==================== 系统启动自检 ====================
-# 在启动 worker 线程之前执行系统自检
-print("\n" + "=" * 60)
-print("JiETNG Maimai DX LINE Bot Starting...")
-print("=" * 60)
-
-try:
-    system_check_results = run_system_check()
-
-    # 如果有关键问题，显示警告
-    if system_check_results["overall_status"] == "WARNING":
-        print("\n⚠️  WARNING: System check found some issues")
-        print("   Check logs for details\n")
-    else:
-        print("\n✓ System check passed\n")
-
-except Exception as e:
-    print(f"\n⚠️  System check failed: {e}")
-    print("   Continuing startup anyway...\n")
-
-# 启动 worker 线程
-for i in range(MAX_CONCURRENT_IMAGE_TASKS):
-    threading.Thread(target=image_worker, daemon=True, name=f"ImageWorker-{i+1}").start()
-
-for i in range(WEB_MAX_CONCURRENT_TASKS):
-    threading.Thread(target=webtask_worker, daemon=True, name=f"WebTaskWorker-{i+1}").start()
-
-# 启动缓存生成 worker（只需1个）
-threading.Thread(target=cache_worker, daemon=True, name="CacheWorker-1").start()
-
-print(f"Started {MAX_CONCURRENT_IMAGE_TASKS} image workers, {WEB_MAX_CONCURRENT_TASKS} web task workers, and 1 cache worker")
-print("=" * 60 + "\n")
-
-
 def cancel_if_timeout(task_done: threading.Event) -> None:
     """
     检查任务是否超时
@@ -483,12 +483,9 @@ def require_dev_token(f):
         token_info = request.token_info
         return jsonify({"status": "success"})
     """
-    from functools import wraps
 
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        from modules.devtoken_manager import verify_dev_token
-
         # 从 Authorization header 获取 token
         auth_header = request.headers.get('Authorization')
 
@@ -544,7 +541,6 @@ def require_user_permission(f):
     2. 如果 token 的 allowed_users 列表包含该用户 - 允许访问
     3. 否则拒绝访问
     """
-    from functools import wraps
 
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -595,7 +591,6 @@ def require_owner_permission(f):
     只检查用户是否通过该 token 创建 (registered_via_token)
     不检查 allowed_users 列表
     """
-    from functools import wraps
 
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -642,7 +637,6 @@ def check_user_permission(user_id, token_id):
     Returns:
         tuple: (has_permission: bool, error_response: dict or None)
     """
-    from modules.devtoken_manager import load_dev_tokens
 
     # 检查用户是否存在
     if user_id not in USERS:
@@ -889,7 +883,7 @@ def user_set_language(user_id, language):
 def get_user(user_id):
     read_user()
 
-    from modules.message_manager import get_user_language, get_multilingual_text
+    
 
     # 多语言文本
     texts = {
@@ -1185,7 +1179,7 @@ def get_rc(level: float) -> str:
     result += DIVIDER
     last_ra = 0
 
-    for score in numpy.arange(RC_SCORE_MIN, RC_SCORE_MAX, RC_SCORE_STEP):
+    for score in numpy.arange(97, 100.5001, 0.0001):
         ra = get_single_ra(level, score)
         if ra != last_ra:
             result += f"\n{format(score, '.4f')}% \t-\t {ra}"
@@ -1381,7 +1375,6 @@ def generate_plate_rcd(user_id, title, ver="jp"):
 
     # 优化：构建用户记录的哈希表，避免嵌套循环 O(n*m*p) -> O(n*m)
     # 使用多个key策略保持与 is_exact_song_match 的兼容性
-    from modules.song_matcher import normalize_text
 
     rcd_map = {}
     for rcd in version_rcd_data:
@@ -1453,8 +1446,6 @@ def generate_internallevel_songs(user_id, level, ver="jp"):
         level: 难度等级（如 "13", "13+", "14", "14+"）
         ver: 服务器版本（"jp" 或 "intl"）
     """
-    import os
-    from modules.message_manager import song_error, level_not_supported, cache_not_found
 
     read_dxdata(ver)
 
@@ -1486,7 +1477,7 @@ def generate_internallevel_songs(user_id, level, ver="jp"):
             level_list_hint(user_id)
         ]
     except Exception as e:
-        print(f"读取缓存失败: {e}")
+        logger.error(f"读取缓存失败: {e}")
         return cache_not_found(user_id)
 
 def _generate_level_cache_for_server(ver):
@@ -1496,10 +1487,8 @@ def _generate_level_cache_for_server(ver):
     参数:
         ver: 服务器版本（"jp" 或 "intl"）
     """
-    import os
-    from modules.image_cache import batch_download_images
 
-    print(f"[Cache] 开始为 {ver.upper()} 服务器生成等级缓存...")
+    logger.info(f"[Cache] 开始为 {ver.upper()} 服务器生成等级缓存...")
 
     read_dxdata(ver)
 
@@ -1547,11 +1536,11 @@ def _generate_level_cache_for_server(ver):
                     })
 
             if not song_data_list:
-                print(f"[Cache] {ver.upper()} Lv.{level}: 无歌曲，跳过")
+                logger.info(f"[Cache] {ver.upper()} Lv.{level}: 无歌曲，跳过")
                 continue
 
             # 批量并发下载所有封面
-            print(f"[Cache] {ver.upper()} Lv.{level}: 并发下载 {len(song_data_list)} 首歌曲封面...")
+            logger.info(f"[Cache] {ver.upper()} Lv.{level}: 并发下载 {len(song_data_list)} 首歌曲封面...")
             cover_urls = [s['cover_url'] for s in song_data_list]
             downloaded_covers = batch_download_images(cover_urls, max_workers=5)
 
@@ -1567,7 +1556,7 @@ def _generate_level_cache_for_server(ver):
                     })
 
             if not target_data:
-                print(f"[Cache] {ver.upper()} Lv.{level}: 封面下载失败，跳过")
+                logger.warning(f"[Cache] {ver.upper()} Lv.{level}: 封面下载失败，跳过")
                 continue
 
             # 生成图片
@@ -1591,18 +1580,17 @@ def _generate_level_cache_for_server(ver):
                 cache_generation_progress["completed_levels"] = generated_count
                 cache_generation_progress["progress"] = int((generated_count / 14) * 100)
 
-            print(f"[Cache] {ver.upper()} Lv.{level}: ✓ ({len(target_data)} 首歌曲)")
+            logger.info(f"[Cache] {ver.upper()} Lv.{level}: ✓ ({len(target_data)} 首歌曲)")
 
         except Exception as e:
-            print(f"[Cache] {ver.upper()} Lv.{level}: ✗ 错误: {e}")
+            logger.warning(f"[Cache] {ver.upper()} Lv.{level}: ✗ 错误: {e}")
             import traceback
             traceback.print_exc()
 
-    print(f"[Cache] {ver.upper()} 服务器缓存生成完成：{generated_count}/{len(valid_levels)} 个等级")
+    logger.info(f"[Cache] {ver.upper()} 服务器缓存生成完成：{generated_count}/{len(valid_levels)} 个等级")
 
 def generate_all_level_caches():
     """后台生成所有服务器的等级缓存（带进度跟踪）"""
-    from datetime import datetime
 
     # 计算实际的总等级数
     valid_levels = ["12", "12+", "13", "13+", "14", "14+", "15"]
@@ -1621,7 +1609,7 @@ def generate_all_level_caches():
     try:
         _generate_level_cache_for_server("jp")
         _generate_level_cache_for_server("intl")
-        print("[Cache] 所有等级缓存生成完成")
+        logger.info("[Cache] 所有等级缓存生成完成")
 
         # 标记完成
         with stats_lock:
@@ -1630,7 +1618,6 @@ def generate_all_level_caches():
             cache_generation_progress["end_time"] = datetime.now().isoformat()
 
         # 通知所有管理员缓存生成完成
-        from modules.line_messenger import smart_push
         for admin_user_id in ADMIN_ID:
             try:
                 smart_push(admin_user_id, TextMessage(
@@ -1639,12 +1626,11 @@ def generate_all_level_caches():
             except Exception as e:
                 logger.error(f"Failed to notify admin {admin_user_id} about cache completion: {e}")
     except Exception as e:
-        print(f"[Cache] 缓存生成失败: {e}")
+        logger.error(f"[Cache] 缓存生成失败: {e}")
         import traceback
         traceback.print_exc()
 
         # 通知所有管理员缓存生成失败
-        from modules.line_messenger import smart_push
         for admin_user_id in ADMIN_ID:
             try:
                 smart_push(admin_user_id, TextMessage(
@@ -1701,7 +1687,7 @@ def create_user_info_img(user_info, scale=1.7):
                 return True
 
             except Exception as e:
-                print(f"加载图片失败 {user_info[key]}: {e}")
+                logger.error(f"加载图片失败 {user_info[key]}: {e}")
                 return None
         return None
 
@@ -2339,12 +2325,6 @@ def handle_accept_perm_request(user_id: str, request_id: str) -> TextMessage:
     Returns:
         TextMessage对象
     """
-    from modules.perm_request_handler import accept_perm_request
-    from modules.message_manager import (
-        get_multilingual_text,
-        perm_request_accept_success_text,
-        perm_request_error_text
-    )
 
     result = accept_perm_request(user_id, request_id)
 
@@ -2373,12 +2353,6 @@ def handle_reject_perm_request(user_id: str, request_id: str) -> TextMessage:
     Returns:
         TextMessage对象
     """
-    from modules.perm_request_handler import reject_perm_request
-    from modules.message_manager import (
-        get_multilingual_text,
-        perm_request_reject_success_text,
-        perm_request_error_text
-    )
 
     result = reject_perm_request(user_id, request_id)
 
@@ -2626,12 +2600,6 @@ def handle_sync_text_command(event):
 
         # 如果用户还没有设置语言，先让用户选择语言
         if not has_language:
-            from modules.message_manager import (
-                language_select_title, language_select_description,
-                language_button_jp, language_button_en, language_button_zh,
-                language_select_alt
-            )
-
             buttons_template = ButtonsTemplate(
                 title=language_select_title,
                 text=language_select_description,
@@ -2653,19 +2621,13 @@ def handle_sync_text_command(event):
 
         if has_account:
             # 已经绑定过账号，提示先解绑
-            from modules.message_manager import already_bound_text, get_multilingual_text
             reply_message = TextMessage(text=get_multilingual_text(already_bound_text, user_id))
             return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
 
         # 用户已设置语言且未绑定账号，显示绑定按钮
-        bind_url = f"https://{DOMAIN}/linebot/sega_bind?token={generate_token(user_id)}"
+        bind_url = f"https://{DOMAIN}/linebot/sega_bind?token={generate_bind_token(user_id)}"
 
         # 使用多语言文本
-        from modules.message_manager import (
-            sega_bind_title_text, sega_bind_description_text,
-            sega_bind_button_text, sega_bind_alt_text, get_multilingual_text
-        )
-
         buttons_template = ButtonsTemplate(
             title=get_multilingual_text(sega_bind_title_text, user_id),
             text=get_multilingual_text(sega_bind_description_text, user_id),
@@ -2694,7 +2656,6 @@ def handle_sync_text_command(event):
         user_set_language(user_id, lang_code)
 
         # 使用多语言成功消息
-        from modules.message_manager import language_set_success_text, get_multilingual_text, get_bind_quick_reply
         success_text = get_multilingual_text(language_set_success_text, user_id)
 
         # 添加快捷回复按钮
@@ -2765,17 +2726,6 @@ def handle_sync_text_command(event):
             return
 
         if user_message.startswith("devtoken "):
-            from modules.devtoken_manager import (
-                create_dev_token, list_dev_tokens, revoke_dev_token, get_token_info
-            )
-            from modules.message_manager import (
-                devtoken_create_success_text, devtoken_create_failed_text,
-                devtoken_list_header_text, devtoken_list_empty_text,
-                devtoken_revoke_success_text, devtoken_revoke_failed_text,
-                devtoken_info_text, devtoken_info_not_found_text,
-                devtoken_usage_text, get_multilingual_text
-            )
-
             # Parse command
             parts = user_message.split(maxsplit=2)
 
@@ -2897,15 +2847,6 @@ def handle_image_message(event):
         # 没有 QR 码，尝试封面匹配（移到队列异步处理）
         user_id = event.source.user_id
 
-        # 发送"正在识别"的提示
-        from modules.message_manager import get_multilingual_text
-        processing_text = {
-            "ja": "🔍 楽曲を識別しています...",
-            "en": "🔍 Identifying song...",
-            "zh": "🔍 正在识别歌曲..."
-        }
-        smart_reply(user_id, event.reply_token, TextMessage(text=get_multilingual_text(processing_text, user_id)), configuration, DIVIDER)
-
         # 添加到图片队列异步处理
         try:
             task_id = f"cover_match_{user_id}_{datetime.now().timestamp()}"
@@ -2920,18 +2861,26 @@ def handle_image_message(event):
                     'nickname': nickname
                 })
 
-            image_queue.put_nowait((async_cover_matching_task, (user_id, image), task_id))
+            image_queue.put_nowait((async_cover_matching_task, (user_id, event.reply_token, image), task_id))
             logger.info(f"[Image Queue] Cover matching task queued for user {user_id}")
         except Exception as e:
             logger.error(f"Failed to queue cover matching task: {e}")
-            smart_push(user_id, qrcode_error(user_id), configuration)
+            notify_admins_error(
+                error_title="Cover Matching Queue Error",
+                error_details=f"{type(e).__name__}: {str(e)}\n\n{traceback.format_exc()}",
+                context={"User ID": user_id, "Task": "cover_matching"},
+                admin_id=ADMIN_ID,
+                configuration=configuration,
+                error_notification_enabled=ERROR_NOTIFICATION_ENABLED
+            )
 
-def async_cover_matching_task(user_id, image):
+def async_cover_matching_task(user_id, reply_token, image):
     """
     异步封面匹配任务 - 在 image_queue 中执行
 
     Args:
         user_id: 用户ID
+        reply_token: 回复令牌
         image: PIL Image 对象
     """
     try:
@@ -2945,7 +2894,7 @@ def async_cover_matching_task(user_id, image):
         read_dxdata(mai_ver)
 
         # 混合策略匹配：hash 快速匹配完整封面，sift 处理场景图片和部分遮挡
-        # 直接尝试多个匹配（图片中可能有多个封面）
+        # 支持多封面识别，但只返回质量接近的匹配（避免误匹配）
         matched_songs = find_song_by_cover(image, SONGS, hash_threshold=15, return_multiple=True, max_results=3)
 
         if matched_songs:
@@ -2958,16 +2907,30 @@ def async_cover_matching_task(user_id, image):
                     reply_messages.append(ImageMessage(original_content_url=original_url, preview_image_url=preview_url))
 
                 if reply_messages:
-                    smart_push(user_id, reply_messages, configuration)
+                    smart_reply(user_id, reply_token, reply_messages, configuration, DIVIDER)
             except Exception as e:
                 logger.error(f"Loading level cache error: {e}")
-                smart_push(user_id, qrcode_error(user_id), configuration)
+                notify_admins_error(
+                    error_title="Cover Matching Result Generation Error",
+                    error_details=f"{type(e).__name__}: {str(e)}\n\n{traceback.format_exc()}",
+                    context={"User ID": user_id, "Task": "cover_matching_result"},
+                    admin_id=ADMIN_ID,
+                    configuration=configuration,
+                    error_notification_enabled=ERROR_NOTIFICATION_ENABLED
+                )
         else:
-            # 未找到匹配，返回错误
-            smart_push(user_id, qrcode_error(user_id), configuration)
+            # 未找到匹配，静默处理（不推送错误给用户）
+            logger.info(f"No cover match found for user {user_id}")
     except Exception as e:
         logger.error(f"Cover matching task error: {e}", exc_info=True)
-        smart_push(user_id, qrcode_error(user_id), configuration)
+        notify_admins_error(
+            error_title="Cover Matching Task Error",
+            error_details=f"{type(e).__name__}: {str(e)}\n\n{traceback.format_exc()}",
+            context={"User ID": user_id, "Task": "cover_matching_task"},
+            admin_id=ADMIN_ID,
+            configuration=configuration,
+            error_notification_enabled=ERROR_NOTIFICATION_ENABLED
+        )
 
 def handle_image_message_task(user_id, reply_token, data, image=None):
     """
@@ -3024,7 +2987,6 @@ def handle_location_message(event):
         reply_message = store_error(user_id)
     else:
         # 使用 LINE SDK v3 对象构建的 Flex Message（已修复结构问题）
-        from modules.storelist_generator import generate_store_buttons
         user_id = event.source.user_id
         reply_message = generate_store_buttons(
             user_id,
@@ -3070,7 +3032,6 @@ def get_user_nickname_wrapper(user_id, use_cache=True):
     try:
         with ApiClient(configuration) as api_client:
             line_bot_api = MessagingApi(api_client)
-            from modules.user_manager import get_user_nickname
             nickname = get_user_nickname(user_id, line_bot_api, use_cache)
 
             # 检查是否为错误消息
@@ -3362,7 +3323,6 @@ def admin_get_notices():
         return jsonify({'error': 'Unauthorized'}), 401
 
     try:
-        from modules.notice_manager import get_all_notices
         notices = get_all_notices()
         return jsonify({'success': True, 'notices': notices})
     except Exception as e:
@@ -3383,7 +3343,6 @@ def admin_create_notice():
         return jsonify({'success': False, 'message': 'Content is required'}), 400
 
     try:
-        from modules.notice_manager import upload_notice
         notice_id = upload_notice(content)
         clear_user_value("notice_read", False)
         logger.info(f"Admin created notice: {notice_id}")
@@ -3412,8 +3371,6 @@ def admin_update_notice():
         return jsonify({'success': False, 'message': 'Notice ID and content are required'}), 400
 
     try:
-        from modules.notice_manager import update_notice, get_latest_notice
-
         # 检查是否为最新公告
         latest_notice = get_latest_notice()
         is_latest = latest_notice and latest_notice.get('id') == notice_id
@@ -3450,7 +3407,6 @@ def admin_delete_notice():
         return jsonify({'success': False, 'message': 'Notice ID is required'}), 400
 
     try:
-        from modules.notice_manager import delete_notice
         clear_user_value("notice_read", True)
         success = delete_notice(notice_id)
 
@@ -3537,7 +3493,6 @@ def admin_delete_user():
             }), 404
 
         # 使用 delete_user 函数删除用户
-        from modules.user_manager import delete_user
         delete_user(user_id)
 
         logger.info(f"Admin deleted user: {user_id}")
@@ -3735,8 +3690,6 @@ def api_list_users():
     返回该 token 有权限访问的所有用户（包括创建的用户和授权访问的用户）
     """
     try:
-        from modules.devtoken_manager import load_dev_tokens
-
         read_user()
 
         token_info = request.token_info
@@ -3804,9 +3757,6 @@ def api_register_user(user_id):
     - nickname: 实际使用的昵称
     """
     try:
-        from modules.token_manager import generate_token as generate_bind_token
-        from modules.user_manager import get_user_nickname
-
         # 获取 JSON 数据
         data = request.get_json() or {}
         nickname = data.get('nickname', '')
@@ -3846,7 +3796,6 @@ def api_register_user(user_id):
         bind_url = f"{DOMAIN}/linebot/sega_bind?token={bind_token}"
 
         # 初始化用户数据
-        from datetime import datetime
         add_user(user_id)
         user_set_language(user_id, language)
         edit_user_value(user_id, "nickname", nickname)
@@ -3916,8 +3865,6 @@ def api_delete_user(user_id):
     需要 Bearer Token 认证（该 token 必须是用户的创建者）
     """
     try:
-        from modules.user_manager import delete_user
-
         # 获取用户信息用于日志
         nickname = get_user_nickname_wrapper(user_id, use_cache=True)
 
@@ -3962,8 +3909,6 @@ def api_request_permission(user_id):
     - message: 状态信息
     """
     try:
-        from modules.perm_request_handler import send_perm_request
-
         # 获取 JSON 数据
         data = request.get_json() or {}
         requester_name = data.get('requester_name', '')
@@ -4019,8 +3964,6 @@ def api_get_perm_requests(user_id):
     - requests: 权限请求列表，包含 request_id, token_id, requester_name, timestamp
     """
     try:
-        from modules.perm_request_handler import get_pending_perm_requests
-
         # 获取待处理的权限请求
         requests = get_pending_perm_requests(user_id)
 
@@ -4062,8 +4005,6 @@ def api_accept_perm_request(user_id):
     - message: 状态信息
     """
     try:
-        from modules.perm_request_handler import accept_perm_request
-
         # 获取 JSON 数据
         data = request.get_json() or {}
         request_id = data.get('request_id', '')
@@ -4124,8 +4065,6 @@ def api_reject_perm_request(user_id):
     - message: 状态信息
     """
     try:
-        from modules.perm_request_handler import reject_perm_request
-
         # 获取 JSON 数据
         data = request.get_json() or {}
         request_id = data.get('request_id', '')
@@ -4186,8 +4125,6 @@ def api_revoke_perm(user_id):
     - message: 状态信息
     """
     try:
-        from modules.devtoken_manager import load_dev_tokens, save_dev_tokens
-
         # 获取 JSON 数据
         data = request.get_json() or {}
         target_token_id = data.get('token_id', '')
@@ -4622,9 +4559,41 @@ def api_get_versions():
         }), 500
 
 if __name__ == "__main__":
+    # ==================== 系统启动自检 ====================
+    # 在启动 worker 线程之前执行系统自检
+    logger.debug("=" * 60)
+    logger.debug("JiETNG Maimai DX LINE Bot Starting...")
+    logger.debug("=" * 60)
+
+    try:
+        system_check_results = run_system_check()
+
+        # 如果有关键问题，显示警告
+        if system_check_results["overall_status"] == "WARNING":
+            logger.debug("⚠️  WARNING: System check found some issues")
+            logger.debug("   Check logs for details")
+        else:
+            logger.debug("✓ System check passed")
+
+    except Exception as e:
+        logger.debug(f"⚠️  System check failed: {e}")
+        logger.debug("   Continuing startup anyway...")
+
+    # 启动 worker 线程
+    for i in range(MAX_CONCURRENT_IMAGE_TASKS):
+        threading.Thread(target=image_worker, daemon=True, name=f"ImageWorker-{i+1}").start()
+
+    for i in range(WEB_MAX_CONCURRENT_TASKS):
+        threading.Thread(target=webtask_worker, daemon=True, name=f"WebTaskWorker-{i+1}").start()
+
+    # 启动缓存生成 worker（只需1个）
+    threading.Thread(target=cache_worker, daemon=True, name="CacheWorker-1").start()
+
+    logger.debug(f"Started {MAX_CONCURRENT_IMAGE_TASKS} image workers, {WEB_MAX_CONCURRENT_TASKS} web task workers, and 1 cache worker")
+
     # 启动内存管理器
     memory_manager.start()
-    logger.info("Memory manager started successfully")
+    logger.debug("Memory manager started successfully")
 
     # 注册清理函数（在内存管理器的清理循环中调用）
     def custom_cleanup():
@@ -4637,7 +4606,6 @@ if __name__ == "__main__":
             cleaned_rate_limits = cleanup_rate_limiter_tracking(rate_limiter_module)
 
             # 清理未绑定的用户（没有 sega_id 或 sega_pwd）
-            from modules.system_checker import clean_unbound_users
             cleanup_result = clean_unbound_users()
             cleaned_unbound_users = cleanup_result.get('deleted_count', 0)
 
@@ -4658,4 +4626,4 @@ if __name__ == "__main__":
     finally:
         # 停止内存管理器
         memory_manager.stop()
-        logger.info("Memory manager stopped")
+        logger.debug("Memory manager stopped")

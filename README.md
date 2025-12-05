@@ -378,7 +378,7 @@ JiETNG/
 │   ├── image_cache.py         # 图像缓存
 │   ├── image_matcher.py       # 图像识别（封面匹配，支持哈希+SIFT特征点）
 │   ├── image_uploader.py      # 图床上传（Imgur/uguu/0x0）
-│   ├── token_manager.py       # Token 管理
+│   ├── bindtoken_manager.py   # 绑定 Token 管理
 │   ├── friendlist_generator.py # 好友列表生成（Flex Message）
 │   ├── notice_manager.py      # 公告系统
 │   ├── dxdata_manager.py      # 歌曲数据管理

@@ -597,7 +597,7 @@ async def get_friends_list(cookies: dict, ver="jp"):
                 })
 
             except Exception as e:
-                print(f"[get_friends_list] Error parsing block: {e}")
+                logger.error(f"[get_friends_list] Error parsing block: {e}")
 
         return friends
 
@@ -754,14 +754,14 @@ async def get_friend_records(cookies: dict, friend_id: str, ver="jp"):
                         "difficulty": difficulty[diff],
                         "type": type,
                         "score": score,
-                        "dx_score": "0 / 1000",
+                        "dx_score": "",
                         "score_icon": score_icon,
                         "combo_icon": combo_icon,
                         "sync_icon": sync_icon
                     })
 
                 except Exception as e:
-                    print(f"[get_friend_records] Error parsing block: {e}")
+                    logger.error(f"[get_friend_records] Error parsing block: {e}")
 
         return friend_records
 

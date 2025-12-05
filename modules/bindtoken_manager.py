@@ -14,7 +14,7 @@ from modules.config_loader import BIND_TOKEN_KEY
 TOKEN_EXPIRE_SECONDS = 120
 
 
-def generate_token(user_id: str) -> str:
+def generate_bind_token(user_id: str) -> str:
     """
     生成绑定Token
 
