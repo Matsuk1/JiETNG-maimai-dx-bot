@@ -171,8 +171,6 @@ Once bound, you can:
 ✅ Track plate progress
 ✅ Search for songs
 ✅ Update scores from maimai NET
-✅ Add friends and view friend rankings
-✅ Generate your maimai pass card
 ✅ Find nearby shops
 
 ## Automatic Score Updates

@@ -879,7 +879,7 @@ curl -H "Authorization: Bearer $TOKEN" "$BASE_URL/search?q=ヒバナ&ver=jp"
 
 ## バージョン履歴
 
-- **v1.1** (2025-02-03): 権限リクエストシステムを追加
+- **v1.1** (2025-12-04): 権限リクエストシステムを追加
   - 5つの権限管理APIエンドポイントを追加
   - 2層権限モデル（所有者 vs 承認済み）を実装
   - `@require_owner_permission` デコレーターを追加

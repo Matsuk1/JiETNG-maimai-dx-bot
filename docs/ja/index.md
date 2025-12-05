@@ -36,9 +36,7 @@ features:
 
   - icon: 👥
     title: フレンドシステム
-    details: 他のプレイヤーと繋がり、スコアを比較し、フレンドランキングを表示。QRコードでフレンド申請も可能。
-    link: /ja/features/friends
-    linkText: 詳細
+    details: ゲーム内フレンドのスコアを表示し、パフォーマンスを比較して競技力を向上。
 
   - icon: 🌐
     title: 多言語対応

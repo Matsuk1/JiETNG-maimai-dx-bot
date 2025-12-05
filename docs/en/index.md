@@ -36,9 +36,7 @@ features:
 
   - icon: 👥
     title: Friend System
-    details: Connect with other players, compare scores, view friend rankings, and send friend requests through QR codes.
-    link: /en/features/friends
-    linkText: Learn more
+    details: View in-game friends' scores, compare performance, and improve your competitive play.
 
   - icon: 🌐
     title: Multi-Language Support

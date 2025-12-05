@@ -56,20 +56,6 @@ Displays achievement rate values for each note type.
 
 ## User Profile
 
-### View Maipass
-
-Generate a player card with QR code:
-
-```
-maipass
-pass
-```
-
-This creates a shareable card containing:
-- Your username and rating
-- QR code for adding friends
-- Profile icon and plate
-
 ### Get User Information
 
 ```

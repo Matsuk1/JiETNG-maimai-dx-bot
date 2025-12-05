@@ -23,10 +23,8 @@ JiETNG (pronounced "jie ting") is a free, feature-rich bot available on LINE tha
 
 ### 👥 Social Features
 
-- **Friend System**: Connect with other players
+- **Friend System**: View in-game friends' scores
 - **Score Comparison**: Compare scores with friends
-- **Friend Requests**: Easy friend adding based on QR codes
-- **Leaderboards**: See your ranking among friends
 
 ### 📈 Analysis Tools
 
@@ -52,7 +50,6 @@ JiETNG (pronounced "jie ting") is a free, feature-rich bot available on LINE tha
 
 ### Community Organizers
 
-- **Friend Features**: Manage player groups
 - **Score Sharing**: Easily share achievements
 - **Multi-language**: Support for Japanese, English, and Chinese
 

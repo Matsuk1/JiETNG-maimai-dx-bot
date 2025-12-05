@@ -910,7 +910,7 @@ curl -H "Authorization: Bearer $TOKEN" "$BASE_URL/search?q=ヒバナ&ver=jp"
 
 ## Version History
 
-- **v1.1** (2025-02-03): Added permission request system
+- **v1.1** (2025-12-04): Added permission request system
   - Added 5 permission management API endpoints
   - Implemented two-tier permission model (owner vs granted)
   - Added `@require_owner_permission` decorator

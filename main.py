@@ -83,8 +83,8 @@ from modules.record_manager import *
 from modules.config_loader import *
 
 # UI and message modules
-from modules.friendlist_generator import generate_friend_buttons
 from modules.message_manager import *
+from modules.friendlist_generator import generate_friend_buttons
 
 # Image processing
 from modules.image_uploader import smart_upload
@@ -97,11 +97,6 @@ from modules.rate_limiter import check_rate_limit
 from modules.line_messenger import smart_reply, smart_push, notify_admins_error
 from modules.song_matcher import find_matching_songs, is_exact_song_match
 from modules.memory_manager import memory_manager, cleanup_user_caches, cleanup_rate_limiter_tracking
-from modules.friend_request_handler import (
-    send_friend_request,
-    accept_friend_request,
-    reject_friend_request
-)
 
 # Module aliases for specific use cases
 import modules.user_manager as user_manager_module
@@ -741,20 +736,6 @@ def line_add_page():
     return redirect(LINE_ADDING_URL)
 
 
-@app.route("/linebot/add_friend", methods=["GET"])
-def maimai_add_friend_page():
-    """
-    好友添加页面
-
-    通过好友码生成 LINE 深链接
-
-    Query Args:
-        id: 好友 LINE ID
-    """
-    friend_id = request.args.get("id")
-    return redirect(f"line://oaMessage/{LINE_ACCOUNT_ID}/?add-friend%20{friend_id}")
-
-
 @app.route("/linebot/sega_bind", methods=["GET", "POST"])
 def website_segaid_bind():
     """
@@ -1070,18 +1051,8 @@ def async_generate_friend_b50_task(event):
     if user_id in USERS and 'version' in USERS[user_id]:
         ver = USERS[user_id]['version']
 
-    if "line_friends" in USERS[user_id] and friend_code in USERS[user_id]['line_friends']:
-        if friend_code in USERS and "personal_info" in USERS[friend_code]:
-            if "line_friends" in USERS[friend_code] and user_id in USERS[friend_code]['line_friends']:
-                edit_user_value(user_id, "id_use", friend_code)
-                reply_msg = friend_use_once(USERS[friend_code]['personal_info']['name'], user_id)
-            else:
-                reply_msg = friendid_error(user_id)
-        else:
-            reply_msg = friendid_error(user_id)
-
-    else:
-        reply_msg = generate_friend_b50(user_id, friend_code, ver)
+    # 直接通过网页爬取获取好友信息
+    reply_msg = generate_friend_b50(user_id, friend_code, ver)
 
     smart_reply(user_id, reply_token, reply_msg, configuration, DIVIDER)
 
@@ -1276,29 +1247,12 @@ def get_friend_list(user_id):
     if user_id not in USERS:
         return segaid_error(user_id)
 
-    elif 'mai_friends' not in USERS[user_id] and 'line_friends' not in USERS[user_id]:
+    elif 'mai_friends' not in USERS[user_id]:
         return friend_error(user_id)
 
     friends_list = copy.deepcopy(get_user_value(user_id, "mai_friends"))
     if not friends_list:
         friends_list = []
-
-    # 获取 USERS[user_id]['line_friends'] 列表并添加到好友列表
-    if 'line_friends' in USERS[user_id] and USERS[user_id]['line_friends']:
-        for friend_id in USERS[user_id]['line_friends']:
-            if friend_id in USERS and 'personal_info' in USERS[friend_id] and 'line_friends' in USERS[friend_id] and user_id in USERS[friend_id]['line_friends']:
-                friend_info = USERS[friend_id]['personal_info']
-                # 构造与 maimai 好友列表相同格式的好友信息
-                friend_entry = {
-                    "name": friend_info.get('name', friend_id),
-                    "rating": friend_info.get('rating', 'N/A'),
-                    "user_id": friend_id,
-                    "is_favorite": True  # 标记为收藏好友以便显示
-                }
-                friends_list.append(friend_entry)
-            else:
-                USERS[user_id]['line_friends'].remove(friend_id)
-                write_user()
 
     return generate_friend_buttons(user_id, get_friend_list_alt_text(user_id), format_favorite_friends(friends_list))
 
@@ -1470,7 +1424,9 @@ def generate_plate_rcd(user_id, title, ver="jp"):
 
     img = generate_plate_image(target_data, title, headers = target_num)
 
-    img = compose_images([create_user_info_img(user_id), img])
+    # 获取用户信息并创建用户信息图片
+    user_info = USERS[user_id]['personal_info']
+    img = compose_images([create_user_info_img(user_info), img])
 
     original_url, preview_url = smart_upload(img)
     message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
@@ -1685,10 +1641,17 @@ def generate_all_level_caches():
             except Exception as notify_error:
                 logger.error(f"Failed to notify admin {admin_user_id} about cache failure: {notify_error}")
 
-def create_user_info_img(user_id, scale=1.5):
-    read_user()
+def create_user_info_img(user_info, scale=1.5):
+    """
+    创建用户信息图片
 
-    user_info = USERS[user_id]['personal_info']
+    Args:
+        user_info: 用户个人信息字典（包含 name, rating, icon_url 等）
+        scale: 图片缩放比例
+
+    Returns:
+        PIL.Image: 用户信息图片
+    """
 
     img_width = 802
     img_height = 128
@@ -1777,35 +1740,6 @@ def create_user_info_img(user_id, scale=1.5):
 
     info_img = info_img.resize((int(img_width * scale), int(img_height * scale)), Image.Resampling.LANCZOS)
     return info_img
-
-def generate_maipass(user_id):
-    read_user()
-    if user_id not in USERS:
-        return segaid_error(user_id)
-
-    if "personal_info" not in USERS[user_id]:
-        return info_error(user_id)
-
-    user_img = create_user_info_img(user_id)
-
-    title_list = [
-        "QRコードをスキャンして",
-        "画像を『JiETNG』に送っても",
-        "maimai フレンドになれるよ！",
-        "\n",
-        "Scan the QR code,",
-        "or send the image to 'JiETNG',",
-        "and we'll become maimai friends!"
-    ]
-
-    qr_img = generate_qr_with_title(f"https://jietng.matsuki.top/linebot/add_friend?id={user_id}", title_list)
-
-    img = compose_images([user_img, qr_img])
-
-    original_url, preview_url = smart_upload(img)
-    img_msg = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
-    message = [img_msg, share_msg(user_id)]
-    return message
 
 def select_records(song_record, type, command, ver):
     if not command == "":
@@ -1944,7 +1878,10 @@ def generate_records(user_id, type="best50", command="", ver="jp"):
         return picture_error(user_id)
 
     img = generate_records_picture(up_songs, down_songs, type.upper())
-    img = compose_images([create_user_info_img(user_id), img])
+
+    # 获取用户信息并创建用户信息图片
+    user_info = USERS[user_id]['personal_info']
+    img = compose_images([create_user_info_img(user_info), img])
 
     original_url, preview_url = smart_upload(img)
     message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
@@ -1977,7 +1914,10 @@ def generate_yang_rating(user_id, ver="jp"):
         version_records.append(version_data)
 
     img = generate_yang_records_picture(version_records)
-    img = compose_images([create_user_info_img(user_id), img])
+
+    # 获取用户信息并创建用户信息图片
+    user_info = USERS[user_id]['personal_info']
+    img = compose_images([create_user_info_img(user_info), img])
 
     original_url, preview_url = smart_upload(img)
     message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
@@ -2067,7 +2007,9 @@ def generate_level_records(user_id, level, ver="jp", page=1):
 
     img = generate_records_picture(up_level_list, down_level_list, title)
 
-    img = compose_images([create_user_info_img(user_id), img])
+    # 获取用户信息并创建用户信息图片
+    user_info = USERS[user_id]['personal_info']
+    img = compose_images([create_user_info_img(user_info), img])
 
     original_url, preview_url = smart_upload(img)
     message = [
@@ -2207,8 +2149,7 @@ def route_to_web_queue(event):
 IMAGE_TASK_ROUTES = {
     # 精确匹配规则 - 这些命令会生成图片
     'exact': {
-        "yang", "yrating", "yra", "ヤンレーティング",
-        "maid card", "maid", "mai pass", "maipass", "マイパス", "マイカード"
+        "yang", "yrating", "yra", "ヤンレーティング"
     },
     # 前缀匹配规则
     'prefix': [],
@@ -2476,17 +2417,39 @@ def handle_sync_text_command(event):
     user_message = event.message.text.strip()
     user_id = event.source.user_id
 
+    # 检查消息中是否有 mention（@）
+    mentioned_user_id = None
+    if hasattr(event.message, 'mention') and event.message.mention:
+        # 获取第一个被 @ 的用户
+        mentionees = event.message.mention.mentionees
+        if mentionees and len(mentionees) > 0:
+            first_mention = mentionees[0]
+            # 检查是否是用户类型的 mention（不是 @all）
+            if hasattr(first_mention, 'user_id') and first_mention.user_id:
+                mentioned_user_id = first_mention.user_id
+                logger.info(f"[Mention] User {user_id} mentioned {mentioned_user_id}, will use mentioned user's data")
+
     read_user()
     if user_id in USERS:
         mai_ver = USERS[user_id].get("version", "jp")
-        id_use = USERS[user_id].get("id_use", user_id)
-        mai_ver_use = USERS[id_use].get("version", "jp")
-        edit_user_value(user_id, "id_use", user_id)
+        # 如果有 mention，优先使用被 @ 的用户 ID
+        if mentioned_user_id:
+            id_use = mentioned_user_id
+        else:
+            id_use = USERS[user_id].get("id_use", user_id)
+        # 获取目标用户的版本信息
+        if id_use in USERS:
+            mai_ver_use = USERS[id_use].get("version", "jp")
+        else:
+            mai_ver_use = mai_ver
+        # 重置 id_use（如果不是 mention 的情况）
+        if not mentioned_user_id:
+            edit_user_value(user_id, "id_use", user_id)
     else:
         id_use = user_id
         mai_ver = "jp"
         mai_ver_use = "jp"
-        
+
 
     # ====== 基础命令映射 ======
     COMMAND_MAP = {
@@ -2510,15 +2473,7 @@ def handle_sync_text_command(event):
         # 好友列表
         "friend list": lambda: get_friend_list(user_id),
         "フレンドリスト": lambda: get_friend_list(user_id),
-        "friendlist": lambda: get_friend_list(user_id),
-
-        # 名片生成
-        "maid card": lambda: generate_maipass(user_id),
-        "maid": lambda: generate_maipass(user_id),
-        "mai pass": lambda: generate_maipass(user_id),
-        "maipass": lambda: generate_maipass(user_id),
-        "マイパス": lambda: generate_maipass(user_id),
-        "マイカード": lambda: generate_maipass(user_id)
+        "friendlist": lambda: get_friend_list(user_id)
     }
 
     if user_message in COMMAND_MAP:
@@ -2588,24 +2543,6 @@ def handle_sync_text_command(event):
             user_id,
             re.sub(r"\s*(の定数リスト|のレベルリスト|level-list)$", "", msg),
             mai_ver
-        )),
-
-        (lambda msg: msg.startswith(("add-friend", "フレンド申請", "friend request")),
-        lambda msg: send_friend_request(
-            user_id,
-            re.sub(r"^(add-friend|フレンド申請|friend request)", "", msg).strip()
-        )),
-
-        (lambda msg: msg.startswith("accept-friend-request "),
-        lambda msg: accept_friend_request(
-            user_id,
-            re.sub(r"^accept-friend-request ", "", msg).strip()
-        )),
-
-        (lambda msg: msg.startswith("reject-friend-request "),
-        lambda msg: reject_friend_request(
-            user_id,
-            re.sub(r"^reject-friend-request ", "", msg).strip()
         )),
 
         # 权限请求管理
@@ -3003,23 +2940,7 @@ def handle_internal_link(user_id, reply_token, data):
         if 'version' in USERS[user_id]:
             mai_ver = USERS[user_id]['version']
 
-    URL_MAP = [
-        (
-            lambda content, domain: re.match(
-                rf"^(?:https?://)?{re.escape(domain)}/linebot/add_friend\?id=",
-                content
-            ),
-
-            lambda content, user_id, reply_token, domain, mai_ver: send_friend_request(
-                user_id,
-                re.sub(
-                    rf"^(?:https?://)?{re.escape(domain)}/linebot/add_friend\?id=",
-                    "",
-                    content
-                ).strip()
-            )
-        ),
-    ]
+    URL_MAP = []
 
     for condition, action in URL_MAP:
         if condition(data, DOMAIN):

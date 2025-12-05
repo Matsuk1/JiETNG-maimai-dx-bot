@@ -916,7 +916,7 @@ curl -H "Authorization: Bearer $TOKEN" "$BASE_URL/search?q=ヒバナ&ver=jp"
 
 ## 版本历史
 
-- **v1.1** (2025-02-03): 添加权限请求系统
+- **v1.1** (2025-12-04): 添加权限请求系统
   - 新增 5 个权限管理 API 端点
   - 实现两层权限模型（所有者 vs 被授权者）
   - 添加 `@require_owner_permission` 装饰器

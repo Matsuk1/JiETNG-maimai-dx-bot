@@ -153,11 +153,11 @@ def login_to_maimai(sega_id: str, password: str, ver="jp"):
 def format_favorite_friends(friends):
     return [
         {
-            "label": f"💬 {f['name']} [{f['rating']}]" if f['user_id'].startswith("U") else f"🛜 {f['name']} [{f['rating']}]",
+            "label": f"🛜 {f['name']} [{f['rating']}]",
             "type": "text",
             "content": f"friend-b50 {f['user_id']}"
         }
-        for f in friends if f.get("is_favorite")
+        for f in friends if f.get("is_favorite") and not f['user_id'].startswith("U")
     ]
 
 def parse_level_value(input_str):

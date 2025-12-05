@@ -197,22 +197,16 @@ UNiVERSEのバージョンリスト
 | Command | Aliases | Description |
 |---------|---------|-------------|
 | `friend list` | `friendlist`, `フレンドリスト` | View added friends list |
-| `add-friend [Code]` | `フレンド申請 [Code]`, `friend request [Code]` | Send friend request |
 | `friend-b50 [Code]` | `friend b50 [Code]`, `フレンドb50 [Code]` | View friend's B50 |
 
 **Examples**:
 ```
 friend list                   # View friends list
-add-friend 1234567890123456   # Send friend request
 friend-b50 1234567890123456   # View friend's B50
 ```
 
 **Notes**:
-- Friend code is 16 digits
 - Requires SEGA account binding
-- Uses **friend request system**: After sending a request, the recipient receives a notification and can accept/reject
-- If both parties send requests to each other, the system automatically approves
-- Friend data is automatically cached
 
 ---
 
@@ -245,22 +239,6 @@ friend-b50 1234567890123456   # View friend's B50
 | `ランダム` | Randomly select a song (short) | `ランダム` |
 | `random-song` | Randomly select a song (English) | `random-song` |
 | `random` | Randomly select a song (English short) | `random` |
-
-### Card Generation
-
-| Command | Aliases | Description |
-|---------|---------|-------------|
-| `maid card` | `maid`, `mai pass`, `maipass`, `マイパス`, `マイカード` | Generate maimai pass card |
-
-### Image Recognition
-
-| Feature | Description |
-|---------|-------------|
-| Send Image | Automatically scan QR codes in images to identify friend invite links or other data |
-
-**Notes**:
-- Send a screenshot of a friend's card to Bot, it will automatically recognize the friend invite link
-- Supports scanning any image containing QR codes
 
 ### Location Service
 
@@ -299,7 +277,6 @@ b50                        # View B50
 ヒバナのレコード            # View personal score
 宴極の達成状況             # View Extreme achievement
 friend list                # Friends list
-maid card                  # Generate card
 ```
 
 ### Filter Examples

@@ -191,18 +191,6 @@ maintenance_error_text = {
 # フレンド関連 / Friend Messages
 # ============================================================
 
-friendid_error_text = {
-    "ja": "こういう人見つかってないね",
-    "en": "Couldn't find anyone like that",
-    "zh": "没有找到这样的人"
-}
-
-friendid_self_error_text = {
-    "ja": "自分とはフレンドになれないよ！",
-    "en": "You can't add yourself as a friend!",
-    "zh": "不能添加自己为好友！"
-}
-
 friend_error_text = {
     "ja": "お気に入りにフレンド登録してないみたいだよ？",
     "en": "Looks like you haven't registered any friends in favorites?",
@@ -213,49 +201,6 @@ friend_rcd_error_text = {
     "ja": "この人フレンドじゃないかも！",
     "en": "This person might not be your friend!",
     "zh": "这个人可能不是你的好友！"
-}
-
-# フレンド申請関連
-friend_request_sent_text = {
-    "ja": "✅ 「{name}」さんにフレンド申請送ったよ！\n相手が何かコマンド使ったら通知届くよ〜",
-    "en": "✅ Friend request sent to '{name}'!\nYou'll be notified when they use any command~",
-    "zh": "✅ 已向「{name}」发送好友申请！\n对方使用命令时你会收到通知~"
-}
-
-friend_request_already_sent_text = {
-    "ja": "もう申請送ったよ〜！相手の承認を待っててね〜",
-    "en": "You've already sent a request~! Wait for their approval~",
-    "zh": "你已经发送过申请了~！等待对方批准吧~"
-}
-
-friend_request_already_friend_text = {
-    "ja": "「{name}」さんとはもうフレンドになったじゃん！",
-    "en": "You're already friends with '{name}'!",
-    "zh": "你已经和「{name}」是好友了！"
-}
-
-friend_request_accepted_text = {
-    "ja": "✅ 「{name}」さんとフレンドになった！",
-    "en": "✅ You're now friends with '{name}'!",
-    "zh": "✅ 你和「{name}」成为好友了！"
-}
-
-friend_request_rejected_text = {
-    "ja": "「{name}」さんからの申請を拒否したよ",
-    "en": "Rejected friend request from '{name}'",
-    "zh": "已拒绝来自「{name}」的申请"
-}
-
-friend_request_not_found_text = {
-    "ja": "あれ？その申請もう処理しちゃったかも",
-    "en": "Hmm? That request might have been processed already",
-    "zh": "咦？那个申请可能已经处理过了"
-}
-
-friend_request_mutual_accepted_text = {
-    "ja": "✅ お互いに申請してたから自動で「{name}」さんとフレンドになった！",
-    "en": "✅ You both sent requests, so you're now automatically friends with '{name}'!",
-    "zh": "✅ 你们互相发送了申请，所以自动成为「{name}」的好友了！"
 }
 
 # 権限リクエスト関連 / Permission Request Related
@@ -363,12 +308,6 @@ dxdata_update_text = {
 # ============================================================
 # その他 / Others
 # ============================================================
-
-share_msg_text = {
-    "ja": "この画像を友達にシェアしよ！",
-    "en": "Share this image with your friends!",
-    "zh": "把这张图片分享给朋友吧！"
-}
 
 # 临时使用好友账号
 friend_use_once_text = {
@@ -616,13 +555,6 @@ friend_list_alt_text = {
     "zh": "好友列表"
 }
 
-# 好友申请 alt_text
-friend_request_alt_text = {
-    "ja": "フレンド申請（{count}件）",
-    "en": "Friend Requests ({count})",
-    "zh": "好友申请（{count}件）"
-}
-
 # 附近机厅列表 alt_text
 nearby_stores_alt_text = {
     "ja": "最寄りの maimai 設置店舗",
@@ -649,16 +581,6 @@ tip_messages = [
         "ja": "💡 困ったときは「help」コマンドで使い方を確認できるよ！",
         "en": "💡 Type 'help' to learn how to use the bot!",
         "zh": "💡 输入「help」可以查看使用方法！"
-    },
-    {
-        "ja": "💡 フレンド申請は相手がコマンドを使用したときに通知されるよ！",
-        "en": "💡 Friend requests are notified when the recipient uses any command!",
-        "zh": "💡 好友申请会在对方使用命令时通知！"
-    },
-    {
-        "ja": "💡 「maipass」で名刺を生成して、友達に送ってフレンド登録できるよ！",
-        "en": "💡 Generate a card with 'maipass' and share it to add friends!",
-        "zh": "💡 使用「maipass」生成名片，发给朋友就能添加好友！"
     },
     {
         "ja": "💡 「calc [tap] [hold] [slide] ([touch])  [break]」でノーツ数を入力すると、各ノーツの達成率が計算できるよ！",
@@ -1041,14 +963,6 @@ def maintenance_error(user_id=None):
     """生成维护错误消息"""
     return create_text_message(maintenance_error_text, user_id, get_support_quick_reply(user_id))
 
-def friendid_error(user_id=None):
-    """生成好友 ID 错误消息"""
-    return create_text_message(friendid_error_text, user_id, get_support_quick_reply(user_id))
-
-def friendid_self_error(user_id=None):
-    """生成不能添加自己为好友的错误消息"""
-    return create_text_message(friendid_self_error_text, user_id, get_support_quick_reply(user_id))
-
 def friend_error(user_id=None):
     """生成好友错误消息"""
     return create_text_message(friend_error_text, user_id)
@@ -1056,39 +970,6 @@ def friend_error(user_id=None):
 def friend_rcd_error(user_id=None):
     """生成好友记录错误消息"""
     return create_text_message(friend_rcd_error_text, user_id)
-
-def friend_request_sent(name, user_id=None):
-    """生成好友申请已发送消息"""
-    text = get_multilingual_text(friend_request_sent_text, user_id).format(name=name)
-    return TextMessage(text=text)
-
-def friend_request_already_sent(user_id=None):
-    """生成好友申请已发送消息"""
-    return create_text_message(friend_request_already_sent_text, user_id)
-
-def friend_request_already_friend(name, user_id=None):
-    """生成已经是好友的消息"""
-    text = get_multilingual_text(friend_request_already_friend_text, user_id).format(name=name)
-    return TextMessage(text=text)
-
-def friend_request_accepted(name, user_id=None):
-    """生成好友申请已接受消息"""
-    text = get_multilingual_text(friend_request_accepted_text, user_id).format(name=name)
-    return TextMessage(text=text)
-
-def friend_request_rejected(name, user_id=None):
-    """生成好友申请已拒绝消息"""
-    text = get_multilingual_text(friend_request_rejected_text, user_id).format(name=name)
-    return TextMessage(text=text)
-
-def friend_request_not_found(user_id=None):
-    """生成好友申请未找到消息"""
-    return create_text_message(friend_request_not_found_text, user_id)
-
-def friend_request_mutual_accepted(name, user_id=None):
-    """生成互相添加好友的消息"""
-    text = get_multilingual_text(friend_request_mutual_accepted_text, user_id).format(name=name)
-    return TextMessage(text=text)
 
 def perm_request_sent(name, user_id=None):
     """生成权限请求已发送消息"""
@@ -1126,10 +1007,6 @@ def notice_upload(user_id=None):
     """生成公告上传消息"""
     return create_text_message(notice_upload_text, user_id)
 
-def share_msg(user_id=None):
-    """生成分享消息"""
-    return create_text_message(share_msg_text, user_id)
-
 def friend_use_once(name, user_id=None):
     """生成临时使用好友账号消息"""
     text = get_multilingual_text(friend_use_once_text, user_id).format(name=name)
@@ -1162,10 +1039,6 @@ def get_notice_header(user_id=None):
 def get_friend_list_alt_text(user_id=None):
     """获取好友列表 alt_text（多语言）"""
     return get_multilingual_text(friend_list_alt_text, user_id)
-
-def get_friend_request_alt_text(count, user_id=None):
-    """获取好友申请 alt_text（多语言）"""
-    return get_multilingual_text(friend_request_alt_text, user_id).format(count=count)
 
 def get_nearby_stores_alt_text(user_id=None):
     """获取附近机厅列表 alt_text（多语言）"""
