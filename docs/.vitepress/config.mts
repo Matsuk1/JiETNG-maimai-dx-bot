@@ -63,8 +63,7 @@ export default withMermaid(defineConfig({
       {
         text: '功能特性',
         items: [
-          { text: '成绩查询', link: '/features/search' },
-          { text: '好友系统', link: '/features/friends' }
+          { text: '成绩查询', link: '/features/search' }
         ]
       },
       {
@@ -150,8 +149,7 @@ export default withMermaid(defineConfig({
           {
             text: 'Features',
             items: [
-              { text: 'Score Search', link: '/en/features/search' },
-              { text: 'Friend System', link: '/en/features/friends' }
+              { text: 'Score Search', link: '/en/features/search' }
             ]
           },
           {
@@ -214,8 +212,7 @@ export default withMermaid(defineConfig({
           {
             text: '機能',
             items: [
-              { text: '楽曲検索', link: '/ja/features/search' },
-              { text: 'フレンド機能', link: '/ja/features/friends' }
+              { text: '楽曲検索', link: '/ja/features/search' }
             ]
           },
           {

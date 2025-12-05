@@ -88,15 +88,6 @@ Usually 20 to 30 seconds, depending on:
 
 ## Features and Commands
 
-### What is the friend system?
-
-Add other JiETNG users as friends to:
-- Compare Best 50 charts
-- View each other's scores
-- Build your maimai community
-
-See [Friend System](/en/features/friends) for details.
-
 ## Troubleshooting
 
 ### "You haven't bound your SEGA ID yet"

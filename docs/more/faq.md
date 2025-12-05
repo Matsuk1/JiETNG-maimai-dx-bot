@@ -88,15 +88,6 @@ maimai update
 
 ## 功能和命令
 
-### 什么是好友系统？
-
-添加其他 JiETNG 用户为好友以：
-- 对比 Best 50 图表
-- 查看彼此的成绩
-- 建立您的 maimai 社区
-
-详情请参阅[好友系统](/features/friends)。
-
 ## 故障排除
 
 ### "您还没有绑定 SEGA ID"
