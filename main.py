@@ -22,6 +22,7 @@ import secrets
 import hashlib
 import copy
 import asyncio
+import aiohttp
 
 from datetime import datetime, timedelta
 from typing import List, Optional, Any
@@ -799,7 +800,7 @@ Token not provided. <br />
             }
             return render_template("error.html", message=missing_fields_messages.get(user_language, missing_fields_messages["ja"]), language=user_language), 400
 
-        result = process_sega_credentials(user_id, segaid, password, user_version, user_language)
+        result = asyncio.run(process_sega_credentials(user_id, segaid, password, user_version, user_language))
         if result == "MAINTENANCE":
             maintenance_messages = {
                 "ja": "公式サイトがメンテナンス中です。しばらくしてからもう一度お試しください。",
@@ -822,18 +823,24 @@ Token not provided. <br />
     return render_template("bind_form.html", user_language=user_language)
 
 
-def process_sega_credentials(user_id, segaid, password, ver="jp", language="ja"):
+async def process_sega_credentials(user_id, segaid, password, ver="jp", language="ja"):
     base = (
         "https://maimaidx-eng.com/maimai-mobile"
         if ver == "intl"
         else "https://maimaidx.jp/maimai-mobile"
     )
 
-    session = login_to_maimai(segaid, password, ver=ver)
-    if session == "MAINTENANCE":
+    cookies = await login_to_maimai(segaid, password, ver=ver)
+    if cookies == "MAINTENANCE":
         return "MAINTENANCE"
-    if fetch_dom(session, f"{base}/home/") is None:
-        return False
+
+    # 验证登录是否成功
+    connector = aiohttp.TCPConnector(ssl=False)
+    async with aiohttp.ClientSession(cookies=cookies, connector=connector) as session:
+        session_id = id(session)
+        dom = await fetch_dom(session, f"{base}/home/", session_id, ver)
+        if dom is None:
+            return False
 
     user_bind_sega_id(user_id, segaid)
     user_bind_sega_pwd(user_id, password)
@@ -1104,21 +1111,21 @@ def maimai_update(user_id, ver="jp"):
     sega_id = USERS[user_id]['sega_id']
     sega_pwd = USERS[user_id]['sega_pwd']
 
-    user_session = login_to_maimai(sega_id, sega_pwd, ver)
-    if user_session == None:
+    # 使用异步登录
+    cookies = asyncio.run(login_to_maimai(sega_id, sega_pwd, ver))
+    if cookies is None:
         return segaid_error(user_id)
-    if user_session == "MAINTENANCE":
+    if cookies == "MAINTENANCE":
         return maintenance_error(user_id)
 
     # 使用异步函数并发获取所有数据
-    cookies = user_session.cookies.get_dict()
 
     async def fetch_all_data():
         return await asyncio.gather(
-            get_maimai_info_async(cookies, ver),
-            get_maimai_records_async(cookies, ver),
-            get_recent_records_async(cookies, ver),
-            get_friends_list_async(cookies, ver)
+            get_maimai_info(cookies, ver),
+            get_maimai_records(cookies, ver),
+            get_recent_records(cookies, ver),
+            get_friends_list(cookies, ver)
         )
 
     user_info, maimai_records, recent_records, friends_list = asyncio.run(fetch_all_data())
@@ -1253,6 +1260,11 @@ def get_friend_list(user_id):
     friends_list = copy.deepcopy(get_user_value(user_id, "mai_friends"))
     if not friends_list:
         friends_list = []
+
+    for friend in friends_list:
+        if "user_id" in friend:
+            friend["friend_id"] = friend["user_id"]
+            del friend["user_id"]
 
     return generate_friend_buttons(user_id, get_friend_list_alt_text(user_id), format_favorite_friends(friends_list))
 
@@ -1641,7 +1653,7 @@ def generate_all_level_caches():
             except Exception as notify_error:
                 logger.error(f"Failed to notify admin {admin_user_id} about cache failure: {notify_error}")
 
-def create_user_info_img(user_info, scale=1.5):
+def create_user_info_img(user_info, scale=1.7):
     """
     创建用户信息图片
 
@@ -1935,35 +1947,38 @@ def generate_friend_b50(user_id, friend_code, ver="jp"):
     sega_id = USERS[user_id]['sega_id']
     sega_pwd = USERS[user_id]['sega_pwd']
 
-    user_session = login_to_maimai(sega_id, sega_pwd, ver)
-    if user_session == None:
-        return segaid_error(user_id)
-    if user_session == "MAINTENANCE":
+    # 使用异步登录和获取好友成绩
+    async def fetch_friend_data():
+        cookies = await login_to_maimai(sega_id, sega_pwd, ver)
+        if cookies is None or cookies == "MAINTENANCE":
+            return cookies, None, None
+        tasks = [
+            get_friend_info(cookies, friend_code, ver),
+            get_friend_records(cookies, friend_code, ver)
+        ]
+        friend_info, friend_records = await asyncio.gather(*tasks)
+        return None, friend_info, friend_records
+
+    error, friend_info, friend_records = asyncio.run(fetch_friend_data())
+
+    if error == "MAINTENANCE":
         return maintenance_error(user_id)
+    if error is None and friend_records is None:
+        return segaid_error(user_id)
 
-    # 使用异步函数获取好友成绩（性能提升约5倍）
-    cookies = user_session.cookies.get_dict()
-    friend_name, song_record = asyncio.run(get_friend_records_async(cookies, friend_code, ver))
-
-    if not friend_name or not song_record:
+    if not friend_records:
         return friend_rcd_error(user_id)
 
-    song_record = get_detailed_info(song_record, ver)
+    friend_records = get_detailed_info(friend_records, ver)
 
-    up_songs_data = list(filter(lambda x: x['new_song'] == False, song_record))
-    down_songs_data = list(filter(lambda x: x['new_song'] == True, song_record))
+    up_songs, down_songs = select_records(friend_records, "best50", "", ver)
 
-    up_songs = sorted(up_songs_data, key=lambda x: -x["ra"])[:35]
-    down_songs = sorted(down_songs_data, key=lambda x: -x["ra"])[:15]
-
-    img = generate_records_picture(up_songs, down_songs, "FRD-B50")
-    img = compose_images([img])
-
+    user_info_img = create_user_info_img(friend_info)
+    rcd_img = generate_records_picture(up_songs, down_songs, "FRD-B50")
+    img = compose_images([user_info_img, rcd_img])
     original_url, preview_url = smart_upload(img)
-    message = [
-        friend_best50_title(friend_name, user_id),
-        ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
-    ]
+
+    message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
     return message
 
 def generate_level_records(user_id, level, ver="jp", page=1):
@@ -2391,6 +2406,19 @@ def handle_text_message(event):
     - 图片生成任务 → image_queue (图片生成，如 b50, yang rating)
     - 其他任务 → 同步处理 (快速文本响应)
     """
+    # 清理消息文本中的 mention 特殊字符（LINE 的 mention 格式是 \ufffd@显示名\ufffd）
+    # 移除所有不可见的 Unicode 字符和 @ 后的用户名
+    original_text = event.message.text
+    cleaned_text = re.sub(r'[\ufffd]', '', original_text)  # 移除替换字符
+    cleaned_text = re.sub(r'@\S+\s*', '', cleaned_text)     # 移除 @用户名
+    cleaned_text = cleaned_text.strip()
+
+    # 替换 event.message.text 用于命令匹配
+    event.message.text = cleaned_text
+
+    if original_text != cleaned_text:
+        logger.info(f"[Text Cleaning] Original: '{original_text}' -> Cleaned: '{cleaned_text}'")
+
     # 检查是否是web任务
     if route_to_web_queue(event):
         return
@@ -2401,6 +2429,7 @@ def handle_text_message(event):
 
     # 同步处理其他文本命令
     handle_sync_text_command(event)
+
 
 # ==================== 任务处理函数 ====================
 
@@ -2849,7 +2878,7 @@ def handle_image_message(event):
     reply_msg = []
 
     if qr_results:
-        # 发现 QR 码，解析并处理
+        # 发现 QR 码，解析并处理（同步，速度快）
         for qr in qr_results:
             data = qr.data.decode("utf-8")
             new_reply_msg = handle_image_message_task(event.source.user_id, event.reply_token, data, image)
@@ -2865,8 +2894,48 @@ def handle_image_message(event):
             )
 
     else:
-        # 没有 QR 码，尝试封面匹配
+        # 没有 QR 码，尝试封面匹配（移到队列异步处理）
         user_id = event.source.user_id
+
+        # 发送"正在识别"的提示
+        from modules.message_manager import get_multilingual_text
+        processing_text = {
+            "ja": "🔍 楽曲を識別しています...",
+            "en": "🔍 Identifying song...",
+            "zh": "🔍 正在识别歌曲..."
+        }
+        smart_reply(user_id, event.reply_token, TextMessage(text=get_multilingual_text(processing_text, user_id)), configuration, DIVIDER)
+
+        # 添加到图片队列异步处理
+        try:
+            task_id = f"cover_match_{user_id}_{datetime.now().timestamp()}"
+            nickname = get_user_nickname_wrapper(user_id, use_cache=True)
+
+            with task_tracking_lock:
+                task_tracking['queued'].append({
+                    'id': task_id,
+                    'function': 'async_cover_matching_task',
+                    'queue_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                    'user_id': user_id,
+                    'nickname': nickname
+                })
+
+            image_queue.put_nowait((async_cover_matching_task, (user_id, image), task_id))
+            logger.info(f"[Image Queue] Cover matching task queued for user {user_id}")
+        except Exception as e:
+            logger.error(f"Failed to queue cover matching task: {e}")
+            smart_push(user_id, qrcode_error(user_id), configuration)
+
+def async_cover_matching_task(user_id, image):
+    """
+    异步封面匹配任务 - 在 image_queue 中执行
+
+    Args:
+        user_id: 用户ID
+        image: PIL Image 对象
+    """
+    try:
+        # 获取用户版本
         mai_ver = "jp"
         read_user()
         if user_id in USERS:
@@ -2889,31 +2958,16 @@ def handle_image_message(event):
                     reply_messages.append(ImageMessage(original_content_url=original_url, preview_image_url=preview_url))
 
                 if reply_messages:
-                    smart_reply(
-                        event.source.user_id,
-                        event.reply_token,
-                        reply_messages,
-                        configuration,
-                        DIVIDER
-                    )
+                    smart_push(user_id, reply_messages, configuration)
             except Exception as e:
                 logger.error(f"Loading level cache error: {e}")
-                smart_reply(
-                    event.source.user_id,
-                    event.reply_token,
-                    qrcode_error(event.source.user_id),
-                    configuration,
-                    DIVIDER
-                )
+                smart_push(user_id, qrcode_error(user_id), configuration)
         else:
             # 未找到匹配，返回错误
-            smart_reply(
-                event.source.user_id,
-                event.reply_token,
-                qrcode_error(event.source.user_id),
-                configuration,
-                DIVIDER
-            )
+            smart_push(user_id, qrcode_error(user_id), configuration)
+    except Exception as e:
+        logger.error(f"Cover matching task error: {e}", exc_info=True)
+        smart_push(user_id, qrcode_error(user_id), configuration)
 
 def handle_image_message_task(user_id, reply_token, data, image=None):
     """
@@ -2953,7 +3007,7 @@ def handle_internal_link(user_id, reply_token, data):
 @handler.add(MessageEvent, message=LocationMessageContent)
 def handle_location_message(event):
     """
-    位置消息处理 - 同步处理，返回机厅按钮列表
+    位置消息处理 - 异步获取附近机厅
     """
     read_user()
 
@@ -2961,7 +3015,7 @@ def handle_location_message(event):
     lng = event.message.longitude
     user_id = event.source.user_id
 
-    stores = get_nearby_maimai_stores(lat, lng, USERS[user_id]['version'])
+    stores = asyncio.run(get_nearby_maimai_stores(lat, lng, USERS[user_id]['version']))
 
     # 检查维护状态
     if stores == "MAINTENANCE":

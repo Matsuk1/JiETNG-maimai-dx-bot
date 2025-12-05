@@ -594,23 +594,28 @@ tip_messages = [
     },
     {
         "ja": "💡 「ランダム曲」で迷った時にランダムに曲を選んでくれるよ！",
-        "en": "💡 Use 'ランダム曲' (random) to randomly pick a song when you can't decide!",
-        "zh": "💡 使用「ランダム曲」(random) 在犹豫时随机选择歌曲！"
-    },
-    {
-        "ja": "💡 QRコード付きの画像を送ると、自動でフレンド追加リンクを認識するよ！",
-        "en": "💡 Send an image with a QR code to automatically recognize friend add links!",
-        "zh": "💡 发送带 QR 码的图片，会自动识别好友添加链接！"
+        "en": "💡 Use 'random-song' to randomly pick a song when you can't decide!",
+        "zh": "💡 使用「random-song」在犹豫时随机选择歌曲！"
     },
     {
         "ja": "💡 「宴極の達成状況」のように入力すると、プレート達成状況が見られるよ！",
-        "en": "💡 Type commands like '宴極の達成状況' to view plate achievement status!",
-        "zh": "💡 输入「宴極の達成状況」等命令可以查看牌子达成情况！"
+        "en": "💡 Type commands like '宴極 achievement' to view plate achievement status!",
+        "zh": "💡 输入「宴極 achievement」等命令可以查看牌子达成情况！"
     },
     {
         "ja": "💡 より詳細な楽曲検索は https://dxrating.net をご利用ください！",
         "en": "💡 For more accurate song queries, visit https://dxrating.net!",
         "zh": "💡 想要更精确的歌曲查询？请访问 https://dxrating.net！"
+    },
+    {
+        "ja": "💡 二次元コードの画像を送信すると、自動的に認識して処理するよ！",
+        "en": "💡 Send a QR code image and it will be automatically recognized and processed!",
+        "zh": "💡 发送二维码图片可以自动识别并处理！"
+    },
+    {
+        "ja": "💡 ジャケット画像を送信すると、楽曲を認識できるよ！",
+        "en": "💡 Send a song jacket image to identify the song!",
+        "zh": "💡 发送曲绘图片可以识别歌曲！"
     },
 ]
 

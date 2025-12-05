@@ -18,6 +18,10 @@ _hash_cache = {}  # 哈希缓存
 _feature_cache = {}  # 特征点缓存
 _cache_loaded = False
 
+# LSH 索引缓存
+_lsh_index = {}  # {bucket_key: [cover_name, ...]}
+_lsh_initialized = False
+
 
 def pil_to_cv2(pil_image):
     """将 PIL Image 转换为 OpenCV 格式"""
@@ -119,6 +123,58 @@ def match_sift_features(kp1, desc1, kp2, desc2):
         return 0, 0, 0.0
 
 
+def _hash_to_lsh_bucket(hash_value, num_bands=32, band_size=8):
+    """
+    将哈希值转换为 LSH bucket keys
+
+    Args:
+        hash_value: imagehash.ImageHash 对象 (16x16 = 256 bits)
+        num_bands: 分段数量（32 bands × 8 bits，保守策略确保高召回率）
+        band_size: 每段的比特数（8 bits 更短，更容易匹配相似图片）
+
+    Returns:
+        list: bucket keys
+
+    说明：
+        - 更多的 bands (32) + 更短的 band_size (8) = 更高召回率
+        - 即使图片有轻微差异，也能通过多个 bands 中的某几个匹配上
+        - 避免漏掉正确结果（假阴性）
+    """
+    hash_array = hash_value.hash.flatten()  # 16x16 -> 256 元素的一维数组
+    bucket_keys = []
+
+    for band_id in range(num_bands):
+        start = band_id * band_size
+        end = min(start + band_size, len(hash_array))
+        band_bits = hash_array[start:end]
+        # 转换为整数作为 bucket key
+        bucket_key = (band_id, int(''.join(map(str, band_bits.astype(int))), 2))
+        bucket_keys.append(bucket_key)
+
+    return bucket_keys
+
+
+def _build_lsh_index():
+    """构建 LSH 索引"""
+    global _lsh_index, _lsh_initialized
+
+    if _lsh_initialized:
+        return
+
+    logger.info("正在构建 LSH 索引...")
+    _lsh_index.clear()
+
+    for cover_name, cover_hash in _hash_cache.items():
+        bucket_keys = _hash_to_lsh_bucket(cover_hash)
+        for bucket_key in bucket_keys:
+            if bucket_key not in _lsh_index:
+                _lsh_index[bucket_key] = []
+            _lsh_index[bucket_key].append(cover_name)
+
+    _lsh_initialized = True
+    logger.info(f"✓ LSH 索引构建完成: {len(_lsh_index)} 个 buckets")
+
+
 def load_cover_cache(covers_dir):
     """
     预加载封面的哈希和特征点
@@ -160,6 +216,9 @@ def load_cover_cache(covers_dir):
 
     _cache_loaded = True
     logger.info(f"✓ 封面数据库加载完成: {loaded}/{len(cover_files)} 张")
+
+    # 构建 LSH 索引
+    _build_lsh_index()
 
 
 def find_similar_cover(input_image, covers_dir=None, hash_threshold=15, return_multiple=False, max_results=3):
@@ -208,10 +267,24 @@ def find_similar_cover(input_image, covers_dir=None, hash_threshold=15, return_m
 
     input_hash = calculate_image_hash(input_image)
     if input_hash:
-        # 收集所有哈希匹配结果
+        # 使用 LSH 索引快速查找候选封面
+        bucket_keys = _hash_to_lsh_bucket(input_hash)
+        candidates = set()
+
+        for bucket_key in bucket_keys:
+            if bucket_key in _lsh_index:
+                candidates.update(_lsh_index[bucket_key])
+
+        logger.info(f"  LSH 候选集: {len(candidates)} 张封面（从 {len(_hash_cache)} 张中筛选）")
+
+        # 只对候选封面计算精确距离
         hash_matches = []
 
-        for cover_name, cover_hash in _hash_cache.items():
+        for cover_name in candidates:
+            if cover_name not in _hash_cache:
+                continue
+
+            cover_hash = _hash_cache[cover_name]
             distance = abs(input_hash - cover_hash)
             if distance <= hash_threshold:
                 confidence = 100 * (1 - distance / (hash_threshold * 2))
