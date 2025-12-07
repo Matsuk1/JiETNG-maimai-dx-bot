@@ -1,6 +1,6 @@
 import json
 from PIL import Image, ImageDraw, ImageFont
-from modules.record_generator import create_thumbnail
+from modules.record_generator import create_thumbnail, create_thumbnail_in_line
 from modules.image_manager import *
 from modules.image_cache import paste_icon_optimized, get_cached_image, get_cover_image
 from modules.config_loader import ICON_TYPE_DIR
@@ -26,7 +26,7 @@ def song_info_generate(song_json, played_data = []):
         img2 = resize_by_width(_generate_song_table_image(song_json), 1200)
 
     else:
-        img2 = resize_by_width(_makeup_played_data(played_data), 600)
+        img2 = resize_by_width(_makeup_played_data(played_data), 800)
 
     song_img = compose_images([img1, img2])
 
@@ -167,10 +167,10 @@ def _generate_song_table_image(song_json, scale_width=1.5, scale_height=2.0):
 
     return image
 
-def _makeup_played_data(played_data, gap=20):
+def _makeup_played_data(played_data, gap=10):
     rcd_imgs = []
     for rcd in played_data:
-        rcd_imgs.append(create_thumbnail(rcd))
+        rcd_imgs.append(create_thumbnail_in_line(rcd, scale=1))
 
     widths = [img.width for img in rcd_imgs]
     heights = [img.height for img in rcd_imgs]
@@ -204,6 +204,7 @@ def _render_song_info_small_img(song_json, cover_img):
     # 封面图处理
     cover_size = 200
     large_cover = cover_img.resize((cover_size, cover_size))
+    large_cover = round_corner(large_cover)
     cover_x = margin
     cover_y = margin
     img.paste(large_cover, (cover_x, cover_y), large_cover)
@@ -268,7 +269,7 @@ def generate_version_list(songs_json):
         else:
             cover_img = cover_img.convert("RGBA")
 
-        song_img = _render_song_info_small_img(song, round_corner(cover_img))
+        song_img = _render_song_info_small_img(song, cover_img)
         song_img = wrap_in_rounded_background(song_img)
         song_imgs.append(song_img)
 

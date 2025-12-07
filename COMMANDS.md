@@ -113,12 +113,6 @@ idealb50 -lv 13.5 14.0               # 定数 13.5-14.0 的理论分 B50
 b50 -ver buddies -lv 14.0            # Buddies 版本且定数 ≥14.0 的 B50
 ```
 
-### Yang Rating（过去版本 Rating）
-
-| 命令 | 别名 | 说明 |
-|------|------|------|
-| `yang` | `yrating`, `yra`, `ヤンレーティング` | 生成 Yang Rating 图（按版本统计） |
-
 ---
 
 ## 歌曲查询

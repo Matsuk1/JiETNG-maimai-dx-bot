@@ -113,12 +113,6 @@ idealb50 -lv 13.5 14.0               # Ideal B50 with constant 13.5-14.0
 b50 -ver buddies -lv 14.0            # B50 with Buddies version and constant ≥14.0
 ```
 
-### Yang Rating (Past Version Rating)
-
-| Command | Aliases | Description |
-|---------|---------|-------------|
-| `yang` | `yrating`, `yra`, `ヤンレーティング` | Generate Yang Rating chart (by version) |
-
 ---
 
 ## Song Queries

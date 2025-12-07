@@ -162,10 +162,10 @@ def get_user_nickname(user_id: str, line_bot_api, use_cache: bool = True) -> str
     except Exception as e:
         # 404错误是正常的(用户可能删除了Bot),使用debug级别记录
         if "404" in str(e):
-            logger.debug(f"User {user_id} not found (may have blocked/deleted bot)")
+            logger.warning(f"User {user_id} not found (may have blocked/deleted bot)")
             nickname = "Unknown (Blocked/Deleted)"
         else:
-            logger.warning(f"Failed to get nickname for {user_id}: {e}")
+            logger.error(f"Failed to get nickname for {user_id}: {e}")
             nickname = "Unknown (API Error)"
 
         # 缓存错误结果(避免重复失败的API调用)

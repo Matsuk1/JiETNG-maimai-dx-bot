@@ -107,12 +107,6 @@ b100 -lv 13.0 14.9 -dx 92 95         # B100 with constant 13.0-14.9 and DX 92%-9
 idealb50 -lv 13.5 14.0               # Ideal B50 with constant 13.5-14.0
 ```
 
-### Yang Rating (Past Version Rating)
-
-| Command | Aliases | Description |
-|---------|---------|-------------|
-| `yang` | `yrating`, `yra`, `ヤンレーティング` | Generate Yang Rating chart (by version) |
-
 ---
 
 ## Song Queries

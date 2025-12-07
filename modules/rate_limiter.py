@@ -73,7 +73,7 @@ def check_rate_limit(user_id: str, task_type: str) -> bool:
 
     Args:
         user_id: 用户ID
-        task_type: 任务类型（如 'maimai_update', 'b50', 'yang' 等）
+        task_type: 任务类型（如 'maimai_update', 'b50' 等）
 
     Returns:
         bool: True 表示超过限制（应该拒绝），False 表示可以继续

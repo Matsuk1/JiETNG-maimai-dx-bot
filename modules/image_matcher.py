@@ -63,7 +63,7 @@ def extract_sift_features(image_cv2):
         return keypoints, descriptors
 
     except Exception as e:
-        logger.debug(f"SIFT feature extraction failed: {e}")
+        logger.error(f"SIFT feature extraction failed: {e}")
         return None, None
 
 
@@ -119,7 +119,7 @@ def match_sift_features(kp1, desc1, kp2, desc2):
         return len(good_matches), 0, 0.0
 
     except Exception as e:
-        logger.debug(f"Feature matching failed: {e}")
+        logger.error(f"Feature matching failed: {e}")
         return 0, 0, 0.0
 
 
@@ -211,7 +211,7 @@ def load_cover_cache(covers_dir):
             loaded += 1
 
         except Exception as e:
-            logger.debug(f"Failed to load cover {cover_file}: {e}")
+            logger.error(f"Failed to load cover {cover_file}: {e}")
             continue
 
     _cache_loaded = True

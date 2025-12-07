@@ -218,10 +218,12 @@ async def login_to_maimai(sega_id: str, password: str, ver="jp"):
     # 随机 User-Agent
     user_agent = _get_random_user_agent()
 
-    connector = aiohttp.TCPConnector(ssl=False)
+    # 优化：增加连接池大小，设置超时
+    connector = aiohttp.TCPConnector(ssl=False, limit=10, ttl_dns_cache=300)
+    timeout = aiohttp.ClientTimeout(total=40, connect=15, sock_read=20)
 
     if ver == "intl":
-        async with aiohttp.ClientSession(connector=connector) as session:
+        async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
             try:
                 async with session.get(
                     "https://lng-tgk-aime-gw.am-all.net/common_auth/login?site_id=maimaidxex&redirect_url=https://maimaidx-eng.com/maimai-mobile/&back_url=https://maimai.sega.com/"
@@ -262,7 +264,7 @@ async def login_to_maimai(sega_id: str, password: str, ver="jp"):
             return session.cookie_jar.filter_cookies("https://maimaidx-eng.com")
 
     else:  # jp
-        async with aiohttp.ClientSession(connector=connector) as session:
+        async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
             try:
                 async with session.get("https://maimaidx.jp/maimai-mobile/login/") as response:
                     if response.status == 503:
@@ -315,8 +317,10 @@ async def get_maimai_info(cookies: dict, ver="jp"):
     base = "https://maimaidx-eng.com/maimai-mobile" if ver == "intl" else "https://maimaidx.jp/maimai-mobile"
     session_id = id(cookies)
 
-    connector = aiohttp.TCPConnector(ssl=False)
-    async with aiohttp.ClientSession(cookies=cookies, connector=connector) as session:
+    # 优化：增加连接池大小，设置超时
+    connector = aiohttp.TCPConnector(ssl=False, limit=20, ttl_dns_cache=300)
+    timeout = aiohttp.ClientTimeout(total=30, connect=10, sock_read=15)
+    async with aiohttp.ClientSession(cookies=cookies, connector=connector, timeout=timeout) as session:
         # 并发请求所有页面
         urls = [
             f"{base}/playerData/",
@@ -390,8 +394,10 @@ async def get_maimai_records(cookies: dict, ver="jp"):
 
     session_id = id(cookies)  # 使用 cookies 对象 id 作为限速键
 
-    connector = aiohttp.TCPConnector(ssl=False)
-    async with aiohttp.ClientSession(cookies=cookies, connector=connector) as session:
+    # 优化：增加连接池大小，设置超时
+    connector = aiohttp.TCPConnector(ssl=False, limit=20, ttl_dns_cache=300)
+    timeout = aiohttp.ClientTimeout(total=45, connect=10, sock_read=20)
+    async with aiohttp.ClientSession(cookies=cookies, connector=connector, timeout=timeout) as session:
         # 并发请求所有难度
         tasks = []
         for page_num in range(5):
@@ -476,8 +482,10 @@ async def get_recent_records(cookies: dict, ver="jp"):
     base = "https://maimaidx-eng.com/maimai-mobile" if ver == "intl" else "https://maimaidx.jp/maimai-mobile"
     session_id = id(cookies)
 
-    connector = aiohttp.TCPConnector(ssl=False)
-    async with aiohttp.ClientSession(cookies=cookies, connector=connector) as session:
+    # 优化：增加连接池大小，设置超时
+    connector = aiohttp.TCPConnector(ssl=False, limit=10, ttl_dns_cache=300)
+    timeout = aiohttp.ClientTimeout(total=30, connect=10, sock_read=15)
+    async with aiohttp.ClientSession(cookies=cookies, connector=connector, timeout=timeout) as session:
         url = f"{base}/record/"
         dom = await fetch_dom(session, url, session_id, ver)
 
@@ -567,8 +575,10 @@ async def get_friends_list(cookies: dict, ver="jp"):
     base = "https://maimaidx-eng.com/maimai-mobile" if ver == "intl" else "https://maimaidx.jp/maimai-mobile"
     session_id = id(cookies)
 
-    connector = aiohttp.TCPConnector(ssl=False)
-    async with aiohttp.ClientSession(cookies=cookies, connector=connector) as session:
+    # 优化：增加连接池大小，设置超时
+    connector = aiohttp.TCPConnector(ssl=False, limit=10, ttl_dns_cache=300)
+    timeout = aiohttp.ClientTimeout(total=30, connect=10, sock_read=15)
+    async with aiohttp.ClientSession(cookies=cookies, connector=connector, timeout=timeout) as session:
         url = f"{base}/friend/"
         dom = await fetch_dom(session, url, session_id, ver)
 

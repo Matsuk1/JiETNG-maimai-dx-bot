@@ -111,7 +111,6 @@ Version abbreviations: `真`, `超`, `晓`, `祭`, `煌`, `镜`, etc.
 | `maimai update` | Update score data from server |
 | `rc [rating]` | View rating reference table |
 | `calc [tap] [hold] [slide] [touch] [break]` | Calculate theoretical score |
-| `yang` / `yra` | View Yang Rating |
 | `[版本]のバージョンリスト` | View version song list |
 
 ### Location Services

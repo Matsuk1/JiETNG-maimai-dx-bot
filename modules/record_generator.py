@@ -33,6 +33,90 @@ def _get_difficulty_color(difficulty):
     }
     return colors.get(difficulty.lower(), (200, 200, 200))
 
+def create_thumbnail_in_line(song, thumb_size=(400, 100), scale=1.5):
+    bg_color = (255, 255, 255)
+    img = Image.new("RGB", thumb_size, bg_color)
+    draw = ImageDraw.Draw(img)
+
+    text_color = (0, 0, 0)
+
+    # --- 基础分数 ---
+    draw.text((15, 13), song['score'], fill=text_color, font=font_huge)
+    draw.text((175, 21), song['dx_score'], fill=text_color, font=font_large)
+
+    # --- score_icon 图标 ---
+    # 根据缩略图尺寸动态计算图标大小
+    paste_icon_optimized(
+        img, song, key='score_icon',
+        size=(90, 40),
+        position=(305, 12),
+        save_dir=ICON_SCORE_DIR,
+        url_func=lambda value: f"https://maimaidx.jp/maimai-mobile/img/music_icon_{value}.png"
+    )
+
+    # --- 最下面的横线 ---
+    # draw.line([(0, 100),(400, 100)], fill=, width=90)
+
+    # --- combo_icon 图标 ---
+    paste_icon_optimized(
+        img, song, key='combo_icon',
+        size=(40, 44),
+        position=(19, 50),
+        save_dir=ICON_COMBO_DIR,
+        url_func=lambda value: f"https://maimaidx.jp/maimai-mobile/img/music_icon_{value}.png"
+    )
+
+    # --- sync_icon 图标 ---
+    paste_icon_optimized(
+        img, song, key='sync_icon',
+        size=(40, 44),
+        position=(65, 50),
+        save_dir=ICON_SYNC_DIR,
+        url_func=lambda value: f"https://maimaidx.jp/maimai-mobile/img/music_icon_{value}.png"
+    )
+
+    # --- dx_star 星星图标 ---
+    if 'dx_score' in song and song['dx_score']:
+        try:
+            dx_score = eval(song['dx_score'].replace(",", ""))
+            if 0 <= dx_score < 0.85:
+                star_num = 0
+            elif 0.85 <= dx_score < 0.9:
+                star_num = 1
+            elif 0.9 <= dx_score < 0.93:
+                star_num = 2
+            elif 0.93 <= dx_score < 0.95:
+                star_num = 3
+            elif 0.95 <= dx_score < 0.97:
+                star_num = 4
+            elif 0.97 <= dx_score <= 1:
+                star_num = 5
+
+            paste_icon_optimized(
+                img, {'star': str(star_num)}, key='star',
+                size=(109, 22),
+                position=(129, 63),
+                save_dir=ICON_DX_STAR_DIR,
+                url_func=lambda value: f"https://maimaidx.jp/maimai-mobile/img/music_icon_dxstar_detail_{value}.png"
+            )
+
+        except Exception as e:
+            logger.error(f"Error calculating dx_star: {e}")
+
+    # --- 数值 ---
+    draw.text((375, 61), f"{song['internalLevelValue']:.1f} → {song['ra']}", fill=(0, 0, 0), font=font_large, anchor="ra")
+
+    # --- 边框 ---
+    border_color = _get_difficulty_color(song['difficulty'])
+    draw.rectangle([(0, 0), (thumb_size[0] - 1, thumb_size[1] - 1)], outline=border_color, width=5)
+
+    final_img = img.convert("RGB")
+
+    new_size = (int(final_img.width * scale), int(final_img.height * scale))
+    final_img = final_img.resize(new_size, Image.Resampling.LANCZOS)
+
+    return final_img
+
 def create_thumbnail(song, thumb_size=(300, 150), padding=15):
     bg_color = _get_difficulty_color(song['difficulty'])
     img = Image.new("RGB", thumb_size, bg_color)
@@ -108,9 +192,7 @@ def create_thumbnail(song, thumb_size=(300, 150), padding=15):
               song['dx_score'], fill=text_color, font=font_small, anchor="ra")
 
     # --- 最下面的横线 ---
-    draw.line([(0, thumb_size[1]),
-               (thumb_size[0], thumb_size[1])],
-              fill=(255, 255, 255), width=90)
+    draw.line([(0, thumb_size[1]), (thumb_size[0], thumb_size[1])], fill=(255, 255, 255), width=90)
 
     # --- dx_star 星星图标 ---
     if 'dx_score' in song and song['dx_score']:
@@ -165,7 +247,7 @@ def create_thumbnail(song, thumb_size=(300, 150), padding=15):
     )
 
 
-    # --- 名次和数值 ---
+    # --- 数值 ---
     draw.text((score_x_offset + 3, thumb_size[1] - 38),
               f"{song['internalLevelValue']:.1f} → {song['ra']}",
               fill=(0, 0, 0), font=font_large, anchor="ra")
@@ -345,95 +427,6 @@ def generate_records_picture(up_songs=[], down_songs=[], title="RECORD"):
 
     return combined
 
-def generate_yang_records_picture(version_songs, title="YANG"):
-    if not version_songs:
-        return
-
-    thumb_size = (400, 200)   # 提升清晰度: 300x150 -> 400x200 (增加33%)
-    cols = 10                 # 固定列
-    spacing = 10              # 缩略图间距
-    side_width = 30           # 左右边距
-    header_height = 150       # 顶部标题区域
-    block_padding = 20        # 每个版本区块之间的留白
-    line_height = 50          # 分隔条厚度
-
-    # 计算整体平均 ra
-    all_songs = [song for block in version_songs for song in block["songs"]]
-    song_count = sum(block["count"] for block in version_songs)
-    if not all_songs:
-        return
-    avg_ra = round(sum(song["ra"] for song in all_songs) / song_count, 2)
-
-    # 先计算整体高度
-    total_height = header_height
-    max_width = cols * (thumb_size[0] + spacing) - spacing + side_width * 2
-
-    for block in version_songs:
-        SONGS = block["songs"]
-        rows = math.ceil(len(SONGS) / cols)
-        block_height = rows * (thumb_size[1] + spacing)
-        total_height += block_height + block_padding + line_height + 50
-
-    combined = Image.new("RGB", (max_width, total_height), (255, 255, 255))
-    draw = ImageDraw.Draw(combined)
-
-    # 顶部 header_text
-    header_text = [
-        f"YANG レーティング: {avg_ra:.2f}"
-    ]
-    draw_aligned_colon_text(
-        draw,
-        lines=header_text,
-        top_left=(side_width + 20, side_width),
-        font=font_huge,
-        spacing=7,
-        fill=(0, 0, 0)
-    )
-
-    # 大标题
-    bbox = draw.textbbox((0, 0), title, font=font_huge_huge)
-    draw.text(((max_width - bbox[2]), -40), title, fill=(200, 200, 200), font=font_huge_huge)
-
-    # 绘制每个版本区块
-    current_y = header_height
-    for idx, block in enumerate(version_songs):
-        SONGS = block["songs"]
-        version_title = block["version_title"]
-        count = block["count"]
-
-        # 分隔条
-        draw.rectangle(
-            [(0, current_y), (max_width, current_y + line_height)],
-            fill=(200, 200, 200)
-        )
-        current_y += line_height + 10
-
-        # 版本平均 ra
-        if SONGS:
-            avg_ra_version = round(sum(s["ra"] for s in SONGS) / count, 2)
-        else:
-            avg_ra_version = 0.00
-
-        # 写版本标题 + ra
-        bbox = draw.textbbox((0, 0), version_title, font=font_huge)
-        title_x = 10
-        title_y = current_y - line_height - 7
-        draw.text((title_x, title_y), version_title, fill=(0, 0, 0), font=font_huge)
-
-        ra_text = f"{avg_ra_version:.2f}"
-        draw.text((title_x + 350, title_y), ra_text, fill=(0, 0, 0), font=font_huge)
-
-        # 画缩略图
-        for i, song in enumerate(SONGS):
-            thumb = create_thumbnail(song, thumb_size)
-            x_offset = (i % cols) * (thumb_size[0] + spacing) + side_width
-            y_offset = current_y + (i // cols) * (thumb_size[1] + spacing)
-            combined.paste(thumb, (x_offset, y_offset))
-
-        # 更新 current_y
-        current_y = current_y + math.ceil(len(SONGS) / cols) * (thumb_size[1] + spacing) + 40 + block_padding
-
-    return combined
 
 def generate_cover(cover, type, icon=None, icon_type=None, size=150, cover_name=None):
     """

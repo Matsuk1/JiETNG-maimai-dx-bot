@@ -92,36 +92,6 @@ def get_single_ra(level: float, score: float, ap_clear: bool = False) -> int:
 
     return ra
 
-def get_yang_single_ra(song_record, eight_adding=False):
-    level = float(song_record['internalLevelValue'])
-    achievement = float(song_record['score'][:-1])
-    dx_score = eval(song_record['dx_score'].replace(",", ""))
-    score = level * max(min((achievement - 100), dx_score), 0)
-    
-    if not eight_adding:
-        return round(score, 2)
-
-    if song_record['combo_icon'] == 'fcp':
-        score += 1
-    elif 'ap' in song_record['combo_icon']:
-        score += 2
-
-    if achievement >= 100.90:
-        score += 1
-    if achievement >= 100.95:
-        score += 1
-    if achievement >= 100.98:
-        score += 1
-
-    if dx_score >= 0.93:
-        score += 1
-    if dx_score >= 0.95:
-        score += 1
-    if dx_score >= 0.97:
-        score += 1
-
-    return round(score, 2)
-
 def get_ideal_score(score: float) -> float:
     if 99.0000 <= score < 99.5000:
         return 99.5000, "ssp"
@@ -134,14 +104,13 @@ def get_ideal_score(score: float) -> float:
     else:
         return score, None
 
-def read_record(user_id: str, recent: bool = False, yang: bool = False) -> List[Dict[str, Any]]:
+def read_record(user_id: str, recent: bool = False) -> List[Dict[str, Any]]:
     """
     从数据库读取用户成绩记录
 
     Args:
         user_id: 用户ID
         recent: 是否读取最近记录 (False=Best记录, True=Recent记录)
-        yang: 是否计算Yang Rating (过去版本rating)
 
     Returns:
         成绩记录列表,每条记录为字典,包含详细信息
@@ -168,7 +137,7 @@ def read_record(user_id: str, recent: bool = False, yang: bool = False) -> List[
             item.pop("user_id", None)
             records.append(item)
 
-        return get_detailed_info(records, USERS[user_id].get('version', "jp"), yang)
+        return get_detailed_info(records, USERS[user_id].get('version', "jp"))
 
     finally:
         conn.close()
@@ -234,7 +203,7 @@ def filter_highest_achievement(data: list) -> list:
             result[key] = entry
     return list(result.values())
 
-def get_detailed_info(song_record, ver="jp", yang=False):
+def get_detailed_info(song_record, ver="jp"):
     read_dxdata(ver)
 
     # 构建哈希表加速查找 O(1) 而不是 O(n)
@@ -261,8 +230,6 @@ def get_detailed_info(song_record, ver="jp", yang=False):
                     record['id'] = sheet['internalId'] if 'internalId' in sheet else -1
                     record['cover_url'] = song['cover_url']
                     record['cover_name'] = song['cover_name']
-                    if yang:
-                        record['ra'] = get_yang_single_ra(record)
                     break
 
         if not found:

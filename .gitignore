@@ -32,6 +32,10 @@ data/dxdata_version.json
 config.json
 *.enc
 
+# Cookie 文件（包含登录凭证）
+cookies/
+maimai_cookies_*.json
+
 # 数据库
 *.db
 *.sqlite

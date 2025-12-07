@@ -78,6 +78,13 @@ class MemoryManager:
         collected_gen2 = gc.collect(2)  # 收集 generation 2
         total_collected = collected_gen0 + collected_gen1 + collected_gen2
 
+        # 清理过期的 cookies（每次 cleanup 都执行）
+        cleaned_cookies = 0
+        try:
+            cleaned_cookies = cleanup_expired_cookies()
+        except Exception as e:
+            logger.error(f"Failed to cleanup expired cookies: {e}")
+
         # 记录清理时间
         self.last_cleanup_time = datetime.now()
         elapsed_time = time.time() - start_time
@@ -90,6 +97,7 @@ class MemoryManager:
                 'gen1': collected_gen1,
                 'gen2': collected_gen2
             },
+            'cleaned_cookies': cleaned_cookies,
             'gc_counts_before': gc_counts_before,
             'elapsed_ms': int(elapsed_time * 1000)
         }
@@ -97,7 +105,8 @@ class MemoryManager:
         logger.info(
             f"Memory cleanup completed: "
             f"collected {total_collected} objects "
-            f"(gen0: {collected_gen0}, gen1: {collected_gen1}, gen2: {collected_gen2}) "
+            f"(gen0: {collected_gen0}, gen1: {collected_gen1}, gen2: {collected_gen2}), "
+            f"cleaned {cleaned_cookies} expired cookies "
             f"in {stats['elapsed_ms']}ms"
         )
 
@@ -224,6 +233,91 @@ def cleanup_rate_limiter_tracking(rate_limiter_module=None):
                 logger.info(f"Cleaned {cleaned_items} expired rate limit tracking entries")
         except Exception as e:
             logger.error(f"Failed to clean rate limit tracking: {e}")
+
+    return cleaned_items
+
+
+def cleanup_expired_cookies(cookie_manager=None, max_age_days: int = 30):
+    """
+    清理过期的 Cookie 文件
+
+    Args:
+        cookie_manager: CookieManager 实例（可选）
+        max_age_days: Cookie 文件最大保留天数，默认30天
+
+    Returns:
+        int: 清理的 cookie 数量
+    """
+    cleaned_items = 0
+
+    if cookie_manager is None:
+        # 如果没有提供 cookie_manager，尝试创建一个
+        try:
+            from modules.cookie_manager import CookieManager
+            from modules.config_loader import COOKIE_ENCRYPTION_KEY, COOKIES_DIR
+            cookie_manager = CookieManager(
+                storage_dir=COOKIES_DIR,
+                encrypt=True,
+                password=COOKIE_ENCRYPTION_KEY
+            )
+        except Exception as e:
+            logger.error(f"Failed to create CookieManager: {e}")
+            return 0
+
+    try:
+        from datetime import datetime, timedelta
+        import json
+
+        current_time = datetime.now()
+        expiry_time = current_time - timedelta(days=max_age_days)
+
+        # 获取所有账号
+        accounts = cookie_manager.list_accounts()
+
+        for account_name in accounts:
+            try:
+                # 获取 cookie 文件信息
+                file_path = cookie_manager.get_cookie_path(account_name)
+
+                # 读取文件内容检查导出时间
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+
+                # 尝试解析（可能是加密的）
+                try:
+                    data = json.loads(content)
+                except json.JSONDecodeError:
+                    # 可能是加密文件，跳过检查导出时间，只检查文件修改时间
+                    file_mtime = datetime.fromtimestamp(file_path.stat().st_mtime)
+                    if file_mtime < expiry_time:
+                        cookie_manager.delete(account_name)
+                        cleaned_items += 1
+                        logger.info(f"Deleted expired cookie: {account_name} (file age)")
+                    continue
+
+                # 检查导出时间
+                if 'export_time' in data:
+                    export_time = datetime.fromisoformat(data['export_time'])
+                    if export_time < expiry_time:
+                        cookie_manager.delete(account_name)
+                        cleaned_items += 1
+                        logger.info(f"Deleted expired cookie: {account_name} (export time)")
+                else:
+                    # 如果没有导出时间，检查文件修改时间
+                    file_mtime = datetime.fromtimestamp(file_path.stat().st_mtime)
+                    if file_mtime < expiry_time:
+                        cookie_manager.delete(account_name)
+                        cleaned_items += 1
+                        logger.info(f"Deleted expired cookie: {account_name} (file age)")
+
+            except Exception as e:
+                logger.error(f"Failed to check cookie expiry for {account_name}: {e}")
+
+        if cleaned_items > 0:
+            logger.info(f"Cleaned {cleaned_items} expired cookie files (older than {max_age_days} days)")
+
+    except Exception as e:
+        logger.error(f"Failed to clean expired cookies: {e}")
 
     return cleaned_items
 
