@@ -1216,14 +1216,19 @@ def maimai_update(user_id, ver="jp"):
             friends_list == "MAINTENANCE"):
             return maintenance_error(user_id)
 
-        # 如果所有核心数据都失败，可能是 cookie 失效，重试
-        if not user_info and not maimai_records and not recent_records:
+        # 如果任何核心数据失败，可能是 cookie 失效，重试
+        if not user_info or not maimai_records or not recent_records:
             if attempt < max_retries:
-                logger.warning(f"All data fetch failed for user {user_id}, retrying ({attempt + 1}/{max_retries})...")
+                logger.warning(f"Some data fetch failed for user {user_id} (user_info={bool(user_info)}, records={bool(maimai_records)}, recent={bool(recent_records)}), retrying ({attempt + 1}/{max_retries})...")
+                # 删除缓存的 cookie，强制下次重新登录
+                account_key = f"{sega_id}_{ver}"
+                if cookie_manager.exists(account_key):
+                    cookie_manager.delete(account_key)
+                    logger.info(f"Deleted cached cookie for {account_key} due to data fetch failure")
                 continue
             # 最后一次重试也失败，跳出循环
         else:
-            # 至少有一些数据成功，跳出循环
+            # 所有数据都成功，跳出循环
             break
 
     error = False
