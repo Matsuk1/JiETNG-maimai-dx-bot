@@ -186,7 +186,7 @@ console_handler.setFormatter(ColoredFormatter(
 ))
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     handlers=[file_handler, console_handler]
 )
 
@@ -921,6 +921,11 @@ async def process_sega_credentials(user_id, segaid, password, ver="jp", language
 
 # ==================== 用户管理函数 ====================
 
+def user_unbind(user_id):
+    msg = unbind_msg(user_id)
+    delete_user(user_id)
+    return msg
+
 def user_bind_sega_id(user_id, sega_id):
     read_user()
 
@@ -955,8 +960,6 @@ def user_set_language(user_id, language):
 
 def get_user(user_id):
     read_user()
-
-    
 
     # 多语言文本
     texts = {
@@ -1092,7 +1095,7 @@ def get_user(user_id):
 
     result += f"\n{'='*30}"
 
-    return result
+    return TextMessage(text=result)
 
 
 # ==================== 异步任务处理函数 ====================
@@ -2516,11 +2519,11 @@ def handle_sync_text_command(event):
         "ドネーション": lambda: donate_message,
 
         # 账户管理
-        "unbind": lambda: (delete_user(user_id), unbind_msg(user_id))[-1],
-        "アンバインド": lambda: (delete_user(user_id), unbind_msg(user_id))[-1],
-        "get me": lambda: TextMessage(text=get_user(user_id)),
-        "getme": lambda: TextMessage(text=get_user(user_id)),
-        "ゲットミー": lambda: TextMessage(text=get_user(user_id)),
+        "unbind": lambda: user_unbind(user_id),
+        "アンバインド": lambda: user_unbind(user_id),
+        "get me": lambda: get_user(user_id),
+        "getme": lambda: get_user(user_id),
+        "ゲットミー": lambda: get_user(user_id),
 
         # 好友列表
         "friend list": lambda: get_friend_list(user_id),
