@@ -29,7 +29,7 @@ def add_user(user_id: str) -> None:
     """
     read_user()
     USERS[user_id] = {
-        "notice_read": False
+        "notice_read": True
     }
     mark_user_dirty()
     write_user()
@@ -72,7 +72,6 @@ def edit_user_value(user_id: str, key: str, word: Any, operation: int = 0) -> No
 
     if user_id not in USERS:
         add_user(user_id)
-        return  # add_user 已经写入
 
     if operation == 0:
         USERS[user_id][key] = word

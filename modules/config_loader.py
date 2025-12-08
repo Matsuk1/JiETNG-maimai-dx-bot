@@ -33,7 +33,6 @@ default_config = {
         "user_list": "./data/user.json.enc",
         "notice_file": "./data/notice.json",
         "dev_tokens": "./data/dev_tokens.json",
-        "cookies": "./data/cookies",
         "font": "./assets/fonts/mplus-jietng.ttf",
         "logo": "./assets/pics/logo.png",
         "level_cache": "./data/level_cache",
@@ -67,7 +66,6 @@ default_config = {
     "keys": {
         "user_data": "",
         "bind_token": "",
-        "cookie_encryption": "",
         "imgur_client_id": ""
     }
 }
@@ -114,7 +112,6 @@ else:
 
 _config["keys"]["user_data"] = _ensure_fernet_key(_config["keys"].get("user_data", ""))
 _config["keys"]["bind_token"] = _ensure_bind_token(_config["keys"].get("bind_token", ""))
-_config["keys"]["cookie_encryption"] = _ensure_bind_token(_config["keys"].get("cookie_encryption", ""))
 
 # 写回更新后的配置
 with open(CONFIG_PATH, 'w', encoding='utf-8') as f:
@@ -139,7 +136,6 @@ RE_DXDATA_LIST = FILE_PATH["re_dxdata_list"]
 USER_LIST = FILE_PATH["user_list"]
 NOTICE_FILE = FILE_PATH["notice_file"]
 DEV_TOKENS_FILE = FILE_PATH["dev_tokens"]
-COOKIES_DIR = FILE_PATH["cookies"]
 FONT_PATH = FILE_PATH["font"]
 LOGO_PATH = FILE_PATH["logo"]
 LEVEL_CACHE_DIR = FILE_PATH["level_cache"]
@@ -174,7 +170,6 @@ LINE_CHANNEL_SECRET = LINE_CHANNEL["secret"]
 KEYS = _config["keys"]
 USER_DATA_KEY = KEYS["user_data"].encode()
 BIND_TOKEN_KEY = KEYS["bind_token"].encode()
-COOKIE_ENCRYPTION_KEY = KEYS["cookie_encryption"]
 IMGUR_CLIENT_ID = KEYS.get("imgur_client_id", "")
 
 # 全局缓存数据

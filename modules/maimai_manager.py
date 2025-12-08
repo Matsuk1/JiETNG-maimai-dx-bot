@@ -364,15 +364,15 @@ async def get_maimai_info(cookies: dict, ver="jp"):
             trophy_content = "ERROR"
 
         user_info = {
-            "name": user_name[0].strip() if user_name else "NAME_ERROR",
+            "name": user_name[0] if user_name else "NAME_ERROR",
             "rating_block_url": rating_block_url[0] if rating_block_url else "https://maimaidx.jp/maimai-mobile/img/rating_base_rainbow.png",
-            "rating": rating[0].strip() if rating else "17000",
+            "rating": rating[0].strip() if rating else "ERROR",
             "cource_rank_url": cource_rank_url[0] if cource_rank_url else "https://maimaidx.jp/maimai-mobile/img/course/course_rank_13KOI1uBwE.png",
             "class_rank_url": class_rank_url[0] if class_rank_url else "https://maimaidx.jp/maimai-mobile/img/class/class_rank_s_01VFe8gl5z.png",
             "icon_url": icon_url[0] if icon_url else "https://maimaidx.jp/maimai-mobile/img/Icon/c22d52b387e3f829.png",
             "nameplate_url": nameplate_url[0] if nameplate_url else "https://maimaidx.jp/maimai-mobile/img/NamePlate/5b993ef9ee53b77e.png",
             "trophy_url": f"https://maimaidx.jp/maimai-mobile/img/trophy_{trophy_type}.png",
-            "trophy_content": trophy_content.strip() if trophy_content else "TROPHY_ERROR"
+            "trophy_content": trophy_content if trophy_content else "TROPHY_ERROR"
         }
 
         return user_info

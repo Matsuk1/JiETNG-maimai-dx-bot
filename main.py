@@ -82,7 +82,6 @@ from modules.user_manager import *
 from modules.bindtoken_manager import generate_bind_token, get_user_id_from_token
 from modules.notice_manager import *
 from modules.maimai_manager import *
-from modules.cookie_manager import CookieManager
 from modules.dxdata_manager import update_dxdata_with_comparison
 from modules.record_manager import *
 from modules.devtoken_manager import (
@@ -230,11 +229,6 @@ STATS = {
     'response_time': 0.0
 }
 stats_lock = threading.Lock()  # 保护统计数据的线程锁
-
-# Cookie 管理器（用于缓存登录状态，提高性能）
-# 从配置文件加载加密密钥和存储目录
-from modules.config_loader import COOKIE_ENCRYPTION_KEY, COOKIES_DIR
-cookie_manager = CookieManager(storage_dir=COOKIES_DIR, encrypt=True, password=COOKIE_ENCRYPTION_KEY)
 
 # ==================== 任务队列系统 ====================
 
@@ -825,53 +819,6 @@ Token not provided. <br />
     return render_template("bind_form.html", user_language=user_language)
 
 
-async def smart_login(segaid, password, ver="jp", force_refresh=False):
-    """智能登录：乐观策略，直接使用 cookie，失败再重登录
-
-    性能优化：
-    - 旧方案：验证(1次请求) + 使用(1次请求) = 2次请求
-    - 新方案：直接使用(1次请求) = 1次请求
-    - 性能提升：~50% (从 2.1秒 降至 0.9秒)
-
-    Args:
-        segaid: SEGA ID
-        password: 密码
-        ver: 版本 (jp/intl)
-        force_refresh: 强制刷新 cookie，即使有缓存也重新登录
-
-    Returns:
-        cookies: SimpleCookie 对象，或 "MAINTENANCE"
-    """
-    account_key = f"{segaid}_{ver}"
-
-    # 如果不强制刷新且有 cookie，直接尝试使用
-    if not force_refresh and cookie_manager.exists(account_key):
-        try:
-            cookies = cookie_manager.load(account_key)
-            # 直接尝试使用（不预先验证）
-            # 注意：这里只是加载 cookie，实际验证会在后续使用时进行
-            # 如果 cookie 失效，后续使用会失败并触发重新登录
-            logger.debug(f"使用缓存的 cookie: {account_key}")
-            return cookies
-
-        except Exception as e:
-            logger.debug(f"加载 cookie 失败: {e}")
-
-    # Cookie 不存在或加载失败，重新登录
-    logger.debug(f"重新登录: {account_key}")
-    cookies = await login_to_maimai(segaid, password, ver=ver)
-
-    if cookies and cookies != "MAINTENANCE":
-        # 保存新的 cookie
-        try:
-            cookie_manager.save(account_key, cookies)
-            logger.debug(f"Cookie 已保存: {account_key}")
-        except Exception as e:
-            logger.error(f"保存 cookie 失败: {e}")
-
-    return cookies
-
-
 async def process_sega_credentials(user_id, segaid, password, ver="jp", language="ja"):
     base = (
         "https://maimaidx-eng.com/maimai-mobile"
@@ -879,35 +826,22 @@ async def process_sega_credentials(user_id, segaid, password, ver="jp", language
         else "https://maimaidx.jp/maimai-mobile"
     )
 
-    # 最多重试2次（总共3次尝试）
-    max_retries = 2
-    for attempt in range(max_retries + 1):
-        force_refresh = (attempt > 0)  # 第二次及以后强制刷新
+    cookies = await login_to_maimai(segaid, password, ver=ver)
+    if cookies == "MAINTENANCE":
+        return "MAINTENANCE"
+    if not cookies:
+        logger.warning(f"Login failed, retrying ({attempt + 1}/{max_retries})...")
+        return False
 
-        cookies = await smart_login(segaid, password, ver=ver, force_refresh=force_refresh)
-        if cookies == "MAINTENANCE":
-            return "MAINTENANCE"
-        if not cookies:
-            if attempt < max_retries:
-                logger.warning(f"Login failed, retrying ({attempt + 1}/{max_retries})...")
-                continue
+    # 验证登录是否成功
+    connector = aiohttp.TCPConnector(ssl=False, limit=10)
+    timeout = aiohttp.ClientTimeout(total=30, connect=10)
+    async with aiohttp.ClientSession(cookies=cookies, connector=connector, timeout=timeout) as session:
+        session_id = id(session)
+        dom = await fetch_dom(session, f"{base}/home/", session_id, ver)
+
+        if dom is None:
             return False
-
-        # 验证登录是否成功
-        connector = aiohttp.TCPConnector(ssl=False, limit=10)
-        timeout = aiohttp.ClientTimeout(total=30, connect=10)
-        async with aiohttp.ClientSession(cookies=cookies, connector=connector, timeout=timeout) as session:
-            session_id = id(session)
-            dom = await fetch_dom(session, f"{base}/home/", session_id, ver)
-
-            if dom is None:
-                if attempt < max_retries:
-                    logger.warning(f"Cookie validation failed, retrying ({attempt + 1}/{max_retries})...")
-                    continue
-                return False
-
-            # 验证成功，跳出循环
-            break
 
     user_bind_sega_id(user_id, segaid)
     user_bind_sega_pwd(user_id, password)
@@ -1190,46 +1124,26 @@ def maimai_update(user_id, ver="jp"):
             get_friends_list(cookies, ver)
         )
 
-    # 最多重试2次（总共3次尝试）
-    max_retries = 2
     user_info = maimai_records = recent_records = friends_list = None
 
-    for attempt in range(max_retries + 1):
-        force_refresh = (attempt > 0)  # 第二次及以后强制刷新
+    cookies = asyncio.run(login_to_maimai(sega_id, sega_pwd, ver))
+    if cookies is None:
+        logger.warning(f"Login failed for user {user_id}")
+        return segaid_error(user_id)
+    if cookies == "MAINTENANCE":
+        return maintenance_error(user_id)
 
-        # 使用智能登录（带 cookie 缓存）
-        cookies = asyncio.run(smart_login(sega_id, sega_pwd, ver, force_refresh=force_refresh))
-        if cookies is None:
-            if attempt < max_retries:
-                logger.warning(f"Login failed for user {user_id}, retrying ({attempt + 1}/{max_retries})...")
-                continue
-            return segaid_error(user_id)
-        if cookies == "MAINTENANCE":
-            return maintenance_error(user_id)
+    # 使用异步函数并发获取所有数据
+    user_info, maimai_records, recent_records, friends_list = asyncio.run(fetch_all_data(cookies))
 
-        # 使用异步函数并发获取所有数据
-        user_info, maimai_records, recent_records, friends_list = asyncio.run(fetch_all_data(cookies))
+    if (user_info == "MAINTENANCE" or
+        maimai_records == "MAINTENANCE" or
+        recent_records == "MAINTENANCE" or
+        friends_list == "MAINTENANCE"):
+        return maintenance_error(user_id)
 
-        if (user_info == "MAINTENANCE" or
-            maimai_records == "MAINTENANCE" or
-            recent_records == "MAINTENANCE" or
-            friends_list == "MAINTENANCE"):
-            return maintenance_error(user_id)
-
-        # 如果任何核心数据失败，可能是 cookie 失效，重试
-        if not user_info or not maimai_records or not recent_records:
-            if attempt < max_retries:
-                logger.warning(f"Some data fetch failed for user {user_id} (user_info={bool(user_info)}, records={bool(maimai_records)}, recent={bool(recent_records)}), retrying ({attempt + 1}/{max_retries})...")
-                # 删除缓存的 cookie，强制下次重新登录
-                account_key = f"{sega_id}_{ver}"
-                if cookie_manager.exists(account_key):
-                    cookie_manager.delete(account_key)
-                    logger.info(f"Deleted cached cookie for {account_key} due to data fetch failure")
-                continue
-            # 最后一次重试也失败，跳出循环
-        else:
-            # 所有数据都成功，跳出循环
-            break
+    if not user_info or not maimai_records or not recent_records:
+        logger.warning(f"Some data fetch failed for user {user_id} (user_info={bool(user_info)}, records={bool(maimai_records)}, recent={bool(recent_records)})")
 
     error = False
 
@@ -1254,9 +1168,10 @@ def maimai_update(user_id, ver="jp"):
     if friends_list:
         edit_user_value(user_id, "mai_friends", friends_list)
 
-    details = "詳しい情報："
+    details = DIVIDER
     for func, status in func_status.items():
-        details += f"\n「{func}」Error" if not status else ""
+        if not status:
+            details += f"\n「{func}」Error"
 
     if not error:
         messages.append(update_over(user_id))
@@ -2480,7 +2395,7 @@ def handle_sync_text_command(event):
     - SEGA ID 绑定
     - 管理员命令
     """
-    user_message = event.message.text.strip()
+    user_message = event.message.text.strip().lower()
     user_id = event.source.user_id
 
     # 检查消息中是否有 mention（@）
