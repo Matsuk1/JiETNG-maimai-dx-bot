@@ -307,7 +307,7 @@ GET /api/v1/records/<user_id>?type=<record_type>&command=<filter>
 ```
 
 **参数:**
-- `type`: 记录类型 (best50/best100/best35/best15/allb50/allb35/apb50/rct50/idealb50，可选，默认 best50)
+- `type`: 记录类型 (best50/best100/best35/best15/allb50/allb35/apb50/fdxb50/rct50/idealb50，可选，默认 best50)
 - `command`: 筛选命令（可选，支持 -ver、-fc、-rate 等）
 
 **示例:**

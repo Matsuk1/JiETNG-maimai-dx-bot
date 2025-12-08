@@ -154,7 +154,7 @@ JiETNG が気に入りましたか？継続的な開発をサポートしまし�
 
 **中国**：[爱発電](https://afdian.com/a/matsuki)
 
-**国際**：[GitHub Sponsors](https://github.com/sponsors/Matsuk1)
+**海外**：[GitHub Sponsors](https://github.com/sponsors/Matsuk1)
 
 ### 🌟 非財政的支援
 

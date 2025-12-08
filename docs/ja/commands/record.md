@@ -34,6 +34,7 @@ ab50         # All Best 50 （楽曲バージョンを無視）
 ab100        # All Best 100（楽曲バージョンを無視）
 ab200        # All Best 200（楽曲バージョンを無視）
 apb50        # All Perfect Best 50（AP/AP+ スコアのみ）
+fdxb50       # Full DX Best 50（FDX/FDX+ スコアのみ）
 idlb50       # Ideal Best 50（最高スコアをシミュレート）
 ```
 
@@ -156,6 +157,14 @@ AP 楽曲のみを表示：
 - rating 順にランク付け
 
 **使用シーン**：AP 進捗を監視
+
+### Full DX Best 50 (fdxb50)
+
+FDX 楽曲のみを表示：
+- FDX（Full DX）と FDX+ スコアのみ
+- rating 順にランク付け
+
+**使用シーン**：FDX 進捗を監視
 
 ### Ideal Best 50 (idlb50)
 

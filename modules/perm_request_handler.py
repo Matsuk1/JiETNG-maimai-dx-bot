@@ -6,7 +6,6 @@
 
 import logging
 from datetime import datetime
-from linebot.v3.messaging import TextMessage
 from modules.config_loader import USERS
 from modules.user_manager import get_user_value, edit_user_value, read_user
 from modules.devtoken_manager import load_dev_tokens, save_dev_tokens

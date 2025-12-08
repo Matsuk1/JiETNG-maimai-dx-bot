@@ -1,5 +1,3 @@
-import os
-import io
 import qrcode
 import logging
 from PIL import Image, ImageDraw, ImageFont

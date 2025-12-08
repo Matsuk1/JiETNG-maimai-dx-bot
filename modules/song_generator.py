@@ -1,5 +1,4 @@
-import json
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 from modules.record_generator import create_thumbnail, create_thumbnail_in_line
 from modules.image_manager import *
 from modules.image_cache import paste_icon_optimized, get_cached_image, get_cover_image
@@ -92,8 +91,6 @@ def _render_basic_info_image(song_json, cover_img):
     return img
 
 def _generate_song_table_image(song_json, scale_width=1.5, scale_height=2.0):
-    font = ImageFont.truetype(FONT_PATH, 28)
-
     headers = ["Difficulty", "Level", "Total", "TAP", "HOLD", "SLIDE", "TOUCH", "BREAK", "JP", "INTL", "USA", "CN"]
     base_col_widths = [160, 90, 80, 80, 80, 80, 80, 80, 60, 70, 60, 60]
     col_widths = [int(w * scale_width) for w in base_col_widths]
@@ -127,8 +124,8 @@ def _generate_song_table_image(song_json, scale_width=1.5, scale_height=2.0):
             block_colors["regions"]
         )
         draw.rectangle([x, 0, x + col_widths[i], row_height], fill=fill)
-        w = draw.textlength(header, font=font)
-        draw.text((x + (col_widths[i] - w) // 2, row_height // 4), header, font=font, fill=(0, 0, 0))
+        w = draw.textlength(header, font=font_huge)
+        draw.text((x + (col_widths[i] - w) // 2, row_height // 4), header, font=font_huge, fill=(0, 0, 0))
 
     # 绘制每一行
     for row_idx, sheet in enumerate(song_json["sheets"]):
@@ -162,8 +159,8 @@ def _generate_song_table_image(song_json, scale_width=1.5, scale_height=2.0):
             draw.rectangle([x, y, x + col_widths[col_idx], y + row_height], fill=fill)
 
             text = str(cell)
-            w = draw.textlength(text, font=font)
-            draw.text((x + (col_widths[col_idx] - w) // 2, y + row_height // 4), text, font=font, fill=(0, 0, 0))
+            w = draw.textlength(text, font=font_huge)
+            draw.text((x + (col_widths[col_idx] - w) // 2, y + row_height // 4), text, font=font_huge, fill=(0, 0, 0))
 
     return image
 

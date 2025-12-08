@@ -43,7 +43,7 @@ Webフォームで以下を入力します：
 - **言語**: 希望する言語を選択
 - **SEGA ID**: SEGAアカウントのユーザー名
 - **パスワード**: SEGAアカウントのパスワード
-- **バージョン**: `jp`（日本）または `intl`（国際版）を選択
+- **バージョン**: `jp`（日本）または `intl`（海外版）を選択
 
 :::danger セキュリティに関する注意
 - SEGA認証情報を誰とも共有しないでください
@@ -120,7 +120,7 @@ unbind
 - SEGA IDとパスワードを再確認
 - 正しいバージョン（jp vs intl）を使用していることを確認
 - [maimai NET](https://maimaidx.jp/maimai-mobile/)に直接ログインして認証情報を確認
-- 国際版の場合は[maimai NET でらっくす International](https://maimaidx-eng.com/maimai-mobile/)を使用
+- 海外版の場合は[maimai NET でらっくす International](https://maimaidx-eng.com/maimai-mobile/)を使用
 
 ### すでに連携済みエラー
 
@@ -151,7 +151,7 @@ unbind
 - すべての日本限定楽曲
 - URL: https://maimaidx.jp/maimai-mobile/
 
-### 国際版（intl）
+### 海外版（intl）
 
 日本国外でプレイしている場合に使用：
 - 他の国の『maimai でらっくす』筐体

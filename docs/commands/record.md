@@ -34,6 +34,7 @@ ab50         # All Best 50 （忽略歌曲版本）
 ab100        # All Best 100（忽略歌曲版本）
 ab200        # All Best 200（忽略歌曲版本）
 apb50        # All Perfect Best 50（仅 AP/AP+ 成绩）
+fdxb50       # Full DX Best 50（仅 FDX/FDX+ 成绩）
 idlb50       # Ideal Best 50（模拟最好成绩）
 ```
 
@@ -156,6 +157,14 @@ b50 -lv 14 15 -scr 99.5 -dx 90           # 复杂过滤
 - 按 rating 排名
 
 **使用场景**：监控您的 AP 进度
+
+### Full DX Best 50 (fdxb50)
+
+仅显示 FDX 歌曲：
+- 仅 FDX（Full DX）和 FDX+ 成绩
+- 按 rating 排名
+
+**使用场景**：监控您的 FDX 进度
 
 ### Ideal Best 50 (idlb50)
 

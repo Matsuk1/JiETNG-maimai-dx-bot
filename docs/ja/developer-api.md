@@ -308,7 +308,7 @@ GET /api/v1/records/<user_id>?type=<record_type>&command=<filter>
 ```
 
 **パラメータ:**
-- `type`: レコードタイプ (best50/best100/best35/best15/allb50/allb35/apb50/rct50/idealb50、オプション、デフォルトはbest50)
+- `type`: レコードタイプ (best50/best100/best35/best15/allb50/allb35/apb50/fdxb50/rct50/idealb50、オプション、デフォルトはbest50)
 - `command`: フィルターコマンド（オプション、-ver、-fc、-rate などをサポート）
 
 **例:**

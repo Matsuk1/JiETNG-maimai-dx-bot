@@ -69,7 +69,8 @@ This document lists all available commands for the JiETNG LINE Bot.
 | `ab50` | `allb50`, `all best 50`, `オールベスト50` | Mixed version Best 50 |
 | `ab100` | `allb100`, `all best 100`, `オールベスト100` | Mixed version Best 100 |
 | `ab200` | `allb200`, `all best 200`, `オールベスト200` | Mixed version Best 200 |
-| `ap50` | `apb50`, `all perfect 50`, `オールパーフェクト50` | AP/APP only Best 50 |
+| `apb50` | `ap50`, `all perfect 50`, `オールパーフェクト50` | AP/AP+ only Best 50 |
+| `fdxb50` | `fdx50`, `full dx 50`, `フールでらっくす50` | FDX/FDX+ only Best 50 |
 | `rct50` | `r50`, `recent50`, `recent 50` | Recent 50 plays |
 | `idealb50` | `idlb50`, `ideal best 50`, `理想的ベスト50` | Ideal Best 50 (auto-upgrade to next rank) |
 | `unknown` | `unknown songs`, `unknown data`, `未発見` | Unrecognized songs |

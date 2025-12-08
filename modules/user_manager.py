@@ -5,7 +5,6 @@
 """
 
 from typing import Any, Optional, Dict
-import json
 import logging
 import threading
 from datetime import datetime

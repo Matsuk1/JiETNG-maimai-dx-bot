@@ -1,11 +1,7 @@
-import json
-import re
-import sys
-import os
 import math
 import logging
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 
 from modules.config_loader import (
     LOGO_PATH,

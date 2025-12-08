@@ -6,7 +6,7 @@
 
 **Maimai DX スコア追跡とデータ管理システム**
 
-日本版と国際版に対応
+日本版と海外版に対応
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-3.1.0-green.svg)](https://flask.palletsprojects.com/)
@@ -15,7 +15,7 @@
 
 [简体中文](README.md) | [English](README_EN.md) | 日本語
 
-[機能](#機能) • [コマンドリスト](COMMANDS_JP.md) • [📚 オンラインドキュメント](https://jietng.matsuki.work/ja/) • [クイックスタート](#クイックスタート) • [管理パネル](#管理パネル) • [デプロイガイド](#デプロイガイド) • [開発ドキュメント](#開発ドキュメント)
+[機能](#機能) • [コマンドリスト](COMMANDS_JP.md) • [オンラインドキュメント](https://jietng.matsuki.work/ja/) • [クイックスタート](#クイックスタート) • [管理パネル](#管理パネル) • [デプロイガイド](#デプロイガイド) • [開発ドキュメント](#開発ドキュメント)
 
 </div>
 
@@ -23,7 +23,7 @@
 
 ## プロジェクト概要
 
-**JiETNG** は、Maimai DX プレイヤー向けの包括的な LINE Bot サービスで、スコア追跡、データ分析、およびさまざまなゲーム補助機能を提供します。日本版（JP）と国際版（INTL）の両方に対応しています。
+**JiETNG** は、Maimai DX プレイヤー向けの包括的な LINE Bot サービスで、スコア追跡、データ分析、およびさまざまなゲーム補助機能を提供します。日本版（JP）と海外版（INTL）の両方に対応しています。
 
 ### コア機能
 
@@ -480,7 +480,7 @@ POST     /linebot/admin/trigger_cleanup    # 手動メモリクリーンアッ�
     "admin_password": "secure_pwd",        // 管理パネルパスワード
     "maimai_version": {
         "jp": ["PRiSM PLUS", "CiRCLE"],    // 日本版バージョン
-        "intl": ["PRiSM PLUS"]             // 国際版バージョン
+        "intl": ["PRiSM PLUS"]             // 海外版バージョン
     },
     "domain": "jietng.example.com",        // サービスドメイン
     "port": 5100,                          // サービスポート

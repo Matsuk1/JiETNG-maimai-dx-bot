@@ -2,41 +2,33 @@
 JiETNG Maimai DX LINE Bot 主程序
 """
 
-import gc
 import os
+import sys
 import random
 import requests
 import json
 import re
 import traceback
-import math
-import difflib
-import numpy
+import numpy as np
 import threading
 import queue
-import textwrap
 import logging
 import psutil
 import platform
 import socket
 import secrets
-import hashlib
 import copy
 import asyncio
 import aiohttp
+import urllib3
 
 from functools import wraps
-
-from datetime import datetime, timedelta
-from typing import List, Optional, Any
-
-from lxml import etree
+from datetime import datetime
 
 from PIL import Image, ImageDraw
 from io import BytesIO
 
 from pyzbar.pyzbar import decode
-from urllib.parse import urlparse
 
 from flask import (
     Flask,
@@ -45,8 +37,7 @@ from flask import (
     render_template,
     redirect,
     session,
-    jsonify,
-    make_response
+    jsonify
 )
 from flask_wtf.csrf import CSRFProtect
 
@@ -57,8 +48,6 @@ from linebot.v3.messaging import (
     ApiClient,
     MessagingApi,
     MessagingApiBlob,
-    ReplyMessageRequest,
-    PushMessageRequest,
     TextMessage,
     ImageMessage,
     TemplateMessage,
@@ -171,6 +160,9 @@ class ColoredFormatter(logging.Formatter):
 
         return formatted
 
+# 禁用 SSL 警告
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
 # 配置日志
 file_handler = logging.FileHandler('jietng.log', encoding='utf-8')
 file_handler.setFormatter(logging.Formatter(
@@ -185,7 +177,7 @@ console_handler.setFormatter(ColoredFormatter(
 ))
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     handlers=[file_handler, console_handler]
 )
 
@@ -723,7 +715,6 @@ def linebot_reply():
         )
         abort(500)
 
-    gc.collect()
     return 'OK', 200
 
 @app.route("/linebot/adding", methods=["GET"])
@@ -892,145 +883,6 @@ def user_set_language(user_id, language):
 
     edit_user_value(user_id, 'language', language)
 
-def get_user(user_id):
-    read_user()
-
-    # 多语言文本
-    texts = {
-        'title': {
-            'ja': '👤 ユーザー情報',
-            'en': '👤 User Information',
-            'zh': '👤 用户信息'
-        },
-        'user_id': {
-            'ja': 'LINE ID',
-            'en': 'LINE ID',
-            'zh': 'LINE ID'
-        },
-        'name': {
-            'ja': 'プレイヤー名',
-            'en': 'Player Name',
-            'zh': '玩家名称'
-        },
-        'rating': {
-            'ja': 'レーティング',
-            'en': 'Rating',
-            'zh': 'Rating'
-        },
-        'sega_id': {
-            'ja': 'SEGA ID',
-            'en': 'SEGA ID',
-            'zh': 'SEGA ID'
-        },
-        'password': {
-            'ja': 'パスワード',
-            'en': 'Password',
-            'zh': '密码'
-        },
-        'server': {
-            'ja': 'サーバー',
-            'en': 'Server',
-            'zh': '服务器'
-        },
-        'language': {
-            'ja': '言語',
-            'en': 'Language',
-            'zh': '语言'
-        },
-        'bound': {
-            'ja': '連携済み',
-            'en': 'Bound',
-            'zh': '已绑定'
-        },
-        'not_bound': {
-            'ja': '未連携',
-            'en': 'Not Bound',
-            'zh': '未绑定'
-        },
-        'jp_server': {
-            'ja': '日本版',
-            'en': 'Japanese Server',
-            'zh': '日服'
-        },
-        'intl_server': {
-            'ja': '海外版',
-            'en': 'International Server',
-            'zh': '国际服'
-        },
-        'lang_ja': {
-            'ja': '日本語',
-            'en': 'Japanese',
-            'zh': '日语'
-        },
-        'lang_en': {
-            'ja': '英語',
-            'en': 'English',
-            'zh': '英语'
-        },
-        'lang_zh': {
-            'ja': '中国語',
-            'en': 'Chinese',
-            'zh': '中文'
-        }
-    }
-
-    # 获取用户语言
-    lang = get_user_language(user_id)
-
-    # 构建输出
-    result = f"{'='*30}\n"
-    result += f"{get_multilingual_text(texts['title'], language=lang)}\n"
-    result += f"{'='*30}\n\n"
-
-    if user_id in USERS:
-        user_data = USERS[user_id]
-
-        # 基本信息
-        result += f"📱 {get_multilingual_text(texts['user_id'], language=lang)}: {user_id}\n\n"
-
-        # 玩家信息
-        if "personal_info" in user_data:
-            personal_info = user_data['personal_info']
-            if 'name' in personal_info:
-                result += f"🎮 {get_multilingual_text(texts['name'], language=lang)}: {personal_info['name']}\n"
-            if 'rating' in personal_info:
-                result += f"⭐ {get_multilingual_text(texts['rating'], language=lang)}: {personal_info['rating']}\n"
-            result += "\n"
-
-        # SEGA账号信息
-        if "sega_id" in user_data:
-            result += f"🔑 {get_multilingual_text(texts['sega_id'], language=lang)}: {user_data['sega_id']}\n"
-        else:
-            result += f"🔑 {get_multilingual_text(texts['sega_id'], language=lang)}: {get_multilingual_text(texts['not_bound'], language=lang)}\n"
-
-        if "sega_pwd" in user_data:
-            result += f"🔐 {get_multilingual_text(texts['password'], language=lang)}: {get_multilingual_text(texts['bound'], language=lang)}\n"
-        else:
-            result += f"🔐 {get_multilingual_text(texts['password'], language=lang)}: {get_multilingual_text(texts['not_bound'], language=lang)}\n"
-
-        result += "\n"
-
-        # 服务器版本
-        if "version" in user_data:
-            server_text = texts['jp_server'] if user_data['version'] == 'jp' else texts['intl_server']
-            result += f"🌐 {get_multilingual_text(texts['server'], language=lang)}: {get_multilingual_text(server_text, language=lang)}\n"
-
-        # 语言设置
-        lang_display = {
-            'ja': texts['lang_ja'],
-            'en': texts['lang_en'],
-            'zh': texts['lang_zh']
-        }.get(lang, texts['lang_ja'])
-        result += f"🌍 {get_multilingual_text(texts['language'], language=lang)}: {get_multilingual_text(lang_display, language=lang)}\n"
-
-    else:
-        result += f"📱 {get_multilingual_text(texts['user_id'], language=lang)}: {user_id}\n\n"
-        result += f"❌ {get_multilingual_text(texts['not_bound'], language=lang)}\n"
-
-    result += f"\n{'='*30}"
-
-    return TextMessage(text=result)
-
 
 # ==================== 异步任务处理函数 ====================
 
@@ -1174,6 +1026,10 @@ def maimai_update(user_id, ver="jp"):
             details += f"\n「{func}」Error"
 
     if not error:
+        # 记录更新时间
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        edit_user_value(user_id, "last_update", current_time)
+
         messages.append(update_over(user_id))
     else:
         messages.append(update_error(user_id))
@@ -1195,7 +1051,7 @@ def get_rc(level: float) -> str:
     result += DIVIDER
     last_ra = 0
 
-    for score in numpy.arange(97, 100.5001, 0.0001):
+    for score in np.arange(97, 100.5001, 0.0001):
         ra = get_single_ra(level, score)
         if ra != last_ra:
             result += f"\n{format(score, '.4f')}% \t-\t {ra}"
@@ -1843,6 +1699,13 @@ def select_records(song_record, type, command, ver):
         down_songs_data = [x for x in down_songs_data if x.get("combo_icon") in ("ap", "app")]
         down_songs = sorted(down_songs_data, key=lambda x: x.get("ra", 0), reverse=True)[:15]
 
+    elif type == "fdxb50":
+        up_songs_data = [x for x in up_songs_data if x.get("sync_icon") in ("fdx", "fdxp")]
+        up_songs = sorted(up_songs_data, key=lambda x: x.get("ra", 0), reverse=True)[:35]
+
+        down_songs_data = [x for x in down_songs_data if x.get("sync_icon") in ("fdx", "fdxp")]
+        down_songs = sorted(down_songs_data, key=lambda x: x.get("ra", 0), reverse=True)[:15]
+
     elif type == "UNKNOWN":
         up_songs = list(filter(lambda x: x['version'] == "UNKNOWN", song_record))
 
@@ -2150,7 +2013,8 @@ IMAGE_TASK_ROUTES = {
         "ab50", "allb50", "all best 50", "オールベスト50",
         "ab100", "allb100", "all best 100", "オールベスト100",
         "ab200", "allb200", "all best 200", "オールベスト200",
-        "ap50", "apb50", "all perfect 50", "オールパーフェクト50",
+        "apb50", "ap50", "all perfect 50", "オールパーフェクト50",
+        "fdxb50", "fdx50", "Full DX 50", "フールでらっくす50",
         "rct50", "r50", "recent50", "recent 50",
         "idealb50", "idlb50", "ideal best 50", "理想的ベスト50",
         "unknown", "unknown songs", "unknown data", "未発見"
@@ -2441,9 +2305,9 @@ def handle_sync_text_command(event):
         # 账户管理
         "unbind": lambda: user_unbind(user_id),
         "アンバインド": lambda: user_unbind(user_id),
-        "get me": lambda: get_user(user_id),
-        "getme": lambda: get_user(user_id),
-        "ゲットミー": lambda: get_user(user_id),
+        "get me": lambda: generate_user_info_flex(user_id),
+        "getme": lambda: generate_user_info_flex(user_id),
+        "ゲットミー": lambda: generate_user_info_flex(user_id),
 
         # 好友列表
         "friend list": lambda: get_friend_list(user_id),
@@ -2552,7 +2416,8 @@ def handle_sync_text_command(event):
         ("ab50", "allb50", "all best 50", "オールベスト50"): "allb50",
         ("ab100", "allb100", "all best 100", "オールベスト100"): "allb100",
         ("ab200", "allb200", "all best 200", "オールベスト200"): "allb200",
-        ("ap50", "apb50", "all perfect 50", "オールパーフェクト50"): "apb50",
+        ("apb50", "ap50", "all perfect 50", "オールパーフェクト50"): "apb50",
+        ("fdxb50", "fdx50", "Full DX 50", "フールでらっくす50"): "fdxb50",
         ("rct50", "r50", "recent50", "recent 50"): "rct50",
         ("idealb50", "idlb50", "ideal best 50", "理想的ベスト50"): "idealb50",
         ("unknown", "unknown songs", "unknown data", "未発見"): "UNKNOWN",
@@ -2664,6 +2529,40 @@ def handle_sync_text_command(event):
             upload_notice(new_notice)
             clear_user_value("notice_read", False)
             return smart_reply(user_id, event.reply_token, notice_upload(user_id), configuration, DIVIDER)
+
+        if user_message == "reboot":
+            # 重启 bot
+            reboot_messages = {
+                'ja': '🔄 Bot を再起動しています...',
+                'en': '🔄 Rebooting bot...',
+                'zh': '🔄 正在重启 Bot...'
+            }
+
+            reply_message = TextMessage(text=get_multilingual_text(reboot_messages, user_id))
+            smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
+
+            # 创建重启标志文件
+            with open(".reboot_flag", "w") as f:
+                f.write("reboot")
+
+            logger.info(f"Admin {user_id} initiated reboot")
+
+            # 在单独的线程中延迟重启，确保响应完成
+            def delayed_reboot():
+                import time
+                import subprocess
+                time.sleep(1)  # 等待1秒确保响应已发送
+                logger.info("Executing reboot...")
+
+                # 启动新进程
+                subprocess.Popen([sys.executable] + sys.argv)
+
+                # 退出当前进程
+                os._exit(0)
+
+            threading.Thread(target=delayed_reboot, daemon=False).start()
+
+            return
 
         if user_message == "dxdata update":
             # 使用新的对比更新函数
@@ -4532,9 +4431,15 @@ def api_get_versions():
 
 if __name__ == "__main__":
     # ==================== 系统启动自检 ====================
+    # 检查是否是重启
+    reboot_flag_file = ".reboot_flag"
+    is_reboot = os.path.exists(reboot_flag_file)
+
     # 在启动 worker 线程之前执行系统自检
     logger.info("=" * 60)
     logger.info("JiETNG Maimai DX LINE Bot Starting...")
+    if is_reboot:
+        logger.info("(Rebooting after admin command)")
     logger.info("=" * 60)
 
     try:
@@ -4592,6 +4497,30 @@ if __name__ == "__main__":
         custom_cleanup()
         return stats
     memory_manager.cleanup = enhanced_cleanup
+
+    # 如果是重启，通知所有管理员
+    if is_reboot:
+        try:
+            # 删除重启标志文件
+            os.remove(reboot_flag_file)
+
+            # 准备通知消息
+            reboot_notification = {
+                'ja': '✅ Bot が再起動しました',
+                'en': '✅ Bot has been rebooted',
+                'zh': '✅ Bot 已重启'
+            }
+
+            # 通知所有管理员
+            for admin_user_id in ADMIN_ID:
+                try:
+                    message_text = get_multilingual_text(reboot_notification, admin_user_id)
+                    smart_push(admin_user_id, TextMessage(text=message_text), configuration)
+                    logger.info(f"Notified admin {admin_user_id} about reboot")
+                except Exception as e:
+                    logger.error(f"Failed to notify admin {admin_user_id} about reboot: {e}")
+        except Exception as e:
+            logger.error(f"Error during reboot notification: {e}")
 
     try:
         app.run(host="0.0.0.0", port=PORT)

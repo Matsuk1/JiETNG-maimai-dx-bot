@@ -15,7 +15,7 @@ Supports Japanese and International servers
 
 [简体中文](README.md) | English | [日本語](README_JP.md)
 
-[Features](#features) • [Command List](COMMANDS_EN.md) • [📚 Online Docs](https://jietng.matsuki.work/en/) • [Quick Start](#quick-start) • [Admin Panel](#admin-panel) • [Deployment](#deployment) • [Documentation](#documentation)
+[Features](#features) • [Command List](COMMANDS_EN.md) • [Online Docs](https://jietng.matsuki.work/en/) • [Quick Start](#quick-start) • [Admin Panel](#admin-panel) • [Deployment](#deployment) • [Documentation](#documentation)
 
 </div>
 

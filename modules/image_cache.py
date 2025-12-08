@@ -6,7 +6,6 @@
 """
 import os
 import requests
-import urllib3
 import logging
 from PIL import Image
 from io import BytesIO
@@ -16,8 +15,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from modules.config_loader import COVERS_DIR
 
-# 禁用 SSL 警告
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # 获取logger
 logger = logging.getLogger(__name__)

@@ -69,7 +69,8 @@
 | `ab50` | `allb50`, `all best 50`, `オールベスト50` | 全バージョン混合のBest 50 |
 | `ab100` | `allb100`, `all best 100`, `オールベスト100` | 全バージョン混合のBest 100 |
 | `ab200` | `allb200`, `all best 200`, `オールベスト200` | 全バージョン混合のBest 200 |
-| `ap50` | `apb50`, `all perfect 50`, `オールパーフェクト50` | AP/APPのみのBest 50 |
+| `apb50` | `ap50`, `all perfect 50`, `オールパーフェクト50` | AP/AP+のみのBest 50 |
+| `fdxb50` | `fdx50`, `full dx 50`, `フールでらっくす50` | FDX/FDX+のみのBest 50 |
 | `rct50` | `r50`, `recent50`, `recent 50` | 最近50回のプレイ記録 |
 | `idealb50` | `idlb50`, `ideal best 50`, `理想的ベスト50` | 理想スコアBest 50（自動的に次のランクに昇格） |
 | `unknown` | `unknown songs`, `unknown data`, `未発見` | 認識されていない楽曲のスコア |

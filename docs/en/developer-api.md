@@ -310,7 +310,7 @@ GET /api/v1/records/<user_id>?type=<record_type>&command=<filter>
 ```
 
 **Parameters:**
-- `type`: Record type (best50/best100/best35/best15/allb50/allb35/apb50/rct50/idealb50, optional, defaults to best50)
+- `type`: Record type (best50/best100/best35/best15/allb50/allb35/apb50/fdxb50/rct50/idealb50, optional, defaults to best50)
 - `command`: Filter command (optional, supports -ver, -fc, -rate, etc.)
 
 **Example:**

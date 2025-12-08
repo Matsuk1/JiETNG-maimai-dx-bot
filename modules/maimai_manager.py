@@ -1,4 +1,3 @@
-import json
 import requests
 import random
 import logging
@@ -7,12 +6,8 @@ import aiohttp
 from lxml import etree
 from modules.record_manager import get_detailed_info
 from modules.rate_limiter import maimai_limiter
-import urllib3
 
 logger = logging.getLogger(__name__)
-
-# 禁用 SSL 警告（因为 maimai 网站的证书问题）
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # User-Agent 池（模拟不同浏览器）
 USER_AGENTS = [

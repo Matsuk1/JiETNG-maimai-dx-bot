@@ -316,13 +316,6 @@ friend_use_once_text = {
     "zh": "这次将作为「{name}」查看记录！\n试试各种命令吧！"
 }
 
-# 好友 Best 50 标题
-friend_best50_title_text = {
-    "ja": "「{name}」さんの Best 50",
-    "en": "{name}'s Best 50",
-    "zh": "「{name}」的 Best 50"
-}
-
 # 指定レベルのレコードなし
 level_record_not_found_text = {
     "ja": "指定されたレベル「{level}」の{page}ページ目の譜面記録は存在しないかも...",
@@ -427,13 +420,6 @@ dxdata_initial_stats_sheets_text = {
     "ja": "📊 譜面: {count}個",
     "en": "📊 Charts: {count}",
     "zh": "📊 谱面: {count}个"
-}
-
-# 定数列表提示消息
-level_list_hint_text = {
-    "ja": "💡 より詳細な定数検索は https://dxrating.net をご利用ください！",
-    "en": "💡 For more accurate constant queries, visit https://dxrating.net!",
-    "zh": "💡 想要更精确的定数查询？请访问 https://dxrating.net！"
 }
 
 # SEGA 账号绑定消息
@@ -617,6 +603,11 @@ tip_messages = [
         "en": "💡 Send a song jacket image to identify the song!",
         "zh": "💡 发送曲绘图片可以识别歌曲！"
     },
+    {
+        "ja": "💡 「rct50」コマンドで最近プレイした50曲が見られるよ！",
+        "en": "💡 Use 'rct50' to view your recently played 50 songs!",
+        "zh": "💡 使用「rct50」命令可查看最近游玩的50首歌！"
+    },
 ]
 
 donate_message = FlexMessage(
@@ -657,33 +648,7 @@ donate_message = FlexMessage(
                     margin="lg",
                     justifyContent="center",
                     contents=[
-                        # 🇯🇵 Liberapay
-                        FlexBox(
-                            layout="vertical",
-                            flex=0,
-                            width="100px",                # ← 按钮宽度
-                            height="40px",                # ← 按钮高度
-                            cornerRadius="6px",
-                            borderColor="#000000",
-                            borderWidth="1px",
-                            backgroundColor="#FFFFFF",
-                            justifyContent="center",
-                            alignItems="center",
-                            contents=[
-                                FlexText(
-                                    text="🇯🇵 Liberapay",
-                                    weight="bold",
-                                    color="#000000",
-                                    size="sm",
-                                    align="center",
-                                    action=URIAction(
-                                        label="Liberapay",
-                                        uri="https://ja.liberapay.com/_matsuk1/donate?currency=JPY"
-                                    )
-                                )
-                            ]
-                        ),
-                        # 🇨🇳 爱发电
+                        # Liberapay
                         FlexBox(
                             layout="vertical",
                             flex=0,
@@ -697,7 +662,33 @@ donate_message = FlexMessage(
                             alignItems="center",
                             contents=[
                                 FlexText(
-                                    text="🇨🇳 爱发电",
+                                    text="Liberapay",
+                                    weight="bold",
+                                    color="#000000",
+                                    size="sm",
+                                    align="center",
+                                    action=URIAction(
+                                        label="Liberapay",
+                                        uri="https://ja.liberapay.com/_matsuk1/donate?currency=JPY"
+                                    )
+                                )
+                            ]
+                        ),
+                        # 爱发电
+                        FlexBox(
+                            layout="vertical",
+                            flex=0,
+                            width="100px",
+                            height="40px",
+                            cornerRadius="6px",
+                            borderColor="#000000",
+                            borderWidth="1px",
+                            backgroundColor="#FFFFFF",
+                            justifyContent="center",
+                            alignItems="center",
+                            contents=[
+                                FlexText(
+                                    text="爱发电",
                                     weight="bold",
                                     color="#000000",
                                     size="sm",
@@ -718,7 +709,7 @@ donate_message = FlexMessage(
                 ),
                 # 底部说明
                 FlexText(
-                    text="Thank you for supporting JiETNG 💙",
+                    text="Thank you for supporting JiETNG",
                     size="xs",
                     color="#666666",
                     align="center",
@@ -734,16 +725,12 @@ donate_message = FlexMessage(
 # ============================================================
 
 quick_reply_labels = {
-    "maimai_update": {"ja": "maimai update", "en": "maimai update", "zh": "maimai update"},
+    "maimai_update": {"ja": "maimai update", "en": "maimai update", "zh": "更新数据"},
     "support": {"ja": "サポート", "en": "Support", "zh": "帮助"},
     "account_bind": {"ja": "アカウント連携", "en": "Link Account", "zh": "绑定账号"},
     "retry": {"ja": "もう一回", "en": "Try Again", "zh": "再试一次"},
-    "best_50": {"ja": "Best 50", "en": "Best 50", "zh": "Best 50"},
-    "best_100": {"ja": "Best 100", "en": "Best 100", "zh": "Best 100"},
+    "recent_50": {"ja": "Recent 50", "en": "Recent 50", "zh": "Recent 50"},
     "all_best_50": {"ja": "All Best 50", "en": "All Best 50", "zh": "All Best 50"},
-    "all_best_35": {"ja": "All Best 35", "en": "All Best 35", "zh": "All Best 35"},
-    "ap_best_50": {"ja": "All Perfect Best 50", "en": "All Perfect Best 50", "zh": "All Perfect Best 50"},
-    "ideal_best_50": {"ja": "Ideal Best 50", "en": "Ideal Best 50", "zh": "Ideal Best 50"},
 }
 
 # ============================================================
@@ -817,20 +804,12 @@ def get_update_over_quick_reply(user_id=None):
     return QuickReply(
         items=[
             QuickReplyItem(action=MessageAction(
-                label=get_quick_reply_label("best_50", user_id),
-                text="b50"
+                label=get_quick_reply_label("recent_50", user_id),
+                text="rct50"
             )),
             QuickReplyItem(action=MessageAction(
                 label=get_quick_reply_label("all_best_50", user_id),
                 text="ab50"
-            )),
-            QuickReplyItem(action=MessageAction(
-                label=get_quick_reply_label("ap_best_50", user_id),
-                text="apb50"
-            )),
-            QuickReplyItem(action=MessageAction(
-                label=get_quick_reply_label("ideal_best_50", user_id),
-                text="idlb50"
             )),
             QuickReplyItem(action=URIAction(
                 label=get_quick_reply_label("support", user_id),
@@ -1017,11 +996,6 @@ def friend_use_once(name, user_id=None):
     text = get_multilingual_text(friend_use_once_text, user_id).format(name=name)
     return TextMessage(text=text)
 
-def friend_best50_title(name, user_id=None):
-    """生成好友 Best 50 标题消息"""
-    text = get_multilingual_text(friend_best50_title_text, user_id).format(name=name)
-    return TextMessage(text=text)
-
 def level_record_not_found(level, page, user_id=None):
     """生成指定等级记录未找到消息"""
     text = get_multilingual_text(level_record_not_found_text, user_id).format(level=level, page=page)
@@ -1124,7 +1098,392 @@ def build_dxdata_update_message(result, user_id=None):
 
     return '\n'.join(message_parts)
 
-def level_list_hint(user_id=None):
-    """生成定数列表提示消息"""
-    text = get_multilingual_text(level_list_hint_text, user_id)
-    return TextMessage(text=text)
+# ============================================================
+# 用户信息 Flex Message / User Info Flex Message
+# ============================================================
+
+user_info_flex_text = {
+    'title': {
+        'ja': '👤 ユーザー情報',
+        'en': '👤 User Information',
+        'zh': '👤 用户信息'
+    },
+    'user_id_label': {
+        'ja': 'LINE ID',
+        'en': 'LINE ID',
+        'zh': 'LINE ID'
+    },
+    'name_label': {
+        'ja': 'プレイヤー名',
+        'en': 'Player Name',
+        'zh': '玩家名称'
+    },
+    'rating_label': {
+        'ja': 'レーティング',
+        'en': 'Rating',
+        'zh': 'Rating'
+    },
+    'sega_id_label': {
+        'ja': 'SEGA ID',
+        'en': 'SEGA ID',
+        'zh': 'SEGA ID'
+    },
+    'password_label': {
+        'ja': 'パスワード',
+        'en': 'Password',
+        'zh': '密码'
+    },
+    'server_label': {
+        'ja': 'サーバー',
+        'en': 'Server',
+        'zh': '服务器'
+    },
+    'language_label': {
+        'ja': '言語',
+        'en': 'Language',
+        'zh': '语言'
+    },
+    'jp_server': {
+        'ja': '日本版',
+        'en': 'Japanese Server',
+        'zh': '日服'
+    },
+    'intl_server': {
+        'ja': '海外版',
+        'en': 'International Server',
+        'zh': '国际服'
+    },
+    'lang_ja': {
+        'ja': '日本語',
+        'en': 'Japanese',
+        'zh': '日语'
+    },
+    'lang_en': {
+        'ja': '英語',
+        'en': 'English',
+        'zh': '英语'
+    },
+    'lang_zh': {
+        'ja': '中国語',
+        'en': 'Chinese',
+        'zh': '中文'
+    },
+    'copy_id': {
+        'ja': 'IDをコピー',
+        'en': 'Copy ID',
+        'zh': '复制ID'
+    },
+    'alt_text': {
+        'ja': 'ユーザー情報',
+        'en': 'User Information',
+        'zh': '用户信息'
+    },
+    'last_update_label': {
+        'ja': '最終更新',
+        'en': 'Last Update',
+        'zh': '最后更新'
+    },
+    'not_bound': {
+        'ja': '未連携',
+        'en': 'Not Bound',
+        'zh': '未绑定'
+    },
+}
+
+def generate_user_info_flex(user_id):
+    """
+    生成用户信息 Flex Message
+
+    Args:
+        user_id: 用户ID
+
+    Returns:
+        FlexMessage: 用户信息 Flex Message
+    """
+    lang = get_user_language(user_id)
+    texts = user_info_flex_text
+
+    # 构建内容行
+    content_rows = []
+
+    if user_id in USERS:
+        user_data = USERS[user_id]
+
+        # LINE ID 行（带复制按钮）
+        content_rows.append({
+            "type": "box",
+            "layout": "horizontal",
+            "spacing": "md",
+            "contents": [
+                {
+                    "type": "box",
+                    "layout": "vertical",
+                    "flex": 3,
+                    "contents": [
+                        {
+                            "type": "text",
+                            "text": get_multilingual_text(texts['user_id_label'], language=lang),
+                            "size": "xs",
+                            "color": "#999999"
+                        },
+                        {
+                            "type": "text",
+                            "text": user_id,
+                            "size": "sm",
+                            "weight": "bold",
+                            "wrap": True,
+                            "margin": "xs"
+                        }
+                    ]
+                },
+                {
+                    "type": "button",
+                    "flex": 0,
+                    "style": "secondary",
+                    "height": "sm",
+                    "action": {
+                        "type": "message",
+                        "label": "📋",
+                        "text": user_id
+                    }
+                }
+            ]
+        })
+
+        # 分隔线
+        content_rows.append({
+            "type": "separator",
+            "margin": "md"
+        })
+
+        # 玩家名称
+        if "personal_info" in user_data:
+            personal_info = user_data['personal_info']
+            if 'name' in personal_info:
+                content_rows.append({
+                    "type": "box",
+                    "layout": "vertical",
+                    "margin": "md",
+                    "contents": [
+                        {
+                            "type": "text",
+                            "text": get_multilingual_text(texts['name_label'], language=lang),
+                            "size": "xs",
+                            "color": "#999999"
+                        },
+                        {
+                            "type": "text",
+                            "text": personal_info['name'],
+                            "size": "sm",
+                            "weight": "bold",
+                            "margin": "xs"
+                        }
+                    ]
+                })
+
+                # 分隔线
+                content_rows.append({
+                    "type": "separator",
+                    "margin": "md"
+                })
+
+            # Rating
+            if 'rating' in personal_info:
+                rating_contents = [
+                    {
+                        "type": "text",
+                        "text": get_multilingual_text(texts['rating_label'], language=lang),
+                        "size": "xs",
+                        "color": "#999999"
+                    },
+                    {
+                        "type": "text",
+                        "text": str(personal_info['rating']),
+                        "size": "sm",
+                        "weight": "bold",
+                        "margin": "xs"
+                    }
+                ]
+
+                # 添加最后更新时间（如果存在）
+                if 'last_update' in user_data:
+                    rating_contents.append({
+                        "type": "text",
+                        "text": f"・{get_multilingual_text(texts['last_update_label'], language=lang)}: {user_data['last_update']}",
+                        "size": "xs",
+                        "color": "#666666",
+                        "margin": "sm"
+                    })
+
+                content_rows.append({
+                    "type": "box",
+                    "layout": "vertical",
+                    "margin": "md",
+                    "contents": rating_contents
+                })
+
+                # 分隔线
+                content_rows.append({
+                    "type": "separator",
+                    "margin": "md"
+                })
+
+        # SEGA ID
+        sega_id_value = user_data.get('sega_id', get_multilingual_text(texts['not_bound'], language=lang))
+
+        content_rows.append({
+            "type": "box",
+            "layout": "vertical",
+            "margin": "md",
+            "contents": [
+                {
+                    "type": "text",
+                    "text": get_multilingual_text(texts['sega_id_label'], language=lang),
+                    "size": "xs",
+                    "color": "#999999"
+                },
+                {
+                    "type": "text",
+                    "text": sega_id_value,
+                    "size": "sm",
+                    "weight": "bold",
+                    "margin": "xs"
+                }
+            ]
+        })
+
+        # 分隔线
+        content_rows.append({
+            "type": "separator",
+            "margin": "md"
+        })
+
+        # 服务器
+        if "version" in user_data:
+            server_text = texts['jp_server'] if user_data['version'] == 'jp' else texts['intl_server']
+            content_rows.append({
+                "type": "box",
+                "layout": "vertical",
+                "margin": "md",
+                "contents": [
+                    {
+                        "type": "text",
+                        "text": get_multilingual_text(texts['server_label'], language=lang),
+                        "size": "xs",
+                        "color": "#999999"
+                    },
+                    {
+                        "type": "text",
+                        "text": get_multilingual_text(server_text, language=lang),
+                        "size": "sm",
+                        "weight": "bold",
+                        "margin": "xs"
+                    }
+                ]
+            })
+
+            # 分隔线
+            content_rows.append({
+                "type": "separator",
+                "margin": "md"
+            })
+
+        # 语言
+        lang_display = {
+            'ja': texts['lang_ja'],
+            'en': texts['lang_en'],
+            'zh': texts['lang_zh']
+        }.get(lang, texts['lang_ja'])
+
+        content_rows.append({
+            "type": "box",
+            "layout": "vertical",
+            "margin": "md",
+            "contents": [
+                {
+                    "type": "text",
+                    "text": get_multilingual_text(texts['language_label'], language=lang),
+                    "size": "xs",
+                    "color": "#999999"
+                },
+                {
+                    "type": "text",
+                    "text": get_multilingual_text(lang_display, language=lang),
+                    "size": "sm",
+                    "weight": "bold",
+                    "margin": "xs"
+                }
+            ]
+        })
+
+    else:
+        # 用户未绑定
+        content_rows.append({
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+                {
+                    "type": "text",
+                    "text": get_multilingual_text(texts['user_id_label'], language=lang),
+                    "size": "xs",
+                    "color": "#999999"
+                },
+                {
+                    "type": "text",
+                    "text": user_id,
+                    "size": "sm",
+                    "weight": "bold",
+                    "wrap": True,
+                    "margin": "xs"
+                }
+            ]
+        })
+
+        content_rows.append({
+            "type": "separator",
+            "margin": "md"
+        })
+
+        content_rows.append({
+            "type": "box",
+            "layout": "vertical",
+            "margin": "md",
+            "contents": [
+                {
+                    "type": "text",
+                    "text": f"❌ {get_multilingual_text(texts['not_bound'], language=lang)}",
+                    "size": "sm",
+                    "color": "#FF0000"
+                }
+            ]
+        })
+
+    # 创建 bubble
+    bubble = {
+        "type": "bubble",
+        "size": "mega",
+        "header": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+                {
+                    "type": "text",
+                    "text": get_multilingual_text(texts['title'], language=lang),
+                    "weight": "bold",
+                    "size": "lg"
+                }
+            ],
+            "paddingAll": "16px"
+        },
+        "body": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": content_rows,
+            "paddingAll": "16px"
+        }
+    }
+
+    return FlexMessage(
+        alt_text=get_multilingual_text(texts['alt_text'], language=lang),
+        contents=FlexContainer.from_dict(bubble)
+    )
