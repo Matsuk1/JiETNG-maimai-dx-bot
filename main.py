@@ -21,6 +21,8 @@ import copy
 import asyncio
 import aiohttp
 import urllib3
+import time
+import subprocess
 
 from functools import wraps
 from datetime import datetime
@@ -948,12 +950,15 @@ def async_admin_maimai_update_task(event):
 # ==================== 主程序入口 ====================
 
 def maimai_update(user_id, ver="jp"):
+    # 记录开始时间
+    start_time = time.time()
+
     messages = []
     func_status = {
         "User Info": True,
         "Best Records": True,
         "Recent Records": True,
-        "Friends List": True
+        "Friends List": 0
     }
 
     read_user()
@@ -999,7 +1004,7 @@ def maimai_update(user_id, ver="jp"):
 
     error = False
 
-    if user_info:
+    if user_info and user_info['rating'] is not "ERROR":
         edit_user_value(user_id, "personal_info", user_info)
     else:
         func_status["User Info"] = False
@@ -1019,21 +1024,53 @@ def maimai_update(user_id, ver="jp"):
 
     if friends_list:
         edit_user_value(user_id, "mai_friends", friends_list)
+        func_status["Friends List"] = len(friends_list)
 
     details = DIVIDER
     for func, status in func_status.items():
-        if not status:
+        if not status and status is not 0:
             details += f"\n「{func}」Error"
+
+    # 计算耗时
+    elapsed_time = time.time() - start_time
 
     if not error:
         # 记录更新时间
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         edit_user_value(user_id, "last_update", current_time)
 
-        messages.append(update_over(user_id))
+        # 获取用户信息
+        user_data = USERS[user_id]
+        username = user_data.get('personal_info', {}).get('name', 'N/A')
+        rating = user_data.get('personal_info', {}).get('rating', 'N/A')
+
+        # 使用 flex message 显示更新结果
+        messages.append(generate_update_result_flex(
+            user_id=user_id,
+            username=username,
+            rating=rating,
+            update_time=current_time,
+            elapsed_time=elapsed_time,
+            func_status=func_status,
+            success=True
+        ))
     else:
-        messages.append(update_error(user_id))
-        messages.append(TextMessage(text=details))
+        # 获取用户信息
+        user_data = USERS[user_id]
+        username = user_data.get('personal_info', {}).get('name', 'N/A')
+        rating = user_data.get('personal_info', {}).get('rating', 'N/A')
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        # 使用 flex message 显示错误结果
+        messages.append(generate_update_result_flex(
+            user_id=user_id,
+            username=username,
+            rating=rating,
+            update_time=current_time,
+            elapsed_time=elapsed_time,
+            func_status=func_status,
+            success=False
+        ))
 
     return messages
 
@@ -1795,6 +1832,14 @@ def generate_friend_b50(user_id, friend_code, ver="jp"):
     if error is None and friend_records is None:
         return segaid_error(user_id)
 
+    # 检查 friend_info 是否包含维护错误
+    if isinstance(friend_info, dict) and friend_info.get("error") == "MAINTENANCE":
+        return maintenance_error(user_id)
+
+    # 检查 friend_records 是否为维护模式字符串
+    if friend_records == "MAINTENANCE":
+        return maintenance_error(user_id)
+
     if not friend_records:
         return friend_rcd_error(user_id)
 
@@ -2529,40 +2574,6 @@ def handle_sync_text_command(event):
             upload_notice(new_notice)
             clear_user_value("notice_read", False)
             return smart_reply(user_id, event.reply_token, notice_upload(user_id), configuration, DIVIDER)
-
-        if user_message == "reboot":
-            # 重启 bot
-            reboot_messages = {
-                'ja': '🔄 Bot を再起動しています...',
-                'en': '🔄 Rebooting bot...',
-                'zh': '🔄 正在重启 Bot...'
-            }
-
-            reply_message = TextMessage(text=get_multilingual_text(reboot_messages, user_id))
-            smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
-
-            # 创建重启标志文件
-            with open(".reboot_flag", "w") as f:
-                f.write("reboot")
-
-            logger.info(f"Admin {user_id} initiated reboot")
-
-            # 在单独的线程中延迟重启，确保响应完成
-            def delayed_reboot():
-                import time
-                import subprocess
-                time.sleep(1)  # 等待1秒确保响应已发送
-                logger.info("Executing reboot...")
-
-                # 启动新进程
-                subprocess.Popen([sys.executable] + sys.argv)
-
-                # 退出当前进程
-                os._exit(0)
-
-            threading.Thread(target=delayed_reboot, daemon=False).start()
-
-            return
 
         if user_message == "dxdata update":
             # 使用新的对比更新函数
@@ -4431,15 +4442,9 @@ def api_get_versions():
 
 if __name__ == "__main__":
     # ==================== 系统启动自检 ====================
-    # 检查是否是重启
-    reboot_flag_file = ".reboot_flag"
-    is_reboot = os.path.exists(reboot_flag_file)
-
     # 在启动 worker 线程之前执行系统自检
     logger.info("=" * 60)
     logger.info("JiETNG Maimai DX LINE Bot Starting...")
-    if is_reboot:
-        logger.info("(Rebooting after admin command)")
     logger.info("=" * 60)
 
     try:
@@ -4497,30 +4502,6 @@ if __name__ == "__main__":
         custom_cleanup()
         return stats
     memory_manager.cleanup = enhanced_cleanup
-
-    # 如果是重启，通知所有管理员
-    if is_reboot:
-        try:
-            # 删除重启标志文件
-            os.remove(reboot_flag_file)
-
-            # 准备通知消息
-            reboot_notification = {
-                'ja': '✅ Bot が再起動しました',
-                'en': '✅ Bot has been rebooted',
-                'zh': '✅ Bot 已重启'
-            }
-
-            # 通知所有管理员
-            for admin_user_id in ADMIN_ID:
-                try:
-                    message_text = get_multilingual_text(reboot_notification, admin_user_id)
-                    smart_push(admin_user_id, TextMessage(text=message_text), configuration)
-                    logger.info(f"Notified admin {admin_user_id} about reboot")
-                except Exception as e:
-                    logger.error(f"Failed to notify admin {admin_user_id} about reboot: {e}")
-        except Exception as e:
-            logger.error(f"Error during reboot notification: {e}")
 
     try:
         app.run(host="0.0.0.0", port=PORT)

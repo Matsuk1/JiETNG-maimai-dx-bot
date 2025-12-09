@@ -9,7 +9,6 @@ from modules.rate_limiter import maimai_limiter
 
 logger = logging.getLogger(__name__)
 
-# User-Agent 池（模拟不同浏览器）
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
@@ -515,7 +514,7 @@ async def get_recent_records(cookies: dict, ver="jp"):
                     else:
                         type = "N/A"
                 else:
-                    type = "N/A"
+                    type = "utage"
 
                 diff_img = block.xpath('.//img[contains(@class, "playlog_diff")]/@src')
                 if diff_img:
@@ -598,6 +597,7 @@ async def get_friends_list(cookies: dict, ver="jp"):
 
             except Exception as e:
                 logger.error(f"[get_friends_list] Error parsing block: {e}")
+                return []
 
         return friends
 
@@ -687,7 +687,7 @@ async def get_friend_records(cookies: dict, friend_id: str, ver="jp"):
         ver: 版本 (jp/intl)
 
     Returns:
-        tuple: (friend_name, music_record)
+        list or str: 好友成绩列表，维护时返回 "MAINTENANCE"
     """
     base = "https://maimaidx-eng.com/maimai-mobile" if ver == "intl" else "https://maimaidx.jp/maimai-mobile"
     difficulty = ['basic', 'advanced', 'expert', 'master', 'remaster']
@@ -709,7 +709,7 @@ async def get_friend_records(cookies: dict, friend_id: str, ver="jp"):
             if dom is None:
                 continue
             if dom == "MAINTENANCE":
-                return "MAINTENANCE", []
+                return "MAINTENANCE"
 
             blocks = dom.xpath(f'//div[contains(@class, "music_{difficulty[diff]}_score_back")]')
 

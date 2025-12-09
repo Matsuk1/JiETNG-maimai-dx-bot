@@ -48,7 +48,6 @@ logs/
 *.swo
 *~
 .DS_Store
-.reboot_flag
 
 # IDE
 .vscode/

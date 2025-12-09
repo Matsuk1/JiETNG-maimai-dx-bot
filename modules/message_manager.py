@@ -1256,6 +1256,36 @@ def generate_user_info_flex(user_id):
             "margin": "md"
         })
 
+        # SEGA ID
+        sega_id_value = user_data.get('sega_id', get_multilingual_text(texts['not_bound'], language=lang))
+
+        content_rows.append({
+            "type": "box",
+            "layout": "vertical",
+            "margin": "md",
+            "contents": [
+                {
+                    "type": "text",
+                    "text": get_multilingual_text(texts['sega_id_label'], language=lang),
+                    "size": "xs",
+                    "color": "#999999"
+                },
+                {
+                    "type": "text",
+                    "text": sega_id_value,
+                    "size": "sm",
+                    "weight": "bold",
+                    "margin": "xs"
+                }
+            ]
+        })
+
+        # 分隔线
+        content_rows.append({
+            "type": "separator",
+            "margin": "md"
+        })
+
         # 玩家名称
         if "personal_info" in user_data:
             personal_info = user_data['personal_info']
@@ -1327,36 +1357,6 @@ def generate_user_info_flex(user_id):
                     "type": "separator",
                     "margin": "md"
                 })
-
-        # SEGA ID
-        sega_id_value = user_data.get('sega_id', get_multilingual_text(texts['not_bound'], language=lang))
-
-        content_rows.append({
-            "type": "box",
-            "layout": "vertical",
-            "margin": "md",
-            "contents": [
-                {
-                    "type": "text",
-                    "text": get_multilingual_text(texts['sega_id_label'], language=lang),
-                    "size": "xs",
-                    "color": "#999999"
-                },
-                {
-                    "type": "text",
-                    "text": sega_id_value,
-                    "size": "sm",
-                    "weight": "bold",
-                    "margin": "xs"
-                }
-            ]
-        })
-
-        # 分隔线
-        content_rows.append({
-            "type": "separator",
-            "margin": "md"
-        })
 
         # 服务器
         if "version" in user_data:
@@ -1470,10 +1470,12 @@ def generate_user_info_flex(user_id):
                     "type": "text",
                     "text": get_multilingual_text(texts['title'], language=lang),
                     "weight": "bold",
-                    "size": "lg"
+                    "size": "lg",
+                    "color": "#FFFFFF"
                 }
             ],
-            "paddingAll": "16px"
+            "paddingAll": "16px",
+            "backgroundColor": "#000000"
         },
         "body": {
             "type": "box",
@@ -1485,5 +1487,280 @@ def generate_user_info_flex(user_id):
 
     return FlexMessage(
         alt_text=get_multilingual_text(texts['alt_text'], language=lang),
+        contents=FlexContainer.from_dict(bubble)
+    )
+
+# ============================================================
+# 更新结果 Flex Message / Update Result Flex Message
+# ============================================================
+
+update_result_flex_text = {
+    'title_success': {
+        'ja': '✅ アップデート完了',
+        'en': '✅ Update Completed',
+        'zh': '✅ 更新完成'
+    },
+    'title_error': {
+        'ja': '⚠️ アップデートエラー',
+        'en': '⚠️ Update Error',
+        'zh': '⚠️ 更新错误'
+    },
+    'username_label': {
+        'ja': 'プレイヤー名',
+        'en': 'Player Name',
+        'zh': '玩家名称'
+    },
+    'rating_label': {
+        'ja': 'レーティング',
+        'en': 'Rating',
+        'zh': 'Rating'
+    },
+    'update_time_label': {
+        'ja': '更新日時',
+        'en': 'Update Time',
+        'zh': '更新时间'
+    },
+    'elapsed_time_label': {
+        'ja': '処理時間',
+        'en': 'Elapsed Time',
+        'zh': '耗时'
+    },
+    'status_label': {
+        'ja': 'ステータス',
+        'en': 'Status',
+        'zh': '状态'
+    },
+    'success': {
+        'ja': '成功',
+        'en': 'Success',
+        'zh': '成功'
+    },
+    'failed': {
+        'ja': '失敗',
+        'en': 'Failed',
+        'zh': '失败'
+    },
+    'alt_text_success': {
+        'ja': 'アップデート完了',
+        'en': 'Update Completed',
+        'zh': '更新完成'
+    },
+    'alt_text_error': {
+        'ja': 'アップデートエラー',
+        'en': 'Update Error',
+        'zh': '更新错误'
+    }
+}
+
+def generate_update_result_flex(user_id, username, rating, update_time, elapsed_time, func_status, success=True):
+    """
+    生成更新结果 Flex Message
+
+    Args:
+        user_id: 用户ID
+        username: 用户名
+        rating: Rating 值
+        update_time: 更新时间
+        elapsed_time: 耗时（秒）
+        func_status: 各功能状态字典
+        friends_count: 好友列表数量
+        success: 是否成功
+
+    Returns:
+        FlexMessage: 更新结果 Flex Message
+    """
+    lang = get_user_language(user_id)
+    texts = update_result_flex_text
+
+    # 格式化耗时
+    if elapsed_time < 60:
+        elapsed_str = f"{elapsed_time:.2f}s"
+    else:
+        minutes = int(elapsed_time // 60)
+        seconds = elapsed_time % 60
+        elapsed_str = f"{minutes}m {seconds:.1f}s"
+
+    # 构建内容行
+    content_rows = []
+
+    # UserName
+    content_rows.append({
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+            {
+                "type": "text",
+                "text": get_multilingual_text(texts['username_label'], language=lang),
+                "size": "xs",
+                "color": "#999999"
+            },
+            {
+                "type": "text",
+                "text": username,
+                "size": "sm",
+                "weight": "bold",
+                "margin": "xs"
+            }
+        ]
+    })
+
+    # 分隔线
+    content_rows.append({
+        "type": "separator",
+        "margin": "md"
+    })
+
+    # Rating
+    content_rows.append({
+        "type": "box",
+        "layout": "vertical",
+        "margin": "md",
+        "contents": [
+            {
+                "type": "text",
+                "text": get_multilingual_text(texts['rating_label'], language=lang),
+                "size": "xs",
+                "color": "#999999"
+            },
+            {
+                "type": "text",
+                "text": str(rating),
+                "size": "sm",
+                "weight": "bold",
+                "margin": "xs"
+            }
+        ]
+    })
+
+    # 分隔线
+    content_rows.append({
+        "type": "separator",
+        "margin": "md"
+    })
+
+    # 更新时间
+    content_rows.append({
+        "type": "box",
+        "layout": "vertical",
+        "margin": "md",
+        "contents": [
+            {
+                "type": "text",
+                "text": get_multilingual_text(texts['update_time_label'], language=lang),
+                "size": "xs",
+                "color": "#999999"
+            },
+            {
+                "type": "text",
+                "text": update_time,
+                "size": "sm",
+                "weight": "bold",
+                "margin": "xs"
+            }
+        ]
+    })
+
+    # 分隔线
+    content_rows.append({
+        "type": "separator",
+        "margin": "md"
+    })
+
+    # 耗时
+    content_rows.append({
+        "type": "box",
+        "layout": "vertical",
+        "margin": "md",
+        "contents": [
+            {
+                "type": "text",
+                "text": get_multilingual_text(texts['elapsed_time_label'], language=lang),
+                "size": "xs",
+                "color": "#999999"
+            },
+            {
+                "type": "text",
+                "text": elapsed_str,
+                "size": "sm",
+                "weight": "bold",
+                "margin": "xs",
+                "color": "#17B169" if success else "#FF6B6B"
+            }
+        ]
+    })
+
+    # 分隔线
+    content_rows.append({
+        "type": "separator",
+        "margin": "md"
+    })
+
+    # 状态详情
+    status_contents = [
+        {
+            "type": "text",
+            "text": get_multilingual_text(texts['status_label'], language=lang),
+            "size": "xs",
+            "color": "#999999"
+        }
+    ]
+
+    for func_name, status in func_status.items():
+        # Friends List 特殊处理：显示数量
+        if func_name == "Friends List":
+            status_text = f"{status}"
+            status_color = "#17B169"
+        else:
+            status_text = get_multilingual_text(texts['success'], language=lang) if status else get_multilingual_text(texts['failed'], language=lang)
+            status_color = "#17B169" if status else "#FF6B6B"
+
+        status_contents.append({
+            "type": "text",
+            "text": f"・{func_name}: {status_text}",
+            "size": "xs",
+            "color": status_color,
+            "margin": "sm"
+        })
+
+    content_rows.append({
+        "type": "box",
+        "layout": "vertical",
+        "margin": "md",
+        "contents": status_contents
+    })
+
+    # 创建 bubble
+    title_text = texts['title_success'] if success else texts['title_error']
+    header_color = "#17B169" if success else "#FF6B6B"
+
+    bubble = {
+        "type": "bubble",
+        "size": "mega",
+        "header": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+                {
+                    "type": "text",
+                    "text": get_multilingual_text(title_text, language=lang),
+                    "weight": "bold",
+                    "size": "lg",
+                    "color": "#FFFFFF"
+                }
+            ],
+            "paddingAll": "16px",
+            "backgroundColor": header_color
+        },
+        "body": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": content_rows,
+            "paddingAll": "16px"
+        }
+    }
+
+    alt_text = texts['alt_text_success'] if success else texts['alt_text_error']
+    return FlexMessage(
+        alt_text=get_multilingual_text(alt_text, language=lang),
         contents=FlexContainer.from_dict(bubble)
     )
