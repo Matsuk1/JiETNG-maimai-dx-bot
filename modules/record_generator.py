@@ -147,7 +147,7 @@ def create_thumbnail(song, thumb_size=(300, 150), padding=15):
         size=(type_width, type_height),
         position=(padding + cover_size - type_width, padding + cover_size - type_height),
         save_dir=ICON_TYPE_DIR,
-        url_func=lambda value: "https://maimaidx.jp/maimai-mobile/img/music_standard.png" if value == "std" else "https://maimaidx.jp/maimai-mobile/img/music_dx.png"
+        url_func=lambda value: "https://maimaidx.jp/maimai-mobile/img/music_standard.png" if value == "std" else "https://maimaidx.jp/maimai-mobile/img/music_dx.png" if value == "dx" else "https://maimaidx.jp/maimai-mobile/img/diff_utage.png"
     )
 
     # 根据缩略图尺寸动态计算布局

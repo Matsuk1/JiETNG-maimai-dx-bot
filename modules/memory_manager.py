@@ -184,7 +184,6 @@ def cleanup_rate_limiter_tracking(rate_limiter_module=None):
 
     if rate_limiter_module and hasattr(rate_limiter_module, 'user_request_tracking'):
         try:
-            import time
             current_time = time.time()
 
             tracking = rate_limiter_module.user_request_tracking

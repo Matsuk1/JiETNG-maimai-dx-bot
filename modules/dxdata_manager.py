@@ -134,6 +134,9 @@ def _split_song_sheets_by_type(song_list):
 
         for sheet in song.get("sheets", []):
             sheet_type = sheet.get("type")
+            if sheet["difficulty"] not in ["basic", "advanced", "expert", "master", "remaster"]:
+                sheet["difficulty"] = "utage"
+
             if "multiverInternalLevelValue" in sheet:
                 sheet["internalLevelValue"] = sheet["multiverInternalLevelValue"].get(MAIMAI_VERSION["jp"][-1], sheet["internalLevelValue"])
 

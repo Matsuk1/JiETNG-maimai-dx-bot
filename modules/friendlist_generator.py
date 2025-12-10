@@ -110,6 +110,11 @@ def generate_friend_buttons(user_id, alt_text, button_list, group_size=6):
                         "size": "xs",
                         "color": "#999999",
                         "margin": "sm"
+                    },
+                    {
+                        "type": "separator",
+                        "color": "#DDDDDD",
+                        "margin": "md"
                     }
                 ],
                 "paddingAll": "16px"

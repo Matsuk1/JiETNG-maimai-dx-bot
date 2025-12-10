@@ -349,6 +349,7 @@ async def get_maimai_info(cookies: dict, ver="jp"):
         # 称号
         trophy_type_block = trophy_dom.xpath('//div[contains(@class, "block_info") and contains(@class, "f_11") and contains(@class, "orange")]/text()')
         trophy_type = trophy_type_block[0].strip().lower() if trophy_type_block else "rainbow"
+        trophy_type = "rainbow" if trophy_type == "ランダム" else trophy_type
         trophy_blocks = trophy_dom.xpath('//div[contains(@class, "trophy_inner_block") and contains(@class, "f_13")]')
         if trophy_blocks:
             trophy_block = trophy_blocks[0]

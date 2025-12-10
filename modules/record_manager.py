@@ -239,5 +239,6 @@ def get_detailed_info(song_record, ver="jp"):
             record['ra'] = 0
             record['id'] = -1
             record['cover_url'] = None
+            record['cover_name'] = "UNKNOWN"
 
     return song_record
