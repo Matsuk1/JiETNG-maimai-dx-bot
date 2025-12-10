@@ -1618,32 +1618,15 @@ def create_user_info_img(user_info, scale=1.7):
     draw.text((138, 54), user_info['name'], fill=(0, 0, 0), font=font_large)
 
     paste_image("class_rank_url", (296, 9), (70, 40))
-
     paste_image("cource_rank_url", (322, 54), (69, 28))
+    paste_image("trophy_url", (129, 92), (266, 21))
 
-    _if_trophy = paste_image("trophy_url", (129, 92), (266, 21))
-
-    def trophy_color(type):
-        return {
-            "normal": (255, 255, 255),
-            "bronze": (193, 102, 78),
-            "silver": (186, 255, 251),
-            "gold": (255, 243, 122),
-            "rainbow": (233, 83, 106),
-        }.get(type, (255, 255, 255))
     trophy_content = truncate_text(draw, user_info['trophy_content'], font_small, 253)
-
-    # 计算文本居中位置
     bbox = draw.textbbox((0, 0), trophy_content, font=font_small)
     text_width = bbox[2] - bbox[0]
     rect_width = 266
     center_x = 129 + (rect_width - text_width) // 2
-
-    if not _if_trophy:
-        draw.rectangle([129, 92, 129 + 266, 92 + 21], fill=trophy_color(user_info['trophy_type']))
-        draw.text((center_x, 93), trophy_content, fill=(0, 0, 0), font=font_small)
-    else:
-        draw.text((center_x, 90), trophy_content, fill=(0, 0, 0), font=font_small)
+    draw.text((center_x, 90), trophy_content, fill=(0, 0, 0), font=font_small)
 
     info_img = info_img.resize((int(img_width * scale), int(img_height * scale)), Image.Resampling.LANCZOS)
     return info_img
