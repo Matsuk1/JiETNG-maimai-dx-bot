@@ -22,7 +22,7 @@ from modules.user_manager import get_user_value, edit_user_value
 from modules.notice_manager import get_latest_notice
 from modules.perm_request_handler import get_pending_perm_requests
 from modules.perm_request_generator import generate_perm_request_message
-from modules.message_manager import tip_messages, get_notice_header
+from modules.message_manager import tip_messages, get_notice_header, generate_error_alert_flex
 
 logger = logging.getLogger(__name__)
 
@@ -191,86 +191,30 @@ def notify_admins_error(
     try:
         # 构建错误消息
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        message_parts = [
-            f"🚨 System Error Alert",
-            f"Time: {timestamp}",
-            f"",
-            f"Error: {error_title}",
-            f"",
-            f"Details:",
-            error_details[:2000] if len(error_details) > 2000 else error_details
-        ]
 
-        # 添加上下文信息
-        if context:
-            message_parts.append("")
-            message_parts.append("Context:")
-            for key, value in context.items():
-                message_parts.append(f"  {key}: {value}")
+        # 生成 Flex Message
+        flex_message = generate_error_alert_flex(error_title, error_details, context, timestamp)
 
-        full_message = "\n".join(message_parts)
-
-        # 如果错误信息过长，使用文本文件
-        if len(full_message) > max_length:
-            # 截断消息
-            short_message = "\n".join([
-                f"🚨 System Error Alert",
-                f"Time: {timestamp}",
-                f"",
-                f"Error: {error_title}",
-                f"",
-                f"⚠️ Error details too long, sending as text file..."
-            ])
-
-            # 创建详细错误文件内容
-            file_content = "\n".join([
-                f"System Error Report",
-                f"=" * 50,
-                f"Time: {timestamp}",
-                f"",
-                f"Error: {error_title}",
-                f"",
-                f"Full Details:",
-                f"-" * 50,
-                error_details,
-                f"",
-            ])
-
-            if context:
-                file_content += "\nContext Information:\n"
-                file_content += "-" * 50 + "\n"
-                for key, value in context.items():
-                    file_content += f"{key}: {value}\n"
-
-            # 保存到临时文件
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False, encoding='utf-8') as f:
-                f.write(file_content)
-                temp_file_path = f.name
-
+        # 如果错误信息过长，需要分段发送额外的详细信息
+        if len(error_details) > 800:
             # 发送给所有管理员
             for admin_user_id in admin_id:
                 try:
-                    # 先发送简短消息
-                    smart_push(admin_user_id, TextMessage(text=short_message), configuration)
+                    # 先发送 Flex Message（包含截断的详情）
+                    smart_push(admin_user_id, flex_message, configuration)
 
-                    # 分段发送详细信息
+                    # 分段发送完整详细信息
                     detail_chunks = [error_details[i:i+900] for i in range(0, len(error_details), 900)]
-                    for i, chunk in enumerate(detail_chunks[:3]):  # 最多发送3段
-                        chunk_msg = f"Details ({i+1}/{min(len(detail_chunks), 3)}):\n{chunk}"
+                    for i, chunk in enumerate(detail_chunks):
+                        chunk_msg = f"Details ({i+1}/{len(detail_chunks)}):\n{chunk}"
                         smart_push(admin_user_id, TextMessage(text=chunk_msg), configuration)
                 except Exception as e:
                     logger.error(f"Failed to notify admin {admin_user_id}: {e}")
-
-            # 清理临时文件
-            try:
-                os.unlink(temp_file_path)
-            except:
-                pass
         else:
-            # 错误信息不长，直接发送
+            # 错误信息不长，直接发送 Flex Message
             for admin_user_id in admin_id:
                 try:
-                    smart_push(admin_user_id, TextMessage(text=full_message), configuration)
+                    smart_push(admin_user_id, flex_message, configuration)
                 except Exception as e:
                     logger.error(f"Failed to notify admin {admin_user_id}: {e}")
 

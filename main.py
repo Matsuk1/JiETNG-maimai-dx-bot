@@ -548,9 +548,6 @@ def require_user_permission(f):
                 "message": "user_id is required"
             }), 400
 
-        # 检查用户是否存在
-        read_user()
-
         # 获取 token 信息（由 require_dev_token 装饰器提供）
         token_info = request.token_info
         token_id = token_info['token_id']
@@ -599,7 +596,6 @@ def require_owner_permission(f):
             }), 400
 
         # 检查用户是否存在
-        read_user()
         if user_id not in USERS:
             return jsonify({
                 "error": "User not found",
@@ -854,35 +850,23 @@ def user_unbind(user_id):
     return msg
 
 def user_bind_sega_id(user_id, sega_id):
-    read_user()
-
     if user_id not in USERS :
         add_user(user_id)
-
     edit_user_value(user_id, 'sega_id', sega_id)
 
 def user_bind_sega_pwd(user_id, sega_pwd):
-    read_user()
-
     if user_id not in USERS :
         add_user(user_id)
-
     edit_user_value(user_id, 'sega_pwd', sega_pwd)
 
 def user_set_version(user_id, version):
-    read_user()
-
     if user_id not in USERS :
         add_user(user_id)
-
     edit_user_value(user_id, 'version', version)
 
 def user_set_language(user_id, language):
-    read_user()
-
     if user_id not in USERS :
         add_user(user_id)
-
     edit_user_value(user_id, 'language', language)
 
 
@@ -894,7 +878,6 @@ def async_maimai_update_task(event):
     reply_token = event.reply_token
 
     # 获取用户版本
-    read_user()
     ver = "jp"
     if user_id in USERS and 'version' in USERS[user_id]:
         ver = USERS[user_id]['version']
@@ -911,7 +894,6 @@ def async_generate_friend_b50_task(event):
     friend_code = user_message.replace("friend-b50 ", "").strip()
 
     # 获取用户版本
-    read_user()
     ver = "jp"
     if user_id in USERS and 'version' in USERS[user_id]:
         ver = USERS[user_id]['version']
@@ -930,7 +912,6 @@ def async_admin_maimai_update_task(event):
     user_id = event.source.user_id
 
     # 获取用户版本
-    read_user()
     ver = "jp"
     if user_id in USERS and 'version' in USERS[user_id]:
         ver = USERS[user_id]['version']
@@ -960,8 +941,6 @@ def maimai_update(user_id, ver="jp"):
         "Recent Records": True,
         "Friends List": 0
     }
-
-    read_user()
 
     if user_id not in USERS:
         return segaid_error(user_id)
@@ -1153,7 +1132,6 @@ def random_song(user_id, key="", ver="jp"):
     return result
 
 def get_friend_list(user_id):
-    read_user()
     if user_id not in USERS:
         return segaid_error(user_id)
 
@@ -1226,7 +1204,6 @@ def generate_plate_rcd(user_id, title, ver="jp"):
     if not (len(title) == 2 or len(title) == 3):
         return plate_error(user_id)
 
-    read_user()
     read_dxdata(ver)
 
     song_record = read_record(user_id)
@@ -1757,8 +1734,6 @@ def select_records(song_record, type, command, ver):
     return up_songs, down_songs;
 
 def generate_records(user_id, type="best50", command="", ver="jp"):
-    read_user()
-
     if user_id not in USERS:
         return segaid_error(user_id)
 
@@ -1785,8 +1760,6 @@ def generate_records(user_id, type="best50", command="", ver="jp"):
     return message
 
 def generate_friend_b50(user_id, friend_code, ver="jp"):
-    read_user()
-
     if user_id not in USERS :
         return segaid_error(user_id)
 
@@ -1839,8 +1812,6 @@ def generate_friend_b50(user_id, friend_code, ver="jp"):
     return message
 
 def generate_level_records(user_id, level, ver="jp", page=1):
-    read_user()
-
     if "personal_info" not in USERS[user_id]:
         return info_error(user_id)
 
@@ -2302,7 +2273,6 @@ def handle_sync_text_command(event):
                 mentioned_user_id = first_mention.user_id
                 logger.info(f"[Mention] User {user_id} mentioned {mentioned_user_id}, will use mentioned user's data")
 
-    read_user()
     if user_id in USERS:
         mai_ver = USERS[user_id].get("version", "jp")
         # 如果有 mention，优先使用被 @ 的用户 ID
@@ -2751,7 +2721,6 @@ def async_cover_matching_task(user_id, reply_token, image):
     try:
         # 获取用户版本
         mai_ver = "jp"
-        read_user()
         if user_id in USERS:
             if 'version' in USERS[user_id]:
                 mai_ver = USERS[user_id]['version']
@@ -2817,7 +2786,6 @@ def handle_image_message_task(user_id, reply_token, data, image=None):
 
 def handle_internal_link(user_id, reply_token, data):
     mai_ver = "jp"
-    read_user()
     if user_id in USERS:
         if 'version' in USERS[user_id]:
             mai_ver = USERS[user_id]['version']
@@ -2837,7 +2805,6 @@ def handle_location_message(event):
     """
     位置消息处理 - 异步获取附近机厅
     """
-    read_user()
 
     lat = event.message.latitude
     lng = event.message.longitude
@@ -2908,7 +2875,6 @@ def get_user_nickname_wrapper(user_id, use_cache=True):
 
     # 如果LINE API失败,尝试从用户数据获取
     if not nickname:
-        read_user()
         if user_id in USERS and USERS[user_id].get('nickname'):
             nickname = USERS[user_id].get('nickname')
 
@@ -2932,9 +2898,6 @@ def admin_panel():
     # GET请求
     if not check_admin_auth():
         return render_template("admin_login.html")
-
-    # 已登录，显示管理面板
-    read_user()
 
     # 准备用户数据 - 不获取昵称,使用懒加载
     users_data = {}
@@ -3303,8 +3266,6 @@ def admin_edit_user():
         }), 400
 
     try:
-        read_user()
-
         if user_id not in USERS:
             return jsonify({
                 'success': False,
@@ -3349,8 +3310,6 @@ def admin_delete_user():
         }), 400
 
     try:
-        read_user()
-
         if user_id not in USERS:
             return jsonify({
                 'success': False,
@@ -3417,8 +3376,6 @@ def admin_get_user_data():
         }), 400
 
     try:
-        read_user()
-
         if user_id not in USERS:
             return jsonify({
                 'success': False,
@@ -3456,8 +3413,6 @@ def admin_load_nicknames():
         return jsonify({'error': 'Unauthorized'}), 401
 
     try:
-        read_user()
-
         # 获取所有用户的昵称
         nicknames = {}
         for user_id in USERS.keys():
@@ -3555,8 +3510,6 @@ def api_list_users():
     返回该 token 有权限访问的所有用户（包括创建的用户和授权访问的用户）
     """
     try:
-        read_user()
-
         token_info = request.token_info
         token_id = token_info['token_id']
 
@@ -3646,8 +3599,6 @@ def api_register_user(user_id):
         logger.info(f"API: Register user {user_id} (nickname={nickname}, language={language}) via token {token_info['token_id']} ({token_info['note']})")
 
         # 读取用户数据
-        read_user()
-
         if user_id in USERS:
             return jsonify({
                 "error": "User already exists",
@@ -4285,8 +4236,6 @@ def api_search_songs():
         if not user_id:
             ver = request.args.get('ver', 'jp')
         else:
-            read_user()
-
             # 使用辅助函数检查权限
             has_permission, error_response = check_user_permission(user_id, token_info['token_id'])
             if not has_permission:
@@ -4431,6 +4380,9 @@ if __name__ == "__main__":
     logger.info("=" * 60)
 
     try:
+        # 读取用户数据
+        logger.info("Loading User List...")
+        load_user()
         system_check_results = run_system_check()
 
         # 如果有关键问题，显示警告

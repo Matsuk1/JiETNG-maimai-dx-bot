@@ -223,7 +223,7 @@ def read_dxdata(ver="jp"):
     VERSIONS.clear()
     VERSIONS.extend(dxdata_file['versions'])
 
-def read_user():
+def load_user():
     global USERS, _user_data_dirty
     if not USERS:  # 只在未加载时读取
         USERS.update(read_encrypted_json(USER_LIST, USER_DATA_KEY))

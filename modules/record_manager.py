@@ -10,7 +10,6 @@ from modules.config_loader import (
     MAIMAI_VERSION,
     SONGS,
     read_dxdata,
-    read_user,
     USERS
 )
 from modules.dbpool_manager import get_connection
@@ -115,8 +114,6 @@ def read_record(user_id: str, recent: bool = False) -> List[Dict[str, Any]]:
     Returns:
         成绩记录列表,每条记录为字典,包含详细信息
     """
-    read_user()
-
     table = "recent_records" if recent else "best_records"
     import logging
     logger = logging.getLogger(__name__)

@@ -7,7 +7,7 @@
 import logging
 from datetime import datetime
 from modules.config_loader import USERS
-from modules.user_manager import get_user_value, edit_user_value, read_user
+from modules.user_manager import get_user_value, edit_user_value
 from modules.devtoken_manager import load_dev_tokens, save_dev_tokens
 from modules.message_manager import (
     segaid_error,
@@ -34,7 +34,6 @@ def send_perm_request(token_id: str, to_user_id: str, requester_name: str = None
     Returns:
         包含状态和消息的字典
     """
-    read_user()
 
     # 验证目标用户是否存在
     if to_user_id not in USERS:
@@ -115,8 +114,6 @@ def accept_perm_request(user_id: str, request_id: str) -> dict:
     Returns:
         包含状态和消息的字典
     """
-    read_user()
-
     if user_id not in USERS:
         return {
             "success": False,
@@ -190,8 +187,6 @@ def reject_perm_request(user_id: str, request_id: str) -> dict:
     Returns:
         包含状态和消息的字典
     """
-    read_user()
-
     if user_id not in USERS:
         return {
             "success": False,

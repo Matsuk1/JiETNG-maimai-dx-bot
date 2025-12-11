@@ -1684,7 +1684,7 @@ def generate_update_result_flex(user_id, username, rating, update_time, elapsed_
                 "size": "sm",
                 "weight": "bold",
                 "margin": "xs",
-                "color": "#17B169" if success else "#FF6B6B"
+                "color": "#17B169" if success else "#FF3B30"
             }
         ]
     })
@@ -1709,11 +1709,10 @@ def generate_update_result_flex(user_id, username, rating, update_time, elapsed_
         # Friends List 特殊处理：显示数量
         if func_name == "Friends List":
             status_text = f"{status}"
-            status_color = "#17B169"
         else:
             status_text = get_multilingual_text(texts['success'], language=lang) if status else get_multilingual_text(texts['failed'], language=lang)
-            status_color = "#17B169" if status else "#FF6B6B"
 
+        status_color = "#17B169" if status else "#FF3B30"
         status_contents.append({
             "type": "text",
             "text": f"・{func_name}: {status_text}",
@@ -1731,7 +1730,7 @@ def generate_update_result_flex(user_id, username, rating, update_time, elapsed_
 
     # 创建 bubble
     title_text = texts['title_success'] if success else texts['title_error']
-    header_color = "#17B169" if success else "#FF6B6B"
+    header_color = "#17B169" if success else "#FF3B30"
 
     bubble = {
         "type": "bubble",
@@ -1762,5 +1761,176 @@ def generate_update_result_flex(user_id, username, rating, update_time, elapsed_
     alt_text = texts['alt_text_success'] if success else texts['alt_text_error']
     return FlexMessage(
         alt_text=get_multilingual_text(alt_text, language=lang),
+        contents=FlexContainer.from_dict(bubble)
+    )
+
+# ============================================================
+# 系统错误警报 Flex Message / System Error Alert Flex Message
+# ============================================================
+
+def generate_error_alert_flex(error_title, error_details, context, timestamp):
+    """
+    生成系统错误警报 Flex Message
+
+    Args:
+        error_title: 错误标题
+        error_details: 错误详情（已截断到合理长度）
+        context: 上下文信息字典
+        timestamp: 时间戳
+
+    Returns:
+        FlexMessage: 系统错误警报 Flex Message
+    """
+    # 构建内容行
+    content_rows = []
+
+    # 时间
+    content_rows.append({
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+            {
+                "type": "text",
+                "text": "Time",
+                "size": "xs",
+                "color": "#999999"
+            },
+            {
+                "type": "text",
+                "text": timestamp,
+                "size": "sm",
+                "weight": "bold",
+                "margin": "xs"
+            }
+        ]
+    })
+
+    # 分隔线
+    content_rows.append({
+        "type": "separator",
+        "margin": "md"
+    })
+
+    # 错误标题
+    content_rows.append({
+        "type": "box",
+        "layout": "vertical",
+        "margin": "md",
+        "contents": [
+            {
+                "type": "text",
+                "text": "Error",
+                "size": "xs",
+                "color": "#999999"
+            },
+            {
+                "type": "text",
+                "text": error_title,
+                "size": "sm",
+                "weight": "bold",
+                "margin": "xs",
+                "wrap": True,
+                "color": "#FF6B6B"
+            }
+        ]
+    })
+
+    # 分隔线
+    content_rows.append({
+        "type": "separator",
+        "margin": "md"
+    })
+
+    # 错误详情
+    # 限制长度避免 flex message 过大
+    detail_text = error_details[:800] + "..." if len(error_details) > 800 else error_details
+
+    content_rows.append({
+        "type": "box",
+        "layout": "vertical",
+        "margin": "md",
+        "contents": [
+            {
+                "type": "text",
+                "text": "Details",
+                "size": "xs",
+                "color": "#999999"
+            },
+            {
+                "type": "text",
+                "text": detail_text,
+                "size": "xs",
+                "margin": "xs",
+                "wrap": True,
+                "color": "#666666"
+            }
+        ]
+    })
+
+    # 如果有上下文信息
+    if context:
+        # 分隔线
+        content_rows.append({
+            "type": "separator",
+            "margin": "md"
+        })
+
+        # 上下文标题
+        context_contents = [
+            {
+                "type": "text",
+                "text": "Context",
+                "size": "xs",
+                "color": "#999999"
+            }
+        ]
+
+        # 添加上下文项
+        for key, value in list(context.items())[:5]:  # 最多显示5项
+            context_contents.append({
+                "type": "text",
+                "text": f"・{key}: {value}",
+                "size": "xs",
+                "color": "#666666",
+                "margin": "sm",
+                "wrap": True
+            })
+
+        content_rows.append({
+            "type": "box",
+            "layout": "vertical",
+            "margin": "md",
+            "contents": context_contents
+        })
+
+    # 创建 bubble
+    bubble = {
+        "type": "bubble",
+        "size": "mega",
+        "header": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+                {
+                    "type": "text",
+                    "text": "🚨 System Error Alert",
+                    "weight": "bold",
+                    "size": "lg",
+                    "color": "#FFFFFF"
+                }
+            ],
+            "paddingAll": "16px",
+            "backgroundColor": "#FF3B30"
+        },
+        "body": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": content_rows,
+            "paddingAll": "16px"
+        }
+    }
+
+    return FlexMessage(
+        alt_text="🚨 System Error Alert",
         contents=FlexContainer.from_dict(bubble)
     )

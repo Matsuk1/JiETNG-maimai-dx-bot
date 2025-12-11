@@ -9,7 +9,7 @@ import logging
 import threading
 from datetime import datetime
 from modules.record_manager import delete_record
-from modules.config_loader import read_user, write_user, mark_user_dirty, USERS
+from modules.config_loader import write_user, mark_user_dirty, USERS
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,10 @@ def add_user(user_id: str) -> None:
     Args:
         user_id: LINE用户ID或代理用户ID
     """
-    read_user()
+
+    if user_id in USERS:
+        return
+
     USERS[user_id] = {
         "notice_read": True
     }
@@ -41,7 +44,6 @@ def delete_user(user_id: str) -> None:
     Args:
         user_id: 要删除的用户ID
     """
-    read_user()
 
     if user_id in USERS:
         del USERS[user_id]
@@ -67,8 +69,6 @@ def edit_user_value(user_id: str, key: str, word: Any, operation: int = 0) -> No
             2 - 减少值
             4 - 删除键
     """
-    read_user()
-
     if user_id not in USERS:
         add_user(user_id)
 
@@ -112,8 +112,6 @@ def get_user_value(user_id: str, key: str = "") -> Optional[Any]:
     Returns:
         指定键的值,或全部状态字典
     """
-    read_user()
-
     if user_id not in USERS:
         add_user(user_id)
 

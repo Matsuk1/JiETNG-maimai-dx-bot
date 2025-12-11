@@ -4,7 +4,7 @@
 """
 import logging
 from typing import List, Dict, Any
-from modules.config_loader import read_user, write_user, mark_user_dirty, USERS
+from modules.config_loader import write_user, mark_user_dirty, USERS
 from modules.user_manager import delete_user
 
 logger = logging.getLogger(__name__)
@@ -15,7 +15,7 @@ def clean_unbound_users() -> Dict[str, Any]:
     清理未完成绑定的用户
     删除没有 sega_id 或 sega_pwd 字段的账户
     """
-    read_user()
+
     deleted_users = []
 
     # 遍历所有用户
