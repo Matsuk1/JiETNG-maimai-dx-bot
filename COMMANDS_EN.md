@@ -211,9 +211,14 @@ friend-b50 1234567890123456   # View friend's B50
 
 | Command | Description | Example |
 |---------|-------------|---------|
-| `rc [constant]` | View Rating table for specified constant | `rc 13.2` |
+| `rc [constant]` | View Rating table for specified constant (1.0-15.0, max 1 decimal) | `rc 13.2` |
 | `RC [constant]` | Rating table (uppercase) | `RC 13.2` |
 | `Rc [constant]` | Rating table (capitalized) | `Rc 13.2` |
+
+**Notes**:
+- Constant range: 1.0 to 15.0
+- Maximum one decimal place (e.g., 13.2, 14.5)
+- Integers are accepted (e.g., 12 → 12.0)
 
 ### Score Calculator
 

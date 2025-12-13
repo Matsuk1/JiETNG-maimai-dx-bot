@@ -2410,80 +2410,68 @@ def generate_rc_flex(level: float, rc_data: list, user_id=None):
     }
     title_text = title_texts.get(language, title_texts['ja'])
 
-    # 构建内容行
+    # 按达成率整数部分分组（100.xxxx、99.xxxx、98.xxxx...）
+    score_groups = {}
+    for score, rating in rc_data:
+        score_int = int(score)
+        if score_int not in score_groups:
+            score_groups[score_int] = []
+        score_groups[score_int].append((score, rating))
+
+    # 获取所有达成率整数值并倒序排列（从高到低）
+    sorted_score_ints = sorted(score_groups.keys(), reverse=True)
+
+    # 构建单列内容
     content_rows = []
 
-    # 按 Rating 值分组
-    current_rating = None
-    group_rows = []
+    for i, score_int in enumerate(sorted_score_ints):
+        entries = score_groups[score_int]
 
-    for score, rating in rc_data:
-        if rating != current_rating:
-            # 新的 Rating 组
-            if group_rows:
-                # 添加之前的组
-                content_rows.extend(group_rows)
-                content_rows.append({
-                    "type": "separator",
-                    "margin": "md",
-                    "color": "#EEEEEE"
-                })
-                group_rows = []
+        # 当整数部分变化时，添加分隔线（第一组除外）
+        if i > 0:
+            content_rows.append({
+                "type": "separator",
+                "margin": "md",
+                "color": "#DDDDDD"
+            })
 
-            current_rating = rating
+        # 按达成率倒序排列
+        entries.sort(key=lambda x: x[0], reverse=True)
 
-            # Rating 标题行（粗体显示 Rating 值）
-            group_rows.append({
+        # 达成率列表
+        for score, rating in entries:
+            score_text = f"{score:.4f}%"
+            is_special = (score_text in ["100.5000%", "100.0000%", "99.5000%", "99.0000%", "98.0000%", "97.0000%"])
+
+            content_rows.append({
                 "type": "box",
                 "layout": "horizontal",
                 "contents": [
                     {
                         "type": "text",
-                        "text": f"Rating: {rating}",
-                        "size": "md",
-                        "weight": "bold",
-                        "color": "#007AFF",
-                        "flex": 1
+                        "text": score_text,
+                        "size": "sm",
+                        "color": "#000000" if is_special else "#666666",
+                        "align": "start"
+                    },
+                    {
+                        "type": "text",
+                        "text": "→",
+                        "size": "sm",
+                        "color": "#222222" if is_special else "#999999",
+                        "align": "center"
+                    },
+                    {
+                        "type": "text",
+                        "text": f"{rating}",
+                        "size": "sm",
+                        "color": "#000000" if is_special else "#666666",
+                        "align": "end"
                     }
                 ],
-                "margin": "md"
+                "margin": "xs",
+                "spacing": "md"
             })
-
-        # 添加达成率行
-        group_rows.append({
-            "type": "box",
-            "layout": "horizontal",
-            "contents": [
-                {
-                    "type": "text",
-                    "text": f"{score:.4f}%",
-                    "size": "sm",
-                    "color": "#666666",
-                    "flex": 1
-                },
-                {
-                    "type": "text",
-                    "text": "→",
-                    "size": "xs",
-                    "color": "#999999",
-                    "align": "center",
-                    "flex": 0
-                },
-                {
-                    "type": "text",
-                    "text": f"{rating}",
-                    "size": "sm",
-                    "color": "#111111",
-                    "align": "end",
-                    "flex": 1
-                }
-            ],
-            "margin": "xs"
-        })
-
-    # 添加最后一组
-    if group_rows:
-        content_rows.extend(group_rows)
 
     # 构建 bubble
     bubble = {
@@ -2499,13 +2487,6 @@ def generate_rc_flex(level: float, rc_data: list, user_id=None):
                     "weight": "bold",
                     "size": "lg",
                     "color": "#FFFFFF"
-                },
-                {
-                    "type": "text",
-                    "text": f"Level: {level}",
-                    "size": "sm",
-                    "color": "#FFFFFF",
-                    "margin": "xs"
                 }
             ],
             "paddingAll": "16px",

@@ -1052,6 +1052,55 @@ def maimai_update(user_id, ver="jp"):
 
     return messages
 
+def handle_rc_command(msg: str, user_id: str):
+    """
+    处理 RC 命令，验证输入并生成 Rating 对照表
+
+    Args:
+        msg: 用户输入的消息（如 "rc 13.2"）
+        user_id: 用户ID
+
+    Returns:
+        FlexMessage 或 TextMessage（错误消息）
+    """
+    # 提取数字
+    level_str = re.sub(r"^rc\b[ 　]*", "", msg, flags=re.IGNORECASE).strip()
+
+    # 尝试转换为浮点数
+    try:
+        level = float(level_str)
+    except ValueError:
+        language = get_user_language(user_id)
+        error_texts = {
+            'ja': '無効な定数です。1.0～15.0の範囲で入力してください。',
+            'en': 'Invalid constant. Please enter a value between 1.0 and 15.0.',
+            'zh': '无效的定数。请输入 1.0~15.0 范围内的数值。'
+        }
+        return TextMessage(text=error_texts.get(language, error_texts['ja']))
+
+    # 验证范围：1.0 到 15.0
+    if level < 1.0 or level > 15.0:
+        language = get_user_language(user_id)
+        error_texts = {
+            'ja': f'定数 {level} は範囲外です。1.0～15.0の範囲で入力してください。',
+            'en': f'Constant {level} is out of range. Please enter a value between 1.0 and 15.0.',
+            'zh': f'定数 {level} 超出范围。请输入 1.0~15.0 范围内的数值。'
+        }
+        return TextMessage(text=error_texts.get(language, error_texts['ja']))
+
+    # 验证小数位数：最多一位
+    if round(level, 1) != level:
+        language = get_user_language(user_id)
+        error_texts = {
+            'ja': f'定数 {level} は無効です。小数点以下は1桁まで入力可能です（例：13.2）。',
+            'en': f'Constant {level} is invalid. Only one decimal place is allowed (e.g., 13.2).',
+            'zh': f'定数 {level} 无效。仅支持一位小数（例如：13.2）。'
+        }
+        return TextMessage(text=error_texts.get(language, error_texts['ja']))
+
+    return get_rc(level, user_id)
+
+
 def get_rc(level: float, user_id=None):
     """
     生成指定难度的Rating对照表 FlexMessage
@@ -2491,7 +2540,7 @@ def handle_sync_text_command(event):
 
         # Rating 对照表
         (lambda msg: msg.startswith(("rc ", "RC ", "Rc ")),
-         lambda msg: get_rc(float(re.sub(r"^rc\b[ 　]*", "", msg, flags=re.IGNORECASE)), user_id)),
+         lambda msg: handle_rc_command(msg, user_id)),
 
         # 版本达成情况
         (lambda msg: msg.endswith(("の達成状況", "の達成情報", "の達成表", "achievement-list", "achievement")),
