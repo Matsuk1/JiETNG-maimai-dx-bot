@@ -9,15 +9,7 @@ from datetime import datetime
 from modules.config_loader import USERS
 from modules.user_manager import get_user_value, edit_user_value
 from modules.devtoken_manager import load_dev_tokens, save_dev_tokens
-from modules.message_manager import (
-    segaid_error,
-    perm_request_sent,
-    perm_request_already_sent,
-    perm_request_already_granted,
-    perm_request_accepted,
-    perm_request_rejected,
-    perm_request_not_found
-)
+from modules.message_manager import segaid_error
 
 logger = logging.getLogger(__name__)
 

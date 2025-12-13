@@ -193,8 +193,8 @@ maintenance_error_text = {
 
 friend_error_text = {
     "ja": "お気に入りにフレンド登録してないみたいだよ？",
-    "en": "Looks like you haven't registered any friends in favorites?",
-    "zh": "看起来你还没有在收藏中注册好友？"
+    "en": "Looks like you haven't registered any favorite friends?",
+    "zh": "看起来你还没有收藏的好友？"
 }
 
 friend_rcd_error_text = {
@@ -203,42 +203,6 @@ friend_rcd_error_text = {
     "zh": "这个人可能不是你的好友！"
 }
 
-# 権限リクエスト関連 / Permission Request Related
-perm_request_sent_text = {
-    "ja": "✅ アクセス権限のリクエストを送信しました！\n「{name}」さんが承認するまでお待ちください〜",
-    "en": "✅ Access permission request sent!\nPlease wait for '{name}' to approve~",
-    "zh": "✅ 已发送访问权限请求！\n请等待「{name}」批准~"
-}
-
-perm_request_already_sent_text = {
-    "ja": "もうリクエスト送ったよ〜！承認を待っててね〜",
-    "en": "You've already sent a request~! Wait for approval~",
-    "zh": "你已经发送过请求了~！等待批准吧~"
-}
-
-perm_request_already_granted_text = {
-    "ja": "「{name}」さんへのアクセス権限はもう持ってるよ！",
-    "en": "You already have access permission to '{name}'!",
-    "zh": "你已经拥有「{name}」的访问权限了！"
-}
-
-perm_request_accepted_text = {
-    "ja": "✅ 「{name}」さん（{requester_name}）からのアクセス権限リクエストを承認しました！",
-    "en": "✅ Access permission granted to '{name}' ({requester_name})!",
-    "zh": "✅ 已批准来自「{name}」（{requester_name}）的访问权限请求！"
-}
-
-perm_request_rejected_text = {
-    "ja": "「{name}」さん（{requester_name}）からのアクセス権限リクエストを拒否しました",
-    "en": "Access permission request from '{name}' ({requester_name}) rejected",
-    "zh": "已拒绝来自「{name}」（{requester_name}）的访问权限请求"
-}
-
-perm_request_not_found_text = {
-    "ja": "あれ？そのリクエストもう処理しちゃったかも",
-    "en": "Hmm? That request might have been processed already",
-    "zh": "咦？那个请求可能已经处理过了"
-}
 
 # 权限请求通知相关文本
 perm_request_notification_title_text = {
@@ -283,11 +247,6 @@ perm_request_reject_success_text = {
     "zh": "✅ 已拒绝访问权限请求。\n\nToken ID: {token_id}\n申请者: {requester_name}"
 }
 
-perm_request_error_text = {
-    "ja": "❌ エラー: {error}\n{message}",
-    "en": "❌ Error: {error}\n{message}",
-    "zh": "❌ 错误: {error}\n{message}"
-}
 
 # ============================================================
 # 管理者通知 / Admin Notifications
@@ -536,9 +495,9 @@ devtoken_usage_text = {
 
 # 好友列表 alt_text
 friend_list_alt_text = {
-    "ja": "フレンドリスト",
-    "en": "Friends List",
-    "zh": "好友列表"
+    "ja": "お気に入りフレンド",
+    "en": "Favorite Friends",
+    "zh": "收藏的好友"
 }
 
 # 附近机厅列表 alt_text
@@ -954,34 +913,6 @@ def friend_error(user_id=None):
 def friend_rcd_error(user_id=None):
     """生成好友记录错误消息"""
     return create_text_message(friend_rcd_error_text, user_id)
-
-def perm_request_sent(name, user_id=None):
-    """生成权限请求已发送消息"""
-    text = get_multilingual_text(perm_request_sent_text, user_id).format(name=name)
-    return TextMessage(text=text)
-
-def perm_request_already_sent(user_id=None):
-    """生成权限请求已发送消息"""
-    return create_text_message(perm_request_already_sent_text, user_id)
-
-def perm_request_already_granted(name, user_id=None):
-    """生成已拥有访问权限的消息"""
-    text = get_multilingual_text(perm_request_already_granted_text, user_id).format(name=name)
-    return TextMessage(text=text)
-
-def perm_request_accepted(name, requester_name, user_id=None):
-    """生成权限请求已接受消息"""
-    text = get_multilingual_text(perm_request_accepted_text, user_id).format(name=name, requester_name=requester_name)
-    return TextMessage(text=text)
-
-def perm_request_rejected(name, requester_name, user_id=None):
-    """生成权限请求已拒绝消息"""
-    text = get_multilingual_text(perm_request_rejected_text, user_id).format(name=name, requester_name=requester_name)
-    return TextMessage(text=text)
-
-def perm_request_not_found(user_id=None):
-    """生成权限请求未找到消息"""
-    return create_text_message(perm_request_not_found_text, user_id)
 
 def get_perm_request_notification_alt_text(count, user_id=None):
     """获取权限请求通知的 alt text"""
@@ -1706,8 +1637,8 @@ def generate_update_result_flex(user_id, username, rating, update_time, elapsed_
     ]
 
     for func_name, status in func_status.items():
-        # Friends List 特殊处理：显示数量
-        if func_name == "Friends List":
+        # Favorite Friends 特殊处理：显示数量
+        if func_name == "Favorite Friends":
             status_text = f"{status}"
         else:
             status_text = get_multilingual_text(texts['success'], language=lang) if status else get_multilingual_text(texts['failed'], language=lang)
@@ -1932,5 +1863,663 @@ def generate_error_alert_flex(error_title, error_details, context, timestamp):
 
     return FlexMessage(
         alt_text="🚨 System Error Alert",
+        contents=FlexContainer.from_dict(bubble)
+    )
+
+
+def generate_calc_result_flex(notes, scores, difficulty=None, level=None):
+    """
+    生成计算结果 Flex Message
+
+    Args:
+        notes: dict with keys ['tap', 'hold', 'slide', 'touch', 'break']
+        scores: dict with score calculations
+        difficulty: 可选，难度名称 (如 'master', 'remaster')
+        level: 可选，难度等级 (如 14.5)
+
+    Returns:
+        FlexMessage: 计算结果 Flex Message
+    """
+    bubble = _build_calc_bubble(notes, scores, difficulty, level)
+    return FlexMessage(
+        alt_text="Calc Result",
+        contents=FlexContainer.from_dict(bubble)
+    )
+
+
+def generate_calc_carousel(calc_bubbles_data):
+    """
+    生成calc结果的carousel Flex Message
+
+    Args:
+        calc_bubbles_data: list of tuples (notes, scores, difficulty, level)
+
+    Returns:
+        FlexMessage: Carousel格式的calc结果
+    """
+    if len(calc_bubbles_data) == 1:
+        # 只有一个bubble，直接返回单个flex message
+        notes, scores, difficulty, level = calc_bubbles_data[0]
+        return generate_calc_result_flex(notes, scores, difficulty, level)
+
+    # 多个bubble，构建carousel
+    bubbles = []
+    for notes, scores, difficulty, level in calc_bubbles_data:
+        # 直接构建bubble字典，复制generate_calc_result_flex的逻辑
+        bubble = _build_calc_bubble(notes, scores, difficulty, level)
+        bubbles.append(bubble)
+
+    carousel = {
+        "type": "carousel",
+        "contents": bubbles
+    }
+    return FlexMessage(
+        alt_text="Calc Results",
+        contents=FlexContainer.from_dict(carousel)
+    )
+
+
+def _build_calc_bubble(notes, scores, difficulty=None, level=None):
+    """
+    构建calc结果的bubble字典（内部辅助函数）
+
+    Args:
+        notes: dict with keys ['tap', 'hold', 'slide', 'touch', 'break']
+        scores: dict with score calculations
+        difficulty: 可选，难度名称
+        level: 可选，难度等级
+
+    Returns:
+        dict: bubble字典
+    """
+    # Note类型和数量
+    note_contents = []
+    note_labels = {
+        'tap': 'TAP',
+        'hold': 'HOLD',
+        'slide': 'SLIDE',
+        'touch': 'TOUCH',
+        'break': 'BREAK'
+    }
+
+    for key in ['tap', 'hold', 'slide', 'touch', 'break']:
+        note_contents.append({
+            "type": "box",
+            "layout": "horizontal",
+            "contents": [
+                {
+                    "type": "text",
+                    "text": note_labels[key],
+                    "size": "sm",
+                    "color": "#666666",
+                    "flex": 0,
+                    "weight": "bold"
+                },
+                {
+                    "type": "text",
+                    "text": str(notes[key]),
+                    "size": "sm",
+                    "color": "#111111",
+                    "align": "end"
+                }
+            ],
+            "margin": "sm"
+        })
+
+    # 分隔线
+    separator = {
+        "type": "separator",
+        "margin": "md"
+    }
+
+    # 判定分数
+    score_contents = []
+    note_groups = [
+        ('tap', ['tap_great', 'tap_good', 'tap_miss']),
+        ('hold', ['hold_great', 'hold_good', 'hold_miss']),
+        ('slide', ['slide_great', 'slide_good', 'slide_miss']),
+        ('touch', ['touch_great', 'touch_good', 'touch_miss']),
+        ('break', ['break_high_perfect', 'break_low_perfect', 'break_high_great',
+                   'break_middle_great', 'break_low_great', 'break_good', 'break_miss'])
+    ]
+
+    def get_judgement_color(score_name):
+        if 'perfect' in score_name:
+            return "#FF9500"
+        elif 'great' in score_name:
+            return "#FF69B4"
+        elif 'good' in score_name:
+            return "#34C759"
+        elif 'miss' in score_name:
+            return "#999999"
+        return "#666666"
+
+    first_group = True
+    for note_type, judgements in note_groups:
+        if not first_group:
+            score_contents.append({
+                "type": "separator",
+                "margin": "md"
+            })
+        first_group = False
+
+        for score_name in judgements:
+            if score_name in scores:
+                score_value = scores[score_name]
+                score_contents.append({
+                    "type": "box",
+                    "layout": "horizontal",
+                    "contents": [
+                        {
+                            "type": "text",
+                            "text": score_name.replace('_', ' ').title(),
+                            "size": "xs",
+                            "color": "#666666",
+                            "flex": 3
+                        },
+                        {
+                            "type": "text",
+                            "text": f"-{score_value:.5f}%",
+                            "size": "xs",
+                            "color": get_judgement_color(score_name),
+                            "align": "end",
+                            "flex": 2
+                        }
+                    ],
+                    "margin": "sm"
+                })
+
+    # 难度映射和颜色
+    difficulty_map = {
+        'basic': {'name': 'BASIC', 'color': '#34C759'},
+        'advanced': {'name': 'ADVANCED', 'color': '#FF9500'},
+        'expert': {'name': 'EXPERT', 'color': '#FF3B30'},
+        'master': {'name': 'MASTER', 'color': '#AF52DE'},
+        'remaster': {'name': 'Re:MASTER', 'color': '#D4A5F5'},
+        'utage': {'name': 'UTAGE', 'color': '#000000'}
+    }
+
+    # 生成标题文本
+    if difficulty:
+        diff_info = difficulty_map.get(difficulty, {'name': difficulty.upper(), 'color': '#007AFF'})
+        title_text = f"🗒️ {diff_info['name']}"
+        if level:
+            title_text += f" (Lv. {level:.1f})"
+        header_color = diff_info['color']
+    else:
+        title_text = "🗒️ Note Distribution"
+        header_color = "#007AFF"
+
+    # 构建bubble
+    bubble = {
+        "type": "bubble",
+        "size": "mega",
+        "header": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+                {
+                    "type": "text",
+                    "text": title_text,
+                    "weight": "bold",
+                    "size": "lg",
+                    "color": "#FFFFFF"
+                }
+            ],
+            "paddingAll": "16px",
+            "backgroundColor": header_color
+        },
+        "body": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": score_contents if difficulty else (note_contents + [separator] + score_contents),
+            "paddingAll": "16px"
+        }
+    }
+
+    return bubble
+
+
+def _generate_search_results_flex_internal(user_id, matching_songs, search_type='song'):
+    """
+    生成搜索结果列表 Flex Message（内部通用函数）
+
+    Args:
+        user_id: 用户ID
+        matching_songs: 匹配的歌曲列表
+        search_type: 搜索类型 ('song' 或 'record')
+
+    Returns:
+        FlexMessage: 搜索结果列表
+    """
+    # 获取用户语言
+    language = get_user_language(user_id)
+
+    # 构建歌曲行
+    song_rows = []
+
+    # 类型映射
+    type_map = {
+        'dx': 'DX',
+        'std': 'STD',
+        'utage': 'UTAGE'
+    }
+
+    # 搜索类型配置
+    search_config = {
+        'song': {
+            'command': 'search',
+            'title': {
+                'ja': f'検索結果 ({len(matching_songs)}件)',
+                'en': f'Search Results ({len(matching_songs)})',
+                'zh': f'搜索结果 ({len(matching_songs)}条)'
+            },
+            'color': '#34C759'
+        },
+        'record': {
+            'command': 'search-record',
+            'title': {
+                'ja': f'レコード検索結果 ({len(matching_songs)}件)',
+                'en': f'Record Search Results ({len(matching_songs)})',
+                'zh': f'成绩搜索结果 ({len(matching_songs)}条)'
+            },
+            'color': '#FF9500'
+        }
+    }
+
+    config = search_config[search_type]
+
+    for song in matching_songs[:20]:  # 最多显示20首
+        song_id = song.get('id', '')
+        song_type = type_map.get(song.get('type', ''), song.get('type', '').upper())
+
+        song_rows.append({
+            "type": "box",
+            "layout": "horizontal",
+            "contents": [
+                {
+                    "type": "box",
+                    "layout": "vertical",
+                    "contents": [
+                        {
+                            "type": "text",
+                            "text": song.get('title', 'Unknown'),
+                            "size": "sm",
+                            "weight": "bold",
+                            "wrap": True,
+                            "maxLines": 2,
+                            "flex": 1
+                        },
+                        {
+                            "type": "text",
+                            "text": song_type,
+                            "size": "xs",
+                            "color": "#999999",
+                            "margin": "xs"
+                        }
+                    ],
+                    "flex": 3
+                },
+                {
+                    "type": "button",
+                    "action": {
+                        "type": "message",
+                        "label": "→",
+                        "text": f"{config['command']} {song_id}"
+                    },
+                    "style": "primary",
+                    "height": "sm",
+                    "flex": 1
+                }
+            ],
+            "margin": "md",
+            "spacing": "sm"
+        })
+
+        # 添加分隔线（最后一首除外）
+        if song != matching_songs[-1] and len(song_rows) < 40:
+            song_rows.append({
+                "type": "separator",
+                "margin": "md"
+            })
+
+    # 标题文本
+    title_text = config['title'].get(language, config['title']['ja'])
+
+    # 构建bubble
+    bubble = {
+        "type": "bubble",
+        "size": "mega",
+        "header": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+                {
+                    "type": "text",
+                    "text": title_text,
+                    "weight": "bold",
+                    "size": "lg",
+                    "color": "#FFFFFF"
+                }
+            ],
+            "paddingAll": "16px",
+            "backgroundColor": config['color']
+        },
+        "body": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": song_rows,
+            "paddingAll": "16px"
+        }
+    }
+
+    return FlexMessage(
+        alt_text=title_text,
+        contents=FlexContainer.from_dict(bubble)
+    )
+
+
+def generate_search_results_flex(user_id, matching_songs):
+    """
+    生成搜索结果列表 Flex Message
+
+    Args:
+        user_id: 用户ID
+        matching_songs: 匹配的歌曲列表
+
+    Returns:
+        FlexMessage: 搜索结果列表
+    """
+    return _generate_search_results_flex_internal(user_id, matching_songs, 'song')
+
+
+def generate_search_record_results_flex(user_id, matching_songs):
+    """
+    生成成绩搜索结果列表 Flex Message
+
+    Args:
+        user_id: 用户ID
+        matching_songs: 匹配的歌曲列表（包含游玩记录）
+
+    Returns:
+        FlexMessage: 成绩搜索结果列表
+    """
+    return _generate_search_results_flex_internal(user_id, matching_songs, 'record')
+
+
+def generate_friend_buttons(user_id, alt_text, friend_list, group_size=10):
+    """
+    生成好友列表 Flex Message（极简黑白风格）
+
+    Args:
+        alt_text: 替代文本
+        friend_list: 好友列表 [{"name": "text", "rating": "text", "friend_id": "text"}]
+        group_size: 每页显示的好友数（默认6个）
+
+    Returns:
+        FlexMessage
+    """
+    if not friend_list:
+        return friend_error(user_id)
+
+    bubbles = []
+    total_pages = (len(friend_list) + group_size - 1) // group_size
+
+    for page_idx in range(0, len(friend_list), group_size):
+        group = friend_list[page_idx:page_idx + group_size]
+        page_num = page_idx // group_size + 1
+
+        # 创建好友行
+        friend_rows = []
+        for idx, friend in enumerate(group):
+            # 解析信息
+            name = friend["name"]
+            rating = friend["rating"]
+            friend_id = friend["friend_id"]
+
+            # 创建单行（第一个不需要上边距）
+            row = {
+                "type": "box",
+                "layout": "horizontal",
+                "spacing": "md",
+                "margin": "md" if idx > 0 else "none",
+                "contents": [
+                    # 左侧：名字和Rating
+                    {
+                        "type": "box",
+                        "layout": "vertical",
+                        "flex": 3,
+                        "contents": [
+                            {
+                                "type": "text",
+                                "text": name,
+                                "size": "sm",
+                                "weight": "bold",
+                                "wrap": True,
+                                "maxLines": 2
+                            },
+                            {
+                                "type": "text",
+                                "text": f"Rating: {rating}",
+                                "size": "xs",
+                                "color": "#999999",
+                                "margin": "xs"
+                            }
+                        ]
+                    },
+                    # 右侧：按钮（只显示符号）
+                    {
+                        "type": "button",
+                        "flex": 0,
+                        "style": "secondary",
+                        "height": "sm",
+                        "action": {
+                            "type": "message",
+                            "label": "→",
+                            "text": f"friend-b50 {friend_id}"
+                        }
+                    }
+                ]
+            }
+
+            # 添加分隔线（除了最后一个）
+            if idx < len(group) - 1:
+                friend_rows.append(row)
+                friend_rows.append({
+                    "type": "separator",
+                    "margin": "sm"
+                })
+            else:
+                friend_rows.append(row)
+
+        # 创建 bubble
+        bubble = {
+            "type": "bubble",
+            "size": "mega",
+            "header": {
+                "type": "box",
+                "layout": "vertical",
+                "contents": [
+                    {
+                        "type": "text",
+                        "text": alt_text,
+                        "weight": "bold",
+                        "size": "lg"
+                    },
+                    {
+                        "type": "text",
+                        "text": f"Page {page_num}/{total_pages} • {len(group)} friends",
+                        "size": "xs",
+                        "color": "#999999",
+                        "margin": "sm"
+                    },
+                    {
+                        "type": "separator",
+                        "color": "#DDDDDD",
+                        "margin": "md"
+                    }
+                ],
+                "paddingAll": "16px"
+            },
+            "body": {
+                "type": "box",
+                "layout": "vertical",
+                "contents": friend_rows,
+                "paddingAll": "16px"
+            }
+        }
+
+        bubbles.append(bubble)
+
+    # 创建 carousel
+    if len(bubbles) == 1:
+        # 只有一页，直接返回 bubble
+        flex_dict = bubbles[0]
+    else:
+        # 多页，使用 carousel
+        flex_dict = {
+            "type": "carousel",
+            "contents": bubbles
+        }
+
+    return FlexMessage(
+        alt_text=alt_text,
+        contents=FlexContainer.from_dict(flex_dict)
+    )
+
+
+def generate_rc_flex(level: float, rc_data: list, user_id=None):
+    """
+    生成 Rating Constant 对照表 Flex Message
+
+    Args:
+        level: 谱面定数 (如 14.5)
+        rc_data: Rating 对照数据列表 [(score, rating), ...]
+        user_id: 用户ID（用于多语言）
+
+    Returns:
+        FlexMessage: Rating 对照表
+    """
+    language = get_user_language(user_id)
+
+    # 标题文本
+    title_texts = {
+        'ja': f'定数 {level} のRating対照表',
+        'en': f'Rating Chart for {level}',
+        'zh': f'定数 {level} Rating 对照表'
+    }
+    title_text = title_texts.get(language, title_texts['ja'])
+
+    # 构建内容行
+    content_rows = []
+
+    # 按 Rating 值分组
+    current_rating = None
+    group_rows = []
+
+    for score, rating in rc_data:
+        if rating != current_rating:
+            # 新的 Rating 组
+            if group_rows:
+                # 添加之前的组
+                content_rows.extend(group_rows)
+                content_rows.append({
+                    "type": "separator",
+                    "margin": "md",
+                    "color": "#EEEEEE"
+                })
+                group_rows = []
+
+            current_rating = rating
+
+            # Rating 标题行（粗体显示 Rating 值）
+            group_rows.append({
+                "type": "box",
+                "layout": "horizontal",
+                "contents": [
+                    {
+                        "type": "text",
+                        "text": f"Rating: {rating}",
+                        "size": "md",
+                        "weight": "bold",
+                        "color": "#007AFF",
+                        "flex": 1
+                    }
+                ],
+                "margin": "md"
+            })
+
+        # 添加达成率行
+        group_rows.append({
+            "type": "box",
+            "layout": "horizontal",
+            "contents": [
+                {
+                    "type": "text",
+                    "text": f"{score:.4f}%",
+                    "size": "sm",
+                    "color": "#666666",
+                    "flex": 1
+                },
+                {
+                    "type": "text",
+                    "text": "→",
+                    "size": "xs",
+                    "color": "#999999",
+                    "align": "center",
+                    "flex": 0
+                },
+                {
+                    "type": "text",
+                    "text": f"{rating}",
+                    "size": "sm",
+                    "color": "#111111",
+                    "align": "end",
+                    "flex": 1
+                }
+            ],
+            "margin": "xs"
+        })
+
+    # 添加最后一组
+    if group_rows:
+        content_rows.extend(group_rows)
+
+    # 构建 bubble
+    bubble = {
+        "type": "bubble",
+        "size": "mega",
+        "header": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+                {
+                    "type": "text",
+                    "text": title_text,
+                    "weight": "bold",
+                    "size": "lg",
+                    "color": "#FFFFFF"
+                },
+                {
+                    "type": "text",
+                    "text": f"Level: {level}",
+                    "size": "sm",
+                    "color": "#FFFFFF",
+                    "margin": "xs"
+                }
+            ],
+            "paddingAll": "16px",
+            "backgroundColor": "#AF52DE"
+        },
+        "body": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": content_rows,
+            "paddingAll": "16px"
+        }
+    }
+
+    return FlexMessage(
+        alt_text=title_text,
         contents=FlexContainer.from_dict(bubble)
     )

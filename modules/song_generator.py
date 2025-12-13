@@ -64,8 +64,9 @@ def _render_basic_info_image(song_json, cover_img):
     title = song_json.get("title", "タイトル不明")
     artist = song_json.get("artist", "アーティスト不明")
     category = song_json.get("category", "類別不明")
-    bpm = song_json.get('bpm', '-')
+    bpm = song_json.get("bpm", "-")
     version = song_json.get("version", "バージョン不明")
+    id = song_json.get("id", "N/A")
 
     info_text = [
         truncate_text(draw, f"アーティスト: {artist}", font_info, canvas_width - text_x - margin),

@@ -452,8 +452,8 @@ def generate_cover(cover, type, icon=None, icon_type=None, size=150, cover_name=
         record_img.paste(cover_img, (0, 0))
 
     # 添加 type 图标（std/dx）- 按比例缩放
-    type_width = int(size * 0.333)  # 50/150 ≈ 0.333
-    type_height = int(size * 0.1)    # 15/150 = 0.1
+    type_width = int(size * 0.5)
+    type_height = int(size * 0.15)
     paste_icon_optimized(
         record_img,
         {'type': type},

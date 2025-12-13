@@ -2,6 +2,7 @@ import requests
 import json
 import os
 import copy
+import hashlib
 from datetime import datetime
 from modules.config_loader import MAIMAI_VERSION, DXDATA_VERSION_FILE
 
@@ -152,6 +153,7 @@ def _split_song_sheets_by_type(song_list):
                 entry["type"] = sheet_type
                 entry["version"] = version_by_type.get(sheet_type, base_info["version"])
                 entry["sheets"] = sheets
+                entry["id"] = generate_song_unique_id(base_info["cover_name"], sheet_type)
                 result.append(entry)
 
     return result
@@ -287,3 +289,34 @@ def update_dxdata_with_comparison(urls, save_to: str = None):
             'old_stats': None,
             'diff': None
         }
+
+
+def generate_song_unique_id(image_name, chart_type):
+    """
+    生成歌曲唯一ID（6个字符）
+
+    Args:
+        image_name: 封面图片文件名（如 "c22d52b387e3f829.png" 或 "c22d52b387e3f829"）
+        chart_type: 谱面类型（"dx", "std", 或 "utage"）
+
+    Returns:
+        str: 6个字符的唯一ID
+
+    Examples:
+        >>> generate_song_unique_id("c22d52b387e3f829.png", "dx")
+        'a3f5e2'
+        >>> generate_song_unique_id("c22d52b387e3f829", "std")
+        'b7c1d9'
+    """
+    # 去掉文件扩展名
+    if image_name.endswith('.png'):
+        image_name = image_name[:-4]
+
+    # 组合字符串并生成哈希
+    combined = f"{image_name}_{chart_type}"
+    hash_obj = hashlib.md5(combined.encode())
+
+    # 取前3个字节转为十六进制（6个字符）
+    short_id = hash_obj.digest()[:3].hex()
+
+    return short_id

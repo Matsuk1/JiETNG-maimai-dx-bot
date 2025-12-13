@@ -268,9 +268,9 @@ donate                     # View donation support options
 bind                       # Bind SEGA account
 update                     # Update score data
 b50                        # View B50
-ヒバナってどんな曲          # View song info
-ヒバナのレコード            # View personal score
-宴極の達成状況             # View Extreme achievement
+ヒバナってどんな曲            # View song info
+ヒバナのレコード              # View personal score
+宴極の達成状況               # View Extreme achievement
 friend list                # Friends list
 ```
 

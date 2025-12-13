@@ -97,7 +97,6 @@ from modules.config_loader import *
 
 # UI and message modules
 from modules.message_manager import *
-from modules.friendlist_generator import generate_friend_buttons
 
 # Image processing
 from modules.image_uploader import smart_upload
@@ -125,12 +124,12 @@ DIVIDER = "-" * 33
 
 # 队列配置
 MAX_QUEUE_SIZE = 10
-MAX_CONCURRENT_IMAGE_TASKS = 3  # 图片生成并发数
-WEB_MAX_CONCURRENT_TASKS = 5    # 网络任务并发数
+MAX_CONCURRENT_IMAGE_TASKS = 5  # 图片生成并发数
+WEB_MAX_CONCURRENT_TASKS = 3    # 网络任务并发数
 TASK_TIMEOUT_SECONDS = 120
 
 # 搜索结果限制
-MAX_SEARCH_RESULTS = 5
+MAX_SEARCH_RESULTS = 10
 
 # 是否启用错误通知
 ERROR_NOTIFICATION_ENABLED = True
@@ -939,7 +938,7 @@ def maimai_update(user_id, ver="jp"):
         "User Info": True,
         "Best Records": True,
         "Recent Records": True,
-        "Friends List": 0
+        "Favorite Friends": 0
     }
 
     if user_id not in USERS:
@@ -983,7 +982,7 @@ def maimai_update(user_id, ver="jp"):
 
     error = False
 
-    if user_info and user_info['rating'] is not "ERROR":
+    if user_info and user_info['rating'] != "ERROR":
         edit_user_value(user_id, "personal_info", user_info)
     else:
         func_status["User Info"] = False
@@ -1003,11 +1002,11 @@ def maimai_update(user_id, ver="jp"):
 
     if friends_list:
         edit_user_value(user_id, "mai_friends", friends_list)
-        func_status["Friends List"] = len(friends_list)
+        func_status["Favorite Friends"] = len(friends_list)
 
     details = DIVIDER
     for func, status in func_status.items():
-        if not status and status is not 0:
+        if not status and status != 0:
             details += f"\n「{func}」Error"
 
     # 计算耗时
@@ -1053,27 +1052,27 @@ def maimai_update(user_id, ver="jp"):
 
     return messages
 
-def get_rc(level: float) -> str:
+def get_rc(level: float, user_id=None):
     """
-    生成指定难度的Rating对照表
+    生成指定难度的Rating对照表 FlexMessage
 
     Args:
         level: 谱面定数 (如 14.5)
+        user_id: 用户ID（用于多语言）
 
     Returns:
-        格式化的Rating对照表字符串,显示不同达成率对应的Rating值
+        FlexMessage: Rating对照表
     """
-    result = f"LEVEL: {level}\n"
-    result += DIVIDER
+    rc_data = []
     last_ra = 0
 
     for score in np.arange(97, 100.5001, 0.0001):
         ra = get_single_ra(level, score)
         if ra != last_ra:
-            result += f"\n{format(score, '.4f')}% \t-\t {ra}"
+            rc_data.append((score, ra))
             last_ra = ra
 
-    return result
+    return generate_rc_flex(level, rc_data, user_id)
 
 def search_song(user_id, acronym, ver="jp"):
     """
@@ -1084,25 +1083,117 @@ def search_song(user_id, acronym, ver="jp"):
         ver: 服务器版本 (jp/intl)
 
     Returns:
-        搜索结果消息列表 (最多6个) 或错误消息
+        搜索结果消息列表 (最多5个) 或搜索结果flex message 或错误消息
     """
     read_dxdata(ver)
 
     # 使用优化的歌曲匹配函数
-    matching_songs = find_matching_songs(acronym, SONGS, max_results=6, threshold=0.85)
+    matching_songs = find_matching_songs(acronym, SONGS, max_results=MAX_SEARCH_RESULTS, threshold=0.85)
 
     # 没有匹配结果
-    if not matching_songs or len(matching_songs) > MAX_SEARCH_RESULTS:
+    if not matching_songs:
         return song_error(user_id)
 
-    # 生成消息列表
+    # 返回搜索结果列表
+    if len(matching_songs) > 1:
+        return generate_search_results_flex(user_id, matching_songs)
+
+    # 生成图片消息列表和calc结果
     result = []
     for song in matching_songs:
+        # 添加歌曲信息图片
         original_url, preview_url = smart_upload(song_info_generate(song))
         message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
         result.append(message)
 
+        # 收集calc数据
+        calc_data = []
+        for sheet in song.get('sheets', []):
+            difficulty = sheet.get('difficulty', 'unknown')
+
+            # 只处理master和remaster难度
+            if difficulty not in ['master', 'remaster']:
+                continue
+
+            notes_counts = sheet.get('noteCounts', {})
+            level = sheet.get('internalLevelValue', 0)
+            notes = {
+                'tap': notes_counts.get('tap', 0),
+                'hold': notes_counts.get('hold', 0),
+                'slide': notes_counts.get('slide', 0),
+                'touch': notes_counts.get('touch', 0),
+                'break': notes_counts.get('break', 0)
+            }
+
+            # 计算分数
+            scores = get_note_score(notes)
+            calc_data.append((notes, scores, difficulty, level))
+
+        # 生成calc结果（carousel或单个）
+        if calc_data:
+            calc_carousel = generate_calc_carousel(calc_data)
+            result.append(calc_carousel)
+
     return result
+
+def search_song_by_id(user_id, song_id, ver="jp"):
+    """
+    通过歌曲ID搜索歌曲并返回歌曲信息图片和calc结果
+
+    Args:
+        user_id: 用户ID
+        song_id: 歌曲唯一ID (6个字符)
+        ver: 服务器版本 (jp/intl)
+
+    Returns:
+        歌曲信息图片消息和calc结果列表 或错误消息
+    """
+    read_dxdata(ver)
+
+    # 在SONGS中查找匹配的歌曲
+    matching_song = None
+    for song in SONGS:
+        if song.get('id') == song_id:
+            matching_song = song
+            break
+
+    # 没有匹配结果
+    if not matching_song:
+        return song_error(user_id)
+
+    # 生成歌曲信息图片
+    original_url, preview_url = smart_upload(song_info_generate(matching_song))
+    image_message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
+
+    # 收集calc数据
+    calc_data = []
+    for sheet in matching_song.get('sheets', []):
+        difficulty = sheet.get('difficulty', 'unknown')
+
+        # 只处理master和remaster难度
+        if difficulty not in ['master', 'remaster']:
+            continue
+
+        notes_counts = sheet.get('noteCounts', {})
+        level = sheet.get('internalLevelValue', 0)
+        notes = {
+            'tap': notes_counts.get('tap', 0),
+            'hold': notes_counts.get('hold', 0),
+            'slide': notes_counts.get('slide', 0),
+            'touch': notes_counts.get('touch', 0),
+            'break': notes_counts.get('break', 0)
+        }
+
+        # 计算分数
+        scores = get_note_score(notes)
+        calc_data.append((notes, scores, difficulty, level))
+
+    # 生成calc结果（carousel或单个）
+    if calc_data:
+        calc_carousel = generate_calc_carousel(calc_data)
+        return [image_message, calc_carousel]
+    else:
+        return image_message
 
 def random_song(user_id, key="", ver="jp"):
     read_dxdata(ver)
@@ -1138,16 +1229,11 @@ def get_friend_list(user_id):
     elif 'mai_friends' not in USERS[user_id]:
         return friend_error(user_id)
 
-    friends_list = copy.deepcopy(get_user_value(user_id, "mai_friends"))
-    if not friends_list:
-        friends_list = []
+    friend_list = copy.deepcopy(get_user_value(user_id, "mai_friends"))
+    if not friend_list:
+        friend_list = []
 
-    for friend in friends_list:
-        if "user_id" in friend:
-            friend["friend_id"] = friend["user_id"]
-            del friend["user_id"]
-
-    return generate_friend_buttons(user_id, get_friend_list_alt_text(user_id), format_favorite_friends(friends_list))
+    return generate_friend_buttons(user_id, get_friend_list_alt_text(user_id), friend_list)
 
 def get_song_record(user_id, acronym, ver="jp"):
     """
@@ -1159,7 +1245,7 @@ def get_song_record(user_id, acronym, ver="jp"):
         ver: 服务器版本 (jp/intl)
 
     Returns:
-        包含用户成绩的歌曲信息图片消息列表 或错误消息
+        包含用户成绩的歌曲信息图片消息列表 或搜索结果flex message 或错误消息
     """
     read_dxdata(ver)
 
@@ -1169,15 +1255,33 @@ def get_song_record(user_id, acronym, ver="jp"):
         return record_error(user_id)
 
     # 使用优化的歌曲匹配函数
-    matching_songs = find_matching_songs(acronym, SONGS, max_results=6, threshold=0.85)
+    matching_songs = find_matching_songs(acronym, SONGS, max_results=MAX_SEARCH_RESULTS, threshold=0.85)
 
     if not matching_songs:
         return song_error(user_id)
 
-    result = []
-
-    # 对每首匹配的歌曲,查找用户的游玩记录
+    # 过滤出有游玩记录的歌曲
+    songs_with_records = []
     for song in matching_songs:
+        has_record = False
+        for rcd in song_record:
+            if is_exact_song_match(rcd['cover_name'], song['cover_name']) and rcd['type'] == song['type']:
+                has_record = True
+                break
+        if has_record:
+            songs_with_records.append(song)
+
+    # 没有找到任何有记录的歌曲
+    if len(songs_with_records) == 0:
+        return song_error(user_id)
+
+    # 返回搜索结果列表
+    if len(songs_with_records) > 1:
+        return generate_search_record_results_flex(user_id, songs_with_records)
+
+    # 生成图片消息列表
+    result = []
+    for song in songs_with_records:
         played_data = []
 
         # 使用优化的精确匹配函数
@@ -1186,17 +1290,56 @@ def get_song_record(user_id, acronym, ver="jp"):
                 rcd['rank'] = ""
                 played_data.append(rcd)
 
-        # 如果该歌曲没有游玩记录,跳过
-        if not played_data:
-            continue
-
         original_url, preview_url = smart_upload(song_info_generate(song, played_data))
         message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
         result.append(message)
 
-    # 没有找到任何有记录的歌曲,或结果过多
-    if len(result) == 0 or len(result) > 6:
-        result = song_error(user_id)
+    return result
+
+def get_song_record_by_id(user_id, song_id, ver="jp"):
+    """
+    通过歌曲ID查询用户在特定歌曲上的游玩记录
+
+    Args:
+        user_id: 用户ID
+        song_id: 歌曲唯一ID (6个字符)
+        ver: 服务器版本 (jp/intl)
+
+    Returns:
+        包含用户成绩的歌曲信息图片消息 或错误消息
+    """
+    read_dxdata(ver)
+
+    song_record = read_record(user_id)
+
+    if not len(song_record):
+        return record_error(user_id)
+
+    # 在SONGS中查找匹配的歌曲
+    matching_song = None
+    for song in SONGS:
+        if song.get('id') == song_id:
+            matching_song = song
+            break
+
+    # 没有匹配结果
+    if not matching_song:
+        return song_error(user_id)
+
+    # 查找用户的游玩记录
+    played_data = []
+    for rcd in song_record:
+        if is_exact_song_match(rcd['cover_name'], matching_song['cover_name']) and rcd['type'] == matching_song['type']:
+            rcd['rank'] = ""
+            played_data.append(rcd)
+
+    # 如果该歌曲没有游玩记录
+    if not played_data:
+        return song_error(user_id)
+
+    # 生成歌曲信息图片
+    original_url, preview_url = smart_upload(song_info_generate(matching_song, played_data))
+    result = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
 
     return result
 
@@ -1333,13 +1476,6 @@ def generate_internallevel_songs(user_id, level, ver="jp"):
         ver: 服务器版本（"jp" 或 "intl"）
     """
 
-    read_dxdata(ver)
-
-    # 验证 level 参数
-    valid_levels = ["10", "10+", "11", "11+", "12", "12+", "13", "13+", "14", "14+", "15"]
-    if level not in valid_levels:
-        return song_error(user_id)
-
     # 检查等级是否支持（只支持12及以上）
     supported_levels = ["12", "12+", "13", "13+", "14", "14+", "15"]
     if level not in supported_levels:
@@ -1358,10 +1494,8 @@ def generate_internallevel_songs(user_id, level, ver="jp"):
         cached_img = Image.open(cache_path)
         original_url, preview_url = smart_upload(cached_img)
         # 返回图片和提示消息
-        return [
-            ImageMessage(original_content_url=original_url, preview_image_url=preview_url),
-            level_list_hint(user_id)
-        ]
+        return ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
+
     except Exception as e:
         logger.error(f"读取缓存失败: {e}")
         return cache_not_found(user_id)
@@ -2175,10 +2309,20 @@ def handle_accept_perm_request(user_id: str, request_id: str) -> TextMessage:
             requester_name=result.get('requester_name', result['token_id'])
         )
     else:
-        text = get_multilingual_text(perm_request_error_text, user_id).format(
-            error=result['error'],
-            message=result['message']
+        # 不直接暴露错误详情给用户，使用通用错误消息
+        notify_admins_error(
+            error_title="Permission Request Accept Error",
+            error_details=f"Error: {result['error']}\nMessage: {result['message']}\nRequest ID: {request_id}",
+            context={
+                "User ID": user_id,
+                "Request ID": request_id,
+                "Error Type": result['error']
+            },
+            admin_id=ADMIN_ID,
+            configuration=configuration,
+            error_notification_enabled=ERROR_NOTIFICATION_ENABLED
         )
+        text = get_multilingual_text(system_error_text, user_id)
 
     return TextMessage(text=text)
 
@@ -2203,10 +2347,20 @@ def handle_reject_perm_request(user_id: str, request_id: str) -> TextMessage:
             requester_name=result.get('requester_name', result['token_id'])
         )
     else:
-        text = get_multilingual_text(perm_request_error_text, user_id).format(
-            error=result['error'],
-            message=result['message']
+        # 不直接暴露错误详情给用户，使用通用错误消息
+        notify_admins_error(
+            error_title="Permission Request Reject Error",
+            error_details=f"Error: {result['error']}\nMessage: {result['message']}\nRequest ID: {request_id}",
+            context={
+                "User ID": user_id,
+                "Request ID": request_id,
+                "Error Type": result['error']
+            },
+            admin_id=ADMIN_ID,
+            configuration=configuration,
+            error_notification_enabled=ERROR_NOTIFICATION_ENABLED
         )
+        text = get_multilingual_text(system_error_text, user_id)
 
     return TextMessage(text=text)
 
@@ -2252,40 +2406,37 @@ def handle_sync_text_command(event):
     """
     同步处理文本命令 - 直接在主线程执行
 
-    处理快速文本命令，如：
-    - check, network, get me, unbind
-    - rc 计算, calc 命令
-    - SEGA ID 绑定
-    - 管理员命令
+    命令分类：
+    1. 基础命令 - donate, unbind, get me, friend list
+    2. 模糊匹配命令 - 歌曲查询、Rating 对照、达成情况等
+    3. B 系列命令 - b50, b100, rct50, apb50 等
+    4. 特殊命令 - bind, language, calc
+    5. 管理员命令 - upload notice, dxdata update, devtoken
     """
     user_message = event.message.text.strip().lower()
     user_id = event.source.user_id
 
-    # 检查消息中是否有 mention（@）
+    # ========================================
+    # 用户上下文初始化
+    # ========================================
+
+    # 检查 @ mention
     mentioned_user_id = None
     if hasattr(event.message, 'mention') and event.message.mention:
-        # 获取第一个被 @ 的用户
         mentionees = event.message.mention.mentionees
         if mentionees and len(mentionees) > 0:
             first_mention = mentionees[0]
-            # 检查是否是用户类型的 mention（不是 @all）
             if hasattr(first_mention, 'user_id') and first_mention.user_id:
                 mentioned_user_id = first_mention.user_id
-                logger.info(f"[Mention] User {user_id} mentioned {mentioned_user_id}, will use mentioned user's data")
+                logger.info(f"[Mention] User {user_id} mentioned {mentioned_user_id}")
 
+    # 初始化用户版本和目标用户
     if user_id in USERS:
         mai_ver = USERS[user_id].get("version", "jp")
-        # 如果有 mention，优先使用被 @ 的用户 ID
-        if mentioned_user_id:
-            id_use = mentioned_user_id
-        else:
-            id_use = USERS[user_id].get("id_use", user_id)
-        # 获取目标用户的版本信息
-        if id_use in USERS:
-            mai_ver_use = USERS[id_use].get("version", "jp")
-        else:
-            mai_ver_use = mai_ver
-        # 重置 id_use（如果不是 mention 的情况）
+        id_use = mentioned_user_id if mentioned_user_id else USERS[user_id].get("id_use", user_id)
+        mai_ver_use = USERS[id_use].get("version", "jp") if id_use in USERS else mai_ver
+
+        # 重置 id_use（非 mention 情况）
         if not mentioned_user_id:
             edit_user_value(user_id, "id_use", user_id)
     else:
@@ -2293,8 +2444,9 @@ def handle_sync_text_command(event):
         mai_ver = "jp"
         mai_ver_use = "jp"
 
-
-    # ====== 基础命令映射 ======
+    # ========================================
+    # 1. 基础命令 - 精确匹配
+    # ========================================
     COMMAND_MAP = {
         # 捐赠
         "donate": lambda: donate_message,
@@ -2317,83 +2469,60 @@ def handle_sync_text_command(event):
         reply_message = COMMAND_MAP[user_message]()
         return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
 
-    # ====== 模糊匹配规则 ======
+    # ========================================
+    # 2. 模糊匹配命令 - 规则匹配
+    # ========================================
     SPECIAL_RULES = [
+        # 歌曲搜索（通过ID）
+        (lambda msg: msg.startswith("search ") and len(msg.split()) == 2 and len(msg.split()[1]) == 6,
+         lambda msg: search_song_by_id(user_id, msg.split()[1], mai_ver)),
+
+        # 成绩搜索（通过ID）
+        (lambda msg: msg.startswith("search-record ") and len(msg.split()) == 2 and len(msg.split()[1]) == 6,
+         lambda msg: get_song_record_by_id(id_use, msg.split()[1], mai_ver_use)),
+
         # 歌曲信息查询
         (lambda msg: msg.endswith(("ってどんな曲", "info", "song-info")),
-        lambda msg: search_song(
-            user_id,
-            re.sub(r"\s*(ってどんな曲|info|song-info)$", "", msg).strip(),
-            mai_ver
-        )),
+         lambda msg: search_song(user_id, re.sub(r"\s*(ってどんな曲|info|song-info)$", "", msg).strip(), mai_ver)),
 
         # 随机歌曲
         (lambda msg: msg.startswith(("ランダム曲", "ランダム", "random-song", "random")),
-        lambda msg: random_song(
-            user_id,
-            re.sub(r"^(ランダム曲|ランダム|random-song|random)", "", msg).strip(),
-            mai_ver
-        )),
+         lambda msg: random_song(user_id, re.sub(r"^(ランダム曲|ランダム|random-song|random)", "", msg).strip(), mai_ver)),
 
         # Rating 对照表
         (lambda msg: msg.startswith(("rc ", "RC ", "Rc ")),
-        lambda msg: TextMessage(
-            text=get_rc(float(re.sub(r"^rc\b[ 　]*", "", msg, flags=re.IGNORECASE)))
-        )),
+         lambda msg: get_rc(float(re.sub(r"^rc\b[ 　]*", "", msg, flags=re.IGNORECASE)), user_id)),
 
         # 版本达成情况
         (lambda msg: msg.endswith(("の達成状況", "の達成情報", "の達成表", "achievement-list", "achievement")),
-        lambda msg: generate_plate_rcd(
-            id_use,
-            re.sub(r"\s*(の達成状況|の達成情報|の達成表|achievement-list|achievement)$", "", msg).strip(),
-            mai_ver_use
-        )),
+         lambda msg: generate_plate_rcd(id_use, re.sub(r"\s*(の達成状況|の達成情報|の達成表|achievement-list|achievement)$", "", msg).strip(), mai_ver_use)),
 
         # 歌曲成绩记录
         (lambda msg: msg.endswith(("のレコード", "song-record", "record")),
-        lambda msg: get_song_record(
-            id_use,
-            re.sub(r"\s*(のレコード|song-record|record)$", "", msg).strip(),
-            mai_ver_use
-        )),
+         lambda msg: get_song_record(id_use, re.sub(r"\s*(のレコード|song-record|record)$", "", msg).strip(), mai_ver_use)),
 
         # 等级成绩列表
         (lambda msg: re.match(r".+(のレコードリスト|record-list|records)[ 　]*\d*$", msg),
-        lambda msg: generate_level_records(
-            id_use,
-            re.sub(r"\s*(のレコードリスト|record-list|records)[ 　]*\d*$", "", msg).strip(),
-            mai_ver_use,
-            int(re.search(r"(\d+)$", msg).group(1)) if re.search(r"(\d+)$", msg) else 1
-        )),
+         lambda msg: generate_level_records(
+             id_use,
+             re.sub(r"\s*(のレコードリスト|record-list|records)[ 　]*\d*$", "", msg).strip(),
+             mai_ver_use,
+             int(re.search(r"(\d+)$", msg).group(1)) if re.search(r"(\d+)$", msg) else 1)),
 
         # 版本歌曲列表
         (lambda msg: msg.endswith(("のバージョンリスト", "version-list", "version")),
-        lambda msg: generate_version_songs(
-            user_id,
-            re.sub(r"\s*\+\s*", " PLUS", re.sub(r"(のバージョンリスト|version-list|version)$", "", msg)).strip(),
-            mai_ver
-        )),
+         lambda msg: generate_version_songs(user_id, re.sub(r"\s*\+\s*", " PLUS", re.sub(r"(のバージョンリスト|version-list|version)$", "", msg)).strip(), mai_ver)),
 
         # 定数查询
         (lambda msg: msg.endswith(("の定数リスト", "のレベルリスト", "level-list")),
-        lambda msg: generate_internallevel_songs(
-            user_id,
-            re.sub(r"\s*(の定数リスト|のレベルリスト|level-list)$", "", msg),
-            mai_ver
-        )),
+         lambda msg: generate_internallevel_songs(user_id, re.sub(r"\s*(の定数リスト|のレベルリスト|level-list)$", "", msg), mai_ver)),
 
         # 权限请求管理
         (lambda msg: msg.startswith("accept-perm-request "),
-        lambda msg: handle_accept_perm_request(
-            user_id,
-            re.sub(r"^accept-perm-request ", "", msg).strip()
-        )),
+         lambda msg: handle_accept_perm_request(user_id, re.sub(r"^accept-perm-request ", "", msg).strip())),
 
         (lambda msg: msg.startswith("reject-perm-request "),
-        lambda msg: handle_reject_perm_request(
-            user_id,
-            re.sub(r"^reject-perm-request ", "", msg).strip()
-        ))
+         lambda msg: handle_reject_perm_request(user_id, re.sub(r"^reject-perm-request ", "", msg).strip()))
     ]
 
     for cond, func in SPECIAL_RULES:
@@ -2401,19 +2530,26 @@ def handle_sync_text_command(event):
             reply_message = func(user_message)
             return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
 
-    # ====== B 系列命令 ======
+    # ========================================
+    # 3. B 系列命令 - 成绩排行
+    # ========================================
     first_word = re.split(r"[ \n]", user_message.lower(), 1)[0]
     rest_text = re.split(r"[ \n]", user_message.lower(), 1)[1] if re.search(r"[ \n]", user_message) else ""
 
     RANK_COMMANDS = {
+        # Best 系列
         ("b50", "best50", "best 50", "ベスト50"): "best50",
         ("b100", "best100", "best 100", "ベスト100"): "best100",
         ("b35", "best35", "best 35", "ベスト35"): "best35",
         ("b15", "best15", "best 15", "ベスト15"): "best15",
+
+        # All Best 系列
         ("ab35", "allb35", "all best 35", "オールベスト35"): "allb35",
         ("ab50", "allb50", "all best 50", "オールベスト50"): "allb50",
         ("ab100", "allb100", "all best 100", "オールベスト100"): "allb100",
         ("ab200", "allb200", "all best 200", "オールベスト200"): "allb200",
+
+        # 特殊系列
         ("apb50", "ap50", "all perfect 50", "オールパーフェクト50"): "apb50",
         ("fdxb50", "fdx50", "Full DX 50", "フールでらっくす50"): "fdxb50",
         ("rct50", "r50", "recent50", "recent 50"): "rct50",
@@ -2426,7 +2562,9 @@ def handle_sync_text_command(event):
             reply_message = generate_records(id_use, mode, rest_text, mai_ver_use)
             return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
 
-    # ====== SEGA ID 绑定逻辑 ======
+    # ========================================
+    # 4. SEGA ID 绑定
+    # ========================================
     BIND_COMMANDS = ["bind", "segaid bind", "バインド"]
     if user_message.lower() in BIND_COMMANDS:
         # 检查用户是否已设置语言
@@ -2478,7 +2616,9 @@ def handle_sync_text_command(event):
 
         return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
 
-    # ====== language 命令 ======
+    # ========================================
+    # 5. 语言设置
+    # ========================================
     if user_message.startswith("language "):
         lang_code = user_message[9:].strip().lower()
 
@@ -2499,7 +2639,9 @@ def handle_sync_text_command(event):
         reply_message = TextMessage(text=success_text, quick_reply=quick_reply)
         return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
 
-    # ====== calc 命令 ======
+    # ========================================
+    # 6. Calc 计算器
+    # ========================================
     if user_message.startswith("calc "):
         try:
             num = list(map(int, user_message[5:].split()))
@@ -2509,18 +2651,14 @@ def handle_sync_text_command(event):
                 raise ValueError
             notes = dict(zip(['tap', 'hold', 'slide', 'touch', 'break'], num))
             scores = get_note_score(notes)
-            result = (
-                f"TAP: \t {num[0]}\nHOLD: \t {num[1]}\nSLIDE: \t {num[2]}\n"
-                f"TOUCH: \t {num[3]}\nBREAK: \t {num[4]}\n{DIVIDER}\n"
-            )
-            for k, v in scores.items():
-                result += f"{k.ljust(20)} -{v:.5f}%\n"
-            reply_message = TextMessage(text=result)
+            reply_message = generate_calc_result_flex(notes, scores)
         except Exception:
             reply_message = input_error(user_id)
         return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
 
-    # ====== 管理员命令 ======
+    # ========================================
+    # 7. 管理员命令
+    # ========================================
     if user_id in ADMIN_ID:
         if user_message.startswith("upload notice"):
             new_notice = user_message.replace("upload notice", "").strip()
@@ -2643,8 +2781,9 @@ def handle_sync_text_command(event):
                 reply_message = TextMessage(text=get_multilingual_text(devtoken_usage_text, user_id))
                 return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
 
-
-    # ====== 默认：不匹配任何命令 ======
+    # ========================================
+    # 默认：未匹配任何命令
+    # ========================================
     return
 
 #图片信息处理
@@ -4225,7 +4364,7 @@ def api_search_songs():
         # 获取查询参数，允许空字符串
         query = request.args.get('q', '')
         user_id = request.args.get('user_id')
-        max_results = request.args.get('max_results', 6, type=int)
+        max_results = request.args.get('max_results', MAX_SEARCH_RESULTS, type=int)
 
         # 处理特殊占位符
         if query == '__empty__':
@@ -4274,10 +4413,10 @@ def api_search_songs():
                 "message": "No songs found"
             })
 
-        if len(matching_songs) > MAX_SEARCH_RESULTS:
+        if len(matching_songs) > max_results:
             return jsonify({
                 "error": "Too many results",
-                "message": f"Found {len(matching_songs)} songs, please refine your search (max: {MAX_SEARCH_RESULTS})",
+                "message": f"Found {len(matching_songs)} songs, please refine your search (max: {max_results})",
                 "count": len(matching_songs)
             }), 400
 
@@ -4315,10 +4454,10 @@ def api_search_songs():
                 "message": "No records found"
             })
 
-        if len(result) > MAX_SEARCH_RESULTS:
+        if len(result) > max_results:
             return jsonify({
                 "error": "Too many results",
-                "message": f"Found {len(result)} songs, please refine your search (max: {MAX_SEARCH_RESULTS})",
+                "message": f"Found {len(result)} songs, please refine your search (max: {max_results})",
                 "count": len(result)
             }), 400
 

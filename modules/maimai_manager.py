@@ -21,15 +21,6 @@ def _get_random_user_agent():
     """返回随机 User-Agent"""
     return random.choice(USER_AGENTS)
 
-def format_favorite_friends(friends):
-    return [
-        {
-            "label": f"{f['name']} [{f['rating']}]",
-            "type": "text",
-            "content": f"friend-b50 {f['friend_id']}"
-        }
-        for f in friends if f.get("is_favorite")
-    ]
 
 def parse_level_value(input_str):
     input_str = input_str.strip()
@@ -87,11 +78,11 @@ def get_note_score(notes):
     Returns:
         字典，包含各类判定的扣分百分比
     """
-    tap_num = notes['tap']
-    hold_num = notes['hold']
-    slide_num = notes['slide']
-    touch_num = notes['touch']
-    break_num = notes['break']
+    tap_num = notes['tap'] if notes['tap'] else 0
+    hold_num = notes['hold'] if notes['hold'] else 0
+    slide_num = notes['slide'] if notes['slide'] else 0
+    touch_num = notes['touch'] if notes['touch'] else 0
+    break_num = notes['break'] if notes['break'] else 0
 
     tap_base = [500, 400, 250]
     hold_base = [1000, 800, 500]
@@ -569,16 +560,26 @@ async def get_friends_list(cookies: dict, ver="jp"):
     # 优化：增加连接池大小
     connector = aiohttp.TCPConnector(ssl=False, limit=10, ttl_dns_cache=300)
     async with aiohttp.ClientSession(cookies=cookies, connector=connector) as session:
+        tasks = []
         url = f"{base}/friend/"
-        dom = await fetch_dom(session, url, session_id, ver)
-
-        if dom is None:
-            return []
-        if dom == "MAINTENANCE":
-            return "MAINTENANCE"
+        tasks.append(fetch_dom(session, url, session_id, ver))
+        url = f"{base}/friend/pages/?idx=2&type=0"
+        tasks.append(fetch_dom(session, url, session_id, ver))
+        
+        doms = await asyncio.gather(*tasks)
 
         friends = []
-        blocks = dom.xpath('//div[contains(@class, "see_through_block")]')
+        blocks = []
+        for dom in doms:
+            if dom is None:
+                return []
+            if dom == "MAINTENANCE":
+                return "MAINTENANCE"
+
+            blocks.extend(dom.xpath('//div[contains(@class, "see_through_block")]'))
+
+        if not blocks:
+            return []
 
         for block in blocks:
             try:
@@ -589,16 +590,27 @@ async def get_friends_list(cookies: dict, ver="jp"):
                     block.xpath(f'.//form[@action="{base}/friend/favoriteOff/"]')
                 )
 
-                friends.append({
-                    "name": name,
-                    "rating": rating,
-                    "friend_id": friend_id,
-                    "is_favorite": is_favorite
-                })
+                if is_favorite:
+                    friends.append({
+                        "name": name,
+                        "rating": rating,
+                        "friend_id": friend_id,
+                    })
 
             except Exception as e:
                 logger.error(f"[get_friends_list] Error parsing block: {e}")
                 return []
+
+        seen = set()
+        new_list = []
+
+        for friend in friends:
+            friend_id = friend["friend_id"]
+            if friend_id not in seen:
+                seen.add(friend_id)
+                new_list.append(friend)
+
+        friends = new_list
 
         return friends
 
