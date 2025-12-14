@@ -171,7 +171,7 @@ async def fetch_dom(session: aiohttp.ClientSession, url: str, session_id: str, v
     try:
         async with session.get(url, headers=headers, ssl=False) as resp:
             if resp.status == 503:
-                logger.warning(f"Maimai server is under maintenance (503): {url}")
+                logger.warning(f"[Maimai] ⚠ Server maintenance (503): url={url}")
                 return "MAINTENANCE"
             resp.raise_for_status()
             html = await resp.text()
@@ -182,7 +182,7 @@ async def fetch_dom(session: aiohttp.ClientSession, url: str, session_id: str, v
 
             return await asyncio.to_thread(etree.HTML, html)
     except Exception as e:
-        logger.error(f"Error fetching {url}: {e}")
+        logger.error(f"[Maimai] ✗ Fetch failed: url={url}, error={e}")
         return None
 
 
@@ -213,11 +213,11 @@ async def login_to_maimai(sega_id: str, password: str, ver="jp"):
                     "https://lng-tgk-aime-gw.am-all.net/common_auth/login?site_id=maimaidxex&redirect_url=https://maimaidx-eng.com/maimai-mobile/&back_url=https://maimai.sega.com/"
                 ) as resp:
                     if resp.status == 503:
-                        logger.warning("Maimai INTL server is under maintenance (503)")
+                        logger.warning("[Maimai] ⚠ Server maintenance (503): server=INTL")
                         return "MAINTENANCE"
                     resp.raise_for_status()
             except Exception as e:
-                logger.error(f"Error accessing INTL login page: {e}")
+                logger.error(f"[Maimai] ✗ Failed to access INTL login page: error={e}")
                 raise
 
             # POST 登录
@@ -252,12 +252,12 @@ async def login_to_maimai(sega_id: str, password: str, ver="jp"):
             try:
                 async with session.get("https://maimaidx.jp/maimai-mobile/login/") as response:
                     if response.status == 503:
-                        logger.warning("Maimai JP server is under maintenance (503)")
+                        logger.warning("[Maimai] ⚠ Server maintenance (503): server=JP")
                         return "MAINTENANCE"
                     response.raise_for_status()
                     html = await response.text()
             except Exception as e:
-                logger.error(f"Error accessing JP login page: {e}")
+                logger.error(f"[Maimai] ✗ Failed to access JP login page: error={e}")
                 raise
 
             # 异步解析 HTML 获取 token
@@ -598,7 +598,7 @@ async def get_friends_list(cookies: dict, ver="jp"):
                     })
 
             except Exception as e:
-                logger.error(f"[get_friends_list] Error parsing block: {e}")
+                logger.error(f"[Maimai] ✗ Failed to parse friend list block: error={e}")
                 return []
 
         seen = set()
@@ -783,7 +783,7 @@ async def get_friend_records(cookies: dict, friend_id: str, ver="jp"):
                     })
 
                 except Exception as e:
-                    logger.error(f"[get_friend_records] Error parsing block: {e}")
+                    logger.error(f"[Maimai] ✗ Failed to parse friend record block: error={e}")
 
         return friend_records
 

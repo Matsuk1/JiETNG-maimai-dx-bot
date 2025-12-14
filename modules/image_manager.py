@@ -189,7 +189,7 @@ def compose_images(images, spacing=40, outer_margin=30,
         logo_y = footer_y_start + int(10 * scale_factor)
         combined.paste(logo_img, (logo_x, logo_y))
     except Exception as e:
-        logger.error(f"无法加载 Logo: {e}")
+        logger.error(f"[ImageManager] ✗ Failed to load logo: error={e}")
 
     # 8. 添加外层灰色背景
     final_width = combined.width + 2 * outer_margin

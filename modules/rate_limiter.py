@@ -96,7 +96,7 @@ def check_rate_limit(user_id: str, task_type: str) -> bool:
 
         # 检查是否超过限制
         if len(user_request_tracking[user_id][task_type]) >= MAX_SAME_REQUESTS:
-            logger.warning(f"Rate limit exceeded for user {user_id}, task type: {task_type}")
+            logger.warning(f"[RateLimit] ⚠ Limit exceeded: user_id={user_id}, task_type={task_type}")
             return True  # 超过限制
 
         # 记录本次请求

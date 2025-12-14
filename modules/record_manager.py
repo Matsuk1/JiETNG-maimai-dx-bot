@@ -117,7 +117,7 @@ def read_record(user_id: str, recent: bool = False) -> List[Dict[str, Any]]:
     table = "recent_records" if recent else "best_records"
     import logging
     logger = logging.getLogger(__name__)
-    logger.info(f"Reading records from table {table} for user {user_id}")
+    logger.info(f"[Record] → Reading records: table={table}, user_id={user_id}")
 
     conn = get_connection()
 
@@ -141,7 +141,7 @@ def read_record(user_id: str, recent: bool = False) -> List[Dict[str, Any]]:
 
 def write_record(user_id, record_json, recent=False):
     table = "recent_records" if recent else "best_records"
-    logger.warning(f"[*] Writing to DB table {table} for user_id = {user_id}\n")
+    logger.info(f"[Record] → Writing records: table={table}, user_id={user_id}")
 
     conn = get_connection()
 
@@ -181,7 +181,7 @@ def write_record(user_id, record_json, recent=False):
 
 def delete_record(user_id, recent=False):
     table = "recent_records" if recent else "best_records"
-    logger.warning(f"[*] Deleting from DB table {table} for user_id = {user_id}\n")
+    logger.info(f"[Record] → Deleting records: table={table}, user_id={user_id}")
 
     conn = get_connection()
 

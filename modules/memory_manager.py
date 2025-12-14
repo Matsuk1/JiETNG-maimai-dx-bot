@@ -35,20 +35,20 @@ class MemoryManager:
     def start(self):
         """启动内存管理器"""
         if self.running:
-            logger.warning("Memory manager is already running")
+            logger.warning("[Memory] ⚠ Manager already running")
             return
 
         self.running = True
         self.thread = threading.Thread(target=self._cleanup_loop, daemon=True)
         self.thread.start()
-        logger.info(f"Memory manager started (interval: {self.interval}s)")
+        logger.info(f"[Memory] ✓ Manager started: interval={self.interval}s")
 
     def stop(self):
         """停止内存管理器"""
         self.running = False
         if self.thread:
             self.thread.join(timeout=5)
-        logger.info("Memory manager stopped")
+        logger.info("[Memory] ✓ Manager stopped")
 
     def _cleanup_loop(self):
         """清理循环"""
@@ -58,7 +58,7 @@ class MemoryManager:
                 if self.running:  # 再次检查，避免在sleep期间被停止
                     self.cleanup()
             except Exception as e:
-                logger.error(f"Memory cleanup error: {e}", exc_info=True)
+                logger.error(f"[Memory] ✗ Cleanup error: error={e}", exc_info=True)
 
     def cleanup(self):
         """
@@ -95,10 +95,10 @@ class MemoryManager:
         }
 
         logger.info(
-            f"Memory cleanup completed: "
-            f"collected {total_collected} objects "
-            f"(gen0: {collected_gen0}, gen1: {collected_gen1}, gen2: {collected_gen2}), "
-            f"in {stats['elapsed_ms']}ms"
+            f"[Memory] ✓ Cleanup completed: "
+            f"collected={total_collected} objects "
+            f"(gen0={collected_gen0}, gen1={collected_gen1}, gen2={collected_gen2}), "
+            f"elapsed={stats['elapsed_ms']}ms"
         )
 
         # 保存清理统计信息
@@ -166,9 +166,9 @@ def cleanup_user_caches(user_manager_module=None):
                     cleaned_items += 1
 
             if cleaned_items > 0:
-                logger.info(f"Cleaned {cleaned_items} expired nickname cache entries")
+                logger.info(f"[Memory] ✓ Cleaned nickname cache: count={cleaned_items}")
         except Exception as e:
-            logger.error(f"Failed to clean nickname cache: {e}")
+            logger.error(f"[Memory] ✗ Failed to clean nickname cache: error={e}")
 
     return cleaned_items
 
@@ -220,9 +220,9 @@ def cleanup_rate_limiter_tracking(rate_limiter_module=None):
                     cleaned_items += 1
 
             if cleaned_items > 0:
-                logger.info(f"Cleaned {cleaned_items} expired rate limit tracking entries")
+                logger.info(f"[Memory] ✓ Cleaned rate limit tracking: count={cleaned_items}")
         except Exception as e:
-            logger.error(f"Failed to clean rate limit tracking: {e}")
+            logger.error(f"[Memory] ✗ Failed to clean rate limit tracking: error={e}")
 
     return cleaned_items
 

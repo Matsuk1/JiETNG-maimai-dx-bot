@@ -97,7 +97,7 @@ def create_thumbnail_in_line(song, thumb_size=(400, 100), scale=1.5):
             )
 
         except Exception as e:
-            logger.error(f"Error calculating dx_star: {e}")
+            logger.error(f"[RecordGenerator] ✗ Failed to calculate dx_star: error={e}")
 
     # --- 数值 ---
     draw.text((375, 61), f"{song['internalLevelValue']:.1f} → {song['ra']}", fill=(0, 0, 0), font=font_large, anchor="ra")
@@ -136,7 +136,7 @@ def create_thumbnail(song, thumb_size=(300, 150), padding=15):
                 cover_img = cover_img.resize((cover_size, cover_size), Image.Resampling.LANCZOS)
                 img.paste(cover_img, (padding, padding), cover_img)
         except Exception as e:
-            logger.error(f"Error loading cover image: {e}")
+            logger.error(f"[RecordGenerator] ✗ Failed to load cover image: error={e}")
 
     # --- type 图标 ---
     # 根据封面尺寸动态计算图标大小
@@ -219,7 +219,7 @@ def create_thumbnail(song, thumb_size=(300, 150), padding=15):
             )
 
         except Exception as e:
-            logger.error(f"Error calculating dx_star: {e}")
+            logger.error(f"[RecordGenerator] ✗ Failed to calculate dx_star: error={e}")
 
     # --- combo_icon 图标 ---
     # 根据缩略图尺寸动态计算图标大小
@@ -491,7 +491,7 @@ def generate_cover(cover, type, icon=None, icon_type=None, size=150, cover_name=
                 record_img.paste(resized_img, (x_offset, y_offset), resized_img.convert("RGBA"))
 
         except Exception as e:
-            logger.error(f"Error loading icon {icon}: {e}")
+            logger.error(f"[RecordGenerator] ✗ Failed to load icon: icon={icon}, error={e}")
 
     return record_img.convert("RGB")
 

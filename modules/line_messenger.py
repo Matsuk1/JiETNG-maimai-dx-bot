@@ -183,7 +183,7 @@ def notify_admins_error(
             from modules.message_manager import system_error
             smart_reply(user_id, reply_token, system_error(user_id), configuration)
         except Exception as e:
-            logger.error(f"Failed to reply user error message: {e}")
+            logger.error(f"[LineMessenger] ✗ Failed to reply error message: error={e}")
 
     if not error_notification_enabled:
         return
@@ -209,15 +209,15 @@ def notify_admins_error(
                         chunk_msg = f"Details ({i+1}/{len(detail_chunks)}):\n{chunk}"
                         smart_push(admin_user_id, TextMessage(text=chunk_msg), configuration)
                 except Exception as e:
-                    logger.error(f"Failed to notify admin {admin_user_id}: {e}")
+                    logger.error(f"[LineMessenger] ✗ Failed to notify admin: admin_id={admin_user_id}, error={e}")
         else:
             # 错误信息不长，直接发送 Flex Message
             for admin_user_id in admin_id:
                 try:
                     smart_push(admin_user_id, flex_message, configuration)
                 except Exception as e:
-                    logger.error(f"Failed to notify admin {admin_user_id}: {e}")
+                    logger.error(f"[LineMessenger] ✗ Failed to notify admin: admin_id={admin_user_id}, error={e}")
 
     except Exception as e:
         # 通知系统本身出错，记录到日志
-        logger.error(f"Error notification system failed: {e}", exc_info=True)
+        logger.error(f"[LineMessenger] ✗ Error notification system failed: error={e}", exc_info=True)

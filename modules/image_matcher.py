@@ -42,7 +42,7 @@ def calculate_image_hash(pil_image):
         phash = imagehash.phash(pil_image, hash_size=16)  # 更大的哈希以提高准确率
         return phash
     except Exception as e:
-        logger.error(f"Failed to calculate hash: {e}")
+        logger.error(f"[ImageMatcher] ✗ Failed to calculate hash: error={e}")
         return None
 
 
@@ -63,7 +63,7 @@ def extract_sift_features(image_cv2):
         return keypoints, descriptors
 
     except Exception as e:
-        logger.error(f"SIFT feature extraction failed: {e}")
+        logger.error(f"[ImageMatcher] ✗ SIFT feature extraction failed: error={e}")
         return None, None
 
 
@@ -119,7 +119,7 @@ def match_sift_features(kp1, desc1, kp2, desc2):
         return len(good_matches), 0, 0.0
 
     except Exception as e:
-        logger.error(f"Feature matching failed: {e}")
+        logger.error(f"[ImageMatcher] ✗ Feature matching failed: error={e}")
         return 0, 0, 0.0
 
 
@@ -161,7 +161,7 @@ def _build_lsh_index():
     if _lsh_initialized:
         return
 
-    logger.info("Building LSH index...")
+    logger.info("[ImageMatcher] → Building LSH index")
     _lsh_index.clear()
 
     for cover_name, cover_hash in _hash_cache.items():
@@ -172,7 +172,7 @@ def _build_lsh_index():
             _lsh_index[bucket_key].append(cover_name)
 
     _lsh_initialized = True
-    logger.info(f"✓ LSH index built: {len(_lsh_index)} buckets")
+    logger.info(f"[ImageMatcher] ✓ LSH index built: buckets={len(_lsh_index)}")
 
 
 def load_cover_cache(covers_dir):
@@ -184,7 +184,7 @@ def load_cover_cache(covers_dir):
     if _cache_loaded:
         return
 
-    logger.info("Loading cover database...")
+    logger.info("[ImageMatcher] → Loading cover database")
 
     cover_files = [f for f in os.listdir(covers_dir) if f.endswith('.png')]
     loaded = 0
@@ -211,11 +211,11 @@ def load_cover_cache(covers_dir):
             loaded += 1
 
         except Exception as e:
-            logger.error(f"Failed to load cover {cover_file}: {e}")
+            logger.error(f"[ImageMatcher] ✗ Failed to load cover: file={cover_file}, error={e}")
             continue
 
     _cache_loaded = True
-    logger.info(f"✓ Cover database loaded: {loaded}/{len(cover_files)} covers")
+    logger.info(f"[ImageMatcher] ✓ Cover database loaded: covers={loaded}/{len(cover_files)}")
 
     # Build LSH index
     _build_lsh_index()
@@ -250,7 +250,7 @@ def find_similar_cover(input_image, covers_dir=None, hash_threshold=15, return_m
         covers_dir = COVERS_DIR
 
     if not os.path.exists(covers_dir):
-        logger.warning(f"Cover directory does not exist: {covers_dir}")
+        logger.warning(f"[ImageMatcher] ⚠ Cover directory not found: path={covers_dir}")
         if return_multiple:
             return []
         else:
@@ -260,10 +260,10 @@ def find_similar_cover(input_image, covers_dir=None, hash_threshold=15, return_m
     load_cover_cache(covers_dir)
 
     logger.info("=" * 60)
-    logger.info("Starting image recognition (hybrid strategy)")
+    logger.info("[ImageMatcher] → Starting recognition (hybrid strategy)")
 
     # ========== Strategy 1: Hash matching (fast) ==========
-    logger.info("→ Phase 1: Hash matching (fast full cover matching)")
+    logger.info("[ImageMatcher] → Phase 1: Hash matching")
 
     input_hash = calculate_image_hash(input_image)
     if input_hash:
@@ -275,7 +275,7 @@ def find_similar_cover(input_image, covers_dir=None, hash_threshold=15, return_m
             if bucket_key in _lsh_index:
                 candidates.update(_lsh_index[bucket_key])
 
-        logger.info(f"  LSH candidates: {len(candidates)} covers (filtered from {len(_hash_cache)})")
+        logger.debug(f"[ImageMatcher] LSH candidates: count={len(candidates)}, total={len(_hash_cache)}")
 
         # Calculate exact distance only for candidates
         hash_matches = []
@@ -310,44 +310,41 @@ def find_similar_cover(input_image, covers_dir=None, hash_threshold=15, return_m
                         filtered_matches.append(match)
                     else:
                         # Quality gap too large, skip
-                        logger.debug(f"  Skip low-quality match: {match['cover_name']} (distance: {match['distance']}, gap: {match['distance'] - best_distance})")
+                        logger.debug(f"[ImageMatcher] Skip low-quality match: cover={match['cover_name']}, distance={match['distance']}, gap={match['distance'] - best_distance}")
 
                 # Take top max_results
                 results = []
                 for i, match in enumerate(filtered_matches[:max_results]):
                     results.append((match['cover_name'], match['confidence'], 'hash'))
-                    logger.info(f"  Match #{i+1}: {match['cover_name']}")
-                    logger.info(f"    Hamming distance: {match['distance']}")
-                    logger.info(f"    Confidence: {match['confidence']:.2f}%")
+                    logger.info(f"[ImageMatcher] Match #{i+1}: cover={match['cover_name']}")
+                    logger.debug(f"[ImageMatcher] Hamming distance={match['distance']}, confidence={match['confidence']:.2f}%")
 
-                logger.info(f"✓ Hash matching success: found {len(results)} possible covers (filtered from {len(hash_matches)} candidates)")
+                logger.info(f"[ImageMatcher] ✓ Hash matching success: results={len(results)}, candidates={len(hash_matches)}")
                 logger.info("=" * 60)
                 return results
             else:
                 # Return only the best match
                 best = hash_matches[0]
-                logger.info(f"  Best hash match: {best['cover_name']}, distance: {best['distance']}")
-                logger.info(f"✓ Hash matching success: {best['cover_name']}")
-                logger.info(f"  Hamming distance: {best['distance']} (threshold: {hash_threshold})")
-                logger.info(f"  Confidence: {best['confidence']:.2f}%")
+                logger.info(f"[ImageMatcher] ✓ Hash matching success: cover={best['cover_name']}, distance={best['distance']}, confidence={best['confidence']:.2f}%")
+                logger.debug(f"[ImageMatcher] Hash threshold={hash_threshold}")
                 logger.info("=" * 60)
                 return best['cover_name'], best['confidence'], "hash"
 
     # ========== Strategy 2: Feature matching (precise) ==========
-    logger.info("→ Phase 2: Feature matching (handle scene images/partial captures)")
+    logger.info("[ImageMatcher] → Phase 2: Feature matching")
 
     input_cv2 = pil_to_cv2(input_image)
     input_kp, input_desc = extract_sift_features(input_cv2)
 
     if input_desc is None:
-        logger.warning("✗ Input image has insufficient feature points")
+        logger.warning("[ImageMatcher] ⚠ Input image has insufficient feature points")
         logger.info("=" * 60)
         if return_multiple:
             return []
         else:
             return None, None, None
 
-    logger.info(f"  Input image feature points: {len(input_kp)}")
+    logger.debug(f"[ImageMatcher] Input image feature points: count={len(input_kp)}")
 
     # 收集所有合格的匹配
     feature_matches = []
@@ -375,7 +372,7 @@ def find_similar_cover(input_image, covers_dir=None, hash_threshold=15, return_m
         # - 覆盖率确保匹配到足够大的区域
         score = (match_quality ** 2) * geometric_matches * (1 + coverage)
 
-        logger.debug(f"  {cover_name}: geometric={geometric_matches}, quality={match_quality:.2%}, coverage={coverage:.2%}, score={score:.2f}")
+        logger.debug(f"[ImageMatcher] Evaluating match: cover={cover_name}, geometric={geometric_matches}, quality={match_quality:.2%}, coverage={coverage:.2%}, score={score:.2f}")
 
         # 添加到结果列表
         feature_matches.append({
@@ -402,36 +399,28 @@ def find_similar_cover(input_image, covers_dir=None, hash_threshold=15, return_m
                     filtered_matches.append(match)
                 else:
                     # 质量差距太大，跳过
-                    logger.debug(f"  Skip low-quality match: {match['cover_name']} (score: {match['score']:.2f}, ratio: {match['score']/best_score:.2%})")
+                    logger.debug(f"[ImageMatcher] Skip low-quality match: cover={match['cover_name']}, score={match['score']:.2f}, ratio={match['score']/best_score:.2%}")
 
             # 取前 max_results 个
             results = []
             for i, match in enumerate(filtered_matches[:max_results]):
                 results.append((match['cover_name'], match['score'], 'sift'))
-                logger.info(f"  Match #{i+1}: {match['cover_name']}")
-                logger.info(f"    Geometric matches: {match['geometric_matches']}")
-                logger.info(f"    Match quality: {match['match_quality']:.2%}")
-                logger.info(f"    Coverage: {match['coverage']:.2%}")
-                logger.info(f"    Composite score: {match['score']:.2f}")
+                logger.info(f"[ImageMatcher] Match #{i+1}: cover={match['cover_name']}")
+                logger.debug(f"[ImageMatcher] geometric={match['geometric_matches']}, quality={match['match_quality']:.2%}, coverage={match['coverage']:.2%}, score={match['score']:.2f}")
 
-            logger.info(f"✓ Feature matching success: found {len(results)} possible covers (filtered from {len(feature_matches)} candidates)")
+            logger.info(f"[ImageMatcher] ✓ Feature matching success: results={len(results)}, candidates={len(feature_matches)}")
             logger.info("=" * 60)
             return results
         else:
             # 只返回最佳匹配
             best = feature_matches[0]
-            logger.info(f"  Best feature match: {best['cover_name']}")
-            logger.info(f"    Geometric matches: {best['geometric_matches']}")
-            logger.info(f"    Match quality: {best['match_quality']:.2%}")
-            logger.info(f"    Coverage: {best['coverage']:.2%}")
-            logger.info(f"    Composite score: {best['score']:.2f}")
-
-            logger.info(f"✓ Feature matching success: {best['cover_name']}")
+            logger.info(f"[ImageMatcher] ✓ Feature matching success: cover={best['cover_name']}, geometric={best['geometric_matches']}, quality={best['match_quality']:.2%}, score={best['score']:.2f}")
+            logger.debug(f"[ImageMatcher] Coverage={best['coverage']:.2%}")
             logger.info("=" * 60)
             return best['cover_name'], best['score'], "sift"
 
     # ========== 全部失败 ==========
-    logger.warning("✗ No matching cover found")
+    logger.warning("[ImageMatcher] ✗ No matching cover found")
     logger.info("=" * 60)
 
     if return_multiple:
@@ -482,7 +471,7 @@ def find_song_by_cover(input_image, songs_data, covers_dir=None, hash_threshold=
             if len(songs) > 5:
                 songs = [s for s in songs if s['type'] in ['dx', 'std']]
             songs = songs[:5]
-            logger.info(f"✓ Successfully identified {len(songs)} songs")
+            logger.info(f"[ImageMatcher] ✓ Successfully identified songs: count={len(songs)}")
 
         return songs
     else:
@@ -514,13 +503,11 @@ def _find_song_by_cover_name(cover_name, songs_data, method):
     for song in songs_data:
         song_cover = song.get('cover_name', '')
         if song_cover == target_cover_with_ext or song_cover == target_cover_without_ext:
-            logger.info(f"✓ Successfully identified song: {song.get('title')}")
-            logger.info(f"  Artist: {song.get('artist')}")
-            logger.info(f"  Method: {method}")
+            logger.info(f"[ImageMatcher] ✓ Successfully identified song: title={song.get('title')}, artist={song.get('artist')}, method={method}")
             result.append(song)
 
     if result:
         return result
 
-    logger.error(f"Database error: found cover {cover_name}, but no corresponding song in database")
+    logger.error(f"[ImageMatcher] ✗ Database error: cover={cover_name}, no corresponding song in database")
     return None

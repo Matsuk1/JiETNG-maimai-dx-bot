@@ -22,7 +22,7 @@ def clean_unbound_users() -> Dict[str, Any]:
     for user_id, value in USERS.items():
         # 检查是否缺少 sega_id 或 sega_pwd
         if "sega_id" not in value or "sega_pwd" not in value:
-            logger.info(f"Deleting unbound user: {user_id} (missing sega_id or sega_pwd)")
+            logger.info(f"[SystemCheck] → Deleting unbound user: user_id={user_id}, reason=missing_credentials")
             delete_user(user_id)
             deleted_users.append(user_id)
 
@@ -32,9 +32,9 @@ def clean_unbound_users() -> Dict[str, Any]:
     }
 
     if deleted_users:
-        logger.info(f"Cleaned up {len(deleted_users)} unbound users")
+        logger.info(f"[SystemCheck] ✓ Cleaned up unbound users: count={len(deleted_users)}")
     else:
-        logger.info("No unbound users found")
+        logger.info("[SystemCheck] ✓ No unbound users found")
 
     return result
 
@@ -56,11 +56,11 @@ def check_database_connection() -> bool:
         cursor.close()
         conn.close()
 
-        logger.info("✓ Database connection check passed")
+        logger.info("[SystemCheck] ✓ Database connection check passed")
         return True
 
     except Exception as e:
-        logger.error(f"✗ Database connection check failed: {e}")
+        logger.error(f"[SystemCheck] ✗ Database connection check failed: error={e}")
         return False
 
 
@@ -89,7 +89,7 @@ def check_required_files() -> Dict[str, bool]:
 
     for name, path in required_files.items():
         if not path:
-            logger.warning(f"⚠ {name} path not configured")
+            logger.warning(f"[SystemCheck] ⚠ File path not configured: file={name}")
             results[name] = False
             continue
 
@@ -97,9 +97,9 @@ def check_required_files() -> Dict[str, bool]:
         results[name] = exists
 
         if exists:
-            logger.info(f"✓ {name} exists: {path}")
+            logger.info(f"[SystemCheck] ✓ File exists: file={name}, path={path}")
         else:
-            logger.warning(f"✗ {name} not found: {path}")
+            logger.warning(f"[SystemCheck] ✗ File not found: file={name}, path={path}")
             all_pass = False
 
     return results
@@ -112,7 +112,7 @@ def run_system_check() -> Dict[str, Any]:
         所有检查结果的汇总字典
     """
     logger.info("=" * 60)
-    logger.info("Starting system check...")
+    logger.info("[SystemCheck] → Starting system check...")
     logger.info("=" * 60)
 
     results = {
@@ -121,34 +121,34 @@ def run_system_check() -> Dict[str, Any]:
     }
 
     # 1. 数据库连接检查
-    logger.info("\n[1/3] Checking database connection...")
+    logger.info("[SystemCheck] → Phase 1/3: Checking database connection...")
     results["checks"]["database"] = check_database_connection()
 
     # 2. 必要文件检查
-    logger.info("\n[2/3] Checking required files...")
+    logger.info("[SystemCheck] → Phase 2/3: Checking required files...")
     results["checks"]["files"] = check_required_files()
 
     # 3. 清理未绑定的代理用户
-    logger.info("\n[3/3] Cleaning unbound users...")
+    logger.info("[SystemCheck] → Phase 3/3: Cleaning unbound users...")
     results["checks"]["cleanup"] = clean_unbound_users()
 
     # 生成报告
-    logger.info("\n" + "=" * 60)
-    logger.info("System check completed")
+    logger.info("=" * 60)
+    logger.info("[SystemCheck] ✓ System check completed")
     logger.info("=" * 60)
 
     # 统计结果
     cleanup = results["checks"]["cleanup"]
     if cleanup["deleted_count"] > 0:
-        logger.info(f"• Deleted {cleanup['deleted_count']} unbound users")
+        logger.info(f"[SystemCheck] ✓ Deleted unbound users: count={cleanup['deleted_count']}")
 
     all_pass = results["checks"]["database"]
     if all_pass:
-        logger.info("✓ All critical checks passed")
+        logger.info("[SystemCheck] ✓ All critical checks passed")
     else:
-        logger.warning("⚠ Some checks failed, please review logs")
+        logger.warning("[SystemCheck] ⚠ Some checks failed, please review logs")
 
-    logger.info("=" * 60 + "\n")
+    logger.info("=" * 60)
 
     # 添加时间戳
     from datetime import datetime

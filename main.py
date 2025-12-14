@@ -273,7 +273,7 @@ def run_task_with_limit(func: callable, args: tuple, sem: threading.Semaphore,
                 # 任务已取消，从取消列表中移除并从排队中移除
                 task_tracking['cancelled'].discard(task_id)
                 task_tracking['queued'] = [t for t in task_tracking['queued'] if t.get('id') != task_id]
-                logger.info(f"Task {task_id} was cancelled, skipping execution")
+                logger.info(f"[Task] ⚠ Cancelled: task_id={task_id}")
                 q.task_done()
                 return
 
@@ -306,7 +306,7 @@ def run_task_with_limit(func: callable, args: tuple, sem: threading.Semaphore,
             try:
                 func(*args)
             except Exception as e:
-                logger.error(f"Task execution error: {e}", exc_info=True)
+                logger.error(f"[Task] ✗ Execution error: function={func.__name__}, error={e}", exc_info=True)
 
                 # 尝试获取用户信息以便回复
                 user_id = None
@@ -382,7 +382,7 @@ def run_task_with_limit(func: callable, args: tuple, sem: threading.Semaphore,
         with stats_lock:
             STATS['tasks_processed'] += 1
             STATS['response_time'] += response_time
-            logger.info(f"Task completed: {func.__name__}, Total: {STATS['tasks_processed']}, Avg: {STATS['response_time']/STATS['tasks_processed']:.1f}ms")
+            logger.info(f"[Task] ✓ Completed: function={func.__name__}, total={STATS['tasks_processed']}, avg_time={STATS['response_time']/STATS['tasks_processed']:.1f}ms")
 
         q.task_done()
 
@@ -399,7 +399,7 @@ def image_worker() -> None:
                 task_id = None
             run_task_with_limit(func, args, image_concurrency_limit, image_queue, task_id, False)
         except Exception as e:
-            logger.error(f"Image task worker error: {e}", exc_info=True)
+            logger.error(f"[Worker] ✗ Image worker error: error={e}", exc_info=True)
             notify_admins_error(
                 error_title="Image Task Worker Error",
                 error_details=f"{type(e).__name__}: {str(e)}\n\n{traceback.format_exc()}",
@@ -423,7 +423,7 @@ def webtask_worker() -> None:
                 task_id = None
             run_task_with_limit(func, args, webtask_concurrency_limit, webtask_queue, task_id, True)
         except Exception as e:
-            logger.error(f"Web task worker error: {e}", exc_info=True)
+            logger.error(f"[Worker] ✗ Web worker error: error={e}", exc_info=True)
             notify_admins_error(
                 error_title="Web Task Worker Error",
                 error_details=f"{type(e).__name__}: {str(e)}\n\n{traceback.format_exc()}",
@@ -443,7 +443,7 @@ def cache_worker() -> None:
             func, args = item
             run_task_with_limit(func, args, cache_concurrency_limit, cache_queue, None, False)
         except Exception as e:
-            logger.error(f"Cache task worker error: {e}", exc_info=True)
+            logger.error(f"[Worker] ✗ Cache worker error: error={e}", exc_info=True)
             with stats_lock:
                 cache_generation_progress["status"] = "error"
                 cache_generation_progress["error_message"] = str(e)
@@ -459,7 +459,7 @@ def cancel_if_timeout(task_done: threading.Event) -> None:
         task_done: 任务完成事件
     """
     if not task_done.is_set():
-        logger.warning("Task execution timeout")
+        logger.warning(f"[Task] ⚠ Execution timeout: timeout={TASK_TIMEOUT_SECONDS}s")
 
 configuration = Configuration(access_token=LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
@@ -668,7 +668,7 @@ def linebot_reply():
     """
     signature = request.headers.get('X-Line-Signature', '')
     body = request.get_data(as_text=True)
-    logger.info("Received webhook request")
+    logger.info("[Webhook] → Received request")
 
     try:
         json_data = json.loads(body)
@@ -677,7 +677,7 @@ def linebot_reply():
         handler.handle(body, signature)
 
     except json.JSONDecodeError as e:
-        logger.error(f"JSON parse failed: {e}")
+        logger.error(f"[Webhook] ✗ JSON parse failed: error={e}")
         notify_admins_error(
             error_title="Webhook JSON Parse Failed",
             error_details=f"{type(e).__name__}: {str(e)}",
@@ -689,7 +689,7 @@ def linebot_reply():
         abort(400)
 
     except InvalidSignatureError as e:
-        logger.error(f"LINE signature verification failed: {e}")
+        logger.error(f"[Webhook] ✗ LINE signature verification failed: error={e}")
         notify_admins_error(
             error_title="LINE Signature Verification Failed",
             error_details=f"{type(e).__name__}: {str(e)}",
@@ -701,7 +701,7 @@ def linebot_reply():
         abort(400)
 
     except Exception as e:
-        logger.error(f"Webhook handling error: {e}", exc_info=True)
+        logger.error(f"[Webhook] ✗ Handling error: error={e}", exc_info=True)
         notify_admins_error(
             error_title="Webhook Handling Error",
             error_details=f"{type(e).__name__}: {str(e)}\n\n{traceback.format_exc()}",
@@ -752,7 +752,7 @@ Token not provided. <br />
             return render_template("error.html", message=token_invalid_message, language="ja"), 400
         
     except Exception as e:
-        logger.error(f"Token verification failed: {e}")
+        logger.error(f"[Auth] ✗ Token verification failed: error={e}")
         # Token 无效的错误消息（此时还没有 user_id，三语同时显示）
         token_invalid_message = "トークンが無効です。<br />Invalid token. <br />令牌无效。"
         return render_template("error.html", message=token_invalid_message, language="ja"), 400
@@ -818,7 +818,7 @@ async def process_sega_credentials(user_id, segaid, password, ver="jp", language
     if cookies == "MAINTENANCE":
         return "MAINTENANCE"
     if not cookies:
-        logger.warning(f"Login failed, retrying ({attempt + 1}/{max_retries})...")
+        logger.warning(f"[Auth] ⚠ Login failed for user_id={user_id}")
         return False
 
     # 验证登录是否成功
@@ -925,7 +925,7 @@ def async_admin_maimai_update_task(event):
                 text=f"✅ Admin triggered update completed\nUser: {user_id}\nStatus: Success"
             ), configuration)
         except Exception as e:
-            logger.error(f"Failed to notify admin: {e}")
+            logger.error(f"[Notification] ✗ Failed to notify admin: admin_id={admin_user_id}, error={e}")
 
 # ==================== 主程序入口 ====================
 
@@ -963,7 +963,7 @@ def maimai_update(user_id, ver="jp"):
 
     cookies = asyncio.run(login_to_maimai(sega_id, sega_pwd, ver))
     if cookies is None:
-        logger.warning(f"Login failed for user {user_id}")
+        logger.warning(f"[User] ⚠ Login failed: user_id={user_id}")
         return segaid_error(user_id)
     if cookies == "MAINTENANCE":
         return maintenance_error(user_id)
@@ -978,7 +978,7 @@ def maimai_update(user_id, ver="jp"):
         return maintenance_error(user_id)
 
     if not user_info or not maimai_records or not recent_records:
-        logger.warning(f"Some data fetch failed for user {user_id} (user_info={bool(user_info)}, records={bool(maimai_records)}, recent={bool(recent_records)})")
+        logger.warning(f"[User] ⚠ Data fetch incomplete: user_id={user_id}, user_info={bool(user_info)}, records={bool(maimai_records)}, recent={bool(recent_records)}")
 
     error = False
 
@@ -1546,7 +1546,7 @@ def generate_internallevel_songs(user_id, level, ver="jp"):
         return ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
 
     except Exception as e:
-        logger.error(f"读取缓存失败: {e}")
+        logger.error(f"[Cache] ✗ Failed to read cache: cache_path={cache_path}, error={e}")
         return cache_not_found(user_id)
 
 def _generate_level_cache_for_server(ver):
@@ -1557,7 +1557,7 @@ def _generate_level_cache_for_server(ver):
         ver: 服务器版本（"jp" 或 "intl"）
     """
 
-    logger.info(f"[Cache] 开始为 {ver.upper()} 服务器生成等级缓存...")
+    logger.info(f"[Cache] → Starting level cache generation: server={ver.upper()}")
 
     read_dxdata(ver)
 
@@ -1605,11 +1605,11 @@ def _generate_level_cache_for_server(ver):
                     })
 
             if not song_data_list:
-                logger.info(f"[Cache] {ver.upper()} Lv.{level}: 无歌曲，跳过")
+                logger.info(f"[Cache] → Skip empty level: server={ver.upper()}, level={level}")
                 continue
 
             # 批量并发下载所有封面
-            logger.info(f"[Cache] {ver.upper()} Lv.{level}: 并发下载 {len(song_data_list)} 首歌曲封面...")
+            logger.info(f"[Cache] → Downloading covers: server={ver.upper()}, level={level}, count={len(song_data_list)}")
             cover_urls = [s['cover_url'] for s in song_data_list]
             downloaded_covers = batch_download_images(cover_urls, max_workers=5)
 
@@ -1625,7 +1625,7 @@ def _generate_level_cache_for_server(ver):
                     })
 
             if not target_data:
-                logger.warning(f"[Cache] {ver.upper()} Lv.{level}: 封面下载失败，跳过")
+                logger.warning(f"[Cache] ⚠ Cover download failed: server={ver.upper()}, level={level}")
                 continue
 
             # 生成图片
@@ -1649,14 +1649,14 @@ def _generate_level_cache_for_server(ver):
                 cache_generation_progress["completed_levels"] = generated_count
                 cache_generation_progress["progress"] = int((generated_count / 14) * 100)
 
-            logger.info(f"[Cache] {ver.upper()} Lv.{level}: ✓ ({len(target_data)} 首歌曲)")
+            logger.info(f"[Cache] ✓ Generated level cache: server={ver.upper()}, level={level}, songs={len(target_data)}")
 
         except Exception as e:
-            logger.warning(f"[Cache] {ver.upper()} Lv.{level}: ✗ 错误: {e}")
+            logger.warning(f"[Cache] ✗ Generation failed: server={ver.upper()}, level={level}, error={e}")
             import traceback
             traceback.print_exc()
 
-    logger.info(f"[Cache] {ver.upper()} 服务器缓存生成完成：{generated_count}/{len(valid_levels)} 个等级")
+    logger.info(f"[Cache] ✓ Server cache completed: server={ver.upper()}, generated={generated_count}/{len(valid_levels)}")
 
 def generate_all_level_caches():
     """后台生成所有服务器的等级缓存（带进度跟踪）"""
@@ -1678,7 +1678,7 @@ def generate_all_level_caches():
     try:
         _generate_level_cache_for_server("jp")
         _generate_level_cache_for_server("intl")
-        logger.info("[Cache] 所有等级缓存生成完成")
+        logger.info("[Cache] ✓ All level caches generated successfully")
 
         # 标记完成
         with stats_lock:
@@ -1693,9 +1693,9 @@ def generate_all_level_caches():
                     text="✅ 定数表缓存生成完成\n已为所有服务器生成12级及以上的定数表缓存"
                 ), configuration)
             except Exception as e:
-                logger.error(f"Failed to notify admin {admin_user_id} about cache completion: {e}")
+                logger.error(f"[Notification] ✗ Failed to notify admin: admin_id={admin_user_id}, context=cache_completion, error={e}")
     except Exception as e:
-        logger.error(f"[Cache] 缓存生成失败: {e}")
+        logger.error(f"[Cache] ✗ Generation failed: error={e}", exc_info=True)
         import traceback
         traceback.print_exc()
 
@@ -1706,7 +1706,7 @@ def generate_all_level_caches():
                     text=f"❌ 定数表缓存生成失败\n错误: {e}"
                 ), configuration)
             except Exception as notify_error:
-                logger.error(f"Failed to notify admin {admin_user_id} about cache failure: {notify_error}")
+                logger.error(f"[Notification] ✗ Failed to notify admin: admin_id={admin_user_id}, context=cache_failure, error={notify_error}")
 
 def create_user_info_img(user_info, scale=1.7):
     """
@@ -1756,7 +1756,7 @@ def create_user_info_img(user_info, scale=1.7):
                 return True
 
             except Exception as e:
-                logger.error(f"加载图片失败 {user_info[key]}: {e}")
+                logger.error(f"[Image] ✗ Failed to load image: url={user_info[key]}, error={e}")
                 return None
         return None
 
@@ -2435,7 +2435,7 @@ def handle_text_message(event):
     event.message.text = cleaned_text
 
     if original_text != cleaned_text:
-        logger.info(f"[Text Cleaning] Original: '{original_text}' -> Cleaned: '{cleaned_text}'")
+        logger.debug(f"[TextCleaning] Cleaned mention: original='{original_text}', cleaned='{cleaned_text}'")
 
     # 检查是否是web任务
     if route_to_web_queue(event):
@@ -2477,7 +2477,7 @@ def handle_sync_text_command(event):
             first_mention = mentionees[0]
             if hasattr(first_mention, 'user_id') and first_mention.user_id:
                 mentioned_user_id = first_mention.user_id
-                logger.info(f"[Mention] User {user_id} mentioned {mentioned_user_id}")
+                logger.info(f"[Mention] User mentioned: user_id={user_id}, mentioned_user_id={mentioned_user_id}")
 
     # 初始化用户版本和目标用户
     if user_id in USERS:
@@ -2736,14 +2736,14 @@ def handle_sync_text_command(event):
                         notification_message = dxdata_update_notification(admin_message_text, admin_user_id)
                         smart_push(admin_user_id, notification_message, configuration)
                     except Exception as e:
-                        logger.error(f"Failed to notify admin {admin_user_id}: {e}")
+                        logger.error(f"[Notification] ✗ Failed to notify admin: admin_id={admin_user_id}, context=dxdata_update, error={e}")
 
             # 将缓存生成任务添加到队列
             try:
                 cache_queue.put((generate_all_level_caches, ()), block=False)
-                logger.info("Cache generation task queued")
+                logger.info("[Cache] ✓ Task queued successfully")
             except queue.Full:
-                logger.warning("Cache queue is full, task not queued")
+                logger.warning("[Cache] ⚠ Queue is full, task not queued")
 
             return
 
@@ -2885,9 +2885,9 @@ def handle_image_message(event):
                 })
 
             image_queue.put_nowait((async_cover_matching_task, (user_id, event.reply_token, image), task_id))
-            logger.info(f"[Image Queue] Cover matching task queued for user {user_id}")
+            logger.info(f"[ImageQueue] ✓ Task queued: user_id={user_id}, task=cover_matching")
         except Exception as e:
-            logger.error(f"Failed to queue cover matching task: {e}")
+            logger.error(f"[ImageQueue] ✗ Failed to queue task: user_id={user_id}, task=cover_matching, error={e}")
             notify_admins_error(
                 error_title="Cover Matching Queue Error",
                 error_details=f"{type(e).__name__}: {str(e)}\n\n{traceback.format_exc()}",
@@ -2931,7 +2931,7 @@ def async_cover_matching_task(user_id, reply_token, image):
                 if reply_messages:
                     smart_reply(user_id, reply_token, reply_messages, configuration, DIVIDER)
             except Exception as e:
-                logger.error(f"Loading level cache error: {e}")
+                logger.error(f"[ImageMatcher] ✗ Result generation error: user_id={user_id}, error={e}")
                 notify_admins_error(
                     error_title="Cover Matching Result Generation Error",
                     error_details=f"{type(e).__name__}: {str(e)}\n\n{traceback.format_exc()}",
@@ -2942,9 +2942,9 @@ def async_cover_matching_task(user_id, reply_token, image):
                 )
         else:
             # 未找到匹配，静默处理（不推送错误给用户）
-            logger.info(f"No cover match found for user {user_id}")
+            logger.info(f"[ImageMatcher] No match found: user_id={user_id}")
     except Exception as e:
-        logger.error(f"Cover matching task error: {e}", exc_info=True)
+        logger.error(f"[ImageMatcher] ✗ Task error: user_id={user_id}, error={e}", exc_info=True)
         notify_admins_error(
             error_title="Cover Matching Task Error",
             error_details=f"{type(e).__name__}: {str(e)}\n\n{traceback.format_exc()}",
@@ -3058,7 +3058,7 @@ def get_user_nickname_wrapper(user_id, use_cache=True):
             if nickname and ("Unknown" in nickname or "API Error" in nickname or "Blocked" in nickname):
                 nickname = None
     except Exception as e:
-        logger.info(f"Failed to get LINE nickname for {user_id}: {e}")
+        logger.debug(f"[User] Failed to get LINE nickname: user_id={user_id}, error={e}")
         nickname = None
 
     # 如果LINE API失败,尝试从用户数据获取
@@ -3246,7 +3246,7 @@ def admin_trigger_update():
             'message': 'Task queue is full'
         }), 503
     except Exception as e:
-        logger.error(f"Admin trigger update error: {e}")
+        logger.error(f"[Admin] ✗ Trigger update error: user_id={user_id}, error={e}")
         return jsonify({
             'success': False,
             'message': str(e)
@@ -3285,7 +3285,7 @@ def admin_cancel_task():
         # 标记任务为已取消
         queued_task['status'] = 'cancelled'
 
-        logger.info(f"Admin cancelled task: {task_id}")
+        logger.info(f"[Admin] ✓ Task cancelled: task_id={task_id}")
 
     return jsonify({
         'success': True,
@@ -3315,7 +3315,7 @@ def admin_memory_stats():
         stats = memory_manager.get_stats()
         return jsonify({'success': True, 'stats': stats})
     except Exception as e:
-        logger.error(f"Admin memory stats error: {e}", exc_info=True)
+        logger.error(f"[Admin] ✗ Memory stats error: error={e}", exc_info=True)
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route("/linebot/admin/trigger_cleanup", methods=["POST"])
@@ -3329,7 +3329,7 @@ def admin_trigger_cleanup():
         stats = memory_manager.cleanup()
         return jsonify({'success': True, 'message': 'Memory cleanup completed', 'stats': stats})
     except Exception as e:
-        logger.error(f"Admin trigger cleanup error: {e}", exc_info=True)
+        logger.error(f"[Admin] ✗ Cleanup trigger error: error={e}", exc_info=True)
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route("/linebot/admin/get_notices", methods=["GET"])
@@ -3342,7 +3342,7 @@ def admin_get_notices():
         notices = get_all_notices()
         return jsonify({'success': True, 'notices': notices})
     except Exception as e:
-        logger.error(f"Admin get notices error: {e}", exc_info=True)
+        logger.error(f"[Admin] ✗ Get notices error: error={e}", exc_info=True)
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route("/linebot/admin/create_notice", methods=["POST"])
@@ -3361,7 +3361,7 @@ def admin_create_notice():
     try:
         notice_id = upload_notice(content)
         clear_user_value("notice_read", False)
-        logger.info(f"Admin created notice: {notice_id}")
+        logger.info(f"[Admin] ✓ Notice created: notice_id={notice_id}")
 
         return jsonify({
             'success': True,
@@ -3369,7 +3369,7 @@ def admin_create_notice():
             'notice_id': notice_id
         })
     except Exception as e:
-        logger.error(f"Admin create notice error: {e}", exc_info=True)
+        logger.error(f"[Admin] ✗ Create notice error: error={e}", exc_info=True)
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route("/linebot/admin/update_notice", methods=["POST"])
@@ -3397,16 +3397,16 @@ def admin_update_notice():
             # 如果修改的是最新公告，将全体用户状态修改为未阅读
             if is_latest:
                 clear_user_value("notice_read", False)
-                logger.info(f"Admin updated latest notice: {notice_id}, cleared all users' read status")
+                logger.info(f"[Admin] ✓ Updated latest notice: notice_id={notice_id}, read_status_cleared=all_users")
             else:
-                logger.info(f"Admin updated notice: {notice_id}")
+                logger.info(f"[Admin] ✓ Updated notice: notice_id={notice_id}")
 
             return jsonify({'success': True, 'message': 'Notice updated successfully'})
         else:
             return jsonify({'success': False, 'message': 'Notice not found'}), 404
 
     except Exception as e:
-        logger.error(f"Admin update notice error: {e}", exc_info=True)
+        logger.error(f"[Admin] ✗ Update notice error: error={e}", exc_info=True)
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route("/linebot/admin/delete_notice", methods=["POST"])
@@ -3427,13 +3427,13 @@ def admin_delete_notice():
         success = delete_notice(notice_id)
 
         if success:
-            logger.info(f"Admin deleted notice: {notice_id}")
+            logger.info(f"[Admin] ✓ Notice deleted: notice_id={notice_id}")
             return jsonify({'success': True, 'message': 'Notice deleted successfully'})
         else:
             return jsonify({'success': False, 'message': 'Notice not found'}), 404
 
     except Exception as e:
-        logger.error(f"Admin delete notice error: {e}", exc_info=True)
+        logger.error(f"[Admin] ✗ Delete notice error: error={e}", exc_info=True)
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route("/linebot/admin/edit_user", methods=["POST"])
@@ -3465,7 +3465,7 @@ def admin_edit_user():
         mark_user_dirty()
         write_user()
 
-        logger.info(f"Admin edited user data for {user_id}")
+        logger.info(f"[Admin] ✓ User data edited: user_id={user_id}")
 
         # 不再发送通知给管理员
 
@@ -3475,7 +3475,7 @@ def admin_edit_user():
         })
 
     except Exception as e:
-        logger.error(f"Admin edit user error: {e}", exc_info=True)
+        logger.error(f"[Admin] ✗ Edit user error: user_id={user_id}, error={e}", exc_info=True)
         return jsonify({
             'success': False,
             'message': str(e)
@@ -3507,7 +3507,7 @@ def admin_delete_user():
         # 使用 delete_user 函数删除用户
         delete_user(user_id)
 
-        logger.info(f"Admin deleted user: {user_id}")
+        logger.info(f"[Admin] ✓ User deleted: user_id={user_id}")
 
         return jsonify({
             'success': True,
@@ -3515,7 +3515,7 @@ def admin_delete_user():
         })
 
     except Exception as e:
-        logger.error(f"Admin delete user error: {e}", exc_info=True)
+        logger.error(f"[Admin] ✗ Delete user error: user_id={user_id}, error={e}", exc_info=True)
         return jsonify({
             'success': False,
             'message': str(e)
@@ -3533,7 +3533,7 @@ def admin_clear_cache():
             cache_size = len(nickname_cache)
             nickname_cache.clear()
 
-        logger.info(f"Admin cleared nickname cache ({cache_size} entries)")
+        logger.info(f"[Admin] ✓ Nickname cache cleared: entries={cache_size}")
 
         return jsonify({
             'success': True,
@@ -3541,7 +3541,7 @@ def admin_clear_cache():
         })
 
     except Exception as e:
-        logger.error(f"Admin clear cache error: {e}", exc_info=True)
+        logger.error(f"[Admin] ✗ Clear cache error: error={e}", exc_info=True)
         return jsonify({
             'success': False,
             'message': str(e)
@@ -3587,7 +3587,7 @@ def admin_get_user_data():
         })
 
     except Exception as e:
-        logger.error(f"Admin get user data error: {e}", exc_info=True)
+        logger.error(f"[Admin] ✗ Get user data error: user_id={user_id}, error={e}", exc_info=True)
         return jsonify({
             'success': False,
             'message': str(e)
@@ -3614,7 +3614,7 @@ def admin_load_nicknames():
         })
 
     except Exception as e:
-        logger.error(f"Admin load nicknames error: {e}", exc_info=True)
+        logger.error(f"[Admin] ✗ Load nicknames error: error={e}", exc_info=True)
         return jsonify({
             'success': False,
             'message': str(e)
@@ -3679,7 +3679,7 @@ def admin_dxdata_status():
         })
 
     except Exception as e:
-        logger.error(f"Admin DXData status error: {e}", exc_info=True)
+        logger.error(f"[Admin] ✗ DXData status error: error={e}", exc_info=True)
         return jsonify({
             'error': str(e)
         }), 500
@@ -3727,7 +3727,7 @@ def api_list_users():
                 })
 
         # 记录 API 访问日志
-        logger.info(f"API: List users via token {token_id} ({token_info['note']})")
+        logger.info(f"[API] List users: token_id={token_id}, note={token_info['note']}, count={len(users_list)}")
 
         return jsonify({
             "success": True,
@@ -3736,7 +3736,7 @@ def api_list_users():
         })
 
     except Exception as e:
-        logger.error(f"API list users error: {e}", exc_info=True)
+        logger.error(f"[API] ✗ List users error: error={e}", exc_info=True)
         return jsonify({
             "error": "Internal server error",
             "message": str(e)
@@ -3784,7 +3784,7 @@ def api_register_user(user_id):
 
         # 记录 API 访问日志
         token_info = request.token_info
-        logger.info(f"API: Register user {user_id} (nickname={nickname}, language={language}) via token {token_info['token_id']} ({token_info['note']})")
+        logger.info(f"[API] Register user: user_id={user_id}, nickname={nickname}, language={language}, token_id={token_info['token_id']}, note={token_info['note']}")
 
         # 读取用户数据
         if user_id in USERS:
@@ -3805,7 +3805,7 @@ def api_register_user(user_id):
         edit_user_value(user_id, "nickname", nickname)
         edit_user_value(user_id, "registered_via_token", token_info['token_id'])
         edit_user_value(user_id, "registered_at", datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-        logger.info(f"Created new user {user_id} via API token {token_info['token_id']}")
+        logger.info(f"[API] ✓ User created: user_id={user_id}, token_id={token_info['token_id']}")
 
         return jsonify({
             "success": True,
@@ -3818,7 +3818,7 @@ def api_register_user(user_id):
         })
 
     except Exception as e:
-        logger.error(f"API register user error: {e}", exc_info=True)
+        logger.error(f"[API] ✗ Register user error: user_id={user_id}, error={e}", exc_info=True)
         return jsonify({
             "error": "Internal server error",
             "message": str(e)
@@ -3841,7 +3841,7 @@ def api_get_user(user_id):
 
         # 记录 API 访问日志
         token_info = request.token_info
-        logger.info(f"API: Get user {user_id} via token {token_info['token_id']} ({token_info['note']})")
+        logger.info(f"[API] Get user: user_id={user_id}, token_id={token_info['token_id']}, note={token_info['note']}")
 
         return jsonify({
             "success": True,
@@ -3851,7 +3851,7 @@ def api_get_user(user_id):
         })
 
     except Exception as e:
-        logger.error(f"API get user error: {e}", exc_info=True)
+        logger.error(f"[API] ✗ Get user error: user_id={user_id}, error={e}", exc_info=True)
         return jsonify({
             "error": "Internal server error",
             "message": str(e)
@@ -3877,7 +3877,7 @@ def api_delete_user(user_id):
 
         # 记录 API 访问日志
         token_info = request.token_info
-        logger.info(f"API: Delete user {user_id} ({nickname}) via token {token_info['token_id']} ({token_info['note']})")
+        logger.info(f"[API] Delete user: user_id={user_id}, nickname={nickname}, token_id={token_info['token_id']}, note={token_info['note']}")
 
         return jsonify({
             "success": True,
@@ -3886,7 +3886,7 @@ def api_delete_user(user_id):
         })
 
     except Exception as e:
-        logger.error(f"API delete user error: {e}", exc_info=True)
+        logger.error(f"[API] ✗ Delete user error: user_id={user_id}, error={e}", exc_info=True)
         return jsonify({
             "error": "Internal server error",
             "message": str(e)
@@ -3926,7 +3926,7 @@ def api_request_permission(user_id):
             requester_name = token_info.get('note', token_id)
 
         # 记录 API 访问日志
-        logger.info(f"API: Request permission to user {user_id} via token {token_id} ({token_info['note']})")
+        logger.info(f"[API] Request permission: target_user_id={user_id}, token_id={token_id}, note={token_info['note']}")
 
         # 发送权限请求
         result = send_perm_request(token_id, user_id, requester_name)
@@ -3947,7 +3947,7 @@ def api_request_permission(user_id):
             }), status_code
 
     except Exception as e:
-        logger.error(f"API request permission error: {e}", exc_info=True)
+        logger.error(f"[API] ✗ Request permission error: user_id={user_id}, error={e}", exc_info=True)
         return jsonify({
             "error": "Internal server error",
             "message": str(e)
@@ -3973,7 +3973,7 @@ def api_get_perm_requests(user_id):
 
         # 记录 API 访问日志
         token_info = request.token_info
-        logger.info(f"API: Get permission requests for user {user_id} via token {token_info['token_id']} ({token_info['note']})")
+        logger.info(f"[API] Get permission requests: user_id={user_id}, token_id={token_info['token_id']}, note={token_info['note']}")
 
         return jsonify({
             "success": True,
@@ -3983,7 +3983,7 @@ def api_get_perm_requests(user_id):
         })
 
     except Exception as e:
-        logger.error(f"API get permission requests error: {e}", exc_info=True)
+        logger.error(f"[API] ✗ Get permission requests error: user_id={user_id}, error={e}", exc_info=True)
         return jsonify({
             "error": "Internal server error",
             "message": str(e)
@@ -4022,7 +4022,7 @@ def api_accept_perm_request(user_id):
 
         # 记录 API 访问日志
         token_info = request.token_info
-        logger.info(f"API: Accept permission request {request_id} for user {user_id} via token {token_info['token_id']} ({token_info['note']})")
+        logger.info(f"[API] Accept permission request: request_id={request_id}, user_id={user_id}, token_id={token_info['token_id']}, note={token_info['note']}")
 
         # 接受权限请求
         result = accept_perm_request(user_id, request_id)
@@ -4044,7 +4044,7 @@ def api_accept_perm_request(user_id):
             }), status_code
 
     except Exception as e:
-        logger.error(f"API accept permission request error: {e}", exc_info=True)
+        logger.error(f"[API] ✗ Accept permission request error: user_id={user_id}, request_id={request_id}, error={e}", exc_info=True)
         return jsonify({
             "error": "Internal server error",
             "message": str(e)
@@ -4082,7 +4082,7 @@ def api_reject_perm_request(user_id):
 
         # 记录 API 访问日志
         token_info = request.token_info
-        logger.info(f"API: Reject permission request {request_id} for user {user_id} via token {token_info['token_id']} ({token_info['note']})")
+        logger.info(f"[API] Reject permission request: request_id={request_id}, user_id={user_id}, token_id={token_info['token_id']}, note={token_info['note']}")
 
         # 拒绝权限请求
         result = reject_perm_request(user_id, request_id)
@@ -4104,7 +4104,7 @@ def api_reject_perm_request(user_id):
             }), status_code
 
     except Exception as e:
-        logger.error(f"API reject permission request error: {e}", exc_info=True)
+        logger.error(f"[API] ✗ Reject permission request error: user_id={user_id}, request_id={request_id}, error={e}", exc_info=True)
         return jsonify({
             "error": "Internal server error",
             "message": str(e)
@@ -4142,7 +4142,7 @@ def api_revoke_perm(user_id):
 
         # 记录 API 访问日志
         token_info = request.token_info
-        logger.info(f"API: Revoke permission for token {target_token_id} from user {user_id} via token {token_info['token_id']} ({token_info['note']})")
+        logger.info(f"[API] Revoke permission: target_token_id={target_token_id}, user_id={user_id}, token_id={token_info['token_id']}, note={token_info['note']}")
 
         # 加载 dev tokens
         dev_tokens = load_dev_tokens()
@@ -4173,7 +4173,7 @@ def api_revoke_perm(user_id):
             }), 404
 
     except Exception as e:
-        logger.error(f"API revoke permission error: {e}", exc_info=True)
+        logger.error(f"[API] ✗ Revoke permission error: user_id={user_id}, target_token_id={target_token_id}, error={e}", exc_info=True)
         return jsonify({
             "error": "Internal server error",
             "message": str(e)
@@ -4247,7 +4247,7 @@ def api_get_task_status(task_id):
         }), 404
 
     except Exception as e:
-        logger.error(f"API get task status error: {e}", exc_info=True)
+        logger.error(f"[API] ✗ Get task status error: task_id={task_id}, error={e}", exc_info=True)
         return jsonify({
             "error": "Internal server error",
             "message": str(e)
@@ -4291,7 +4291,7 @@ def api_update_user(user_id):
 
             # 记录 API 访问日志
             token_info = request.token_info
-            logger.info(f"API: Triggered update for user {user_id} via token {token_info['token_id']} ({token_info['note']})")
+            logger.info(f"[API] ✓ Update triggered: user_id={user_id}, task_id={task_id}, token_id={token_info['token_id']}, note={token_info['note']}")
 
             return jsonify({
                 "success": True,
@@ -4309,7 +4309,7 @@ def api_update_user(user_id):
             }), 503
 
     except Exception as e:
-        logger.error(f"API update user error: {e}", exc_info=True)
+        logger.error(f"[API] ✗ Update user error: user_id={user_id}, error={e}", exc_info=True)
         return jsonify({
             "error": "Internal server error",
             "message": str(e)
@@ -4337,7 +4337,7 @@ def api_get_records(user_id):
 
         # 记录 API 访问日志
         token_info = request.token_info
-        logger.info(f"API: Get records for user {user_id} (type={record_type}) via token {token_info['token_id']} ({token_info['note']})")
+        logger.info(f"[API] Get records: user_id={user_id}, type={record_type}, token_id={token_info['token_id']}, note={token_info['note']}")
 
         # 验证 record_type
         valid_types = ["best50", "best100", "best35", "best15", "allb50", "allb100", "allb200", "allb35", "apb50", "rct50", "idealb50", "UNKNOWN"]
@@ -4388,7 +4388,7 @@ def api_get_records(user_id):
         })
 
     except Exception as e:
-        logger.error(f"API get records error: {e}", exc_info=True)
+        logger.error(f"[API] ✗ Get records error: user_id={user_id}, error={e}", exc_info=True)
         return jsonify({
             "error": "Internal server error",
             "message": str(e)
@@ -4445,7 +4445,7 @@ def api_search_songs():
             }), 400
 
         # 记录 API 访问日志
-        logger.info(f"API: Search songs with query '{query}' via token {token_info['token_id']} ({token_info['note']})")
+        logger.info(f"[API] Search songs: query='{query}', token_id={token_info['token_id']}, note={token_info['note']}")
 
         # 读取歌曲数据
         read_dxdata(ver)
@@ -4520,7 +4520,7 @@ def api_search_songs():
 
 
     except Exception as e:
-        logger.error(f"API search songs error: {e}", exc_info=True)
+        logger.error(f"[API] ✗ Search songs error: query='{query}', error={e}", exc_info=True)
         return jsonify({
             "error": "Internal server error",
             "message": str(e)
@@ -4544,7 +4544,7 @@ def api_get_versions():
     try:
         # 记录 API 访问日志
         token_info = request.token_info
-        logger.info(f"API: Get versions info via token {token_info['token_id']} ({token_info['note']})")
+        logger.info(f"[API] Get versions: token_id={token_info['token_id']}, note={token_info['note']}")
 
         read_dxdata()
 
@@ -4554,7 +4554,7 @@ def api_get_versions():
         })
 
     except Exception as e:
-        logger.error(f"API get versions error: {e}", exc_info=True)
+        logger.error(f"[API] ✗ Get versions error: error={e}", exc_info=True)
         return jsonify({
             "error": "Internal server error",
             "message": str(e)
@@ -4564,25 +4564,25 @@ if __name__ == "__main__":
     # ==================== 系统启动自检 ====================
     # 在启动 worker 线程之前执行系统自检
     logger.info("=" * 60)
-    logger.info("JiETNG Maimai DX LINE Bot Starting...")
+    logger.info("[System] → Starting JiETNG Maimai DX LINE Bot...")
     logger.info("=" * 60)
 
     try:
         # 读取用户数据
-        logger.info("Loading User List...")
+        logger.info("[System] → Loading user list...")
         load_user()
         system_check_results = run_system_check()
 
         # 如果有关键问题，显示警告
         if system_check_results["overall_status"] == "WARNING":
-            logger.info("⚠️  WARNING: System check found some issues")
-            logger.info("   Check logs for details")
+            logger.info("[System] ⚠ System check found some issues")
+            logger.info("[System] → Check logs for details")
         else:
-            logger.info("✓ System check passed")
+            logger.info("[System] ✓ System check passed")
 
     except Exception as e:
-        logger.info(f"⚠️  System check failed: {e}")
-        logger.info("   Continuing startup anyway...")
+        logger.info(f"[System] ⚠ System check failed: error={e}")
+        logger.info("[System] → Continuing startup anyway...")
 
     # 启动 worker 线程
     for i in range(MAX_CONCURRENT_IMAGE_TASKS):
@@ -4594,11 +4594,11 @@ if __name__ == "__main__":
     # 启动缓存生成 worker（只需1个）
     threading.Thread(target=cache_worker, daemon=True, name="CacheWorker-1").start()
 
-    logger.info(f"Started {MAX_CONCURRENT_IMAGE_TASKS} image workers, {WEB_MAX_CONCURRENT_TASKS} web task workers, and 1 cache worker")
+    logger.info(f"[System] ✓ Workers started: image={MAX_CONCURRENT_IMAGE_TASKS}, web={WEB_MAX_CONCURRENT_TASKS}, cache=1")
 
     # 启动内存管理器
     memory_manager.start()
-    logger.info("Memory manager started successfully")
+    logger.info("[System] ✓ Memory manager started")
 
     # 注册清理函数（在内存管理器的清理循环中调用）
     def custom_cleanup():
@@ -4614,9 +4614,9 @@ if __name__ == "__main__":
             cleanup_result = clean_unbound_users()
             cleaned_unbound_users = cleanup_result.get('deleted_count', 0)
 
-            logger.info(f"Custom cleanup: {cleaned_nicknames} nicknames, {cleaned_rate_limits} rate limit entries, {cleaned_unbound_users} unbound users")
+            logger.info(f"[System] ✓ Custom cleanup completed: nicknames={cleaned_nicknames}, rate_limits={cleaned_rate_limits}, unbound_users={cleaned_unbound_users}")
         except Exception as e:
-            logger.error(f"Custom cleanup error: {e}", exc_info=True)
+            logger.error(f"[System] ✗ Custom cleanup error: error={e}", exc_info=True)
 
     # 覆盖内存管理器的cleanup方法，加入自定义清理
     original_cleanup = memory_manager.cleanup
@@ -4631,4 +4631,4 @@ if __name__ == "__main__":
     finally:
         # 停止内存管理器
         memory_manager.stop()
-        logger.info("Memory manager stopped")
+        logger.info("[System] Memory manager stopped")

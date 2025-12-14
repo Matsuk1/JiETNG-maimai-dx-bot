@@ -21,11 +21,11 @@ def _upload_to_uguu(img):
             if data.get("success") and data.get("files"):
                 return data["files"][0]["url"]
             else:
-                logger.error(" Upload failed:", data)
+                logger.error(f"[ImageUploader] ✗ Uguu upload failed: data={data}")
         else:
-            logger.error(" Request failed:", resp.status_code)
+            logger.error(f"[ImageUploader] ✗ Uguu request failed: status={resp.status_code}")
     except Exception as e:
-        logger.error(" Response parsing error:", e)
+        logger.error(f"[ImageUploader] ✗ Uguu response parsing error: error={e}")
 
     return None
 
@@ -42,16 +42,16 @@ def _upload_to_0x0(img):
         if response.status_code == 200 and response.text.startswith("https://0x0.st/"):
             return response.text.strip()
         else:
-            logger.error(" Upload failed:", response.text)
+            logger.error(f"[ImageUploader] ✗ 0x0 upload failed: response={response.text}")
     except Exception as e:
-        logger.error(" Exception:", e)
+        logger.error(f"[ImageUploader] ✗ 0x0 exception: error={e}")
 
     return None
 
 def _upload_to_imgur(img):
     """上传图片到 Imgur"""
     if not IMGUR_CLIENT_ID:
-        logger.error(" Client ID not configured")
+        logger.error("[ImageUploader] ✗ Imgur client ID not configured")
         return None
 
     url = "https://api.imgur.com/3/image"
@@ -70,11 +70,11 @@ def _upload_to_imgur(img):
             if data.get("success") and data.get("data"):
                 return data["data"]["link"]
             else:
-                logger.error(" Upload failed:", data)
+                logger.error(f"[ImageUploader] ✗ Imgur upload failed: data={data}")
         else:
-            logger.error(" Request failed:", response.status_code, response.text)
+            logger.error(f"[ImageUploader] ✗ Imgur request failed: status={response.status_code}, response={response.text}")
     except Exception as e:
-        logger.error(" Exception:", e)
+        logger.error(f"[ImageUploader] ✗ Imgur exception: error={e}")
 
     return None
 
@@ -94,12 +94,12 @@ def smart_upload(img):
     original_io.seek(0)
 
     # 上传原图
-    logger.info(" Uploading original image...")
+    logger.info("[ImageUploader] → Uploading original image")
     original_url = None
 
     # 优先尝试 imgur
     if IMGUR_CLIENT_ID:
-        logger.info(" Using imgur to upload original")
+        logger.info("[ImageUploader] → Using imgur to upload original")
         url = "https://api.imgur.com/3/image"
         headers = {"Authorization": f"Client-ID {IMGUR_CLIENT_ID}"}
         files = {'image': original_io}
@@ -111,12 +111,12 @@ def smart_upload(img):
                 if data.get("success") and data.get("data"):
                     original_url = data["data"]["link"]
         except Exception as e:
-            logger.error(f" Exception: {e}")
+            logger.error(f"[ImageUploader] ✗ Imgur upload exception: error={e}")
 
         original_io.seek(0)  # 重置指针以供后续使用
 
     if not original_url:
-        logger.info(" Using uguu to upload original")
+        logger.info("[ImageUploader] → Using uguu to upload original")
         files = {'files[]': ('image.png', original_io, 'image/png')}
         try:
             resp = requests.post("https://uguu.se/upload.php", files=files)
@@ -125,24 +125,24 @@ def smart_upload(img):
                 if data.get("success") and data.get("files"):
                     original_url = data["files"][0]["url"]
         except Exception as e:
-            logger.error(f" Exception: {e}")
+            logger.error(f"[ImageUploader] ✗ Uguu upload exception: error={e}")
 
         original_io.seek(0)
 
     if not original_url:
-        logger.info(" Using 0x0 to upload original")
+        logger.info("[ImageUploader] → Using 0x0 to upload original")
         files = {'file': ('image.png', original_io, 'image/png')}
         try:
             response = requests.post("https://0x0.st", files=files)
             if response.status_code == 200 and response.text.startswith("https://0x0.st/"):
                 original_url = response.text.strip()
         except Exception as e:
-            logger.error(f" Exception: {e}")
+            logger.error(f"[ImageUploader] ✗ 0x0 upload exception: error={e}")
 
     if not original_url:
-        logger.info(" Original upload failed")
+        logger.error("[ImageUploader] ✗ All upload methods failed")
         return None, None
 
     # 不再上传预览图，直接使用原图
-    logger.info(f" Upload complete - original: {original_url}")
+    logger.info(f"[ImageUploader] ✓ Upload complete: url={original_url}")
     return original_url, original_url

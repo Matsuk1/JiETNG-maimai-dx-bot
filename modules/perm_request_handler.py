@@ -85,7 +85,7 @@ def send_perm_request(token_id: str, to_user_id: str, requester_name: str = None
     user_perm_requests.append(request_data)
     edit_user_value(to_user_id, 'perm_requests', user_perm_requests)
 
-    logger.info(f"Permission request sent: token {token_id} -> user {to_user_id}")
+    logger.info(f"[Permission] ✓ Request sent: token_id={token_id}, target_user={to_user_id}, request_id={request_id}")
 
     return {
         "success": True,
@@ -157,7 +157,7 @@ def accept_perm_request(user_id: str, request_id: str) -> dict:
     requests.remove(request_data)
     edit_user_value(user_id, 'perm_requests', requests)
 
-    logger.info(f"Permission granted: token {token_id} can now access user {user_id}")
+    logger.info(f"[Permission] ✓ Request accepted: token_id={token_id}, user_id={user_id}, request_id={request_id}")
 
     return {
         "success": True,
@@ -207,7 +207,7 @@ def reject_perm_request(user_id: str, request_id: str) -> dict:
     requests.remove(request_data)
     edit_user_value(user_id, 'perm_requests', requests)
 
-    logger.info(f"Permission rejected: token {request_data['token_id']} request for user {user_id}")
+    logger.info(f"[Permission] Request rejected: token_id={request_data['token_id']}, user_id={user_id}, request_id={request_id}")
 
     return {
         "success": True,

@@ -69,7 +69,7 @@ def download_and_cache_icon(url, save_path):
         return Image.open(save_path).convert("RGBA")
 
     except Exception as e:
-        logger.error(f"Error downloading {url}: {e}")
+        logger.error(f"[ImageCache] ✗ Download failed: url={url}, error={e}")
         return None
 
 
@@ -101,7 +101,7 @@ def get_cached_image(url):
         response.raise_for_status()
         return Image.open(BytesIO(response.content))
     except Exception as e:
-        logger.error(f"Error loading {url}: {e}")
+        logger.error(f"[ImageCache] ✗ Failed to load image: url={url}, error={e}")
         return None
 
 
@@ -131,7 +131,7 @@ def paste_icon_optimized(img, song_data, key, size, position, save_dir, url_func
             img.paste(icon_img, position, mask=icon_img)
 
     except Exception as e:
-        logger.error(f"paste_icon_optimized error for '{key}': {e}")
+        logger.error(f"[ImageCache] ✗ Failed to paste icon: key={key}, error={e}")
 
 
 def get_cover_image(cover_url, cover_name, covers_dir=None):
@@ -161,13 +161,13 @@ def get_cover_image(cover_url, cover_name, covers_dir=None):
             try:
                 return Image.open(local_path).convert("RGBA")
             except Exception as e:
-                logger.warning(f"Error loading local file {local_path}: {e}, will re-download")
+                logger.warning(f"[ImageCache] ⚠ Local file corrupted, re-downloading: path={local_path}, error={e}")
                 # 如果本地文件损坏，删除它并重新下载
                 os.remove(local_path)
 
         # 2. 本地不存在，从 URL 下载
         if not cover_url:
-            logger.warning(f"No cover_url provided for {cover_name}")
+            logger.warning(f"[ImageCache] ⚠ No cover URL provided: cover_name={cover_name}")
             return None
 
         session = _get_session()
@@ -190,19 +190,21 @@ def get_cover_image(cover_url, cover_name, covers_dir=None):
 
             except requests.exceptions.Timeout:
                 if attempt < max_retries - 1:
+                    logger.warning(f"[ImageCache] ⚠ Download timeout, retrying: cover_name={cover_name}, attempt={attempt + 1}/{max_retries}")
                     continue  # 重试
                 else:
-                    logger.error(f"Timeout after {max_retries} attempts for {cover_name}")
+                    logger.error(f"[ImageCache] ✗ Download timeout after retries: cover_name={cover_name}, attempts={max_retries}")
                     return None
             except requests.exceptions.HTTPError as e:
                 # 403/404 等 HTTP 错误不重试
                 if e.response.status_code in [403, 404]:
+                    logger.warning(f"[ImageCache] ⚠ HTTP error (no retry): cover_name={cover_name}, status={e.response.status_code}")
                     return None
-                logger.error(f"HTTP Error for {cover_name}: {e}")
+                logger.error(f"[ImageCache] ✗ HTTP error: cover_name={cover_name}, error={e}")
                 return None
 
     except Exception as e:
-        logger.error(f"Error downloading cover {cover_name}: {e}")
+        logger.error(f"[ImageCache] ✗ Failed to download cover: cover_name={cover_name}, error={e}")
         return None
 
 
@@ -224,7 +226,7 @@ def batch_download_images(urls, max_workers=5):
             img = get_cached_image(url)
             return url, img
         except Exception as e:
-            logger.error(f"Error downloading {url}: {e}")
+            logger.error(f"[ImageCache] ✗ Batch download failed: url={url}, error={e}")
             return url, None
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
