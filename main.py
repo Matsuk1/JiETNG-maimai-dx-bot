@@ -849,22 +849,22 @@ def user_unbind(user_id):
     return msg
 
 def user_bind_sega_id(user_id, sega_id):
-    if user_id not in USERS :
+    if user_id not in USERS:
         add_user(user_id)
     edit_user_value(user_id, 'sega_id', sega_id)
 
 def user_bind_sega_pwd(user_id, sega_pwd):
-    if user_id not in USERS :
+    if user_id not in USERS:
         add_user(user_id)
     edit_user_value(user_id, 'sega_pwd', sega_pwd)
 
 def user_set_version(user_id, version):
-    if user_id not in USERS :
+    if user_id not in USERS:
         add_user(user_id)
     edit_user_value(user_id, 'version', version)
 
 def user_set_language(user_id, language):
-    if user_id not in USERS :
+    if user_id not in USERS:
         add_user(user_id)
     edit_user_value(user_id, 'language', language)
 
@@ -1407,32 +1407,32 @@ def generate_plate_rcd(user_id, title, ver="jp"):
         return info_error(user_id)
 
     version_name = title[0]
-    plate_type = title[1:]
+    plate_type = title[1:].replace("极", "極")
 
     target_version = []
     target_icon = []
     target_type = ""
 
-    for version in VERSIONS :
-        if version_name in version['abbr'] :
+    for version in VERSIONS:
+        if version_name in version['abbr']:
             target_version.append(version['version'])
 
-    if not len(target_version) :
+    if not len(target_version):
         return version_error(user_id)
 
-    if plate_type in ["極", "极"] :
+    if plate_type == "極":
         target_type = "combo"
         target_icon = ["fc", "fcp", "ap", "app"]
 
-    elif plate_type == "将" :
+    elif plate_type == "将":
         target_type = "score"
         target_icon = ["sss", "sssp"]
 
-    elif plate_type == "神" :
+    elif plate_type == "神":
         target_type = "combo"
         target_icon = ["ap", "app"]
 
-    elif plate_type == "舞舞" :
+    elif plate_type == "舞舞":
         target_type = "sync"
         target_icon = ["fdx", "fdxp"]
 
@@ -1469,11 +1469,11 @@ def generate_plate_rcd(user_id, title, ver="jp"):
         key2 = (normalized_name, difficulty, type)
         rcd_map[key2] = rcd
 
-    for song in SONGS :
+    for song in SONGS:
         if song['version'] not in target_version or song['type'] == 'utage':
             continue
 
-        for sheet in song['sheets'] :
+        for sheet in song['sheets']:
             if not sheet['regions']['jp'] or sheet["difficulty"] not in target_num:
                 continue
 
@@ -1502,8 +1502,30 @@ def generate_plate_rcd(user_id, title, ver="jp"):
                     if icon in target_icon:
                         target_num[difficulty]['clear'] += 1
 
-            if sheet['difficulty'] == "master" :
-                target_data.append({"img": generate_cover(song['cover_url'], song_type, icon, target_type, cover_name=song.get('cover_name')), "level": sheet['level']})
+            if sheet['difficulty'] == "master":
+                # 构建 complete_info：检查所有难度是否符合牌子条件
+                complete_info = {}
+                for diff in ["basic", "advanced", "expert", "master"]:
+                    # 尝试查找该难度的记录
+                    key_check = (song_title, diff, song_type)
+                    key_check_normalized = (normalize_text(song_title), diff, song_type)
+
+                    meets_condition = False
+                    if key_check in rcd_map:
+                        rcd = rcd_map[key_check]
+                        diff_icon = rcd[f'{target_type}_icon']
+                        meets_condition = diff_icon in target_icon
+                    elif key_check_normalized in rcd_map:
+                        rcd = rcd_map[key_check_normalized]
+                        diff_icon = rcd[f'{target_type}_icon']
+                        meets_condition = diff_icon in target_icon
+
+                    complete_info[diff] = meets_condition
+
+                target_data.append({
+                    "img": generate_cover(song['cover_url'], song_type, icon, target_type, cover_name=song.get('cover_name'), complete_info=complete_info),
+                    "level": sheet['level']
+                })
 
     img = generate_plate_image(target_data, title, headers = target_num)
 
@@ -1943,10 +1965,10 @@ def generate_records(user_id, type="best50", command="", ver="jp"):
     return message
 
 def generate_friend_b50(user_id, friend_code, ver="jp"):
-    if user_id not in USERS :
+    if user_id not in USERS:
         return segaid_error(user_id)
 
-    elif 'sega_id' not in USERS[user_id] or 'sega_pwd' not in USERS[user_id] :
+    elif 'sega_id' not in USERS[user_id] or 'sega_pwd' not in USERS[user_id]:
         return segaid_error(user_id)
 
     sega_id = USERS[user_id]['sega_id']
@@ -1987,7 +2009,7 @@ def generate_friend_b50(user_id, friend_code, ver="jp"):
     up_songs, down_songs = select_records(friend_records, "best50", "", ver)
 
     user_info_img = create_user_info_img(friend_info)
-    rcd_img = generate_records_picture(up_songs, down_songs, "FRD-B50")
+    rcd_img = generate_records_picture(up_songs, down_songs, "BEST50")
     img = compose_images([user_info_img, rcd_img])
     original_url, preview_url = smart_upload(img)
 
@@ -2052,11 +2074,11 @@ def generate_version_songs(user_id, version_title, ver="jp"):
     target_icon = []
     target_type = ""
 
-    for version in VERSIONS :
-        if version_title.lower() == version['version'].lower() :
+    for version in VERSIONS:
+        if version_title.lower() == version['version'].lower():
             target_version.append(version['version'])
 
-    if not len(target_version) :
+    if not len(target_version):
         return version_error(user_id)
 
     songs_data = list(filter(lambda x: x['version'] in target_version and x['type'] not in ['utage'], SONGS))
@@ -2469,20 +2491,30 @@ def handle_sync_text_command(event):
     # 用户上下文初始化
     # ========================================
 
-    # 检查 @ mention
+    # 检查 @ mention（仅提取信息，不阻断非命令消息）
     mentioned_user_id = None
     if hasattr(event.message, 'mention') and event.message.mention:
         mentionees = event.message.mention.mentionees
-        if mentionees and len(mentionees) > 0:
+        if mentionees:
+            # 多个 mention 时只取第一个用户
+            if len(mentionees) >= 2:
+                logger.debug(f"[Mention] Multiple mentions detected, using first one: user_id={user_id}")
             first_mention = mentionees[0]
             if hasattr(first_mention, 'user_id') and first_mention.user_id:
                 mentioned_user_id = first_mention.user_id
-                logger.info(f"[Mention] User mentioned: user_id={user_id}, mentioned_user_id={mentioned_user_id}")
+                if mentioned_user_id in USERS:
+                    logger.info(f"[Mention] User mentioned: user_id={user_id}, mentioned_user_id={mentioned_user_id}")
+                else:
+                    logger.debug(f"[Mention] Mentioned user not registered: mentioned_user_id={mentioned_user_id}")
 
     # 初始化用户版本和目标用户
     if user_id in USERS:
         mai_ver = USERS[user_id].get("version", "jp")
-        id_use = mentioned_user_id if mentioned_user_id else USERS[user_id].get("id_use", user_id)
+        # 只有当 mentioned_user_id 存在且已注册时才使用
+        if mentioned_user_id and mentioned_user_id in USERS:
+            id_use = mentioned_user_id
+        else:
+            id_use = user_id
         mai_ver_use = USERS[id_use].get("version", "jp") if id_use in USERS else mai_ver
 
         # 重置 id_use（非 mention 情况）

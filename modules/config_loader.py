@@ -35,7 +35,8 @@ default_config = {
         "font": "./assets/fonts/mplus-jietng.ttf",
         "logo": "./assets/pics/logo.png",
         "level_cache": "./data/level_cache",
-        "covers": "./data/covers",
+        "covers": "./assets/covers",
+        "plates": "./assets/plates",
         "icon_type": "./assets/icon/type",
         "icon_score": "./assets/icon/score",
         "icon_dx_star": "./assets/icon/dx_star",
@@ -139,6 +140,7 @@ FONT_PATH = FILE_PATH["font"]
 LOGO_PATH = FILE_PATH["logo"]
 LEVEL_CACHE_DIR = FILE_PATH["level_cache"]
 COVERS_DIR = FILE_PATH["covers"]
+PLATES_DIR = FILE_PATH["plates"]
 ICON_TYPE_DIR = FILE_PATH["icon_type"]
 ICON_SCORE_DIR = FILE_PATH["icon_score"]
 ICON_DX_STAR_DIR = FILE_PATH["icon_dx_star"]

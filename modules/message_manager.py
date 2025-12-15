@@ -203,6 +203,18 @@ friend_rcd_error_text = {
     "zh": "这个人可能不是你的好友！"
 }
 
+mention_error_text = {
+    "ja": "メンションされたユーザーはまだ登録してないみたい！",
+    "en": "The mentioned user hasn't registered yet!",
+    "zh": "被提到的用户好像还没有注册！"
+}
+
+multiple_mention_error_text = {
+    "ja": "ごめん！一度に複数のユーザーをメンションできないよ〜",
+    "en": "Sorry! You can't mention multiple users at once~",
+    "zh": "抱歉！不能一次提到多个用户哦~"
+}
+
 
 # 权限请求通知相关文本
 perm_request_notification_title_text = {
@@ -913,6 +925,14 @@ def friend_error(user_id=None):
 def friend_rcd_error(user_id=None):
     """生成好友记录错误消息"""
     return create_text_message(friend_rcd_error_text, user_id)
+
+def mention_error(user_id=None):
+    """生成提到用户不存在错误消息"""
+    return create_text_message(mention_error_text, user_id)
+
+def multiple_mention_error(user_id=None):
+    """生成多个用户提到错误消息"""
+    return create_text_message(multiple_mention_error_text, user_id)
 
 def get_perm_request_notification_alt_text(count, user_id=None):
     """获取权限请求通知的 alt text"""

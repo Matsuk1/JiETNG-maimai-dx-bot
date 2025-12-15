@@ -39,6 +39,54 @@ def clean_unbound_users() -> Dict[str, Any]:
     return result
 
 
+def clean_deprecated_user_fields() -> Dict[str, Any]:
+    """
+    清理用户数据中的废弃字段
+    删除不再使用的字段：friend_requests, id_use, line_friends, beta, beta_ver
+    """
+
+    deprecated_fields = ["friend_requests", "id_use", "line_friends", "beta", "beta_ver"]
+    cleaned_users = []
+    total_fields_removed = 0
+
+    # 遍历所有用户
+    for user_id, user_data in USERS.items():
+        fields_removed = []
+
+        # 检查并删除废弃字段
+        for field in deprecated_fields:
+            if field in user_data:
+                del user_data[field]
+                fields_removed.append(field)
+                total_fields_removed += 1
+
+        # 如果有字段被删除，标记用户数据为脏数据并记录
+        if fields_removed:
+            mark_user_dirty(user_id)
+            cleaned_users.append({
+                "user_id": user_id,
+                "removed_fields": fields_removed
+            })
+            logger.debug(f"[SystemCheck] Cleaned deprecated fields: user_id={user_id}, fields={fields_removed}")
+
+    # 如果有修改，写入文件
+    if cleaned_users:
+        write_user()
+
+    result = {
+        "cleaned_user_count": len(cleaned_users),
+        "total_fields_removed": total_fields_removed,
+        "cleaned_users": cleaned_users
+    }
+
+    if cleaned_users:
+        logger.info(f"[SystemCheck] ✓ Cleaned deprecated fields: users={len(cleaned_users)}, fields_removed={total_fields_removed}")
+    else:
+        logger.info("[SystemCheck] ✓ No deprecated fields found")
+
+    return result
+
+
 def check_database_connection() -> bool:
     """
     检查数据库连接是否正常
@@ -121,16 +169,20 @@ def run_system_check() -> Dict[str, Any]:
     }
 
     # 1. 数据库连接检查
-    logger.info("[SystemCheck] → Phase 1/3: Checking database connection...")
+    logger.info("[SystemCheck] → Phase 1/4: Checking database connection...")
     results["checks"]["database"] = check_database_connection()
 
     # 2. 必要文件检查
-    logger.info("[SystemCheck] → Phase 2/3: Checking required files...")
+    logger.info("[SystemCheck] → Phase 2/4: Checking required files...")
     results["checks"]["files"] = check_required_files()
 
     # 3. 清理未绑定的代理用户
-    logger.info("[SystemCheck] → Phase 3/3: Cleaning unbound users...")
+    logger.info("[SystemCheck] → Phase 3/4: Cleaning unbound users...")
     results["checks"]["cleanup"] = clean_unbound_users()
+
+    # 4. 清理废弃的用户字段
+    logger.info("[SystemCheck] → Phase 4/4: Cleaning deprecated user fields...")
+    results["checks"]["deprecated_fields"] = clean_deprecated_user_fields()
 
     # 生成报告
     logger.info("=" * 60)
@@ -141,6 +193,10 @@ def run_system_check() -> Dict[str, Any]:
     cleanup = results["checks"]["cleanup"]
     if cleanup["deleted_count"] > 0:
         logger.info(f"[SystemCheck] ✓ Deleted unbound users: count={cleanup['deleted_count']}")
+
+    deprecated_cleanup = results["checks"]["deprecated_fields"]
+    if deprecated_cleanup["cleaned_user_count"] > 0:
+        logger.info(f"[SystemCheck] ✓ Cleaned deprecated fields: users={deprecated_cleanup['cleaned_user_count']}, fields={deprecated_cleanup['total_fields_removed']}")
 
     all_pass = results["checks"]["database"]
     if all_pass:

@@ -1,10 +1,12 @@
 import math
 import logging
+import os
 
 from PIL import Image, ImageDraw
 
 from modules.config_loader import (
     LOGO_PATH,
+    PLATES_DIR,
     ICON_TYPE_DIR,
     ICON_SCORE_DIR,
     ICON_DX_STAR_DIR,
@@ -268,12 +270,12 @@ def generate_records_picture(up_songs=[], down_songs=[], title="RECORD"):
     up_level = down_level = 0
     up_score = down_score = 0
 
-    for rcd in up_songs :
+    for rcd in up_songs:
         up_ra += rcd['ra']
         up_level += rcd['internalLevelValue']
         up_score += float(rcd['score'][:-1])
 
-    for rcd in down_songs :
+    for rcd in down_songs:
         down_ra += rcd['ra']
         down_level += rcd['internalLevelValue']
         down_score += float(rcd['score'][:-1])
@@ -424,7 +426,7 @@ def generate_records_picture(up_songs=[], down_songs=[], title="RECORD"):
     return combined
 
 
-def generate_cover(cover, type, icon=None, icon_type=None, size=150, cover_name=None):
+def generate_cover(cover, type, icon=None, icon_type=None, size=150, cover_name=None, complete_info=None):
     """
     生成歌曲封面图片，带有类型标识和可选图标
 
@@ -452,17 +454,31 @@ def generate_cover(cover, type, icon=None, icon_type=None, size=150, cover_name=
         record_img.paste(cover_img, (0, 0))
 
     # 添加 type 图标（std/dx）- 按比例缩放
+    # 如果有 complete_info，放在右上角；否则放在右下角
     type_width = int(size * 0.5)
     type_height = int(size * 0.15)
+    if complete_info is not None:
+        # 有圆点信息时，type 放在右上角
+        type_position = (img_width - type_width, 0)
+    else:
+        # 无圆点信息时，type 放在右下角（原位置）
+        type_position = (img_width - type_width, img_height - type_height)
+
     paste_icon_optimized(
         record_img,
         {'type': type},
         key='type',
         size=(type_width, type_height),
-        position=(img_width - type_width, img_height - type_height),
+        position=type_position,
         save_dir=ICON_TYPE_DIR,
         url_func=lambda value: "https://maimaidx.jp/maimai-mobile/img/music_standard.png" if value == "std" else "https://maimaidx.jp/maimai-mobile/img/music_dx.png"
     )
+
+    # 检查底部是否有圆点容器
+    has_bottom_content = False
+    if complete_info:
+        difficulties = ["basic", "advanced", "expert", "master"]
+        has_bottom_content = any(complete_info.get(diff, False) for diff in difficulties)
 
     # 如果提供了 icon 和 icon_type，显示对应的图标
     if icon and icon_type and icon != "back":
@@ -475,8 +491,8 @@ def generate_cover(cover, type, icon=None, icon_type=None, size=150, cover_name=
                 # 转换为 RGBA 以支持透明度
                 record_img = record_img.convert("RGBA")
 
-                # 计算缩放 - 按比例缩放图标
-                icon_width = int(size * 0.867)  # 130/150 ≈ 0.867
+                # 计算缩放 - 按比例缩放图标（缩小一点）
+                icon_width = int(size * 0.75)  # 原来 0.867，缩小到 0.75
                 aspect_ratio = icon_img.height / icon_img.width
                 new_height = int(icon_width * aspect_ratio)
                 resized_img = icon_img.resize((icon_width, new_height), Image.Resampling.LANCZOS)
@@ -485,13 +501,75 @@ def generate_cover(cover, type, icon=None, icon_type=None, size=150, cover_name=
                 shadow = Image.new("RGBA", record_img.size, (0, 0, 0, 150))
                 record_img = Image.alpha_composite(record_img, shadow)
 
-                # 粘贴图标
+                # 粘贴图标（只有底部有内容时才往上移）
                 x_offset = (record_img.width - icon_width) // 2
-                y_offset = (record_img.height - new_height) // 2
+                if has_bottom_content:
+                    y_offset = (record_img.height - new_height) // 2 - int(size * 0.08)  # 往上移动 8%
+                else:
+                    y_offset = (record_img.height - new_height) // 2  # 垂直居中
                 record_img.paste(resized_img, (x_offset, y_offset), resized_img.convert("RGBA"))
 
         except Exception as e:
             logger.error(f"[RecordGenerator] ✗ Failed to load icon: icon={icon}, error={e}")
+
+    # 绘制难度完成情况小圆点
+    if complete_info:
+        # 所有难度列表（按顺序）
+        difficulties = ["basic", "advanced", "expert", "master"]
+
+        # 检查是否有任何难度为 True
+        has_any_true = any(complete_info.get(diff, False) for diff in difficulties)
+
+        # 只有当至少有一个难度为 True 时才绘制容器和圆点
+        if has_any_true:
+            record_img = record_img.convert("RGBA")
+            draw = ImageDraw.Draw(record_img)
+
+            # 圆点参数（放大为原来的 1.5 倍）
+            dot_radius = int(size * 0.04 * 1.5)  # 圆点半径：size 的 6%
+            dot_y = img_height - dot_radius - int(size * 0.05)  # 距离底部 5%
+
+            # 计算圆点间距和起始位置（固定为4个位置，居中）
+            num_positions = len(difficulties)
+            total_dots_width = (num_positions - 1) * (dot_radius * 4)  # 圆点之间的总宽度
+            start_x = (img_width - total_dots_width) // 2  # 居中起始位置
+            spacing_between = dot_radius * 4  # 圆点之间的间距
+
+            # 绘制半透明灰白色背景容器
+            container_padding_horizontal = int(dot_radius * 2.0)  # 左右内边距更大
+            container_padding_vertical = int(dot_radius * 0.8)    # 上下内边距更小
+            container_x1 = start_x - container_padding_horizontal
+            container_y1 = dot_y - dot_radius - container_padding_vertical
+            container_x2 = start_x + total_dots_width + container_padding_horizontal
+            container_y2 = dot_y + dot_radius + container_padding_vertical
+
+            # 创建半透明容器层
+            container_layer = Image.new("RGBA", record_img.size, (0, 0, 0, 0))
+            container_draw = ImageDraw.Draw(container_layer)
+            container_draw.rounded_rectangle(
+                [container_x1, container_y1, container_x2, container_y2],
+                radius=int(dot_radius * 0.8),
+                fill=(240, 240, 240, 160)  # 灰白色，透明度约 63%
+            )
+
+            # 将容器层合成到图像上
+            record_img = Image.alpha_composite(record_img, container_layer)
+            draw = ImageDraw.Draw(record_img)
+
+            # 从左往右绘制小圆点（遍历所有难度）
+            for i, diff in enumerate(difficulties):
+                if complete_info.get(diff, False):
+                    # 如果该难度为 True，绘制对应颜色的圆点
+                    color = _get_difficulty_color(diff)
+                    dot_x = start_x + i * spacing_between
+
+                    # 绘制圆点
+                    draw.ellipse(
+                        [dot_x - dot_radius, dot_y - dot_radius,
+                         dot_x + dot_radius, dot_y + dot_radius],
+                        fill=color
+                    )
+                # 如果为 False，留空（不绘制）
 
     return record_img.convert("RGB")
 
@@ -509,7 +587,7 @@ def generate_plate_image(target_data, title, img_width=1700, img_height=600, max
         if row_imgs:
             rows.append((level, row_imgs))
 
-    total_height = rows_num * row_height + margin + 170 + 190
+    total_height = rows_num * row_height + margin + 170 + 40
 
     final_img = Image.new("RGB", (img_width, total_height), "white")
     draw = ImageDraw.Draw(final_img)
@@ -520,11 +598,39 @@ def generate_plate_image(target_data, title, img_width=1700, img_height=600, max
         draw.text((margin + 350, margin + add_), f"{value['clear']} / {value['all']}", fill="black", font=font_huge)
         add_ += 40
 
-    # 添加右侧标题
-    title_text_size = draw.textlength(f"{title}の達成表", font=font_huge_huge)
-    title_x = img_width - margin - title_text_size - 30
-    title_y = margin - 25
-    draw.text((title_x, title_y), f"{title}の達成表", fill=(206, 206, 206), font=font_huge_huge)
+    # 添加右侧标题（称号图片）
+    try:
+        plate_path = os.path.join(PLATES_DIR, f"{title}.webp")
+        if os.path.exists(plate_path):
+            plate_img = Image.open(plate_path).convert("RGBA")
+
+            # 原图尺寸 390x60，缩放到合适大小（保持宽高比）
+            # 目标高度 120px（1.5倍）
+            target_height = 120
+            aspect_ratio = plate_img.width / plate_img.height
+            target_width = int(target_height * aspect_ratio)
+            plate_img = plate_img.resize((target_width, target_height), Image.Resampling.LANCZOS)
+
+            # 位置：右上角，增加与顶部的间距
+            plate_x = img_width - margin - target_width - 30
+            plate_y = margin + 30
+
+            # 贴上称号图片（支持透明）
+            final_img.paste(plate_img, (plate_x, plate_y), plate_img)
+        else:
+            # 如果图片不存在，回退到文字显示
+            title_text_size = draw.textlength(title, font=font_huge_huge)
+            title_x = img_width - margin - title_text_size - 30
+            title_y = margin - 25
+            draw.text((title_x, title_y), title, fill=(206, 206, 206), font=font_huge_huge)
+            logger.debug(f"[RecordGenerator] Plate image not found, using text: plate={title}")
+    except Exception as e:
+        # 出错时回退到文字显示
+        title_text_size = draw.textlength(title, font=font_huge_huge)
+        title_x = img_width - margin - title_text_size - 30
+        title_y = margin - 25
+        draw.text((title_x, title_y), title, fill=(206, 206, 206), font=font_huge_huge)
+        logger.error(f"[RecordGenerator] ✗ Failed to load plate image: plate={title}, error={e}")
 
     # 渲染主体图像内容
     y_offset = margin + 30 + 180
