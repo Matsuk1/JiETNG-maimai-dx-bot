@@ -23,6 +23,10 @@ default_config = {
         "jp": [],
         "intl": []
     },
+    "temp_version": {
+        "abbr": "",
+        "title": ""
+    },
     "domain": "",
     "port": 5000,
     "file_path": {
@@ -121,6 +125,7 @@ with open(CONFIG_PATH, 'w', encoding='utf-8') as f:
 ADMIN_ID = _config["admin_id"]
 ADMIN_PASSWORD = _config["admin_password"]
 MAIMAI_VERSION = _config["maimai_version"]
+TEMP_VERSION = _config["temp_version"]
 
 # 域名字段
 DOMAIN = _config["domain"]
