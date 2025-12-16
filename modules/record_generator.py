@@ -592,11 +592,87 @@ def generate_plate_image(target_data, title, img_width=1700, img_height=600, max
     final_img = Image.new("RGB", (img_width, total_height), "white")
     draw = ImageDraw.Draw(final_img)
 
-    add_ = 15
-    for key, value in headers.items():
-        draw.text((margin + 50, margin + add_), f"{key.upper()}:", fill="black", font=font_huge)
-        draw.text((margin + 350, margin + add_), f"{value['clear']} / {value['all']}", fill="black", font=font_huge)
-        add_ += 40
+    # 绘制左侧信息栏：卡片式容器（2列布局）
+    card_start_x = margin + 10  # 往左移动（从30改为10）
+    card_y = margin + 15
+    card_width = 305
+    card_height = 65
+    card_gap_x = 15  # 横向间距
+    card_gap_y = 12  # 纵向间距
+    border_width = 8
+
+    final_img = final_img.convert("RGBA")
+
+    for idx, (key, value) in enumerate(headers.items()):
+        # 计算卡片位置（2列布局，先上下后左右）
+        row = idx % 2  # 行索引（0 或 1）
+        col = idx // 2  # 列索引
+        card_x = card_start_x + col * (card_width + card_gap_x)
+        current_y = card_y + row * (card_height + card_gap_y)
+
+        # 获取难度对应的颜色
+        difficulty_color = _get_difficulty_color(key)
+
+        # 创建卡片层用于阴影和圆角
+        card_layer = Image.new("RGBA", final_img.size, (0, 0, 0, 0))
+        card_draw = ImageDraw.Draw(card_layer)
+
+        # 绘制阴影效果（稍微偏移）
+        shadow_offset = 3
+        card_draw.rounded_rectangle(
+            [card_x + shadow_offset, current_y + shadow_offset,
+             card_x + card_width + shadow_offset, current_y + card_height + shadow_offset],
+            radius=12,
+            fill=(0, 0, 0, 30)
+        )
+
+        # 绘制卡片主体背景（使用浅色版本的难度颜色）
+        r, g, b = difficulty_color[:3]
+        light_r = int(r + (255 - r) * 0.85)
+        light_g = int(g + (255 - g) * 0.85)
+        light_b = int(b + (255 - b) * 0.85)
+        bg_color = (light_r, light_g, light_b, 255)
+
+        card_draw.rounded_rectangle(
+            [card_x, current_y, card_x + card_width, current_y + card_height],
+            radius=12,
+            fill=bg_color
+        )
+
+        # 绘制左侧彩色边框
+        card_draw.rounded_rectangle(
+            [card_x, current_y, card_x + border_width, current_y + card_height],
+            radius=12,
+            fill=difficulty_color + (255,) if len(difficulty_color) == 3 else difficulty_color
+        )
+
+        # 将卡片层合成到图像上
+        final_img = Image.alpha_composite(final_img, card_layer)
+        draw = ImageDraw.Draw(final_img)
+
+        # 绘制难度名称（左侧，边框后）
+        text_x = card_x + border_width + 15
+        text_y = current_y + (card_height - 30) // 2
+        difficulty_text = f"{key.upper()}"
+        draw.text((text_x, text_y), difficulty_text, fill=(60, 60, 60), font=font_huge)
+
+        # 判断是否全部完成
+        is_completed = value['clear'] == value['all'] and value['all'] > 0
+
+        # 绘制数据（右侧对齐）
+        if is_completed:
+            # 全部完成时显示 "✓"
+            data_text = "✓"
+        else:
+            # 未完成时显示进度
+            data_text = f"{value['clear']} / {value['all']}"
+
+        data_text_width = draw.textlength(data_text, font=font_huge)
+        data_x = card_x + card_width - data_text_width - 15  # 右侧对齐
+        draw.text((data_x, text_y), data_text, fill=(40, 40, 40), font=font_huge)
+
+    final_img = final_img.convert("RGB")
+    draw = ImageDraw.Draw(final_img)  # 转换后重新创建 draw 对象
 
     # 添加右侧标题（称号图片）
     try:
@@ -605,15 +681,16 @@ def generate_plate_image(target_data, title, img_width=1700, img_height=600, max
             plate_img = Image.open(plate_path).convert("RGBA")
 
             # 原图尺寸 390x60，缩放到合适大小（保持宽高比）
-            # 目标高度 120px（1.5倍）
-            target_height = 120
+            # 目标高度 160px（120 * 4/3）
+            target_height = 160
             aspect_ratio = plate_img.width / plate_img.height
             target_width = int(target_height * aspect_ratio)
             plate_img = plate_img.resize((target_width, target_height), Image.Resampling.LANCZOS)
 
-            # 位置：右上角，增加与顶部的间距
-            plate_x = img_width - margin - target_width - 30
-            plate_y = margin + 30
+            # 位置：右上角，横向中轴线不变（调整 y 坐标以保持中轴线）
+            plate_x = img_width - margin - target_width - 10  # 往右移动（从30改为10）
+            original_center_y = margin + 30 + 60  # 原来 120px 高度时的中心线
+            plate_y = original_center_y - target_height // 2  # 新的 y 坐标
 
             # 贴上称号图片（支持透明）
             final_img.paste(plate_img, (plate_x, plate_y), plate_img)

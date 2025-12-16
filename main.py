@@ -1413,6 +1413,9 @@ def generate_plate_rcd(user_id, title, ver="jp"):
     target_icon = []
     target_type = ""
 
+    if version_name in TEMP_VERSION["abbr"]:
+        target_version.append(TEMP_VERSION["title"])
+
     for version in VERSIONS:
         if version_name in version['abbr']:
             target_version.append(version['version'])
