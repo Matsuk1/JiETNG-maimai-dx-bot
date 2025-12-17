@@ -431,10 +431,8 @@ JiETNG/
 │   ├── song_generator.py      # Song chart generation
 │   ├── image_manager.py       # Image processing
 │   ├── image_cache.py         # Image caching
-│   ├── image_matcher.py       # Image recognition (cover matching with hash + SIFT features)
 │   ├── image_uploader.py      # Image hosting upload (Imgur/uguu/0x0)
 │   ├── bindtoken_manager.py   # Bind token management
-│   ├── friendlist_generator.py # Friend list generation (Flex Message)
 │   ├── notice_manager.py      # Announcement system
 │   ├── dxdata_manager.py      # Song data management
 │   ├── json_encrypt.py        # Encryption utilities
@@ -444,9 +442,7 @@ JiETNG/
 │   ├── memory_manager.py      # Memory management and cleanup
 │   ├── system_checker.py      # System self-check
 │   ├── storelist_generator.py # Arcade store list generation (Flex Message)
-│   ├── friend_request_generator.py # Friend request generation (Flex Message)
-│   ├── friend_request_handler.py  # Friend request handling
-│   └── message_manager.py     # Multi-language message management (with announcements and tips)
+│   └── message_manager.py     # Multi-language message management (with announcements)
 ├── templates/                 # HTML templates
 │   ├── bind_form.html         # Account binding form
 │   ├── success.html           # Success page

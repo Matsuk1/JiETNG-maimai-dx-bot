@@ -371,10 +371,8 @@ JiETNG/
 │   ├── song_generator.py      # 楽曲チャート生成
 │   ├── image_manager.py       # 画像処理
 │   ├── image_cache.py         # 画像キャッシュ
-│   ├── image_matcher.py       # 画像認識（カバーマッチング、ハッシュ+SIFT特徴点対応）
 │   ├── image_uploader.py      # 画像アップロード（Imgur/uguu/0x0）
 │   ├── bindtoken_manager.py   # バインドトークン管理
-│   ├── friendlist_generator.py # フレンドリスト生成（Flex Message）
 │   ├── notice_manager.py      # お知らせシステム
 │   ├── dxdata_manager.py      # 楽曲データ管理
 │   ├── json_encrypt.py        # 暗号化ツール
@@ -384,9 +382,7 @@ JiETNG/
 │   ├── memory_manager.py      # メモリ管理とクリーンアップ
 │   ├── system_checker.py      # システム自己診断
 │   ├── storelist_generator.py # 設置店舗リスト生成（Flex Message）
-│   ├── friend_request_generator.py # フレンド申請生成（Flex Message）
-│   ├── friend_request_handler.py  # フレンド申請処理
-│   └── message_manager.py     # 多言語メッセージ管理（お知らせと Tips 含む）
+│   └── message_manager.py     # 多言語メッセージ管理（お知らせ含む）
 ├── templates/                 # HTML テンプレート
 │   ├── bind_form.html         # アカウント連携フォーム
 │   ├── success.html           # 成功ページ

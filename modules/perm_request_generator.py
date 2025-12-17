@@ -2,7 +2,6 @@
 权限请求Flex消息模块
 
 生成权限请求的Flex消息，包含"承認"（同意）和"拒否"（拒绝）按钮
-采用与friend_request相同的极简黑白风格
 """
 
 from linebot.v3.messaging import FlexMessage, FlexContainer
@@ -88,9 +87,9 @@ def generate_perm_request_message(requests: list, user_id: str = None) -> FlexMe
                     "style": "primary",
                     "height": "sm",
                     "action": {
-                        "type": "message",
+                        "type": "postback",
                         "label": accept_label,
-                        "text": f"accept-perm-request {req['request_id']}"
+                        "data": f"accept-perm-request {req['request_id']}"
                     }
                 },
                 {
@@ -98,9 +97,9 @@ def generate_perm_request_message(requests: list, user_id: str = None) -> FlexMe
                     "style": "secondary",
                     "height": "sm",
                     "action": {
-                        "type": "message",
+                        "type": "postback",
                         "label": reject_label,
-                        "text": f"reject-perm-request {req['request_id']}"
+                        "data": f"reject-perm-request {req['request_id']}"
                     }
                 }
             ]

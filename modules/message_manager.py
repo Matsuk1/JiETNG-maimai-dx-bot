@@ -4,6 +4,7 @@ from linebot.v3.messaging import (
     QuickReply,
     QuickReplyItem,
     MessageAction,
+    PostbackAction,
     URIAction,
     FlexMessage,
     FlexContainer
@@ -512,74 +513,33 @@ friend_list_alt_text = {
     "zh": "收藏的好友"
 }
 
+# 查看好友 B50 按钮显示文本
+view_friend_b50_text = {
+    "ja": "{name} の B50 を表示",
+    "en": "View {name}'s B50",
+    "zh": "查看 {name} 的 B50"
+}
+
+# Note 分数计算按钮文本
+calc_button_text = {
+    "ja": "ノーツ計算",
+    "en": "Note Calc",
+    "zh": "Note 计算"
+}
+
+# Note 分数计算 alt_text
+calc_button_alt_text = {
+    "ja": "ノーツ計算",
+    "en": "Note Calculation",
+    "zh": "Note 分数计算"
+}
+
 # 附近机厅列表 alt_text
 nearby_stores_alt_text = {
     "ja": "最寄りの maimai 設置店舗",
     "en": "Nearby maimai Arcade Stores",
     "zh": "附近的 maimai 机厅"
 }
-
-# ============================================================
-# Tips メッセージリスト / Tips Messages (多语言支持)
-# ============================================================
-
-tip_messages = [
-    {
-        "ja": "💡 定期的に「maimai update」でデータを更新すると、最新のスコアが反映されるよ！",
-        "en": "💡 Regularly use 'maimai update' to sync your latest scores!",
-        "zh": "💡 定期使用「maimai update」更新数据，可以反映最新分数！"
-    },
-    {
-        "ja": "💡 フレンド機能を使えば、友達のスコアと比較できるよ！",
-        "en": "💡 Use the friend feature to compare scores with your friends!",
-        "zh": "💡 使用好友功能可以和朋友比较分数！"
-    },
-    {
-        "ja": "💡 困ったときは「help」コマンドで使い方を確認できるよ！",
-        "en": "💡 Type 'help' to learn how to use the bot!",
-        "zh": "💡 输入「help」可以查看使用方法！"
-    },
-    {
-        "ja": "💡 「calc [tap] [hold] [slide] ([touch])  [break]」でノーツ数を入力すると、各ノーツの達成率が計算できるよ！",
-        "en": "💡 Use 'calc [tap] [hold] [slide] ([touch]) [break]' to calculate achievement rates for each kind of notes!",
-        "zh": "💡 使用「calc [tap] [hold] [slide] ([touch]) [break]」输入 note 数量，可以计算各类note对应的达成率！"
-    },
-    {
-        "ja": "💡 位置情報を送信すると、近くのmaimaiゲーセンを検索できるよ！",
-        "en": "💡 Send your location to find nearby maimai arcades!",
-        "zh": "💡 发送位置信息可以搜索附近的 maimai 游戏厅！"
-    },
-    {
-        "ja": "💡 「ランダム曲」で迷った時にランダムに曲を選んでくれるよ！",
-        "en": "💡 Use 'random-song' to randomly pick a song when you can't decide!",
-        "zh": "💡 使用「random-song」在犹豫时随机选择歌曲！"
-    },
-    {
-        "ja": "💡 「宴極の達成状況」のように入力すると、プレート達成状況が見られるよ！",
-        "en": "💡 Type commands like '宴極 achievement' to view plate achievement status!",
-        "zh": "💡 输入「宴極 achievement」等命令可以查看牌子达成情况！"
-    },
-    {
-        "ja": "💡 より詳細な楽曲検索は https://dxrating.net をご利用ください！",
-        "en": "💡 For more accurate song queries, visit https://dxrating.net!",
-        "zh": "💡 想要更精确的歌曲查询？请访问 https://dxrating.net！"
-    },
-    {
-        "ja": "💡 二次元コードの画像を送信すると、自動的に認識して処理するよ！",
-        "en": "💡 Send a QR code image and it will be automatically recognized and processed!",
-        "zh": "💡 发送二维码图片可以自动识别并处理！"
-    },
-    {
-        "ja": "💡 ジャケット画像を送信すると、楽曲を認識できるよ！",
-        "en": "💡 Send a song jacket image to identify the song!",
-        "zh": "💡 发送曲绘图片可以识别歌曲！"
-    },
-    {
-        "ja": "💡 「rct50」コマンドで最近プレイした50曲が見られるよ！",
-        "en": "💡 Use 'rct50' to view your recently played 50 songs!",
-        "zh": "💡 使用「rct50」命令可查看最近游玩的50首歌！"
-    },
-]
 
 donate_message = FlexMessage(
     alt_text="JiETNGを支援 · Support JiETNG",
@@ -742,11 +702,13 @@ def get_support_quick_reply(user_id=None):
 
 def get_update_quick_reply(user_id=None):
     """获取更新相关的 QuickReply"""
+    label = get_quick_reply_label("maimai_update", user_id)
     return QuickReply(
         items=[
             QuickReplyItem(action=MessageAction(
-                label=get_quick_reply_label("maimai_update", user_id),
-                text="maimai update"
+                label=label,
+                text="maimai update",
+                display_text=label
             )),
             QuickReplyItem(action=URIAction(
                 label=get_quick_reply_label("support", user_id),
@@ -757,11 +719,13 @@ def get_update_quick_reply(user_id=None):
 
 def get_bind_quick_reply(user_id=None):
     """获取绑定相关的 QuickReply"""
+    label = get_quick_reply_label("bind", user_id)
     return QuickReply(
         items=[
             QuickReplyItem(action=MessageAction(
-                label=get_quick_reply_label("bind", user_id),
-                text="bind"
+                label=label,
+                text="bind",
+                display_text=label
             )),
             QuickReplyItem(action=URIAction(
                 label=get_quick_reply_label("support", user_id),
@@ -772,15 +736,19 @@ def get_bind_quick_reply(user_id=None):
 
 def get_update_over_quick_reply(user_id=None):
     """获取更新完成后的 QuickReply"""
+    label_rct50 = get_quick_reply_label("recent_50", user_id)
+    label_ab50 = get_quick_reply_label("all_best_50", user_id)
     return QuickReply(
         items=[
             QuickReplyItem(action=MessageAction(
-                label=get_quick_reply_label("recent_50", user_id),
-                text="rct50"
+                label=label_rct50,
+                text="rct50",
+                display_text=label_rct50
             )),
             QuickReplyItem(action=MessageAction(
-                label=get_quick_reply_label("all_best_50", user_id),
-                text="ab50"
+                label=label_ab50,
+                text="ab50",
+                display_text=label_ab50
             )),
             QuickReplyItem(action=URIAction(
                 label=get_quick_reply_label("support", user_id),
@@ -791,11 +759,13 @@ def get_update_over_quick_reply(user_id=None):
 
 def get_update_error_quick_reply(user_id=None):
     """获取更新错误后的 QuickReply"""
+    label = get_quick_reply_label("retry", user_id)
     return QuickReply(
         items=[
             QuickReplyItem(action=MessageAction(
-                label=get_quick_reply_label("retry", user_id),
-                text="maimai update"
+                label=label,
+                text="maimai update",
+                display_text=label
             )),
             QuickReplyItem(action=URIAction(
                 label=get_quick_reply_label("support", user_id),
@@ -806,11 +776,13 @@ def get_update_error_quick_reply(user_id=None):
 
 def get_segaid_error_quick_reply(user_id=None):
     """获取 SEGA ID 错误的 QuickReply"""
+    label = get_quick_reply_label("account_bind", user_id)
     return QuickReply(
         items=[
             QuickReplyItem(action=MessageAction(
-                label=get_quick_reply_label("account_bind", user_id),
-                text="bind"
+                label=label,
+                text="bind",
+                display_text=label
             )),
             QuickReplyItem(action=URIAction(
                 label=get_quick_reply_label("support", user_id),
@@ -821,11 +793,13 @@ def get_segaid_error_quick_reply(user_id=None):
 
 def get_record_error_quick_reply(user_id=None):
     """获取记录错误的 QuickReply"""
+    label = get_quick_reply_label("maimai_update", user_id)
     return QuickReply(
         items=[
             QuickReplyItem(action=MessageAction(
-                label=get_quick_reply_label("maimai_update", user_id),
-                text="maimai update"
+                label=label,
+                text="maimai update",
+                display_text=label
             )),
             QuickReplyItem(action=URIAction(
                 label=get_quick_reply_label("support", user_id),
@@ -966,6 +940,77 @@ def get_notice_header(user_id=None):
     """获取公告标题（多语言）"""
     return get_multilingual_text(notice_header_text, user_id)
 
+def generate_notice_flex(notice_json, user_id=None):
+    """
+    生成公告 FlexMessage
+
+    Args:
+        notice_json: 公告数据 {"id": "...", "content": "...", "date": "..."}
+        user_id: 用户ID（用于多语言）
+
+    Returns:
+        FlexMessage
+    """
+    title = get_notice_header(user_id)
+    content = notice_json.get('content', '')
+    date = notice_json.get('date', '')
+
+    bubble = {
+        "type": "bubble",
+        "size": "kilo",
+        "header": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+                {
+                    "type": "text",
+                    "text": title,
+                    "weight": "bold",
+                    "size": "md",
+                    "color": "#FFFFFF"
+                }
+            ],
+            "backgroundColor": "#FF6B35",
+            "paddingAll": "16px"
+        },
+        "body": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+                {
+                    "type": "text",
+                    "text": content,
+                    "wrap": True,
+                    "size": "sm",
+                    "color": "#333333",
+                    "margin": "none"
+                }
+            ],
+            "paddingAll": "20px",
+            "backgroundColor": "#FFFFFF"
+        },
+        "footer": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+                {
+                    "type": "text",
+                    "text": date,
+                    "size": "xs",
+                    "color": "#999999",
+                    "align": "end"
+                }
+            ],
+            "paddingAll": "12px",
+            "backgroundColor": "#F5F5F5"
+        }
+    }
+
+    return FlexMessage(
+        alt_text=title,
+        contents=FlexContainer.from_dict(bubble)
+    )
+
 def get_friend_list_alt_text(user_id=None):
     """获取好友列表 alt_text（多语言）"""
     return get_multilingual_text(friend_list_alt_text, user_id)
@@ -973,6 +1018,50 @@ def get_friend_list_alt_text(user_id=None):
 def get_nearby_stores_alt_text(user_id=None):
     """获取附近机厅列表 alt_text（多语言）"""
     return get_multilingual_text(nearby_stores_alt_text, user_id)
+
+def get_calc_button_label(user_id=None):
+    """获取定数计算按钮标签（多语言）"""
+    return get_multilingual_text(calc_button_text, user_id)
+
+def get_calc_button_alt_text(user_id=None):
+    """获取定数计算按钮 alt_text（多语言）"""
+    return get_multilingual_text(calc_button_alt_text, user_id)
+
+def generate_calc_button(song_id, user_id=None):
+    """
+    生成 Note 计算按钮（FlexMessage）
+
+    Args:
+        song_id: 歌曲ID
+        user_id: 用户ID（用于多语言）
+
+    Returns:
+        FlexMessage
+    """
+    return FlexMessage(
+        alt_text=get_calc_button_alt_text(user_id),
+        contents=FlexContainer.from_dict({
+            "type": "bubble",
+            "size": "nano",
+            "body": {
+                "type": "box",
+                "layout": "vertical",
+                "contents": [
+                    {
+                        "type": "button",
+                        "style": "secondary",
+                        "height": "sm",
+                        "action": {
+                            "type": "postback",
+                            "label": get_calc_button_label(user_id),
+                            "data": f"calc-song {song_id}"
+                        }
+                    }
+                ],
+                "paddingAll": "8px"
+            }
+        })
+    )
 
 def build_dxdata_update_message(result, user_id=None):
     """
@@ -2334,9 +2423,10 @@ def generate_friend_buttons(user_id, alt_text, friend_list, group_size=10):
                         "style": "secondary",
                         "height": "sm",
                         "action": {
-                            "type": "message",
+                            "type": "postback",
                             "label": "→",
-                            "text": f"friend-b50 {friend_id}"
+                            "data": f"friend-b50 {friend_id}",
+                            "displayText": get_multilingual_text(view_friend_b50_text, user_id).format(name=name)
                         }
                     }
                 ]

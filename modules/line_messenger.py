@@ -22,49 +22,16 @@ from modules.user_manager import get_user_value, edit_user_value
 from modules.notice_manager import get_latest_notice
 from modules.perm_request_handler import get_pending_perm_requests
 from modules.perm_request_generator import generate_perm_request_message
-from modules.message_manager import tip_messages, get_notice_header, generate_error_alert_flex
+from modules.message_manager import generate_notice_flex, generate_error_alert_flex
 
 logger = logging.getLogger(__name__)
 
 
-def get_random_tip(user_id=None):
-    """
-    从 tip_messages 列表中随机返回一条 tips（支持多语言）
-
-    Args:
-        user_id: 用户ID，用于获取用户语言设置
-
-    Returns:
-        TextMessage: 随机选择的 tips 消息
-    """
-    if not tip_messages:
-        return None
-
-    # 获取用户语言设置，默认为日语
-    language = 'ja'
-    if user_id and user_id in USERS:
-        language = get_user_value(user_id, "language") or 'ja'
-
-    # 随机选择一条 tip
-    tip = random.choice(tip_messages)
-
-    # 获取对应语言的文本，如果不存在则使用日语
-    if isinstance(tip, dict):
-        tip_text = tip.get(language, tip.get('ja', ''))
-    else:
-        # 兼容旧格式（纯字符串）
-        tip_text = tip
-
-    if tip_text:
-        return TextMessage(text=tip_text)
-    return None
-
-
 def smart_reply(user_id: str, reply_token: str, messages, configuration: Configuration, divider: str = "-" * 33):
     """
-    智能回复函数 - 自动附加好友申请、未读公告和 tips
+    智能回复函数 - 自动附加好友申请、未读公告
 
-    消息优先级：好友申请 > 公告 > Tips
+    消息优先级：好友申请 > 公告
     仅当消息数量 < 5 时才添加附加消息
 
     Args:
@@ -105,16 +72,9 @@ def smart_reply(user_id: str, reply_token: str, messages, configuration: Configu
             if not notice_read:
                 notice_json = get_latest_notice()
                 if notice_json:
-                    notice_header = get_notice_header(user_id)
-                    notice = f"{notice_header}\n{divider}\n{notice_json['content']}\n{divider}\n{notice_json['date']}"
-                    messages.append(TextMessage(text=notice))
+                    notice_flex = generate_notice_flex(notice_json, user_id)
+                    messages.append(notice_flex)
                     edit_user_value(user_id, "notice_read", True)
-
-        # 优先级3: Tips 消息（只在还有空间时添加）
-        if len(messages) < 5 and random.random() < 0.10:
-            tip_msg = get_random_tip(user_id)
-            if tip_msg:
-                messages.append(tip_msg)
 
     # 如果有保存的 quick_reply，将其移动到最后一条消息上
     if saved_quick_reply is not None and messages:

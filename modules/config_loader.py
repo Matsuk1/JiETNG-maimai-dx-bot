@@ -39,6 +39,7 @@ default_config = {
         "font": "./assets/fonts/mplus-jietng.ttf",
         "logo": "./assets/pics/logo.png",
         "level_cache": "./data/level_cache",
+        "versions": "./assets/versions",
         "covers": "./assets/covers",
         "plates": "./assets/plates",
         "icon_type": "./assets/icon/type",
@@ -144,6 +145,7 @@ DEV_TOKENS_FILE = FILE_PATH["dev_tokens"]
 FONT_PATH = FILE_PATH["font"]
 LOGO_PATH = FILE_PATH["logo"]
 LEVEL_CACHE_DIR = FILE_PATH["level_cache"]
+VERSIONS_DIR = FILE_PATH["versions"]
 COVERS_DIR = FILE_PATH["covers"]
 PLATES_DIR = FILE_PATH["plates"]
 ICON_TYPE_DIR = FILE_PATH["icon_type"]

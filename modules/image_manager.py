@@ -2,6 +2,7 @@ import qrcode
 import logging
 from PIL import Image, ImageDraw, ImageFont
 from modules.config_loader import FONT_PATH, LOGO_PATH
+import numpy as np
 
 # 全局字体对象（一次性加载）
 font_title = ImageFont.truetype(FONT_PATH, 34)
@@ -68,7 +69,7 @@ def resize_by_width(img, target_width):
     return resized_img
 
 def wrap_in_rounded_background(content_img, padding=20, radius=30,
-                               bg_color=(255, 255, 255), border_color=(220, 220, 220), border_width=5):
+                               bg_color=(255, 255, 255, 255), border_color=(220, 220, 220, 255), border_width=5):
     """
     将图像放入圆角白底框中（支持灰色边框，去除透明通道）
 
@@ -84,7 +85,7 @@ def wrap_in_rounded_background(content_img, padding=20, radius=30,
     bg_size = (content_img.width + 2 * padding, content_img.height + 2 * padding)
 
     # 创建白底画布
-    bg = Image.new("RGB", bg_size, bg_color)
+    bg = Image.new("RGBA", bg_size, bg_color)
     draw = ImageDraw.Draw(bg)
 
     # 绘制圆角矩形边框
@@ -99,104 +100,130 @@ def wrap_in_rounded_background(content_img, padding=20, radius=30,
     )
 
     # 贴上内容图
-    content_img = content_img.convert("RGB")
-    bg.paste(content_img, (padding, padding))
+    content_img = content_img.convert("RGBA")
+    bg.paste(content_img, (padding, padding), content_img)
 
     return bg
 
 def compose_images(images, spacing=40, outer_margin=30,
-                   footer_height=150, bg_color=(255, 255, 255), inner_bg=(255, 255, 255)):
+                   footer_height=150, bg_color=(255, 255, 255, 0), inner_bg=(255, 255, 255, 0), border_width=5):
     """
-    将多张图片垂直拼接，并添加页脚。
+    将多张图片垂直拼接，并添加页脚（RGB / RGBA 自适应）。
 
     参数：
         images: PIL.Image 对象列表
         spacing: 图片之间的间距
         outer_margin: 最外层边距
         footer_height: 页脚高度（基准值，会根据图片宽度动态调整）
-        bg_color: 外层背景颜色（RGB）
-        inner_bg: 内部背景颜色
+        bg_color: 外层背景颜色（RGB 或 RGBA）
+        inner_bg: 内部背景颜色（RGB 或 RGBA）
 
     返回：
-        组合后的 PIL.Image 对象
+        组合后的 PIL.Image 对象（RGB 或 RGBA）
     """
     if not images:
         raise ValueError("图片列表不能为空")
 
-    # 1. 给每个图加上圆角背景（不缩放，保持原始尺寸）
-    images_with_bg = [wrap_in_rounded_background(img) for img in images]
+    def ensure_rgba(img: Image.Image) -> Image.Image:
+        return img if img.mode == "RGBA" else img.convert("RGBA")
 
-    # 2. 计算总尺寸（使用最大宽度，与 combine_with_rounded_background 逻辑一致）
+    def color_to_rgba(color):
+        if len(color) == 4:
+            return color
+        return (*color, 255)
+
+    # 判断最终是否需要 RGBA 输出
+    output_rgba = (len(bg_color) == 4 and bg_color[3] < 255) or \
+                  (len(inner_bg) == 4 and inner_bg[3] < 255)
+
+    bg_color_rgba = color_to_rgba(bg_color)
+    inner_bg_rgba = color_to_rgba(inner_bg)
+
+    # 1. 给每个图加圆角背景，并统一为 RGBA
+    images_with_bg = [
+        ensure_rgba(wrap_in_rounded_background(img, border_width=border_width))
+        for img in images
+    ]
+
+    # 2. 计算尺寸
     max_img_width = max(img.width for img in images_with_bg)
     total_images_height = sum(img.height for img in images_with_bg)
-    total_images_height += spacing * (len(images_with_bg) - 1)  # 图片间距
+    total_images_height += spacing * (len(images_with_bg) - 1)
 
-    # 3. 动态计算页脚高度和元素尺寸，基于图片宽度
-    # 基准宽度: 1700px (原始设计宽度)
+    # 3. 动态缩放参数
     base_width = 1700
     scale_factor = max_img_width / base_width
 
-    # 动态调整页脚高度（最小150px，最大250px）
     dynamic_footer_height = max(150, min(250, int(footer_height * scale_factor)))
 
-    # 动态调整字体大小
     base_font_size = 28
     dynamic_font_size = max(24, min(40, int(base_font_size * scale_factor)))
     dynamic_font = ImageFont.truetype(FONT_PATH, dynamic_font_size)
 
-    # 动态调整 Logo 尺寸
     base_logo_size = 130
     dynamic_logo_size = max(100, min(180, int(base_logo_size * scale_factor)))
 
-    # 动态调整边距
     dynamic_left_margin = max(40, min(80, int(50 * scale_factor)))
     dynamic_right_margin = max(150, min(250, int(180 * scale_factor)))
-
-    # 动态调整行间距
     dynamic_line_spacing = max(30, min(50, int(35 * scale_factor)))
 
-    # 4. 内部画布尺寸（包含图片和页脚）
+    # 4. 内部画布
     inner_width = max_img_width
     inner_height = total_images_height + spacing + dynamic_footer_height
 
-    # 5. 创建内部白色背景
-    combined = Image.new("RGB", (inner_width, inner_height), inner_bg)
+    combined = Image.new("RGBA", (inner_width, inner_height), inner_bg_rgba)
 
-    # 6. 垂直粘贴所有图片（居中对齐，与 combine_with_rounded_background 逻辑一致）
+    # 5. 粘贴图片（统一使用 alpha）
     y_offset = 0
     for img in images_with_bg:
-        x_offset = (inner_width - img.width) // 2  # 居中
-        if img.mode == "RGB":
-            combined.paste(img, (x_offset, y_offset))
-        else:
-            combined.paste(img, (x_offset, y_offset), img)
+        x_offset = (inner_width - img.width) // 2
+        combined.paste(img, (x_offset, y_offset), img)
         y_offset += img.height + spacing
 
-    # 7. 添加页脚
+    # 6. 页脚
     draw = ImageDraw.Draw(combined)
     footer_y_start = total_images_height + spacing - 10
 
-    # 页脚文本（左侧，使用动态边距和字体）
-    footer_text = ["Generated by JiETNG.", "© 2025 Matsuki.", "All rights reserved."]
+    footer_text = [
+        "Generated by JiETNG.",
+        "© 2025 Matsuki.",
+        "All rights reserved."
+    ]
+
     for i, text in enumerate(footer_text):
         text_y = footer_y_start + int(20 * scale_factor) + i * dynamic_line_spacing
-        draw.text((dynamic_left_margin, text_y), text, fill=(0, 0, 0), font=dynamic_font)
+        draw.text(
+            (dynamic_left_margin, text_y),
+            text,
+            fill=(0, 0, 0, 255),
+            font=dynamic_font
+        )
 
-    # 页脚 Logo（右侧，使用动态尺寸和边距）
+    # Logo
     try:
-        logo_img = Image.open(LOGO_PATH).resize((dynamic_logo_size, dynamic_logo_size), Image.Resampling.LANCZOS)
+        logo_img = Image.open(LOGO_PATH)
+        logo_img = ensure_rgba(
+            logo_img.resize(
+                (dynamic_logo_size, dynamic_logo_size),
+                Image.Resampling.LANCZOS
+            )
+        )
         logo_x = inner_width - dynamic_right_margin
         logo_y = footer_y_start + int(10 * scale_factor)
-        combined.paste(logo_img, (logo_x, logo_y))
+        combined.paste(logo_img, (logo_x, logo_y), logo_img)
     except Exception as e:
         logger.error(f"[ImageManager] ✗ Failed to load logo: error={e}")
 
-    # 8. 添加外层灰色背景
+    # 7. 外层背景
     final_width = combined.width + 2 * outer_margin
     final_height = combined.height + 2 * outer_margin
 
-    final_img = Image.new("RGB", (final_width, final_height), bg_color)
-    final_img.paste(combined, (outer_margin, outer_margin))
+    final_img = Image.new("RGBA", (final_width, final_height), bg_color_rgba)
+    final_img.paste(combined, (outer_margin, outer_margin), combined)
+
+    # 8. 自动降级为 RGB（如果不需要透明）
+    if not output_rgba:
+        final_img = final_img.convert("RGB")
 
     return final_img
 

@@ -55,10 +55,14 @@ from linebot.v3.messaging import (
     TemplateMessage,
     ButtonsTemplate,
     MessageAction,
-    URIAction
+    PostbackAction,
+    URIAction,
+    FlexMessage,
+    FlexContainer
 )
 from linebot.v3.webhooks import (
     MessageEvent,
+    PostbackEvent,
     TextMessageContent,
     ImageMessageContent,
     LocationMessageContent
@@ -101,7 +105,6 @@ from modules.message_manager import *
 # Image processing
 from modules.image_uploader import smart_upload
 from modules.image_manager import *
-from modules.image_matcher import find_song_by_cover
 from modules.image_cache import batch_download_images
 
 # System utilities
@@ -1128,11 +1131,12 @@ def search_song(user_id, acronym, ver="jp"):
     搜索歌曲并返回歌曲信息图片
 
     Args:
+        user_id: 用户ID
         acronym: 搜索关键词
         ver: 服务器版本 (jp/intl)
 
     Returns:
-        搜索结果消息列表 (最多5个) 或搜索结果flex message 或错误消息
+        搜索结果消息列表 或搜索结果flex message 或错误消息
     """
     read_dxdata(ver)
 
@@ -1147,47 +1151,50 @@ def search_song(user_id, acronym, ver="jp"):
     if len(matching_songs) > 1:
         return generate_search_results_flex(user_id, matching_songs)
 
-    # 生成图片消息列表和calc结果
+    # 单个结果：返回图片 + 按钮
     result = []
     for song in matching_songs:
-        # 添加歌曲信息图片
         original_url, preview_url = smart_upload(song_info_generate(song))
         message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
         result.append(message)
-
-        # 收集calc数据
-        calc_data = []
-        for sheet in song.get('sheets', []):
-            difficulty = sheet.get('difficulty', 'unknown')
-
-            # 只处理master和remaster难度
-            if difficulty not in ['master', 'remaster']:
-                continue
-
-            notes_counts = sheet.get('noteCounts', {})
-            level = sheet.get('internalLevelValue', 0)
-            notes = {
-                'tap': notes_counts.get('tap', 0),
-                'hold': notes_counts.get('hold', 0),
-                'slide': notes_counts.get('slide', 0),
-                'touch': notes_counts.get('touch', 0),
-                'break': notes_counts.get('break', 0)
-            }
-
-            # 计算分数
-            scores = get_note_score(notes)
-            calc_data.append((notes, scores, difficulty, level))
-
-        # 生成calc结果（carousel或单个）
-        if calc_data:
-            calc_carousel = generate_calc_carousel(calc_data)
-            result.append(calc_carousel)
+        song_id = song.get('id')
+        result.append(generate_calc_button(song_id, user_id))
 
     return result
 
 def search_song_by_id(user_id, song_id, ver="jp"):
     """
-    通过歌曲ID搜索歌曲并返回歌曲信息图片和calc结果
+    通过歌曲ID搜索歌曲并返回歌曲信息图片
+
+    Args:
+        user_id: 用户ID
+        song_id: 歌曲唯一ID (6个字符)
+        ver: 服务器版本 (jp/intl)
+
+    Returns:
+        歌曲信息图片消息 或错误消息
+    """
+    read_dxdata(ver)
+
+    # 在SONGS中查找匹配的歌曲
+    matching_song = None
+    for song in SONGS:
+        if song.get('id') == song_id:
+            matching_song = song
+            break
+
+    # 没有匹配结果
+    if not matching_song:
+        return song_error(user_id)
+
+    # 返回图片 + 按钮
+    original_url, preview_url = smart_upload(song_info_generate(matching_song))
+    image_message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
+    return [image_message, generate_calc_button(song_id, user_id)]
+
+def calc_by_id(user_id, song_id, ver="jp"):
+    """
+    通过歌曲ID搜索歌曲并返回歌曲calc结果
 
     Args:
         user_id: 用户ID
@@ -1209,10 +1216,6 @@ def search_song_by_id(user_id, song_id, ver="jp"):
     # 没有匹配结果
     if not matching_song:
         return song_error(user_id)
-
-    # 生成歌曲信息图片
-    original_url, preview_url = smart_upload(song_info_generate(matching_song))
-    image_message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
 
     # 收集calc数据
     calc_data = []
@@ -1237,12 +1240,9 @@ def search_song_by_id(user_id, song_id, ver="jp"):
         scores = get_note_score(notes)
         calc_data.append((notes, scores, difficulty, level))
 
-    # 生成calc结果（carousel或单个）
-    if calc_data:
-        calc_carousel = generate_calc_carousel(calc_data)
-        return [image_message, calc_carousel]
-    else:
-        return image_message
+    calc_carousel = generate_calc_carousel(calc_data)
+    return calc_carousel
+
 
 def random_song(user_id, key="", ver="jp"):
     read_dxdata(ver)
@@ -2077,20 +2077,30 @@ def generate_version_songs(user_id, version_title, ver="jp"):
     target_icon = []
     target_type = ""
 
+    version_title = version_title.lower().replace("dx", "maimaiでらっくす").replace("deluxe", "maimaiでらっくす")
+
     for version in VERSIONS:
-        if version_title.lower() == version['version'].lower():
+        if version_title == version['version'].lower():
             target_version.append(version['version'])
 
     if not len(target_version):
         return version_error(user_id)
 
+    version_img = None
+    version_img_path = os.path.join(VERSIONS_DIR, f"{version_title.replace(' ', '_')}.png")
+    try:
+        version_img = Image.open(version_img_path)
+        version_img = resize_by_width(version_img, 1340)
+    except Exception as e:
+        logger.error(f"[VersionImage] ✗ Failed to load image: file={version_img_path}, error={e}")
+
     songs_data = list(filter(lambda x: x['version'] in target_version and x['type'] not in ['utage'], SONGS))
-    version_img = generate_version_list(songs_data)
+    version_list_img = generate_version_list(songs_data)
 
-    # 不再缩小图片 - 保持高清晰度 (原本缩小到1/3会严重降低清晰度)
-    # 已提升缩略图尺寸从 300x150 到 400x200,水印会自动按比例调整
-
-    img = compose_images([version_img])
+    if version_img is None:
+        img = compose_images([version_list_img])
+    else:
+        img = compose_images([version_img, version_list_img], border_width=0)
 
     original_url, preview_url = smart_upload(img)
     message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
@@ -2561,6 +2571,10 @@ def handle_sync_text_command(event):
         (lambda msg: msg.startswith("search ") and len(msg.split()) == 2 and len(msg.split()[1]) == 6,
          lambda msg: search_song_by_id(user_id, msg.split()[1], mai_ver)),
 
+        # Calc （通过ID）
+        (lambda msg: msg.startswith("calc-song ") and len(msg.split()) == 2 and len(msg.split()[1]) == 6,
+         lambda msg: calc_by_id(user_id, msg.split()[1], mai_ver)),
+
         # 成绩搜索（通过ID）
         (lambda msg: msg.startswith("search-record ") and len(msg.split()) == 2 and len(msg.split()[1]) == 6,
          lambda msg: get_song_record_by_id(id_use, msg.split()[1], mai_ver_use)),
@@ -2901,94 +2915,6 @@ def handle_image_message(event):
                 DIVIDER
             )
 
-    else:
-        # 没有 QR 码，尝试封面匹配（移到队列异步处理）
-        user_id = event.source.user_id
-
-        # 添加到图片队列异步处理
-        try:
-            task_id = f"cover_match_{user_id}_{datetime.now().timestamp()}"
-            nickname = get_user_nickname_wrapper(user_id, use_cache=True)
-
-            with task_tracking_lock:
-                task_tracking['queued'].append({
-                    'id': task_id,
-                    'function': 'async_cover_matching_task',
-                    'queue_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                    'user_id': user_id,
-                    'nickname': nickname
-                })
-
-            image_queue.put_nowait((async_cover_matching_task, (user_id, event.reply_token, image), task_id))
-            logger.info(f"[ImageQueue] ✓ Task queued: user_id={user_id}, task=cover_matching")
-        except Exception as e:
-            logger.error(f"[ImageQueue] ✗ Failed to queue task: user_id={user_id}, task=cover_matching, error={e}")
-            notify_admins_error(
-                error_title="Cover Matching Queue Error",
-                error_details=f"{type(e).__name__}: {str(e)}\n\n{traceback.format_exc()}",
-                context={"User ID": user_id, "Task": "cover_matching"},
-                admin_id=ADMIN_ID,
-                configuration=configuration,
-                error_notification_enabled=ERROR_NOTIFICATION_ENABLED
-            )
-
-def async_cover_matching_task(user_id, reply_token, image):
-    """
-    异步封面匹配任务 - 在 image_queue 中执行
-
-    Args:
-        user_id: 用户ID
-        reply_token: 回复令牌
-        image: PIL Image 对象
-    """
-    try:
-        # 获取用户版本
-        mai_ver = "jp"
-        if user_id in USERS:
-            if 'version' in USERS[user_id]:
-                mai_ver = USERS[user_id]['version']
-
-        read_dxdata(mai_ver)
-
-        # 混合策略匹配：hash 快速匹配完整封面，sift 处理场景图片和部分遮挡
-        # 支持多封面识别，但只返回质量接近的匹配（避免误匹配）
-        matched_songs = find_song_by_cover(image, SONGS, hash_threshold=15, return_multiple=True, max_results=3)
-
-        if matched_songs:
-            try:
-                reply_messages = []
-
-                # 处理所有匹配结果（1个或多个）
-                for song in matched_songs:
-                    original_url, preview_url = smart_upload(song_info_generate(song))
-                    reply_messages.append(ImageMessage(original_content_url=original_url, preview_image_url=preview_url))
-
-                if reply_messages:
-                    smart_reply(user_id, reply_token, reply_messages, configuration, DIVIDER)
-            except Exception as e:
-                logger.error(f"[ImageMatcher] ✗ Result generation error: user_id={user_id}, error={e}")
-                notify_admins_error(
-                    error_title="Cover Matching Result Generation Error",
-                    error_details=f"{type(e).__name__}: {str(e)}\n\n{traceback.format_exc()}",
-                    context={"User ID": user_id, "Task": "cover_matching_result"},
-                    admin_id=ADMIN_ID,
-                    configuration=configuration,
-                    error_notification_enabled=ERROR_NOTIFICATION_ENABLED
-                )
-        else:
-            # 未找到匹配，静默处理（不推送错误给用户）
-            logger.info(f"[ImageMatcher] No match found: user_id={user_id}")
-    except Exception as e:
-        logger.error(f"[ImageMatcher] ✗ Task error: user_id={user_id}, error={e}", exc_info=True)
-        notify_admins_error(
-            error_title="Cover Matching Task Error",
-            error_details=f"{type(e).__name__}: {str(e)}\n\n{traceback.format_exc()}",
-            context={"User ID": user_id, "Task": "cover_matching_task"},
-            admin_id=ADMIN_ID,
-            configuration=configuration,
-            error_notification_enabled=ERROR_NOTIFICATION_ENABLED
-        )
-
 def handle_image_message_task(user_id, reply_token, data, image=None):
     """
     处理图片消息中的数据
@@ -3056,6 +2982,51 @@ def handle_location_message(event):
         configuration,
         DIVIDER
     )
+
+# Postback 事件处理
+@handler.add(PostbackEvent)
+def handle_postback(event):
+    """
+    处理 Postback 事件（来自 PostbackAction 的按钮点击）
+
+    将 postback data 作为文本消息处理，走和 MessageEvent 相同的命令判断逻辑
+    """
+    user_id = event.source.user_id
+    postback_data = event.postback.data
+
+    logger.info(f"[Postback] user_id={user_id}, data={postback_data}")
+
+    try:
+        # 创建一个模拟的 TextMessageContent 对象
+        class MockTextMessage:
+            def __init__(self, text):
+                self.text = text
+                self.type = 'text'
+
+        # 创建一个模拟的 MessageEvent 对象
+        class MockMessageEvent:
+            def __init__(self, original_event, text):
+                self.source = original_event.source
+                self.reply_token = original_event.reply_token
+                self.message = MockTextMessage(text)
+
+        # 创建模拟事件，使用 postback data 作为消息文本
+        mock_event = MockMessageEvent(event, postback_data)
+
+        # 检查是否是web任务
+        if route_to_web_queue(mock_event):
+            return
+
+        # 检查是否是图片生成任务
+        if route_to_image_queue(mock_event):
+            return
+
+        # 同步处理文本命令（走和 MessageEvent 相同的逻辑）
+        handle_sync_text_command(mock_event)
+
+    except Exception as e:
+        logger.error(f"[Postback] ✗ Error processing postback: user_id={user_id}, data={postback_data}, error={e}")
+        logger.error(traceback.format_exc())
 
 # ==================== 管理后台路由 ====================
 

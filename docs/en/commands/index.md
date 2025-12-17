@@ -237,21 +237,6 @@ friend-b50 1234567890123456   # View friend's B50
 | `random-song` | Randomly select a song (English) | `random-song` |
 | `random` | Randomly select a song (English short) | `random` |
 
-### Image Recognition
-
-| Feature | Description |
-|---------|-------------|
-| Send Image (Cover Recognition) | Recognize song covers in images and return song information and personal scores |
-
-**Cover Recognition**:
-- Send images containing song covers (game screenshots, promotional images, etc.)
-- Bot will automatically recognize covers and return corresponding song information
-- Hybrid recognition strategy:
-  - **Hash Matching**: Fast recognition of complete covers (high accuracy)
-  - **SIFT Feature Matching**: Recognize partial covers in scene images (high recall)
-- Supports multi-song recognition in one image (up to 5 songs)
-- Recognition rate: Nearly 100% for complete covers, varies for partial occlusion
-
 ### Location Service
 
 | Feature | Description |
