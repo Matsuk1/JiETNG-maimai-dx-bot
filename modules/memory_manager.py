@@ -145,7 +145,6 @@ def cleanup_user_caches(user_manager_module=None):
     # 清理用户昵称缓存（如果提供了模块引用）
     if user_manager_module and hasattr(user_manager_module, 'nickname_cache'):
         try:
-            from datetime import datetime
             current_time = datetime.now()
 
             # 获取缓存和锁

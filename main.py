@@ -76,6 +76,7 @@ from modules.record_generator import *
 from modules.user_manager import *
 from modules.bindtoken_manager import generate_bind_token, get_user_id_from_token
 from modules.notice_manager import *
+from modules.notice_stats import *
 from modules.maimai_manager import *
 from modules.dxdata_manager import update_dxdata_with_comparison
 from modules.record_manager import *
@@ -105,7 +106,6 @@ from modules.message_manager import *
 # Image processing
 from modules.image_uploader import smart_upload
 from modules.image_manager import *
-from modules.image_cache import batch_download_images
 
 # System utilities
 from modules.system_checker import run_system_check, clean_unbound_users
@@ -187,7 +187,7 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='assets', static_url_path='/static')
 app.secret_key = secrets.token_hex(32)  # 用于session加密
 
 # 启用 CSRF 保护
@@ -235,23 +235,6 @@ image_concurrency_limit = threading.Semaphore(MAX_CONCURRENT_IMAGE_TASKS)
 # Web任务队列 (处理耗时的网络请求，如 maimai_update 等)
 webtask_queue = queue.Queue(maxsize=MAX_QUEUE_SIZE)
 webtask_concurrency_limit = threading.Semaphore(WEB_MAX_CONCURRENT_TASKS)
-
-# 缓存生成任务队列 (处理定数表缓存生成等后台任务)
-cache_queue = queue.Queue(maxsize=5)  # 缓存任务通常较少，队列较小
-cache_concurrency_limit = threading.Semaphore(1)  # 同时只允许1个缓存任务
-
-# 缓存生成进度跟踪
-cache_generation_progress = {
-    "status": "idle",  # idle, running, completed, error
-    "current_server": "",  # jp, intl
-    "current_level": "",  # 12, 12+, 13, etc.
-    "progress": 0,  # 0-100
-    "total_levels": 0,
-    "completed_levels": 0,
-    "error_message": "",
-    "start_time": None,
-    "end_time": None
-}
 
 
 def run_task_with_limit(func: callable, args: tuple, sem: threading.Semaphore,
@@ -437,21 +420,6 @@ def webtask_worker() -> None:
             )
             webtask_queue.task_done()
 
-
-def cache_worker() -> None:
-    """缓存生成任务队列的工作线程"""
-    while True:
-        try:
-            item = cache_queue.get()
-            func, args = item
-            run_task_with_limit(func, args, cache_concurrency_limit, cache_queue, None, False)
-        except Exception as e:
-            logger.error(f"[Worker] ✗ Cache worker error: error={e}", exc_info=True)
-            with stats_lock:
-                cache_generation_progress["status"] = "error"
-                cache_generation_progress["error_message"] = str(e)
-                cache_generation_progress["end_time"] = datetime.now().isoformat()
-            cache_queue.task_done()
 
 
 def cancel_if_timeout(task_done: threading.Event) -> None:
@@ -1543,7 +1511,7 @@ def generate_plate_rcd(user_id, title, ver="jp"):
 
 def generate_internallevel_songs(user_id, level, ver="jp"):
     """
-    生成指定定数范围的歌曲列表图片
+    生成指定定数范围的歌曲列表图片（现场生成）
 
     参数:
         level: 难度等级（如 "13", "13+", "14", "14+"）
@@ -1555,183 +1523,71 @@ def generate_internallevel_songs(user_id, level, ver="jp"):
     if level not in supported_levels:
         return level_not_supported(user_id)
 
-    # 检查缓存
-    cache_filename = f"{ver}_{level.replace('+', 'plus')}.png"
-    cache_path = os.path.join(LEVEL_CACHE_DIR, cache_filename)
-
-    if not os.path.exists(cache_path):
-        # 缓存不存在，返回错误
-        return cache_not_found(user_id)
-
-    # 从缓存读取图片并上传
     try:
-        cached_img = Image.open(cache_path)
-        original_url, preview_url = smart_upload(cached_img)
-        # 返回图片和提示消息
+        logger.info(f"[LevelList] → Generating level list: user_id={user_id}, level={level}, server={ver.upper()}")
+
+        # 读取数据
+        read_dxdata(ver)
+
+        # 收集符合条件的歌曲信息
+        song_data_list = []
+        region_key = ver
+
+        for song in SONGS:
+            if song['type'] == 'utage':
+                continue
+
+            for sheet in song['sheets']:
+                if not sheet['regions'].get(region_key, False):
+                    continue
+
+                # 14+ 包含 14+ 和 15 级别
+                if level == "14+":
+                    if sheet['level'] not in ["14+", "15"]:
+                        continue
+                else:
+                    if sheet['level'] != level:
+                        continue
+
+                song_data_list.append({
+                    "cover_url": song['cover_url'],
+                    "cover_name": song.get('cover_name'),
+                    "type": song['type'],
+                    "internal_level": sheet['internalLevelValue']
+                })
+
+        if not song_data_list:
+            logger.warning(f"[LevelList] ⚠ No songs found: level={level}, server={ver.upper()}")
+            return system_error(user_id)
+
+        # 生成封面图片（使用已下载的图片）
+        target_data = []
+        for song_data in song_data_list:
+            cover_url = song_data['cover_url']
+            cover_img = generate_cover(cover_url, song_data['type'], size=135, cover_name=song_data.get('cover_name'))
+            target_data.append({
+                "img": cover_img,
+                "internal_level": song_data['internal_level']
+            })
+
+        if not target_data:
+            logger.warning(f"[LevelList] ⚠ Failed: level={level}, server={ver.upper()}")
+            return system_error(user_id)
+
+        # 生成图片
+        level_img = generate_internallevel_image(target_data, level)
+
+        # 用compose函数包装
+        final_img = compose_images([level_img])
+
+        # 上传图片
+        original_url, preview_url = smart_upload(final_img)
+
         return ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
 
     except Exception as e:
-        logger.error(f"[Cache] ✗ Failed to read cache: cache_path={cache_path}, error={e}")
-        return cache_not_found(user_id)
-
-def _generate_level_cache_for_server(ver):
-    """
-    为指定服务器生成所有等级的缓存
-
-    参数:
-        ver: 服务器版本（"jp" 或 "intl"）
-    """
-
-    logger.info(f"[Cache] → Starting level cache generation: server={ver.upper()}")
-
-    read_dxdata(ver)
-
-    # 定义所有支持的等级（只生成12及以上，14+ 会包含 14+ 和 15，15 单独只包含 15.0）
-    valid_levels = ["12", "12+", "13", "13+", "14", "14+", "15"]
-
-    # 创建缓存目录
-    os.makedirs(LEVEL_CACHE_DIR, exist_ok=True)
-
-    generated_count = 0
-
-    for idx, level in enumerate(valid_levels):
-        try:
-            # 更新进度 - 开始处理这个等级
-            with stats_lock:
-                cache_generation_progress["current_server"] = ver.upper()
-                cache_generation_progress["current_level"] = level
-                cache_generation_progress["completed_levels"] = generated_count
-                cache_generation_progress["progress"] = int((generated_count / 14) * 100)
-            # 收集符合条件的歌曲信息
-            song_data_list = []
-            region_key = ver
-
-            for song in SONGS:
-                if song['type'] == 'utage':
-                    continue
-
-                for sheet in song['sheets']:
-                    if not sheet['regions'].get(region_key, False):
-                        continue
-
-                    # 14+ 包含 14+ 和 15 级别
-                    if level == "14+":
-                        if sheet['level'] not in ["14+", "15"]:
-                            continue
-                    else:
-                        if sheet['level'] != level:
-                            continue
-
-                    song_data_list.append({
-                        "cover_url": song['cover_url'],
-                        "cover_name": song.get('cover_name'),
-                        "type": song['type'],
-                        "internal_level": sheet['internalLevelValue']
-                    })
-
-            if not song_data_list:
-                logger.info(f"[Cache] → Skip empty level: server={ver.upper()}, level={level}")
-                continue
-
-            # 批量并发下载所有封面
-            logger.info(f"[Cache] → Downloading covers: server={ver.upper()}, level={level}, count={len(song_data_list)}")
-            cover_urls = [s['cover_url'] for s in song_data_list]
-            downloaded_covers = batch_download_images(cover_urls, max_workers=5)
-
-            # 生成封面图片（使用已下载的图片）
-            target_data = []
-            for song_data in song_data_list:
-                cover_url = song_data['cover_url']
-                if cover_url in downloaded_covers:
-                    cover_img = generate_cover(cover_url, song_data['type'], size=135, cover_name=song_data.get('cover_name'))
-                    target_data.append({
-                        "img": cover_img,
-                        "internal_level": song_data['internal_level']
-                    })
-
-            if not target_data:
-                logger.warning(f"[Cache] ⚠ Cover download failed: server={ver.upper()}, level={level}")
-                continue
-
-            # 生成图片
-            level_img = generate_internallevel_image(target_data, level)
-
-            # 不再缩小图片 - 保持高清晰度 (原本缩小到3/5会降低清晰度)
-            # 已提升 img_size 从 135px 到 180px,水印会自动按比例调整
-
-            # 用compose函数包装
-            final_img = compose_images([level_img])
-
-            # 保存到缓存
-            cache_filename = f"{ver}_{level.replace('+', 'plus')}.png"
-            cache_path = os.path.join(LEVEL_CACHE_DIR, cache_filename)
-            final_img.save(cache_path, 'PNG')
-
-            generated_count += 1
-
-            # 立即更新完成的等级数和进度
-            with stats_lock:
-                cache_generation_progress["completed_levels"] = generated_count
-                cache_generation_progress["progress"] = int((generated_count / 14) * 100)
-
-            logger.info(f"[Cache] ✓ Generated level cache: server={ver.upper()}, level={level}, songs={len(target_data)}")
-
-        except Exception as e:
-            logger.warning(f"[Cache] ✗ Generation failed: server={ver.upper()}, level={level}, error={e}")
-            import traceback
-            traceback.print_exc()
-
-    logger.info(f"[Cache] ✓ Server cache completed: server={ver.upper()}, generated={generated_count}/{len(valid_levels)}")
-
-def generate_all_level_caches():
-    """后台生成所有服务器的等级缓存（带进度跟踪）"""
-
-    # 计算实际的总等级数
-    valid_levels = ["12", "12+", "13", "13+", "14", "14+", "15"]
-    total_levels = len(valid_levels)  # 每个服务器都有这些等级
-
-    # 初始化进度
-    with stats_lock:
-        cache_generation_progress["status"] = "running"
-        cache_generation_progress["progress"] = 0
-        cache_generation_progress["total_levels"] = total_levels
-        cache_generation_progress["completed_levels"] = 0
-        cache_generation_progress["error_message"] = ""
-        cache_generation_progress["start_time"] = datetime.now().isoformat()
-        cache_generation_progress["end_time"] = None
-
-    try:
-        _generate_level_cache_for_server("jp")
-        _generate_level_cache_for_server("intl")
-        logger.info("[Cache] ✓ All level caches generated successfully")
-
-        # 标记完成
-        with stats_lock:
-            cache_generation_progress["status"] = "completed"
-            cache_generation_progress["progress"] = 100
-            cache_generation_progress["end_time"] = datetime.now().isoformat()
-
-        # 通知所有管理员缓存生成完成
-        for admin_user_id in ADMIN_ID:
-            try:
-                smart_push(admin_user_id, TextMessage(
-                    text="✅ 定数表缓存生成完成\n已为所有服务器生成12级及以上的定数表缓存"
-                ), configuration)
-            except Exception as e:
-                logger.error(f"[Notification] ✗ Failed to notify admin: admin_id={admin_user_id}, context=cache_completion, error={e}")
-    except Exception as e:
-        logger.error(f"[Cache] ✗ Generation failed: error={e}", exc_info=True)
-        import traceback
-        traceback.print_exc()
-
-        # 通知所有管理员缓存生成失败
-        for admin_user_id in ADMIN_ID:
-            try:
-                smart_push(admin_user_id, TextMessage(
-                    text=f"❌ 定数表缓存生成失败\n错误: {e}"
-                ), configuration)
-            except Exception as notify_error:
-                logger.error(f"[Notification] ✗ Failed to notify admin: admin_id={admin_user_id}, context=cache_failure, error={notify_error}")
+        logger.error(f"[LevelList] ✗ Generation failed: user_id={user_id}, level={level}, error={e}", exc_info=True)
+        return system_error(user_id)
 
 def create_user_info_img(user_info, scale=1.7):
     """
@@ -1860,11 +1716,11 @@ def select_records(song_record, type, command, ver):
                 versions = []
                 for v in raw_versions:
                     if v.strip():
-                        # 将 + 替换为 " PLUS"（注意前面有空格）
-                        processed = v.strip().replace("+", " PLUS").upper()
+                        # 将 + 替换为 " PLUS"
+                        processed = v.strip().replace("+", " PLUS").lower().replace("dx", "maimaiでらっくす").replace("deluxe", "maimaiでらっくす")
                         versions.append(processed)
                 # 筛选歌曲版本在指定列表中的记录（忽略大小写）
-                song_record = list(filter(lambda x: (x.get('version') or '').upper() in versions, song_record))
+                song_record = list(filter(lambda x: (x.get('version') or '').lower() in versions, song_record))
 
     up_songs = down_songs = []
 
@@ -2787,13 +2643,6 @@ def handle_sync_text_command(event):
                     except Exception as e:
                         logger.error(f"[Notification] ✗ Failed to notify admin: admin_id={admin_user_id}, context=dxdata_update, error={e}")
 
-            # 将缓存生成任务添加到队列
-            try:
-                cache_queue.put((generate_all_level_caches, ()), block=False)
-                logger.info("[Cache] ✓ Task queued successfully")
-            except queue.Full:
-                logger.warning("[Cache] ⚠ Queue is full, task not queued")
-
             return
 
         if user_message.startswith("devtoken "):
@@ -2989,7 +2838,9 @@ def handle_postback(event):
     """
     处理 Postback 事件（来自 PostbackAction 的按钮点击）
 
-    将 postback data 作为文本消息处理，走和 MessageEvent 相同的命令判断逻辑
+    支持：
+    - 公告投票 (action=vote_notice)
+    - 其他 Postback 事件（作为文本消息处理）
     """
     user_id = event.source.user_id
     postback_data = event.postback.data
@@ -2997,6 +2848,54 @@ def handle_postback(event):
     logger.info(f"[Postback] user_id={user_id}, data={postback_data}")
 
     try:
+        # 处理公告投票
+        if 'action=vote_notice' in postback_data:
+            # 解析postback data
+            params = dict(param.split('=') for param in postback_data.split('&'))
+            action = params.get('action')
+            notice_id = params.get('notice_id')
+            vote_type = params.get('vote')  # 'support' | 'oppose'
+
+            if action == 'vote_notice' and notice_id and vote_type in ['support', 'oppose']:
+                # 验证公告存在且启用投票
+                notice = get_notice_by_id(notice_id)
+                if not notice:
+                    logger.warning(f"[Notice] ⚠ Notice not found: notice_id={notice_id}")
+                    return
+
+                if not notice.get('voting_enabled'):
+                    logger.warning(f"[Notice] ⚠ Voting not enabled: notice_id={notice_id}")
+                    return
+
+                # 记录投票
+                success = record_notice_vote(user_id, notice_id, vote_type)
+
+                if success:
+                    # 获取统计数据
+                    stats = calculate_notice_stats(notice_id)
+
+                    # 获取用户语言
+                    lang = get_user_language(user_id) or 'ja'
+
+                    # 构建反馈消息（多语言）
+                    vote_success_text = {
+                        'ja': f"投票ありがとうございます！\n\n支持: {stats['support_count']}人 ({stats['support_count']/(stats['support_count']+stats['oppose_count'])*100 if stats['support_count']+stats['oppose_count'] > 0 else 0:.1f}%)\n反対: {stats['oppose_count']}人 ({stats['oppose_count']/(stats['support_count']+stats['oppose_count'])*100 if stats['support_count']+stats['oppose_count'] > 0 else 0:.1f}%)",
+                        'en': f"Thank you for voting!\n\nSupport: {stats['support_count']} ({stats['support_count']/(stats['support_count']+stats['oppose_count'])*100 if stats['support_count']+stats['oppose_count'] > 0 else 0:.1f}%)\nOppose: {stats['oppose_count']} ({stats['oppose_count']/(stats['support_count']+stats['oppose_count'])*100 if stats['support_count']+stats['oppose_count'] > 0 else 0:.1f}%)",
+                        'zh': f"感谢您的投票！\n\n支持: {stats['support_count']}人 ({stats['support_count']/(stats['support_count']+stats['oppose_count'])*100 if stats['support_count']+stats['oppose_count'] > 0 else 0:.1f}%)\n反对: {stats['oppose_count']}人 ({stats['oppose_count']/(stats['support_count']+stats['oppose_count'])*100 if stats['support_count']+stats['oppose_count'] > 0 else 0:.1f}%)"
+                    }
+
+                    reply_message = TextMessage(text=vote_success_text.get(lang, vote_success_text['ja']))
+
+                    # 发送回复
+                    smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
+
+                    logger.info(f"[Notice] ✓ Vote processed: user_id={user_id}, notice_id={notice_id}, vote={vote_type}")
+                    return
+                else:
+                    logger.error(f"[Notice] ✗ Vote failed: user_id={user_id}, notice_id={notice_id}")
+                    return
+
+        # 其他Postback事件：走原有的文本命令逻辑
         # 创建一个模拟的 TextMessageContent 对象
         class MockTextMessage:
             def __init__(self, text):
@@ -3340,12 +3239,12 @@ def admin_trigger_cleanup():
 
 @app.route("/linebot/admin/get_notices", methods=["GET"])
 def admin_get_notices():
-    """获取所有公告"""
+    """获取所有公告(包括草稿)"""
     if not check_admin_auth():
         return jsonify({'error': 'Unauthorized'}), 401
 
     try:
-        notices = get_all_notices()
+        notices = get_all_notices(include_drafts=True)
         return jsonify({'success': True, 'notices': notices})
     except Exception as e:
         logger.error(f"[Admin] ✗ Get notices error: error={e}", exc_info=True)
@@ -3354,24 +3253,51 @@ def admin_get_notices():
 @app.route("/linebot/admin/create_notice", methods=["POST"])
 @csrf.exempt
 def admin_create_notice():
-    """创建新公告"""
+    """创建新公告 - 支持多语言、草稿、投票"""
     if not check_admin_auth():
         return jsonify({'error': 'Unauthorized'}), 401
 
     data = request.get_json()
-    content = data.get('content', '').strip()
 
-    if not content:
-        return jsonify({'success': False, 'message': 'Content is required'}), 400
+    # 多语言内容
+    content_zh = data.get('content_zh', '').strip()
+    content_ja = data.get('content_ja', '').strip()
+    content_en = data.get('content_en', '').strip()
+
+    # 验证至少填写一种语言
+    if not any([content_ja, content_en, content_zh]):
+        return jsonify({'success': False, 'message': 'At least one language content is required'}), 400
+
+    # 构建多语言内容对象
+    content_dict = {
+        'zh': content_zh,
+        'ja': content_ja,
+        'en': content_en,
+    }
+
+    # 获取其他参数
+    status = data.get('status', 'published')  # 'draft' | 'published'
+    voting_enabled = data.get('voting_enabled', False)
+    created_by = session.get('user_id', 'admin')
 
     try:
-        notice_id = upload_notice(content)
-        clear_user_value("notice_read", False)
-        logger.info(f"[Admin] ✓ Notice created: notice_id={notice_id}")
+        notice_id = upload_notice(
+            content=content_dict,
+            status=status,
+            voting_enabled=voting_enabled,
+            created_by=created_by
+        )
+
+        # 仅发布状态的公告才清除阅读状态
+        if status == 'published':
+            clear_notice_read_status(notice_id)
+            logger.info(f"[Admin] ✓ Notice published: notice_id={notice_id}")
+        else:
+            logger.info(f"[Admin] ✓ Notice saved as draft: notice_id={notice_id}")
 
         return jsonify({
             'success': True,
-            'message': 'Notice created successfully',
+            'message': f'Notice {"published" if status == "published" else "saved as draft"} successfully',
             'notice_id': notice_id
         })
     except Exception as e:
@@ -3381,29 +3307,40 @@ def admin_create_notice():
 @app.route("/linebot/admin/update_notice", methods=["POST"])
 @csrf.exempt
 def admin_update_notice():
-    """更新公告"""
+    """更新公告 - 支持多语言"""
     if not check_admin_auth():
         return jsonify({'error': 'Unauthorized'}), 401
 
     data = request.get_json()
     notice_id = data.get('notice_id')
-    content = data.get('content', '').strip()
 
-    if not notice_id or not content:
-        return jsonify({'success': False, 'message': 'Notice ID and content are required'}), 400
+    # 多语言内容
+    content_zh = data.get('content_zh', '').strip()
+    content_ja = data.get('content_ja', '').strip()
+    content_en = data.get('content_en', '').strip()
+
+    if not notice_id or not any([content_ja, content_en, content_zh]):
+        return jsonify({'success': False, 'message': 'Notice ID and at least one language content are required'}), 400
+
+    content_dict = {
+        'zh': content_zh,
+        'ja': content_ja,
+        'en': content_en,
+    }
 
     try:
-        # 检查是否为最新公告
-        latest_notice = get_latest_notice()
+        # 检查是否为最新已发布公告
+        latest_notice = get_latest_published_notice()
         is_latest = latest_notice and latest_notice.get('id') == notice_id
 
-        success = update_notice(notice_id, content)
+        success = update_notice(notice_id, content_dict)
 
         if success:
-            # 如果修改的是最新公告，将全体用户状态修改为未阅读
-            if is_latest:
-                clear_user_value("notice_read", False)
-                logger.info(f"[Admin] ✓ Updated latest notice: notice_id={notice_id}, read_status_cleared=all_users")
+            notice = get_notice_by_id(notice_id)
+            # 如果修改的是已发布的公告,清除阅读状态
+            if notice.get('status') == 'published' and is_latest:
+                clear_notice_read_status(notice_id)
+                logger.info(f"[Admin] ✓ Updated latest published notice: notice_id={notice_id}")
             else:
                 logger.info(f"[Admin] ✓ Updated notice: notice_id={notice_id}")
 
@@ -3440,6 +3377,104 @@ def admin_delete_notice():
 
     except Exception as e:
         logger.error(f"[Admin] ✗ Delete notice error: error={e}", exc_info=True)
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route("/linebot/admin/publish_notice", methods=["POST"])
+@csrf.exempt
+def admin_publish_notice():
+    """发布草稿公告"""
+    if not check_admin_auth():
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json()
+    notice_id = data.get('notice_id')
+
+    if not notice_id:
+        return jsonify({'success': False, 'message': 'Notice ID is required'}), 400
+
+    try:
+        success = publish_notice(notice_id)
+
+        if success:
+            # 清除所有用户的阅读状态
+            clear_notice_read_status(notice_id)
+            logger.info(f"[Admin] ✓ Published draft notice: notice_id={notice_id}")
+            return jsonify({'success': True, 'message': 'Notice published successfully'})
+        else:
+            return jsonify({'success': False, 'message': 'Notice not found or already published'}), 404
+
+    except Exception as e:
+        logger.error(f"[Admin] ✗ Publish notice error: error={e}", exc_info=True)
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route("/linebot/admin/get_notice_stats", methods=["GET"])
+def admin_get_notice_stats():
+    """获取公告统计数据"""
+    if not check_admin_auth():
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    notice_id = request.args.get('notice_id')
+
+    try:
+        if notice_id:
+            # 获取单个公告的统计
+            stats = calculate_notice_stats(notice_id)
+            if stats is None:
+                return jsonify({'success': False, 'message': 'Notice not found'}), 404
+            return jsonify({'success': True, 'stats': stats})
+        else:
+            # 获取所有公告的统计
+            stats = get_all_notices_stats()
+            return jsonify({'success': True, 'stats': stats})
+
+    except Exception as e:
+        logger.error(f"[Admin] ✗ Get notice stats error: error={e}", exc_info=True)
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route("/linebot/notice_vote", methods=["POST"])
+@csrf.exempt
+def notice_vote():
+    """
+    用户投票端点
+    通过 LINE LIFF 或 Postback 调用
+    """
+    data = request.get_json()
+    user_id = data.get('user_id')
+    notice_id = data.get('notice_id')
+    vote_type = data.get('vote_type')  # 'support' | 'oppose'
+
+    if not all([user_id, notice_id, vote_type]):
+        return jsonify({'success': False, 'message': 'Missing required parameters'}), 400
+
+    if vote_type not in ['support', 'oppose']:
+        return jsonify({'success': False, 'message': 'Invalid vote type'}), 400
+
+    try:
+        # 验证公告存在且启用投票
+        notice = get_notice_by_id(notice_id)
+        if not notice:
+            return jsonify({'success': False, 'message': 'Notice not found'}), 404
+
+        if not notice.get('voting_enabled'):
+            return jsonify({'success': False, 'message': 'Voting is not enabled for this notice'}), 400
+
+        # 记录投票
+        success = record_notice_vote(user_id, notice_id, vote_type)
+
+        if success:
+            # 返回最新统计
+            stats = calculate_notice_stats(notice_id)
+            logger.info(f"[Notice] ✓ User voted: user_id={user_id}, notice_id={notice_id}, vote={vote_type}")
+            return jsonify({
+                'success': True,
+                'message': 'Vote recorded successfully',
+                'stats': stats
+            })
+        else:
+            return jsonify({'success': False, 'message': 'Failed to record vote'}), 500
+
+    except Exception as e:
+        logger.error(f"[Notice] ✗ Vote error: error={e}", exc_info=True)
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route("/linebot/admin/edit_user", methods=["POST"])
@@ -3625,17 +3660,6 @@ def admin_load_nicknames():
             'success': False,
             'message': str(e)
         }), 500
-
-@app.route("/linebot/admin/cache_progress", methods=["GET"])
-def admin_cache_progress():
-    """获取缓存生成进度"""
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
-
-    with stats_lock:
-        progress_data = cache_generation_progress.copy()
-
-    return jsonify(progress_data)
 
 @app.route("/linebot/admin/dxdata_status", methods=["GET"])
 def admin_dxdata_status():
@@ -4288,7 +4312,6 @@ def api_update_user(user_id):
         mock_event = MockEvent(user_id)
 
         # 生成任务ID
-        import secrets
         task_id = f"api_update_{secrets.token_hex(8)}"
 
         # 将更新任务加入队列
@@ -4597,10 +4620,7 @@ if __name__ == "__main__":
     for i in range(WEB_MAX_CONCURRENT_TASKS):
         threading.Thread(target=webtask_worker, daemon=True, name=f"WebTaskWorker-{i+1}").start()
 
-    # 启动缓存生成 worker（只需1个）
-    threading.Thread(target=cache_worker, daemon=True, name="CacheWorker-1").start()
-
-    logger.info(f"[System] ✓ Workers started: image={MAX_CONCURRENT_IMAGE_TASKS}, web={WEB_MAX_CONCURRENT_TASKS}, cache=1")
+    logger.info(f"[System] ✓ Workers started: image={MAX_CONCURRENT_IMAGE_TASKS}, web={WEB_MAX_CONCURRENT_TASKS}")
 
     # 启动内存管理器
     memory_manager.start()

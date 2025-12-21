@@ -115,7 +115,6 @@ def read_record(user_id: str, recent: bool = False) -> List[Dict[str, Any]]:
         成绩记录列表,每条记录为字典,包含详细信息
     """
     table = "recent_records" if recent else "best_records"
-    import logging
     logger = logging.getLogger(__name__)
     logger.info(f"[Record] → Reading records: table={table}, user_id={user_id}")
 

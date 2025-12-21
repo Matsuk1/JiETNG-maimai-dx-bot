@@ -1,4 +1,5 @@
 from modules.config_loader import SUPPORT_PAGE, USERS
+from modules.user_manager import get_notice_interaction
 from linebot.v3.messaging import (
     TextMessage,
     QuickReply,
@@ -146,11 +147,6 @@ level_not_supported_text = {
     "zh": "不支持该等级的定数表。\n仅支持12级及以上。"
 }
 
-cache_not_found_text = {
-    "ja": "定数表のキャッシュが見つかりません。\n管理者に問い合わせてください。",
-    "en": "Level chart cache not found.\nPlease contact the administrator.",
-    "zh": "定数表缓存不存在。\n请联系管理员。"
-}
 
 plate_error_text = {
     "ja": "そのプレートがわからないね...",
@@ -864,10 +860,6 @@ def level_not_supported(user_id=None):
     """生成等级不支持消息"""
     return create_text_message(level_not_supported_text, user_id, get_support_quick_reply(user_id))
 
-def cache_not_found(user_id=None):
-    """生成缓存不存在消息"""
-    return create_text_message(cache_not_found_text, user_id, get_support_quick_reply(user_id))
-
 def plate_error(user_id=None):
     """生成牌子错误消息"""
     return create_text_message(plate_error_text, user_id, get_support_quick_reply(user_id))
@@ -942,22 +934,37 @@ def get_notice_header(user_id=None):
 
 def generate_notice_flex(notice_json, user_id=None):
     """
-    生成公告 FlexMessage
+    生成公告 FlexMessage (支持多语言和投票)
 
     Args:
-        notice_json: 公告数据 {"id": "...", "content": "...", "date": "..."}
-        user_id: 用户ID（用于多语言）
+        notice_json: 公告数据 {"id": "...", "content": {...}, "date": "...", "voting_enabled": bool}
+        user_id: 用户ID（用于多语言和投票状态）
 
     Returns:
         FlexMessage
     """
-    title = get_notice_header(user_id)
-    content = notice_json.get('content', '')
-    date = notice_json.get('date', '')
+    # 获取用户语言
+    lang = get_user_language(user_id) if user_id else 'ja'
 
+    # 标题（多语言）
+    title = get_notice_header(user_id)
+
+    # 内容（根据用户语言）
+    content_dict = notice_json.get('content', {})
+    if isinstance(content_dict, str):
+        # 向后兼容旧格式
+        content = content_dict
+    else:
+        content = content_dict.get(lang, content_dict.get('ja', ''))
+
+    date = notice_json.get('date', '')
+    notice_id = notice_json.get('id', '')
+    voting_enabled = notice_json.get('voting_enabled', False)
+
+    # 基础bubble结构
     bubble = {
         "type": "bubble",
-        "size": "kilo",
+        "size": "mega",
         "header": {
             "type": "box",
             "layout": "vertical",
@@ -992,19 +999,79 @@ def generate_notice_flex(notice_json, user_id=None):
         "footer": {
             "type": "box",
             "layout": "vertical",
-            "contents": [
-                {
-                    "type": "text",
-                    "text": date,
-                    "size": "xs",
-                    "color": "#999999",
-                    "align": "end"
-                }
-            ],
+            "contents": [],
             "paddingAll": "12px",
             "backgroundColor": "#F5F5F5"
         }
     }
+
+    # 如果启用投票，添加投票按钮
+    if voting_enabled and user_id:
+        # 获取用户当前投票状态
+        interaction = get_notice_interaction(user_id, notice_id)
+        current_vote = interaction.get('vote') if interaction else None
+
+        # 投票按钮文本（多语言）
+        vote_labels = {
+            'support': {'ja': '支持', 'en': 'Support', 'zh': '支持'},
+            'oppose': {'ja': '反対', 'en': 'Oppose', 'zh': '反对'}
+        }
+
+        support_label = vote_labels['support'].get(lang, '支持')
+        oppose_label = vote_labels['oppose'].get(lang, '反対')
+
+        # 如果已投票，标记选中状态
+        support_style = "primary"
+        oppose_style = "primary"
+        support_color = "#17B169"
+        oppose_color = "#FF3B30"
+
+        # 添加投票按钮
+        vote_buttons = {
+            "type": "box",
+            "layout": "horizontal",
+            "spacing": "sm",
+            "margin": "md",
+            "contents": [
+                {
+                    "type": "button",
+                    "action": {
+                        "type": "postback",
+                        "label": support_label,
+                        "data": f"action=vote_notice&notice_id={notice_id}&vote=support"
+                    },
+                    "style": support_style,
+                    "color": support_color,
+                    "height": "sm"
+                },
+                {
+                    "type": "button",
+                    "action": {
+                        "type": "postback",
+                        "label": oppose_label,
+                        "data": f"action=vote_notice&notice_id={notice_id}&vote=oppose"
+                    },
+                    "style": oppose_style,
+                    "color": oppose_color,
+                    "height": "sm"
+                }
+            ]
+        }
+
+        bubble['footer']['contents'].append(vote_buttons)
+        bubble['footer']['contents'].append({
+            "type": "separator",
+            "margin": "md"
+        })
+
+    # 添加日期
+    bubble['footer']['contents'].append({
+        "type": "text",
+        "text": date,
+        "size": "xs",
+        "color": "#999999",
+        "align": "end"
+    })
 
     return FlexMessage(
         alt_text=title,

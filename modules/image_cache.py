@@ -73,38 +73,6 @@ def download_and_cache_icon(url, save_path):
         return None
 
 
-@lru_cache(maxsize=2048)
-def get_cached_image(url):
-    """
-    从 URL 获取图片（带内存缓存）
-
-    注意：LRU cache 基于 URL，不会跨线程共享 session 状态
-
-    Args:
-        url: 图片URL
-
-    Returns:
-        PIL.Image 或 None
-    """
-    try:
-        # 每次调用都创建新的请求（避免 session 污染）
-        # 对于图片下载，创建新请求的开销可以接受
-        response = requests.get(
-            url,
-            timeout=10,
-            verify=False,
-            headers={
-                "User-Agent": "Mozilla/5.0",
-                "Referer": "https://maimaidx.jp"
-            }
-        )
-        response.raise_for_status()
-        return Image.open(BytesIO(response.content))
-    except Exception as e:
-        logger.error(f"[ImageCache] ✗ Failed to load image: url={url}, error={e}")
-        return None
-
-
 def paste_icon_optimized(img, song_data, key, size, position, save_dir, url_func):
     """
     优化版的贴图标函数
@@ -206,34 +174,3 @@ def get_cover_image(cover_url, cover_name, covers_dir=None):
     except Exception as e:
         logger.error(f"[ImageCache] ✗ Failed to download cover: cover_name={cover_name}, error={e}")
         return None
-
-
-def batch_download_images(urls, max_workers=5):
-    """
-    并发批量下载图片
-
-    Args:
-        urls: URL 列表
-        max_workers: 最大并发数
-
-    Returns:
-        dict: {url: PIL.Image} 字典
-    """
-    results = {}
-
-    def download_single(url):
-        try:
-            img = get_cached_image(url)
-            return url, img
-        except Exception as e:
-            logger.error(f"[ImageCache] ✗ Batch download failed: url={url}, error={e}")
-            return url, None
-
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = {executor.submit(download_single, url): url for url in urls}
-        for future in as_completed(futures):
-            url, img = future.result()
-            if img:
-                results[url] = img
-
-    return results

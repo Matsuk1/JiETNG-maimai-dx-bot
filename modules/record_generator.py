@@ -426,12 +426,12 @@ def generate_records_picture(up_songs=[], down_songs=[], title="RECORD"):
     return combined
 
 
-def generate_cover(cover, type, icon=None, icon_type=None, size=150, cover_name=None, complete_info=None):
+def generate_cover(cover_url, type, icon=None, icon_type=None, size=150, cover_name=None, complete_info=None):
     """
     生成歌曲封面图片，带有类型标识和可选图标
 
     参数:
-        cover: 封面 URL（兼容旧代码）
+        cover_url: 封面 URL
         type: 歌曲类型 ("std" 或 "dx")
         icon: 可选的图标名称（如 "ap", "fc" 等）
         icon_type: 可选的图标类型（如 "combo", "score", "sync"）
@@ -442,12 +442,8 @@ def generate_cover(cover, type, icon=None, icon_type=None, size=150, cover_name=
     img_height = size
     record_img = Image.new("RGB", (img_width, img_height), (255, 255, 255))
 
-    # 加载封面图片（优先使用 cover_name 本地文件）
-    if cover_name:
-        cover_img = get_cover_image(cover_url=cover, cover_name=cover_name)
-    else:
-        # 向后兼容：没有 cover_name 时直接从 URL 下载
-        cover_img = get_cached_image(cover)
+    # 加载封面图片
+    cover_img = get_cover_image(cover_url=cover_url, cover_name=cover_name)
 
     if cover_img:
         cover_img = cover_img.resize((size, size))

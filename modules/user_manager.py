@@ -10,6 +10,7 @@ import threading
 from datetime import datetime
 from modules.record_manager import delete_record
 from modules.config_loader import write_user, mark_user_dirty, USERS
+from modules.notice_manager import get_latest_published_notice
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,7 @@ def add_user(user_id: str) -> None:
         return
 
     USERS[user_id] = {
-        "notice_read": True
+        "notice_interactions": {}
     }
     mark_user_dirty()
     write_user()
@@ -172,3 +173,180 @@ def get_user_nickname(user_id: str, line_bot_api, use_cache: bool = True) -> str
             }
 
         return nickname
+
+
+# ==================== 公告交互追踪功能 ====================
+
+def _migrate_user_notice_data(user_id: str) -> None:
+    """
+    迁移用户公告数据到v2格式
+    从旧的 notice_read 布尔值迁移到 notice_interactions 对象
+
+    Args:
+        user_id: 用户ID
+    """
+    if user_id not in USERS:
+        add_user(user_id)
+        return
+
+    user_data = USERS[user_id]
+
+    # 如果已有新格式,跳过
+    if 'notice_interactions' in user_data:
+        return
+
+    # 迁移旧的 notice_read 布尔值
+    old_notice_read = user_data.get('notice_read', True)
+
+    # 初始化新结构
+    user_data['notice_interactions'] = {}
+
+    # 如果用户未读最新公告,标记最新公告为未读
+    if not old_notice_read:
+        latest_notice = get_latest_published_notice()
+        if latest_notice:
+            notice_id = latest_notice['id']
+            user_data['notice_interactions'][notice_id] = {
+                'read': False,
+                'read_at': None,
+                'vote': None,
+                'voted_at': None
+            }
+
+    # 删除旧字段
+    if 'notice_read' in user_data:
+        del user_data['notice_read']
+
+    mark_user_dirty()
+
+
+def record_notice_read(user_id: str, notice_id: str) -> None:
+    """
+    记录用户阅读公告
+
+    Args:
+        user_id: 用户ID
+        notice_id: 公告ID
+    """
+    if user_id not in USERS:
+        add_user(user_id)
+
+    _migrate_user_notice_data(user_id)
+
+    if 'notice_interactions' not in USERS[user_id]:
+        USERS[user_id]['notice_interactions'] = {}
+
+    if notice_id not in USERS[user_id]['notice_interactions']:
+        USERS[user_id]['notice_interactions'][notice_id] = {
+            'read': False,
+            'read_at': None,
+            'vote': None,
+            'voted_at': None
+        }
+
+    USERS[user_id]['notice_interactions'][notice_id]['read'] = True
+    USERS[user_id]['notice_interactions'][notice_id]['read_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    mark_user_dirty()
+    write_user(force=True)
+
+
+def record_notice_vote(user_id: str, notice_id: str, vote_type: str) -> bool:
+    """
+    记录用户投票
+
+    Args:
+        user_id: 用户ID
+        notice_id: 公告ID
+        vote_type: 'support' 或 'oppose'
+
+    Returns:
+        bool: 是否成功
+    """
+    if user_id not in USERS:
+        return False
+
+    _migrate_user_notice_data(user_id)
+
+    if 'notice_interactions' not in USERS[user_id]:
+        USERS[user_id]['notice_interactions'] = {}
+
+    if notice_id not in USERS[user_id]['notice_interactions']:
+        USERS[user_id]['notice_interactions'][notice_id] = {
+            'read': True,
+            'read_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'vote': None,
+            'voted_at': None
+        }
+
+    USERS[user_id]['notice_interactions'][notice_id]['vote'] = vote_type
+    USERS[user_id]['notice_interactions'][notice_id]['voted_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    # 确保投票时也标记为已读
+    if not USERS[user_id]['notice_interactions'][notice_id]['read']:
+        USERS[user_id]['notice_interactions'][notice_id]['read'] = True
+        USERS[user_id]['notice_interactions'][notice_id]['read_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    mark_user_dirty()
+    write_user(force=True)
+
+    return True
+
+
+def get_notice_interaction(user_id: str, notice_id: str) -> Optional[Dict]:
+    """
+    获取用户与公告的交互状态
+
+    Args:
+        user_id: 用户ID
+        notice_id: 公告ID
+
+    Returns:
+        交互状态字典或None
+    """
+    if user_id not in USERS:
+        return None
+
+    _migrate_user_notice_data(user_id)
+
+    interactions = USERS[user_id].get('notice_interactions', {})
+    return interactions.get(notice_id)
+
+
+def has_user_read_notice(user_id: str, notice_id: str) -> bool:
+    """
+    检查用户是否已阅读指定公告
+
+    Args:
+        user_id: 用户ID
+        notice_id: 公告ID
+
+    Returns:
+        bool: 是否已阅读
+    """
+    interaction = get_notice_interaction(user_id, notice_id)
+    return interaction.get('read', False) if interaction else False
+
+
+def clear_notice_read_status(notice_id: str) -> None:
+    """
+    清除所有用户对指定公告的阅读状态(发布新公告时使用)
+
+    Args:
+        notice_id: 公告ID
+    """
+    for user_id in list(USERS.keys()):
+        _migrate_user_notice_data(user_id)
+
+        if 'notice_interactions' not in USERS[user_id]:
+            USERS[user_id]['notice_interactions'] = {}
+
+        USERS[user_id]['notice_interactions'][notice_id] = {
+            'read': False,
+            'read_at': None,
+            'vote': None,
+            'voted_at': None
+        }
+
+    mark_user_dirty()
+    write_user()

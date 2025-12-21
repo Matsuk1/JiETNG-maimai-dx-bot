@@ -3,9 +3,12 @@
 在系统启动时执行各种检查和清理任务
 """
 import logging
+from datetime import datetime
+import os
 from typing import List, Dict, Any
-from modules.config_loader import write_user, mark_user_dirty, USERS
+from modules.config_loader import _config, write_user, mark_user_dirty, USERS
 from modules.user_manager import delete_user
+from modules.dbpool_manager import get_connection
 
 logger = logging.getLogger(__name__)
 
@@ -95,8 +98,6 @@ def check_database_connection() -> bool:
         True if connection is healthy, False otherwise
     """
     try:
-        from modules.dbpool_manager import get_connection
-
         conn = get_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT 1")
@@ -119,9 +120,6 @@ def check_required_files() -> Dict[str, bool]:
     Returns:
         文件检查结果字典
     """
-    import os
-    from modules.config_loader import _config
-
     file_path_config = _config.get("file_path", {})
 
     required_files = {
@@ -207,7 +205,6 @@ def run_system_check() -> Dict[str, Any]:
     logger.info("=" * 60)
 
     # 添加时间戳
-    from datetime import datetime
     results["timestamp"] = datetime.now().isoformat()
     results["overall_status"] = "PASS" if all_pass else "WARNING"
 

@@ -18,11 +18,17 @@ from linebot.v3.messaging import (
     TextMessage
 )
 from modules.config_loader import USERS
-from modules.user_manager import get_user_value, edit_user_value
-from modules.notice_manager import get_latest_notice
+from modules.user_manager import (
+    get_user_value,
+    edit_user_value,
+    _migrate_user_notice_data,
+    has_user_read_notice,
+    record_notice_read
+)
+from modules.notice_manager import get_latest_notice, get_latest_published_notice
 from modules.perm_request_handler import get_pending_perm_requests
 from modules.perm_request_generator import generate_perm_request_message
-from modules.message_manager import generate_notice_flex, generate_error_alert_flex
+from modules.message_manager import generate_notice_flex, generate_error_alert_flex, system_error
 
 logger = logging.getLogger(__name__)
 
@@ -62,19 +68,25 @@ def smart_reply(user_id: str, reply_token: str, messages, configuration: Configu
                 if perm_request_msg:
                     messages.append(perm_request_msg)
 
-        # 优先级2: 公告消息
-        if len(messages) < 5:
-            if user_id not in USERS:
-                notice_read = True
-            else:
-                notice_read = get_user_value(user_id, "notice_read")
+        # 优先级2: 公告消息（使用新的交互追踪系统）
+        if len(messages) < 5 and user_id:
+            # 执行用户数据迁移（如果需要）
+            _migrate_user_notice_data(user_id)
 
-            if not notice_read:
-                notice_json = get_latest_notice()
-                if notice_json:
-                    notice_flex = generate_notice_flex(notice_json, user_id)
+            # 获取最新已发布的公告
+            latest_notice = get_latest_published_notice()
+
+            if latest_notice:
+                notice_id = latest_notice['id']
+
+                # 检查用户是否已阅读
+                has_read = has_user_read_notice(user_id, notice_id)
+
+                if not has_read:
+                    # 推送公告并标记为已读
+                    notice_flex = generate_notice_flex(latest_notice, user_id)
                     messages.append(notice_flex)
-                    edit_user_value(user_id, "notice_read", True)
+                    record_notice_read(user_id, notice_id)
 
     # 如果有保存的 quick_reply，将其移动到最后一条消息上
     if saved_quick_reply is not None and messages:
@@ -140,7 +152,6 @@ def notify_admins_error(
     # 先回复用户（如果提供了参数）
     if user_id and reply_token:
         try:
-            from modules.message_manager import system_error
             smart_reply(user_id, reply_token, system_error(user_id), configuration)
         except Exception as e:
             logger.error(f"[LineMessenger] ✗ Failed to reply error message: error={e}")

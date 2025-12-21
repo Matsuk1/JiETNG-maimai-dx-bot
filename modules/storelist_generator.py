@@ -1,8 +1,7 @@
-from linebot.v3.messaging import FlexMessage, FlexContainer
-from modules.message_manager import store_error
 import urllib.parse
 import re
-
+from linebot.v3.messaging import FlexMessage, FlexContainer
+from modules.message_manager import store_error
 
 def generate_google_map_url(name: str, address: str = "", lat: float = None, lng: float = None):
     """生成不会触发“是否在App中打开”的 Google 地图网页链接"""

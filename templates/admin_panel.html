@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <title>Admin Panel | JiETNG</title>
+  <link rel="icon" type="image/png" href="/static/pics/logo.png">
   {% include 'common_styles.html' %}
 
   <style>
@@ -916,7 +917,7 @@
       <button class="tab active" onclick="switchTab('stats')">Statistics</button>
       <button class="tab" onclick="switchTab('users')">Users</button>
       <button class="tab" onclick="switchTab('tasks')">Task Queue</button>
-      <button class="tab" onclick="switchTab('cache')">Cache & Data</button>
+      <button class="tab" onclick="switchTab('dxdata')">DxData</button>
       <button class="tab" onclick="switchTab('notices')">Notices</button>
       <button class="tab" onclick="switchTab('logs')">Logs</button>
     </div>
@@ -1232,8 +1233,8 @@
       </div>
     </div>
 
-    <!-- Cache & Data Tab -->
-    <div id="cache-tab" class="tab-content">
+    <!-- DxData Tab -->
+    <div id="dxdata-tab" class="tab-content">
       <!-- DXData Status Section -->
       <div class="section">
         <div class="section-title">DXData Status</div>
@@ -1249,20 +1250,6 @@
         </div>
       </div>
 
-      <!-- Cache Generation Progress Section -->
-      <div class="section">
-        <div class="section-title">Cache Generation Progress</div>
-
-        <div id="cache-progress-container">
-          <div style="text-align: center; padding: 40px; opacity: 0.5;">
-            Loading cache progress...
-          </div>
-        </div>
-
-        <div style="margin-top: 12px; text-align: center;">
-          <button class="btn btn-primary" onclick="loadCacheProgress()">Refresh</button>
-        </div>
-      </div>
     </div>
 
     <!-- Logs Tab -->
@@ -1307,9 +1294,9 @@
     </div>
   </div>
 
-  <!-- Notice Modal -->
+  <!-- Notice Modal (Multi-language Support) -->
   <div id="noticeModal" class="modal">
-    <div class="modal-content">
+    <div class="modal-content" style="max-width: 800px;">
       <div class="modal-header">
         <h2 class="modal-title" id="notice-modal-title">Create Notice</h2>
         <button class="close-btn" onclick="closeNoticeModal()">&times;</button>
@@ -1318,11 +1305,59 @@
       <form id="noticeForm" onsubmit="saveNotice(event)">
         <input type="hidden" id="notice-id">
 
+        <!-- Multi-language Content -->
         <div class="form-group">
-          <label class="form-label">Notice Content</label>
-          <textarea id="notice-content" class="form-textarea" rows="6" placeholder="Enter notice content..." required></textarea>
+          <label class="form-label">Notice Content (Multi-language)</label>
+
+          <!-- Chinese -->
+          <div style="margin-bottom: 12px;">
+            <label style="font-size: 12px; color: #666; display: block; margin-bottom: 4px;">
+              🇨🇳 中文
+            </label>
+            <textarea id="notice-content-zh" class="form-textarea" rows="4" placeholder="输入中文内容..."></textarea>
+          </div>
+
+          <!-- Japanese -->
+          <div style="margin-bottom: 12px;">
+            <label style="font-size: 12px; color: #666; display: block; margin-bottom: 4px;">
+              🇯🇵 日本語
+            </label>
+            <textarea id="notice-content-ja" class="form-textarea" rows="4" placeholder="日本語の内容を入力..."></textarea>
+          </div>
+
+          <!-- English -->
+          <div style="margin-bottom: 12px;">
+            <label style="font-size: 12px; color: #666; display: block; margin-bottom: 4px;">
+              🇺🇸 English
+            </label>
+            <textarea id="notice-content-en" class="form-textarea" rows="4" placeholder="Enter English content..."></textarea>
+          </div>
+
           <small style="opacity: 0.6; font-size: 12px;">
-            💡 This will be shown to users when they interact with the bot.
+            💡 At least one language is required. Unfilled languages will display the filled content.
+          </small>
+        </div>
+
+        <!-- Voting Option -->
+        <div class="form-group">
+          <label class="form-label" style="display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" id="notice-voting-enabled" style="width: auto;">
+            Enable Voting (Support/Oppose)
+          </label>
+          <small style="opacity: 0.6; font-size: 12px; display: block; margin-top: 4px;">
+            Allow users to vote "Support" or "Oppose" on this notice
+          </small>
+        </div>
+
+        <!-- Publication Status -->
+        <div class="form-group">
+          <label class="form-label">Publication Status</label>
+          <select id="notice-status" class="form-input">
+            <option value="published">Publish immediately</option>
+            <option value="draft">Save as draft</option>
+          </select>
+          <small style="opacity: 0.6; font-size: 12px; display: block; margin-top: 4px;">
+            Drafts are only visible to admins and won't be pushed to users
           </small>
         </div>
 
@@ -1331,6 +1366,24 @@
           <button type="submit" class="btn btn-success" id="notice-save-btn">Save</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Notice Statistics Modal -->
+  <div id="noticeStatsModal" class="modal">
+    <div class="modal-content" style="max-width: 600px;">
+      <div class="modal-header">
+        <h2 class="modal-title">Notice Statistics</h2>
+        <button class="close-btn" onclick="closeStatsModal()">&times;</button>
+      </div>
+
+      <div id="stats-content" style="padding: 20px;">
+        <!-- Statistics content will be dynamically generated -->
+      </div>
+
+      <div style="padding: 0 20px 20px;">
+        <button class="btn btn-primary" onclick="closeStatsModal()">Close</button>
+      </div>
     </div>
   </div>
 
@@ -1881,51 +1934,92 @@
         return;
       }
 
-      container.innerHTML = ''; // 清空容器
+      container.innerHTML = '';
 
       for (const notice of notices) {
         const noticeItem = document.createElement('div');
         noticeItem.className = 'task-item';
         noticeItem.style.marginBottom = '16px';
 
+        // Status badge
+        const statusBadge = document.createElement('span');
+        statusBadge.style.cssText = 'padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-right: 8px; display: inline-block;';
+        if (notice.status === 'draft') {
+          statusBadge.textContent = 'Draft';
+          statusBadge.style.backgroundColor = '#FFF3CD';
+          statusBadge.style.color = '#856404';
+        } else {
+          statusBadge.textContent = 'Published';
+          statusBadge.style.backgroundColor = '#D4EDDA';
+          statusBadge.style.color = '#155724';
+        }
+
+        // Voting badge
+        const votingBadge = document.createElement('span');
+        if (notice.voting_enabled) {
+          votingBadge.style.cssText = 'padding: 2px 8px; border-radius: 4px; font-size: 11px; background-color: #D1ECF1; color: #0C5460; margin-right: 8px; display: inline-block;';
+          votingBadge.textContent = 'Voting';
+        }
+
+        // Content preview (show Chinese content, truncate)
+        const contentPreview = (typeof notice.content === 'string'
+          ? notice.content
+          : notice.content.zh || notice.content.jp || notice.content.en || '').substring(0, 100) + '...';
+
         const taskInfo = document.createElement('div');
         taskInfo.className = 'task-info';
         taskInfo.style.flex = '1';
 
-        const contentDiv = document.createElement('div');
-        contentDiv.style.fontWeight = '600';
-        contentDiv.style.marginBottom = '8px';
-        contentDiv.textContent = notice.content;
+        taskInfo.innerHTML = `
+          ${statusBadge.outerHTML}
+          ${notice.voting_enabled ? votingBadge.outerHTML : ''}
+          <div style="font-weight: 600; margin-bottom: 8px; margin-top: 4px;">
+            ${escapeHtml(contentPreview)}
+          </div>
+          <div style="font-size: 11px; opacity: 0.5;">
+            ID: ${notice.id} | Created: ${notice.date}
+          </div>
+        `;
 
-        const metaDiv = document.createElement('div');
-        metaDiv.style.fontSize = '11px';
-        metaDiv.style.opacity = '0.5';
-        metaDiv.textContent = `ID: ${notice.id} | Created: ${notice.date}`;
+        // Actions
+        const actions = document.createElement('div');
+        actions.style.display = 'flex';
+        actions.style.gap = '8px';
 
-        taskInfo.appendChild(contentDiv);
-        taskInfo.appendChild(metaDiv);
+        // Stats button (only for published)
+        if (notice.status === 'published') {
+          const statsBtn = document.createElement('button');
+          statsBtn.className = 'btn btn-primary';
+          statsBtn.textContent = 'Stats';
+          statsBtn.onclick = () => showNoticeStats(notice.id);
+          actions.appendChild(statsBtn);
+        }
 
-        const actionsDiv = document.createElement('div');
-        actionsDiv.style.display = 'flex';
-        actionsDiv.style.gap = '8px';
-        actionsDiv.style.alignItems = 'center';
+        // Publish button (only for drafts)
+        if (notice.status === 'draft') {
+          const publishBtn = document.createElement('button');
+          publishBtn.className = 'btn btn-success';
+          publishBtn.textContent = 'Publish';
+          publishBtn.onclick = () => publishDraft(notice.id);
+          actions.appendChild(publishBtn);
+        }
 
+        // Edit button
         const editBtn = document.createElement('button');
-        editBtn.className = 'btn btn-warning';
+        editBtn.className = 'btn btn-primary';
         editBtn.textContent = 'Edit';
         editBtn.onclick = () => editNotice(notice.id);
+        actions.appendChild(editBtn);
 
+        // Delete button
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'btn btn-danger';
         deleteBtn.textContent = 'Delete';
         deleteBtn.onclick = () => deleteNoticeConfirm(notice.id);
-
-        actionsDiv.appendChild(editBtn);
-        actionsDiv.appendChild(deleteBtn);
+        actions.appendChild(deleteBtn);
 
         noticeItem.appendChild(taskInfo);
-        noticeItem.appendChild(actionsDiv);
-
+        noticeItem.appendChild(actions);
         container.appendChild(noticeItem);
       }
     }
@@ -1939,7 +2033,11 @@
     function showCreateNoticeModal() {
       document.getElementById('notice-modal-title').textContent = 'Create New Notice';
       document.getElementById('notice-id').value = '';
-      document.getElementById('notice-content').value = '';
+      document.getElementById('notice-content-zh').value = '';
+      document.getElementById('notice-content-ja').value = '';
+      document.getElementById('notice-content-en').value = '';
+      document.getElementById('notice-voting-enabled').checked = false;
+      document.getElementById('notice-status').value = 'published';
       document.getElementById('notice-save-btn').textContent = 'Create';
       document.getElementById('noticeModal').style.display = 'block';
     }
@@ -1953,7 +2051,22 @@
             if (notice) {
               document.getElementById('notice-modal-title').textContent = 'Edit Notice';
               document.getElementById('notice-id').value = notice.id;
-              document.getElementById('notice-content').value = notice.content;
+
+              // Handle multi-language content
+              const content = notice.content;
+              if (typeof content === 'string') {
+                // Backward compatibility
+                document.getElementById('notice-content-zh').value = content;
+                document.getElementById('notice-content-ja').value = '';
+                document.getElementById('notice-content-en').value = '';
+              } else {
+                document.getElementById('notice-content-zh').value = content.zh || '';
+                document.getElementById('notice-content-ja').value = content.ja || '';
+                document.getElementById('notice-content-en').value = content.en || '';
+              }
+
+              document.getElementById('notice-voting-enabled').checked = notice.voting_enabled || false;
+              document.getElementById('notice-status').value = notice.status || 'published';
               document.getElementById('notice-save-btn').textContent = 'Update';
               document.getElementById('noticeModal').style.display = 'block';
             }
@@ -1965,18 +2078,31 @@
       event.preventDefault();
 
       const noticeId = document.getElementById('notice-id').value;
-      const content = document.getElementById('notice-content').value.trim();
+      const contentZh = document.getElementById('notice-content-zh').value.trim();
+      const contentJa = document.getElementById('notice-content-ja').value.trim();
+      const contentEn = document.getElementById('notice-content-en').value.trim();
+      const votingEnabled = document.getElementById('notice-voting-enabled').checked;
+      const status = document.getElementById('notice-status').value;
 
-      if (!content) {
-        showToast('✗ Content cannot be empty');
+      // Validate at least one language
+      if (!contentJa && !contentEn && !contentZh) {
+        showToast('✗ At least one language content is required');
         return;
       }
 
       const isUpdate = !!noticeId;
       const url = isUpdate ? '/linebot/admin/update_notice' : '/linebot/admin/create_notice';
-      const payload = isUpdate
-        ? { notice_id: noticeId, content: content }
-        : { content: content };
+      const payload = {
+        content_ja: contentJa,
+        content_en: contentEn,
+        content_zh: contentZh,
+        voting_enabled: votingEnabled,
+        status: status
+      };
+
+      if (isUpdate) {
+        payload.notice_id = noticeId;
+      }
 
       const btn = document.getElementById('notice-save-btn');
       btn.disabled = true;
@@ -2033,6 +2159,114 @@
     function closeNoticeModal() {
       document.getElementById('noticeModal').style.display = 'none';
       document.getElementById('noticeForm').reset();
+    }
+
+    function showNoticeStats(noticeId) {
+      fetch(`/linebot/admin/get_notice_stats?notice_id=${noticeId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            displayNoticeStats(data.stats);
+            document.getElementById('noticeStatsModal').style.display = 'block';
+          } else {
+            showToast('✗ Failed to load statistics');
+          }
+        })
+        .catch(err => {
+          showToast('✗ Network error: ' + err);
+        });
+    }
+
+    function displayNoticeStats(stats) {
+      const container = document.getElementById('stats-content');
+
+      const supportPct = stats.support_count + stats.oppose_count > 0
+        ? (stats.support_count / (stats.support_count + stats.oppose_count) * 100).toFixed(1)
+        : 0;
+      const opposePct = stats.support_count + stats.oppose_count > 0
+        ? (stats.oppose_count / (stats.support_count + stats.oppose_count) * 100).toFixed(1)
+        : 0;
+
+      container.innerHTML = `
+        <div style="margin-bottom: 24px;">
+          <h3 style="font-size: 14px; color: #666; margin-bottom: 12px;">📖 Read Statistics</h3>
+          <div style="padding: 16px; border-radius: 8px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span>Total Users:</span>
+              <strong>${stats.total_users}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span>Read Count:</span>
+              <strong style="color: #17B169;">${stats.read_count}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span>Read Percentage:</span>
+              <strong style="color: #17B169;">${stats.read_percentage}%</strong>
+            </div>
+
+            <!-- Progress bar -->
+            <div style="margin-top: 12px; background: #E9ECEF; height: 8px; border-radius: 4px; overflow: hidden;">
+              <div style="width: ${stats.read_percentage}%; height: 100%; background: linear-gradient(90deg, #17B169, #28C76F); transition: width 0.3s;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 style="font-size: 14px; color: #666; margin-bottom: 12px;">🗳️ Voting Statistics</h3>
+          <div style="padding: 16px; border-radius: 8px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span>Support:</span>
+              <strong style="color: #17B169;">${stats.support_count} (${supportPct}%)</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span>Oppose:</span>
+              <strong style="color: #FF3B30;">${stats.oppose_count} (${opposePct}%)</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span>No Vote:</span>
+              <strong style="color: #999;">${stats.no_vote_count}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span>Vote Participation:</span>
+              <strong>${stats.vote_percentage}%</strong>
+            </div>
+
+            <!-- Vote visualization -->
+            <div style="margin-top: 12px; display: flex; height: 8px; border-radius: 4px; overflow: hidden;">
+              <div style="width: ${supportPct}%; background: #17B169;"></div>
+              <div style="width: ${opposePct}%; background: #FF3B30;"></div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function closeStatsModal() {
+      document.getElementById('noticeStatsModal').style.display = 'none';
+    }
+
+    function publishDraft(noticeId) {
+      if (!confirm('Are you sure you want to publish this draft?\n\nThis will send the notice to all users.')) {
+        return;
+      }
+
+      fetch('/linebot/admin/publish_notice', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({notice_id: noticeId})
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            showToast('✓ Notice published successfully');
+            loadNotices();
+          } else {
+            showToast('✗ ' + data.message);
+          }
+        })
+        .catch(err => {
+          showToast('✗ Network error: ' + err);
+        });
     }
 
     // Close modals when clicking outside
@@ -2168,109 +2402,7 @@
       });
     }
 
-    // ==================== Cache & Data Functions ====================
-
-    function loadCacheProgress() {
-      const container = document.getElementById('cache-progress-container');
-      container.innerHTML = '<div style="text-align: center; padding: 40px; opacity: 0.5;">Loading...</div>';
-
-      fetch('/linebot/admin/cache_progress')
-        .then(res => res.json())
-        .then(data => {
-          displayCacheProgress(data);
-        })
-        .catch(err => {
-          container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--danger-color);">Network error: ' + err + '</div>';
-        });
-    }
-
-    function displayCacheProgress(progress) {
-      const container = document.getElementById('cache-progress-container');
-
-      let statusColor = 'var(--text-secondary)';
-      let statusText = progress.status;
-
-      if (progress.status === 'idle') {
-        statusColor = 'var(--text-secondary)';
-        statusText = 'Idle';
-      } else if (progress.status === 'running') {
-        statusColor = 'var(--info-color)';
-        statusText = 'Running';
-      } else if (progress.status === 'completed') {
-        statusColor = 'var(--success-color)';
-        statusText = 'Completed';
-      } else if (progress.status === 'error') {
-        statusColor = 'var(--danger-color)';
-        statusText = 'Error';
-      }
-
-      let html = `
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;">
-          <div style="padding: 20px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px;">
-            <div style="font-size: 12px; opacity: 0.6; margin-bottom: 8px;">Status</div>
-            <div style="font-size: 24px; font-weight: 700; color: ${statusColor}; margin-bottom: 4px;">
-              ${statusText}
-            </div>
-            <div style="font-size: 13px; opacity: 0.5;">Cache generation</div>
-          </div>
-
-          <div style="padding: 20px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px;">
-            <div style="font-size: 12px; opacity: 0.6; margin-bottom: 8px;">Progress</div>
-            <div style="font-size: 32px; font-weight: 700; color: var(--accent-color); margin-bottom: 4px;">
-              ${progress.progress}<span style="font-size: 18px; margin-left: 4px;">%</span>
-            </div>
-            <div style="width: 100%; height: 6px; background: var(--border-color); border-radius: 3px; margin-top: 8px; opacity: 0.3;">
-              <div style="height: 100%; background: var(--accent-color); border-radius: 3px; width: ${progress.progress}%; transition: width 0.3s;"></div>
-            </div>
-          </div>
-
-          <div style="padding: 20px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px;">
-            <div style="font-size: 12px; opacity: 0.6; margin-bottom: 8px;">Completed Levels</div>
-            <div style="font-size: 32px; font-weight: 700; color: var(--accent-color); margin-bottom: 4px;">
-              ${progress.completed_levels} / ${progress.total_levels}
-            </div>
-            <div style="font-size: 13px; opacity: 0.5;">Levels generated</div>
-          </div>
-        </div>
-      `;
-
-      if (progress.status === 'running' && progress.current_server && progress.current_level) {
-        html += `
-          <div style="padding: 16px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px; margin-bottom: 16px;">
-            <div style="font-size: 12px; font-weight: 600; opacity: 0.7; margin-bottom: 8px;">Current Task</div>
-            <div style="font-size: 14px;">
-              Server: <span style="font-weight: 600; color: var(--accent-color);">${progress.current_server}</span> |
-              Level: <span style="font-weight: 600; color: var(--accent-color);">${progress.current_level}</span>
-            </div>
-          </div>
-        `;
-      }
-
-      if (progress.error_message) {
-        html += `
-          <div style="padding: 16px; background: rgba(220, 38, 38, 0.1); border: 1px solid var(--danger-color); border-radius: 12px; margin-bottom: 16px;">
-            <div style="font-size: 12px; font-weight: 600; color: var(--danger-color); margin-bottom: 8px;">Error Message</div>
-            <div style="font-size: 13px; color: var(--danger-color); font-family: 'Courier New', monospace;">
-              ${escapeHtml(progress.error_message)}
-            </div>
-          </div>
-        `;
-      }
-
-      if (progress.start_time) {
-        html += `
-          <div style="padding: 16px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px;">
-            <div style="font-size: 12px; font-weight: 600; opacity: 0.7; margin-bottom: 8px;">Timing</div>
-            <div style="font-size: 13px; opacity: 0.7;">
-              Start: ${progress.start_time || 'N/A'}
-              ${progress.end_time ? '<br>End: ' + progress.end_time : ''}
-            </div>
-          </div>
-        `;
-      }
-
-      container.innerHTML = html;
-    }
+    // ==================== DxData Functions ====================
 
     function loadDXDataStatus() {
       const container = document.getElementById('dxdata-status-container');

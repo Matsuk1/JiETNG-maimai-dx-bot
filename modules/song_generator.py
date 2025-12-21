@@ -1,7 +1,7 @@
 from PIL import Image, ImageDraw
 from modules.record_generator import create_thumbnail, create_thumbnail_in_line
 from modules.image_manager import *
-from modules.image_cache import paste_icon_optimized, get_cached_image, get_cover_image
+from modules.image_cache import paste_icon_optimized, get_cover_image
 from modules.config_loader import ICON_TYPE_DIR
 
 def song_info_generate(song_json, played_data = []):
@@ -9,10 +9,7 @@ def song_info_generate(song_json, played_data = []):
     cover_name = song_json.get("cover_name")
 
     # 优先使用本地缓存
-    if cover_name:
-        cover_img = get_cover_image(cover_url, cover_name)
-    else:
-        cover_img = get_cached_image(cover_url)
+    cover_img = get_cover_image(cover_url, cover_name)
 
     if not cover_img:
         cover_img = Image.new("RGBA", (200, 200), (200, 200, 200))
@@ -245,11 +242,6 @@ def _render_song_info_small_img(song_json, cover_img):
     return img
 
 def generate_version_list(songs_json):
-    # 批量并发下载所有封面（速度优化）
-    from modules.image_cache import batch_download_images
-    cover_urls = [song["cover_url"] for song in songs_json]
-    batch_download_images(cover_urls, max_workers=5)  # 预先下载所有封面
-
     song_imgs = []
 
     for song in songs_json:
@@ -257,10 +249,7 @@ def generate_version_list(songs_json):
         cover_name = song.get("cover_name")
 
         # 优先使用本地缓存
-        if cover_name:
-            cover_img = get_cover_image(cover_url, cover_name)
-        else:
-            cover_img = get_cached_image(cover_url)
+        cover_img = get_cover_image(cover_url, cover_name)
 
         if not cover_img:
             cover_img = Image.new("RGBA", (200, 200), (200, 200, 200))
