@@ -52,7 +52,7 @@ default_config = {
         "host": "localhost",
         "user": "root",
         "password": "",
-        "database": "records"
+        "database": "maimai_records"
     },
     "urls": {
         "line_adding": "",

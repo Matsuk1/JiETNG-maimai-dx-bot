@@ -39,7 +39,8 @@ from flask import (
     render_template,
     redirect,
     session,
-    jsonify
+    jsonify,
+    send_file
 )
 from flask_wtf.csrf import CSRFProtect
 
@@ -99,6 +100,9 @@ from modules.perm_request_handler import (
 
 # Config loader
 from modules.config_loader import *
+
+# Backup manager
+from modules.backup_manager import create_backup
 
 # UI and message modules
 from modules.message_manager import *
@@ -2728,6 +2732,42 @@ def handle_sync_text_command(event):
                 reply_message = TextMessage(text=get_multilingual_text(devtoken_usage_text, user_id))
                 return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
 
+        if user_message == "backup":
+            # 创建系统备份
+            try:
+                # 准备数据库配置
+                db_config = {
+                    'host': DB_HOST,
+                    'user': DB_USER,
+                    'password': DB_PASSWORD,
+                    'database': DB_NAME
+                }
+
+                # 读取当前配置
+                with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
+                    config_data = json.load(f)
+
+                # 创建备份
+                success, message, backup_path = create_backup(
+                    users_data=USERS,  # 未加密的用户数据
+                    config_data=config_data,
+                    db_config=db_config,
+                    backup_password=ADMIN_PASSWORD,
+                    output_dir="./data"
+                )
+
+                # 发送结果消息
+                result_message = TextMessage(text=message)
+                smart_reply(user_id, event.reply_token, result_message, configuration, DIVIDER)
+
+                return
+
+            except Exception as e:
+                logger.error(f"[Backup] ✗ Backup command error: user_id={user_id}, error={e}", exc_info=True)
+                error_message = TextMessage(text=f"❌ Backup failed\nError: {str(e)}")
+                smart_reply(user_id, event.reply_token, error_message, configuration, DIVIDER)
+                return
+
     # ========================================
     # 默认：未匹配任何命令
     # ========================================
@@ -3656,6 +3696,155 @@ def admin_load_nicknames():
 
     except Exception as e:
         logger.error(f"[Admin] ✗ Load nicknames error: error={e}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route("/linebot/admin/get_backups", methods=["GET"])
+def admin_get_backups():
+    """获取所有备份文件列表"""
+    if not check_admin_auth():
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    try:
+        backup_dir = "./data"
+        backup_files = []
+
+        # 扫描备份目录
+        if os.path.exists(backup_dir):
+            for filename in os.listdir(backup_dir):
+                if filename.startswith("backup_") and filename.endswith(".zip"):
+                    filepath = os.path.join(backup_dir, filename)
+                    stat = os.stat(filepath)
+
+                    backup_files.append({
+                        'filename': filename,
+                        'size': stat.st_size,
+                        'size_mb': round(stat.st_size / (1024 * 1024), 2),
+                        'created_at': datetime.fromtimestamp(stat.st_mtime).strftime('%Y-%m-%d %H:%M:%S'),
+                        'timestamp': stat.st_mtime
+                    })
+
+        # 按时间倒序排序（最新的在前）
+        backup_files.sort(key=lambda x: x['timestamp'], reverse=True)
+
+        return jsonify({
+            'success': True,
+            'backups': backup_files,
+            'count': len(backup_files)
+        })
+
+    except Exception as e:
+        logger.error(f"[Admin] ✗ Get backups error: error={e}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route("/linebot/admin/download_backup", methods=["GET"])
+def admin_download_backup():
+    """下载指定的备份文件"""
+    if not check_admin_auth():
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    try:
+        filename = request.args.get('file')
+        if not filename:
+            return jsonify({
+                'success': False,
+                'message': 'Missing file parameter'
+            }), 400
+
+        # 安全检查：只允许备份文件
+        if not filename.startswith("backup_") or not filename.endswith(".zip"):
+            return jsonify({
+                'success': False,
+                'message': 'Invalid backup filename'
+            }), 400
+
+        # 防止路径遍历攻击
+        if ".." in filename or "/" in filename or "\\" in filename:
+            return jsonify({
+                'success': False,
+                'message': 'Invalid filename'
+            }), 400
+
+        backup_path = os.path.join("./data", filename)
+
+        # 检查文件是否存在
+        if not os.path.exists(backup_path):
+            return jsonify({
+                'success': False,
+                'message': 'Backup file not found'
+            }), 404
+
+        # 发送文件
+        return send_file(
+            backup_path,
+            as_attachment=True,
+            download_name=filename,
+            mimetype='application/zip'
+        )
+
+    except Exception as e:
+        logger.error(f"[Admin] ✗ Download backup error: file={filename}, error={e}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route("/linebot/admin/delete_backup", methods=["POST"])
+@csrf.exempt
+def admin_delete_backup():
+    """删除指定的备份文件"""
+    if not check_admin_auth():
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    try:
+        data = request.get_json()
+        filename = data.get('filename')
+
+        if not filename:
+            return jsonify({
+                'success': False,
+                'message': 'Missing filename parameter'
+            }), 400
+
+        # 安全检查：只允许备份文件
+        if not filename.startswith("backup_") or not filename.endswith(".zip"):
+            return jsonify({
+                'success': False,
+                'message': 'Invalid backup filename'
+            }), 400
+
+        # 防止路径遍历攻击
+        if ".." in filename or "/" in filename or "\\" in filename:
+            return jsonify({
+                'success': False,
+                'message': 'Invalid filename'
+            }), 400
+
+        backup_path = os.path.join("./data", filename)
+
+        # 检查文件是否存在
+        if not os.path.exists(backup_path):
+            return jsonify({
+                'success': False,
+                'message': 'Backup file not found'
+            }), 404
+
+        # 删除文件
+        os.remove(backup_path)
+        logger.info(f"[Admin] ✓ Backup deleted: file={filename}")
+
+        return jsonify({
+            'success': True,
+            'message': f'Backup {filename} deleted successfully'
+        })
+
+    except Exception as e:
+        logger.error(f"[Admin] ✗ Delete backup error: error={e}", exc_info=True)
         return jsonify({
             'success': False,
             'message': str(e)
