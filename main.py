@@ -78,6 +78,7 @@ from modules.user_manager import *
 from modules.bindtoken_manager import generate_bind_token, get_user_id_from_token
 from modules.notice_manager import *
 from modules.notice_stats import *
+from modules.tip_ad_manager import load_tip_ad_data, get_all_tip_ads, create_tip_ad, update_tip_ad, delete_tip_ad, get_tip_ad_by_id
 from modules.maimai_manager import *
 from modules.dxdata_manager import update_dxdata_with_comparison
 from modules.record_manager import *
@@ -1102,6 +1103,7 @@ def random_song(user_id, key="", ver="jp"):
     length = len(SONGS)
     is_exit = False
     valid_songs = []
+    result = []
 
     if key:
         level_values = parse_level_value(key)
@@ -1912,7 +1914,7 @@ def generate_level_records(user_id, level, ver="jp", page=1):
     if not up_level_list and not down_level_list:
         return level_record_not_found(level, page, user_id)
 
-    title = f"LV{level} #{page}"
+    title = f"Lv{level} #{page}"
 
     img = generate_records_picture(up_level_list, down_level_list, title)
 
@@ -2751,7 +2753,7 @@ def handle_sync_text_command(event):
                     config_data=config_data,
                     db_config=db_config,
                     backup_password=ADMIN_PASSWORD,
-                    output_dir="./data"
+                    output_dir=BACKUP_DIR
                 )
 
                 # 发送结果消息
@@ -3515,6 +3517,141 @@ def notice_vote():
         logger.error(f"[Notice] ✗ Vote error: error={e}", exc_info=True)
         return jsonify({'success': False, 'message': str(e)}), 500
 
+# ==================== Tip/Ad 管理 API ====================
+
+@app.route("/linebot/admin/get_tip_ads", methods=["GET"])
+def admin_get_tip_ads():
+    """获取所有 tip/ad"""
+    if not check_admin_auth():
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    try:
+        tip_ads = get_all_tip_ads()
+        return jsonify({'success': True, 'tip_ads': tip_ads})
+    except Exception as e:
+        logger.error(f"[Admin] ✗ Get tip/ads error: error={e}", exc_info=True)
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route("/linebot/admin/create_tip_ad", methods=["POST"])
+@csrf.exempt
+def admin_create_tip_ad():
+    """创建新的 tip/ad"""
+    if not check_admin_auth():
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json()
+    tip_type = data.get('type')
+    text_zh = data.get('text_zh')
+    text_en = data.get('text_en')
+    text_ja = data.get('text_ja')
+    button_type = data.get('button_type')
+    button_label_zh = data.get('button_label_zh')
+    button_label_en = data.get('button_label_en')
+    button_label_ja = data.get('button_label_ja')
+    button_value = data.get('button_value')
+    enabled = data.get('enabled', True)
+
+    if not all([tip_type, text_zh, text_en, text_ja]):
+        return jsonify({'success': False, 'message': 'Missing required fields'}), 400
+
+    if tip_type not in ['tip', 'ad']:
+        return jsonify({'success': False, 'message': 'Invalid type'}), 400
+
+    try:
+        tip_ad = create_tip_ad(
+            tip_type=tip_type,
+            text_zh=text_zh,
+            text_en=text_en,
+            text_ja=text_ja,
+            button_type=button_type,
+            button_label_zh=button_label_zh,
+            button_label_en=button_label_en,
+            button_label_ja=button_label_ja,
+            button_value=button_value,
+            enabled=enabled
+        )
+        logger.info(f"[Admin] ✓ Created tip/ad: id={tip_ad['id']}, type={tip_type}")
+        return jsonify({'success': True, 'tip_ad': tip_ad})
+    except Exception as e:
+        logger.error(f"[Admin] ✗ Create tip/ad error: error={e}", exc_info=True)
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route("/linebot/admin/update_tip_ad", methods=["POST"])
+@csrf.exempt
+def admin_update_tip_ad():
+    """更新 tip/ad"""
+    if not check_admin_auth():
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json()
+    tip_id = data.get('id')
+
+    if not tip_id:
+        return jsonify({'success': False, 'message': 'Missing id'}), 400
+
+    tip_type = data.get('type')
+    text_zh = data.get('text_zh')
+    text_en = data.get('text_en')
+    text_ja = data.get('text_ja')
+    button_type = data.get('button_type')
+    button_label_zh = data.get('button_label_zh')
+    button_label_en = data.get('button_label_en')
+    button_label_ja = data.get('button_label_ja')
+    button_value = data.get('button_value')
+    enabled = data.get('enabled')
+    remove_button = data.get('remove_button', False)
+
+    try:
+        tip_ad = update_tip_ad(
+            tip_id=tip_id,
+            tip_type=tip_type,
+            text_zh=text_zh,
+            text_en=text_en,
+            text_ja=text_ja,
+            button_type=button_type,
+            button_label_zh=button_label_zh,
+            button_label_en=button_label_en,
+            button_label_ja=button_label_ja,
+            button_value=button_value,
+            enabled=enabled,
+            remove_button=remove_button
+        )
+
+        if tip_ad:
+            logger.info(f"[Admin] ✓ Updated tip/ad: id={tip_id}")
+            return jsonify({'success': True, 'tip_ad': tip_ad})
+        else:
+            return jsonify({'success': False, 'message': 'Tip/ad not found'}), 404
+    except Exception as e:
+        logger.error(f"[Admin] ✗ Update tip/ad error: error={e}", exc_info=True)
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route("/linebot/admin/delete_tip_ad", methods=["POST"])
+@csrf.exempt
+def admin_delete_tip_ad():
+    """删除 tip/ad"""
+    if not check_admin_auth():
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json()
+    tip_id = data.get('id')
+
+    if not tip_id:
+        return jsonify({'success': False, 'message': 'Missing id'}), 400
+
+    try:
+        success = delete_tip_ad(tip_id)
+        if success:
+            logger.info(f"[Admin] ✓ Deleted tip/ad: id={tip_id}")
+            return jsonify({'success': True})
+        else:
+            return jsonify({'success': False, 'message': 'Tip/ad not found'}), 404
+    except Exception as e:
+        logger.error(f"[Admin] ✗ Delete tip/ad error: error={e}", exc_info=True)
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+# ==================== 用户管理 API ====================
+
 @app.route("/linebot/admin/edit_user", methods=["POST"])
 @csrf.exempt
 def admin_edit_user():
@@ -3706,14 +3843,13 @@ def admin_get_backups():
         return jsonify({'error': 'Unauthorized'}), 401
 
     try:
-        backup_dir = "./data"
         backup_files = []
 
         # 扫描备份目录
-        if os.path.exists(backup_dir):
-            for filename in os.listdir(backup_dir):
+        if os.path.exists(BACKUP_DIR):
+            for filename in os.listdir(BACKUP_DIR):
                 if filename.startswith("backup_") and filename.endswith(".zip"):
-                    filepath = os.path.join(backup_dir, filename)
+                    filepath = os.path.join(BACKUP_DIR, filename)
                     stat = os.stat(filepath)
 
                     backup_files.append({
@@ -3768,7 +3904,7 @@ def admin_download_backup():
                 'message': 'Invalid filename'
             }), 400
 
-        backup_path = os.path.join("./data", filename)
+        backup_path = os.path.join(BACKUP_DIR, filename)
 
         # 检查文件是否存在
         if not os.path.exists(backup_path):
@@ -3823,7 +3959,7 @@ def admin_delete_backup():
                 'message': 'Invalid filename'
             }), 400
 
-        backup_path = os.path.join("./data", filename)
+        backup_path = os.path.join(BACKUP_DIR, filename)
 
         # 检查文件是否存在
         if not os.path.exists(backup_path):
@@ -4787,6 +4923,11 @@ if __name__ == "__main__":
         # 读取用户数据
         logger.info("[System] → Loading user list...")
         load_user()
+
+        # 加载 tip/ad 数据
+        logger.info("[System] → Loading tip/ad data...")
+        load_tip_ad_data()
+
         system_check_results = run_system_check()
 
         # 如果有关键问题，显示警告

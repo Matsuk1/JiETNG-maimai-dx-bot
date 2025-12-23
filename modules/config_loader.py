@@ -35,6 +35,8 @@ default_config = {
         "re_dxdata_list": "./data/re_dxdata.json",
         "user_list": "./data/user.json.enc",
         "notice_file": "./data/notice.json",
+        "tip_ad_file": "./data/tip_ad.json",
+        "backup": "./data/backup",
         "dev_tokens": "./data/dev_tokens.json",
         "font": "./assets/fonts/mplus-jietng.ttf",
         "logo": "./assets/pics/logo.png",
@@ -140,6 +142,8 @@ DXDATA_VERSION_FILE = FILE_PATH["dxdata_version"]
 RE_DXDATA_LIST = FILE_PATH["re_dxdata_list"]
 USER_LIST = FILE_PATH["user_list"]
 NOTICE_FILE = FILE_PATH["notice_file"]
+TIP_AD_FILE = FILE_PATH["tip_ad_file"]
+BACKUP_DIR = FILE_PATH["backup"]
 DEV_TOKENS_FILE = FILE_PATH["dev_tokens"]
 FONT_PATH = FILE_PATH["font"]
 LOGO_PATH = FILE_PATH["logo"]

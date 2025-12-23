@@ -376,8 +376,8 @@ def generate_records_picture(up_songs=[], down_songs=[], title="RECORD"):
     )
 
     # 将斜体标题粘贴到主图层（继续往左上移动）
-    title_x = img_width - side_width - title_width - 70
-    title_y = card_y - 30
+    title_x = img_width - side_width - title_width - 60
+    title_y = card_y - 40
     combined.paste(title_layer, (title_x, title_y), title_layer)
 
     up_thumbnails = [create_thumbnail(song, thumb_size) for song in up_songs[:grid_size[0] * grid_size[1]]]

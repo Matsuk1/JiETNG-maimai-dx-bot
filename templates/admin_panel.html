@@ -696,6 +696,31 @@
       opacity: 0.5;
     }
 
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-success {
+      background: linear-gradient(135deg, var(--success-color), #059669);
+      color: white;
+    }
+
+    .badge-secondary {
+      background: var(--border-color);
+      color: var(--text-color);
+      opacity: 0.6;
+    }
+
+    table tbody tr:hover {
+      background-color: var(--hover-bg);
+    }
+
     .toggle-icon {
       font-size: 12px;
       margin-left: 8px;
@@ -919,6 +944,7 @@
       <button class="tab" onclick="switchTab('tasks')">Task Queue</button>
       <button class="tab" onclick="switchTab('dxdata')">DxData</button>
       <button class="tab" onclick="switchTab('notices')">Notices</button>
+      <button class="tab" onclick="switchTab('tipad')">Tip/Ad</button>
       <button class="tab" onclick="switchTab('backups')">Backups</button>
       <button class="tab" onclick="switchTab('logs')">Logs</button>
     </div>
@@ -1253,25 +1279,120 @@
 
     </div>
 
-    <!-- Backups Tab -->
-    <div id="backups-tab" class="tab-content">
-      <h2 style="font-size: 24px; margin-bottom: 20px; font-weight: 600;">Backup Management</h2>
-
-      <div class="card" style="padding: 20px; margin-bottom: 20px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-          <div>
-            <h3 style="margin: 0; font-size: 18px; font-weight: 600;">Backup Files</h3>
-            <p style="margin: 5px 0 0 0; color: var(--text-tertiary); font-size: 14px;">
-              Download or delete system backup files
-            </p>
-          </div>
-          <button onclick="loadBackups()" class="btn btn-primary">
-            Refresh
-          </button>
+    <!-- Tip/Ad Tab -->
+    <div id="tipad-tab" class="tab-content">
+      <div class="section">
+        <div class="section-title">
+          Tip/Ad Management
+          <button class="btn btn-success" onclick="showCreateTipAdForm()" style="float: right;">Create New Tip/Ad</button>
         </div>
 
-        <div id="backups-list" style="margin-top: 20px;">
-          <div style="text-align: center; padding: 40px; color: var(--text-tertiary);">
+        <div id="tipadList">
+          <div style="text-align: center; padding: 40px; color: var(--text-color); opacity: 0.5;">
+            Loading tip/ad items...
+          </div>
+        </div>
+
+        <div style="margin-top: 12px; text-align: center;">
+          <button class="btn btn-primary" onclick="loadTipAds()">Refresh</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tip/Ad Form Modal -->
+    <div id="tipadFormModal" class="modal">
+      <div class="modal-content" style="max-width: 700px;">
+        <div class="modal-header">
+          <h2 class="modal-title" id="tipadFormTitle">Create Tip/Ad</h2>
+          <button class="close-btn" onclick="closeTipAdForm()">&times;</button>
+        </div>
+
+        <form id="tipadForm" onsubmit="saveTipAd(event)">
+          <input type="hidden" id="tipad_id">
+
+          <div class="form-group">
+            <label class="form-label">Type:</label>
+            <select id="tipad_type" required class="form-input">
+              <option value="tip">💡 Tip</option>
+              <option value="ad">📢 Ad</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Text (Chinese):</label>
+            <textarea id="tipad_text_zh" required class="form-input" style="min-height: 80px;"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Text (English):</label>
+            <textarea id="tipad_text_en" required class="form-input" style="min-height: 80px;"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Text (Japanese):</label>
+            <textarea id="tipad_text_ja" required class="form-input" style="min-height: 80px;"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">
+              <input type="checkbox" id="tipad_has_button" onchange="toggleButtonFields()"> Add Button
+            </label>
+          </div>
+
+          <div id="buttonFields" style="display: none; border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; margin-bottom: 20px; background-color: var(--hover-bg);">
+            <div class="form-group">
+              <label class="form-label">Button Type:</label>
+              <select id="tipad_button_type" class="form-input">
+                <option value="uri">Link (URI)</option>
+                <option value="message">Message</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Button Label (Chinese):</label>
+              <input type="text" id="tipad_button_label_zh" class="form-input">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Button Label (English):</label>
+              <input type="text" id="tipad_button_label_en" class="form-input">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Button Label (Japanese):</label>
+              <input type="text" id="tipad_button_label_ja" class="form-input">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Button Value (URI or Message Text):</label>
+              <input type="text" id="tipad_button_value" class="form-input">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">
+              <input type="checkbox" id="tipad_enabled" checked> Enabled
+            </label>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn-cancel" onclick="closeTipAdForm()">Cancel</button>
+            <button type="submit" class="btn btn-success">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Backups Tab -->
+    <div id="backups-tab" class="tab-content">
+      <div class="section">
+        <div class="section-title">
+          Backup Management
+          <button class="btn btn-primary" onclick="loadBackups()" style="float: right;">Refresh</button>
+        </div>
+
+        <div id="backups-list">
+          <div style="text-align: center; padding: 40px; color: var(--text-color); opacity: 0.5;">
             Click "Refresh" to load backups
           </div>
         </div>
@@ -1438,6 +1559,16 @@
       // 如果切换到notices标签，加载公告
       if (tabName === 'notices') {
         loadNotices();
+      }
+
+      // 如果切换到tipad标签，加载tip/ad
+      if (tabName === 'tipad') {
+        loadTipAds();
+      }
+
+      // 如果切换到backups标签，加载备份列表
+      if (tabName === 'backups') {
+        loadBackups();
       }
 
       // 如果切换到stats标签，加载内存统计
@@ -2547,14 +2678,20 @@
 
     function displayBackups(backups) {
       const listEl = document.getElementById('backups-list');
+
+      if (backups.length === 0) {
+        listEl.innerHTML = '<div class="empty-state">No backup files found.</div>';
+        return;
+      }
+
       let html = '<table style="width: 100%; border-collapse: collapse;">';
       html += `
         <thead>
           <tr style="border-bottom: 2px solid var(--border-color);">
-            <th style="padding: 12px; text-align: left; font-weight: 600;">Filename</th>
-            <th style="padding: 12px; text-align: right; font-weight: 600;">Size</th>
-            <th style="padding: 12px; text-align: right; font-weight: 600;">Created At</th>
-            <th style="padding: 12px; text-align: right; font-weight: 600;">Actions</th>
+            <th style="padding: 12px; text-align: left; font-weight: 600; color: var(--text-color);">Filename</th>
+            <th style="padding: 12px; text-align: right; font-weight: 600; color: var(--text-color);">Size</th>
+            <th style="padding: 12px; text-align: right; font-weight: 600; color: var(--text-color);">Created At</th>
+            <th style="padding: 12px; text-align: right; font-weight: 600; color: var(--text-color);">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -2562,21 +2699,21 @@
 
       backups.forEach(backup => {
         html += `
-          <tr style="border-bottom: 1px solid var(--border-color);">
+          <tr style="border-bottom: 1px solid var(--border-color); transition: background-color 0.2s;">
             <td style="padding: 12px;">
-              <div style="font-family: monospace; font-size: 13px;">${backup.filename}</div>
+              <div style="font-family: 'Courier New', monospace; font-size: 13px; color: var(--accent-color); font-weight: 500;">${backup.filename}</div>
             </td>
             <td style="padding: 12px; text-align: right;">
-              <span style="color: var(--text-tertiary);">${backup.size_mb} MB</span>
+              <span style="color: var(--text-tertiary); font-size: 13px;">${backup.size_mb} MB</span>
             </td>
             <td style="padding: 12px; text-align: right;">
-              <span style="color: var(--text-tertiary);">${backup.created_at}</span>
+              <span style="color: var(--text-tertiary); font-size: 13px;">${backup.created_at}</span>
             </td>
             <td style="padding: 12px; text-align: right;">
-              <button onclick="downloadBackup('${backup.filename}')" class="btn btn-sm btn-primary" style="margin-right: 8px;">
+              <button onclick="downloadBackup('${backup.filename}')" class="btn btn-primary" style="margin-right: 8px;">
                 Download
               </button>
-              <button onclick="deleteBackup('${backup.filename}')" class="btn btn-sm btn-danger">
+              <button onclick="deleteBackup('${backup.filename}')" class="btn btn-danger">
                 Delete
               </button>
             </td>
@@ -2608,6 +2745,217 @@
           if (data.success) {
             showToast('✓ Backup deleted successfully');
             loadBackups(); // Reload the list
+          } else {
+            showToast('✗ ' + data.message);
+          }
+        })
+        .catch(err => {
+          showToast('✗ Network error: ' + err);
+        });
+    }
+
+    // ==================== Tip/Ad Management Functions ====================
+
+    function loadTipAds() {
+      fetch('/linebot/admin/get_tip_ads')
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            displayTipAds(data.tip_ads);
+          } else {
+            showToast('✗ Failed to load tip/ads');
+          }
+        })
+        .catch(err => {
+          showToast('✗ Network error: ' + err);
+        });
+    }
+
+    function displayTipAds(tipads) {
+      const container = document.getElementById('tipadList');
+      if (tipads.length === 0) {
+        container.innerHTML = '<div class="empty-state">No tip/ads found. Create one to get started!</div>';
+        return;
+      }
+
+      let html = '<div style="display: grid; gap: 12px;">';
+      tipads.forEach(tipad => {
+        const typeIcon = tipad.type === 'ad' ? '📢' : '💡';
+        const typeColor = tipad.type === 'ad' ? '#FF9500' : '#5856D6';
+        const statusBadge = tipad.enabled
+          ? '<span class="badge badge-success">Enabled</span>'
+          : '<span class="badge badge-secondary">Disabled</span>';
+
+        html += `
+          <div class="user-item" style="background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+              <div>
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+                  <span style="font-size: 20px;">${typeIcon}</span>
+                  <span style="color: ${typeColor}; font-weight: 600; text-transform: uppercase; font-size: 14px;">${tipad.type}</span>
+                  ${statusBadge}
+                </div>
+                <div style="color: var(--text-tertiary); font-size: 11px; font-family: 'Courier New', monospace;">
+                  ID: ${tipad.id} | Created: ${tipad.created_at}
+                </div>
+              </div>
+              <div class="user-actions">
+                <button class="btn btn-warning" onclick="editTipAd('${tipad.id}')">Edit</button>
+                <button class="btn btn-danger" onclick="deleteTipAd('${tipad.id}')">Delete</button>
+              </div>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+              <div style="font-size: 11px; font-weight: 600; margin-bottom: 4px; color: var(--text-color); opacity: 0.7;">🇨🇳 Chinese:</div>
+              <div style="padding: 8px 12px; background: var(--hover-bg); border-radius: 6px; margin-bottom: 8px; font-size: 13px; color: var(--text-color);">${tipad.text.zh || 'N/A'}</div>
+
+              <div style="font-size: 11px; font-weight: 600; margin-bottom: 4px; color: var(--text-color); opacity: 0.7;">🇬🇧 English:</div>
+              <div style="padding: 8px 12px; background: var(--hover-bg); border-radius: 6px; margin-bottom: 8px; font-size: 13px; color: var(--text-color);">${tipad.text.en || 'N/A'}</div>
+
+              <div style="font-size: 11px; font-weight: 600; margin-bottom: 4px; color: var(--text-color); opacity: 0.7;">🇯🇵 Japanese:</div>
+              <div style="padding: 8px 12px; background: var(--hover-bg); border-radius: 6px; font-size: 13px; color: var(--text-color);">${tipad.text.ja || 'N/A'}</div>
+            </div>
+
+            ${tipad.button ? `
+              <div style="border-top: 1px solid var(--border-color); padding-top: 12px;">
+                <div style="font-size: 11px; font-weight: 600; margin-bottom: 6px; color: var(--text-color); opacity: 0.7;">Button Settings:</div>
+                <div style="background: var(--hover-bg); padding: 10px; border-radius: 6px; font-size: 12px;">
+                  <div style="margin-bottom: 4px; color: var(--text-color);"><strong>Type:</strong> ${tipad.button.type}</div>
+                  <div style="margin-bottom: 4px; color: var(--text-color);"><strong>Label (ZH):</strong> ${tipad.button.label.zh} →</div>
+                  <div style="margin-bottom: 4px; color: var(--text-color);"><strong>Label (EN):</strong> ${tipad.button.label.en} →</div>
+                  <div style="margin-bottom: 4px; color: var(--text-color);"><strong>Label (JA):</strong> ${tipad.button.label.ja} →</div>
+                  <div style="color: var(--text-color);"><strong>Value:</strong> ${tipad.button.value}</div>
+                </div>
+              </div>
+            ` : '<div style="color: var(--text-tertiary); font-style: italic; border-top: 1px solid var(--border-color); padding-top: 10px; font-size: 12px;">No button configured</div>'}
+          </div>
+        `;
+      });
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    function showCreateTipAdForm() {
+      document.getElementById('tipadFormTitle').textContent = 'Create Tip/Ad';
+      document.getElementById('tipadForm').reset();
+      document.getElementById('tipad_id').value = '';
+      document.getElementById('tipad_enabled').checked = true;
+      document.getElementById('tipad_has_button').checked = false;
+      document.getElementById('buttonFields').style.display = 'none';
+      document.getElementById('tipadFormModal').classList.add('show');
+    }
+
+    function editTipAd(tipId) {
+      fetch('/linebot/admin/get_tip_ads')
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            const tipad = data.tip_ads.find(t => t.id === tipId);
+            if (tipad) {
+              document.getElementById('tipadFormTitle').textContent = 'Edit Tip/Ad';
+              document.getElementById('tipad_id').value = tipad.id;
+              document.getElementById('tipad_type').value = tipad.type;
+              document.getElementById('tipad_text_zh').value = tipad.text.zh || '';
+              document.getElementById('tipad_text_en').value = tipad.text.en || '';
+              document.getElementById('tipad_text_ja').value = tipad.text.ja || '';
+              document.getElementById('tipad_enabled').checked = tipad.enabled;
+
+              if (tipad.button) {
+                document.getElementById('tipad_has_button').checked = true;
+                document.getElementById('buttonFields').style.display = 'block';
+                document.getElementById('tipad_button_type').value = tipad.button.type;
+                document.getElementById('tipad_button_label_zh').value = tipad.button.label.zh || '';
+                document.getElementById('tipad_button_label_en').value = tipad.button.label.en || '';
+                document.getElementById('tipad_button_label_ja').value = tipad.button.label.ja || '';
+                document.getElementById('tipad_button_value').value = tipad.button.value || '';
+              } else {
+                document.getElementById('tipad_has_button').checked = false;
+                document.getElementById('buttonFields').style.display = 'none';
+              }
+
+              document.getElementById('tipadFormModal').classList.add('show');
+            }
+          }
+        })
+        .catch(err => {
+          showToast('✗ Failed to load tip/ad: ' + err);
+        });
+    }
+
+    function closeTipAdForm() {
+      document.getElementById('tipadFormModal').classList.remove('show');
+    }
+
+    function toggleButtonFields() {
+      const hasButton = document.getElementById('tipad_has_button').checked;
+      document.getElementById('buttonFields').style.display = hasButton ? 'block' : 'none';
+    }
+
+    function saveTipAd(event) {
+      event.preventDefault();
+
+      const tipId = document.getElementById('tipad_id').value;
+      const hasButton = document.getElementById('tipad_has_button').checked;
+
+      const data = {
+        type: document.getElementById('tipad_type').value,
+        text_zh: document.getElementById('tipad_text_zh').value,
+        text_en: document.getElementById('tipad_text_en').value,
+        text_ja: document.getElementById('tipad_text_ja').value,
+        enabled: document.getElementById('tipad_enabled').checked
+      };
+
+      if (tipId) {
+        data.id = tipId;
+      }
+
+      if (hasButton) {
+        data.button_type = document.getElementById('tipad_button_type').value;
+        data.button_label_zh = document.getElementById('tipad_button_label_zh').value;
+        data.button_label_en = document.getElementById('tipad_button_label_en').value;
+        data.button_label_ja = document.getElementById('tipad_button_label_ja').value;
+        data.button_value = document.getElementById('tipad_button_value').value;
+      } else if (tipId) {
+        data.remove_button = true;
+      }
+
+      const url = tipId ? '/linebot/admin/update_tip_ad' : '/linebot/admin/create_tip_ad';
+
+      fetch(url, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            showToast('✓ Tip/Ad saved successfully');
+            closeTipAdForm();
+            loadTipAds();
+          } else {
+            showToast('✗ ' + data.message);
+          }
+        })
+        .catch(err => {
+          showToast('✗ Network error: ' + err);
+        });
+    }
+
+    function deleteTipAd(tipId) {
+      if (!confirm('Are you sure you want to delete this tip/ad?')) {
+        return;
+      }
+
+      fetch('/linebot/admin/delete_tip_ad', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({id: tipId})
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            showToast('✓ Tip/Ad deleted successfully');
+            loadTipAds();
           } else {
             showToast('✗ ' + data.message);
           }

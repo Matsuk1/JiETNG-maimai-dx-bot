@@ -11,14 +11,7 @@ import tempfile
 import logging
 from datetime import datetime
 from typing import Tuple, Optional
-
-# 尝试导入pyzipper，如果不可用则使用标准zipfile（无密码保护）
-try:
-    import pyzipper
-    HAS_PYZIPPER = True
-except ImportError:
-    import zipfile
-    HAS_PYZIPPER = False
+import pyzipper
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +21,7 @@ def create_backup(
     config_data: dict,
     db_config: dict,
     backup_password: str,
-    output_dir: str = "./data"
+    output_dir: str
 ) -> Tuple[bool, str, Optional[str]]:
     """
     创建系统备份
@@ -78,24 +71,14 @@ def create_backup(
             # 确保输出目录存在
             os.makedirs(output_dir, exist_ok=True)
 
-            # 使用pyzipper创建加密压缩包（如果可用）
-            if HAS_PYZIPPER:
-                with pyzipper.AESZipFile(backup_path, 'w', compression=pyzipper.ZIP_DEFLATED, encryption=pyzipper.WZ_AES) as zf:
-                    zf.setpassword(backup_password.encode('utf-8'))
-                    zf.write(sql_file, arcname="maimai_records.sql")
-                    zf.write(user_json_file, arcname="user.json")
-                    zf.write(config_json_file, arcname="config.json")
-                password_note = "🔒 Password: config.admin_password (AES encrypted)"
-                logger.info(f"[Backup] ✓ Encrypted backup created: {backup_path}")
-            else:
-                # 降级到无密码保护的zip
-                import zipfile
-                with zipfile.ZipFile(backup_path, 'w', zipfile.ZIP_DEFLATED) as zf:
-                    zf.write(sql_file, arcname="maimai_records.sql")
-                    zf.write(user_json_file, arcname="user.json")
-                    zf.write(config_json_file, arcname="config.json")
-                password_note = "⚠️ No password protection (pyzipper not installed)"
-                logger.warning(f"[Backup] ⚠ Created unencrypted backup (pyzipper not available): {backup_path}")
+            # 使用pyzipper创建加密压缩包
+            with pyzipper.AESZipFile(backup_path, 'w', compression=pyzipper.ZIP_DEFLATED, encryption=pyzipper.WZ_AES) as zf:
+                zf.setpassword(backup_password.encode('utf-8'))
+                zf.write(sql_file, arcname="maimai_records.sql")
+                zf.write(user_json_file, arcname="user.json")
+                zf.write(config_json_file, arcname="config.json")
+            password_note = "🔒 Password: config.admin_password (AES encrypted)"
+            logger.info(f"[Backup] ✓ Encrypted backup created: {backup_path}")
 
             # 获取文件大小
             file_size = os.path.getsize(backup_path)

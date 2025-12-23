@@ -1,5 +1,6 @@
 from modules.config_loader import SUPPORT_PAGE, USERS
 from modules.user_manager import get_notice_interaction
+from modules.tip_ad_manager import get_random_tip_ad
 from linebot.v3.messaging import (
     TextMessage,
     QuickReply,
@@ -1835,6 +1836,19 @@ def generate_update_result_flex(user_id, username, rating, update_time, elapsed_
         "contents": status_contents
     })
 
+    # 获取随机tip/ad并添加到内容中
+    tip_ad = get_random_tip_ad(language=lang)
+    if tip_ad:
+        # 添加分隔线
+        content_rows.append({
+            "type": "separator",
+            "margin": "md"
+        })
+
+        # 生成tip/ad容器
+        tip_ad_box = generate_tip_ad_box(tip_ad, lang)
+        content_rows.append(tip_ad_box)
+
     # 创建 bubble
     title_text = texts['title_success'] if success else texts['title_error']
     header_color = "#17B169" if success else "#FF3B30"
@@ -1870,6 +1884,100 @@ def generate_update_result_flex(user_id, username, rating, update_time, elapsed_
         alt_text=get_multilingual_text(alt_text, language=lang),
         contents=FlexContainer.from_dict(bubble)
     )
+
+def generate_tip_ad_box(tip_ad, lang):
+    """
+    生成 Tip/Ad 小容器
+
+    Args:
+        tip_ad: tip/ad 数据字典
+        lang: 语言代码
+
+    Returns:
+        dict: Flex Box 字典
+    """
+    # 获取对应语言的文本
+    text_dict = tip_ad.get('text', {})
+    text = text_dict.get(lang, text_dict.get('ja', ''))
+
+    # 确定颜色和图标
+    is_ad = tip_ad.get('type') == 'ad'
+    bg_color = "#FFF4E6" if is_ad else "#F0EFFF"  # 浅橙色 or 浅紫色背景
+    text_color = "#FF9500" if is_ad else "#5856D6"
+    icon = "📢" if is_ad else "💡"
+
+    # 构建内容
+    box_contents = [
+        {
+            "type": "box",
+            "layout": "horizontal",
+            "contents": [
+                {
+                    "type": "text",
+                    "text": icon,
+                    "size": "md",
+                    "flex": 0
+                },
+                {
+                    "type": "text",
+                    "text": text,
+                    "size": "xs",
+                    "wrap": True,
+                    "color": "#666666",
+                    "flex": 1,
+                    "margin": "sm"
+                }
+            ]
+        }
+    ]
+
+    # 如果有按钮，添加按钮
+    if 'button' in tip_ad:
+        button_info = tip_ad['button']
+        button_type = button_info.get('type', 'uri')
+        button_label_dict = button_info.get('label', {})
+        button_label = button_label_dict.get(lang, button_label_dict.get('ja', 'Go'))
+        button_value = button_info.get('value', '')
+
+        # 添加箭头到按钮标签
+        button_label_with_arrow = f"{button_label} →"
+
+        # 根据按钮类型创建action
+        if button_type == 'uri':
+            action = {
+                "type": "uri",
+                "label": button_label_with_arrow,
+                "uri": button_value
+            }
+        else:  # message
+            action = {
+                "type": "message",
+                "label": button_label_with_arrow,
+                "text": button_value
+            }
+
+        # 添加按钮
+        box_contents.append({
+            "type": "button",
+            "action": action,
+            "style": "link",
+            "height": "sm",
+            "color": text_color,
+            "margin": "sm"
+        })
+
+    # 构建最终的box
+    tip_ad_box = {
+        "type": "box",
+        "layout": "vertical",
+        "contents": box_contents,
+        "backgroundColor": bg_color,
+        "cornerRadius": "md",
+        "paddingAll": "12px",
+        "margin": "md"
+    }
+
+    return tip_ad_box
 
 # ============================================================
 # 系统错误警报 Flex Message / System Error Alert Flex Message
