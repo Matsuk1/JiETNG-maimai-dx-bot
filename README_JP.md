@@ -15,7 +15,7 @@
 
 [简体中文](README.md) | [English](README_EN.md) | 日本語
 
-[機能](#機能) • [コマンドリスト](COMMANDS_JP.md) • [オンラインドキュメント](https://jietng.matsuki.work/ja/) • [クイックスタート](#クイックスタート) • [管理パネル](#管理パネル) • [デプロイガイド](#デプロイガイド) • [開発ドキュメント](#開発ドキュメント)
+[機能](#機能) • [コマンドリスト](https://jietng.matsuki.work/ja/commands/) • [オンラインドキュメント](https://jietng.matsuki.work/ja/) • [クイックスタート](#クイックスタート) • [管理パネル](#管理パネル) • [デプロイガイド](#デプロイガイド) • [開発ドキュメント](#開発ドキュメント)
 
 </div>
 
@@ -55,7 +55,7 @@
 
 ### 📖 完全コマンドリスト
 
-詳細なコマンド説明と使用例は **[COMMANDS_JP.md](COMMANDS_JP.md)** をご覧ください
+詳細なコマンド説明と使用例は **[オンラインコマンドドキュメント](https://jietng.matsuki.work/ja/commands/)** をご覧ください
 
 ---
 
@@ -133,29 +133,52 @@ git clone https://github.com/Matsuk1/JiETNG.git
 cd JiETNG
 ```
 
-#### 2. 依存関係をインストール
+#### 2. システム依存関係をインストール
+
+本プロジェクトは QR コード認識のため `zbar` ライブラリが必要です。まずシステムレベルの依存関係をインストールしてください：
+
+**macOS**:
+```bash
+brew install zbar
+```
+
+**Ubuntu/Debian**:
+```bash
+sudo apt-get update
+sudo apt-get install libzbar0
+```
+
+**CentOS/RHEL**:
+```bash
+sudo yum install zbar
+```
+
+**Windows**:
+[ZBar 公式サイト](http://zbar.sourceforge.net/) からバイナリをダウンロードしてインストール
+
+#### 3. Python 依存関係をインストール
 
 ```bash
 pip install -r requirements.txt
 ```
 
-#### 3. データベースを設定
+#### 4. データベースを設定
 
 ```bash
 # MySQL にログイン
 mysql -u root -p
 
 # データベースとユーザーを作成
-CREATE DATABASE records CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE maimai_records CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER 'jietng'@'localhost' IDENTIFIED BY 'jietng_2025';
-GRANT ALL PRIVILEGES ON records.* TO 'jietng'@'localhost';
+GRANT ALL PRIVILEGES ON maimai_records.* TO 'jietng'@'localhost';
 FLUSH PRIVILEGES;
 
 # データベース構造をインポート
-mysql -u jietng -p records < records_db.sql
+mysql -u jietng -p maimai_records < records_db.sql
 ```
 
-#### 4. config.json を設定
+#### 5. config.json を設定
 
 `config.json` ファイルを編集：
 
@@ -164,7 +187,7 @@ mysql -u jietng -p records < records_db.sql
     "admin_id": ["U0123456789abcdef"],
     "admin_password": "your_admin_password",
     "domain": "your-domain.com",
-    "port": 5100,
+    "port": 5000,
     "line_channel": {
         "account_id": "@yourlineid",
         "access_token": "YOUR_CHANNEL_ACCESS_TOKEN",
@@ -174,11 +197,11 @@ mysql -u jietng -p records < records_db.sql
         "host": "localhost",
         "user": "jietng",
         "password": "jietng_2025",
-        "database": "records"
+        "database": "maimai_records"
     },
     "urls": {
         "line_adding": "https://line.me/R/ti/p/@yourlineid",
-        "support_page": "https://github.com/Matsuk1/JiETNG/blob/main/COMMANDS.md",
+        "support_page": "https://jietng.matsuki.work/ja/commands/",
         "dxdata": [
             "https://raw.githubusercontent.com/gekichumai/dxrating/refs/heads/main/packages/dxdata/dxdata.json",
             "https://dp4p6x0xfi5o9.cloudfront.net/maimai/data.json"
@@ -187,7 +210,7 @@ mysql -u jietng -p records < records_db.sql
 }
 ```
 
-#### 5. LINE Channel 認証情報を取得
+#### 6. LINE Channel 認証情報を取得
 
 1. [LINE Developers Console](https://developers.line.biz/) にアクセス
 2. Messaging API Channel を作成
@@ -195,18 +218,18 @@ mysql -u jietng -p records < records_db.sql
 4. Webhook URL を設定：`https://your-domain.com/linebot/webhook`
 5. **Use webhook** を有効化
 
-#### 6. サービスを起動
+#### 7. サービスを起動
 
 ```bash
 python main.py
 ```
 
-サービスは `http://0.0.0.0:5100` で起動します
+サービスは `http://0.0.0.0:5000` で起動します
 
 ### 本番環境デプロイ（推奨）
 
 ```bash
-gunicorn -w 4 -b 0.0.0.0:5100 --timeout 120 main:app
+gunicorn -w 4 -b 0.0.0.0:5000 --timeout 120 main:app
 ```
 
 ---
@@ -237,10 +260,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # ポートを公開
-EXPOSE 5100
+EXPOSE 5000
 
 # 起動コマンド
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5100", "--timeout", "120", "main:app"]
+CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "--timeout", "120", "main:app"]
 ```
 
 #### docker-compose.yml を作成
@@ -253,7 +276,7 @@ services:
     build: .
     container_name: jietng_bot
     ports:
-      - "5100:5100"
+      - "5000:5000"
     volumes:
       - ./data:/app/data
       - ./config.json:/app/config.json
@@ -323,7 +346,7 @@ server {
     server_name your-domain.com;
 
     location /linebot {
-        proxy_pass http://127.0.0.1:5100;
+        proxy_pass http://127.0.0.1:5000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -355,41 +378,42 @@ JiETNG/
 ├── README.md                  # 中国語ドキュメント
 ├── README_EN.md               # 英語ドキュメント
 ├── README_JP.md               # 日本語ドキュメント（このファイル）
-├── COMMANDS.md                # コマンドリスト（中国語）
-├── COMMANDS_EN.md             # コマンドリスト（英語）
-├── COMMANDS_JP.md             # コマンドリスト（日本語）
 ├── requirements.txt           # Python 依存関係
 ├── records_db.sql             # データベーススキーマ
 ├── modules/                   # 機能モジュール
+│   ├── backup_manager.py      # バックアップ管理
+│   ├── bindtoken_manager.py   # バインドトークン管理
 │   ├── config_loader.py       # 設定ローダー
 │   ├── dbpool_manager.py      # データベース接続プール
 │   ├── devtoken_manager.py    # 開発者トークン管理
-│   ├── user_manager.py        # ユーザー管理 + ニックネームキャッシュ
-│   ├── maimai_manager.py      # Maimai API インターフェース
-│   ├── record_manager.py      # データベース操作
-│   ├── record_generator.py    # スコアチャート生成
-│   ├── song_generator.py      # 楽曲チャート生成
-│   ├── image_manager.py       # 画像処理
-│   ├── image_cache.py         # 画像キャッシュ
-│   ├── image_uploader.py      # 画像アップロード（Imgur/uguu/0x0）
-│   ├── bindtoken_manager.py   # バインドトークン管理
-│   ├── notice_manager.py      # お知らせシステム
 │   ├── dxdata_manager.py      # 楽曲データ管理
+│   ├── image_cache.py         # 画像キャッシュ
+│   ├── image_manager.py       # 画像処理
+│   ├── image_uploader.py      # 画像アップロード（Imgur/uguu/0x0）
 │   ├── json_encrypt.py        # 暗号化ツール
-│   ├── rate_limiter.py        # 頻度制限 + リクエスト追跡
 │   ├── line_messenger.py      # LINE メッセージ送信
-│   ├── song_matcher.py        # 楽曲検索（あいまい一致対応）
+│   ├── maimai_manager.py      # Maimai API インターフェース
 │   ├── memory_manager.py      # メモリ管理とクリーンアップ
-│   ├── system_checker.py      # システム自己診断
+│   ├── message_manager.py     # 多言語メッセージ管理（お知らせ含む）
+│   ├── notice_manager.py      # お知らせシステム
+│   ├── notice_stats.py        # お知らせ統計
+│   ├── perm_request_generator.py  # 権限リクエスト生成器
+│   ├── perm_request_handler.py    # 権限リクエストハンドラー
+│   ├── rate_limiter.py        # 頻度制限 + リクエスト追跡
+│   ├── record_generator.py    # スコアチャート生成
+│   ├── record_manager.py      # データベース操作
+│   ├── song_generator.py      # 楽曲チャート生成
+│   ├── song_matcher.py        # 楽曲検索（あいまい一致対応）
 │   ├── storelist_generator.py # 設置店舗リスト生成（Flex Message）
-│   └── message_manager.py     # 多言語メッセージ管理（お知らせ含む）
+│   ├── system_checker.py      # システム自己診断
+│   └── user_manager.py        # ユーザー管理 + ニックネームキャッシュ
 ├── templates/                 # HTML テンプレート
-│   ├── bind_form.html         # アカウント連携フォーム
-│   ├── success.html           # 成功ページ
-│   ├── error.html             # エラーページ
 │   ├── admin_login.html       # 管理者ログインページ
 │   ├── admin_panel.html       # 管理パネルインターフェース
-│   └── stats.html             # 統計情報ページ
+│   ├── bind_form.html         # アカウント連携フォーム
+│   ├── common_styles.html     # 共通スタイル
+│   ├── error.html             # エラーページ
+│   └── success.html           # 成功ページ
 ├── data/                      # データファイル
 │   ├── dxdata.json            # 楽曲データベース
 │   ├── notice.json            # お知らせ情報
@@ -479,7 +503,7 @@ POST     /linebot/admin/trigger_cleanup    # 手動メモリクリーンアッ�
         "intl": ["PRiSM PLUS"]             // 海外版バージョン
     },
     "domain": "jietng.example.com",        // サービスドメイン
-    "port": 5100,                          // サービスポート
+    "port": 5000,                          // サービスポート
     "file_path": {
         "dxdata_list": "./data/dxdata.json",
         "dxdata_version": "./data/dxdata_version.json",
@@ -487,17 +511,17 @@ POST     /linebot/admin/trigger_cleanup    # 手動メモリクリーンアッ�
         "user_list": "./data/user.json.enc",
         "notice_file": "./data/notice.json",
         "font": "./assets/fonts/mplus-jietng.ttf",
-        "logo": "./assets/pics/logo.jpg"
+        "logo": "./assets/pics/logo.png"
     },
     "record_database": {
         "host": "localhost",
         "user": "jietng",
         "password": "your_password",
-        "database": "records"
+        "database": "maimai_records"
     },
     "urls": {
         "line_adding": "https://line.me/R/ti/p/@yourlineid",
-        "support_page": "https://github.com/Matsuk1/JiETNG/blob/main/COMMANDS.md",
+        "support_page": "https://jietng.matsuki.work/ja/commands/",
         "dxdata": [
             "https://raw.githubusercontent.com/gekichumai/dxrating/refs/heads/main/packages/dxdata/dxdata.json",
             "https://dp4p6x0xfi5o9.cloudfront.net/maimai/data.json"

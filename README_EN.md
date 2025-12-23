@@ -15,7 +15,7 @@ Supports Japanese and International servers
 
 [简体中文](README.md) | English | [日本語](README_JP.md)
 
-[Features](#features) • [Command List](COMMANDS_EN.md) • [Online Docs](https://jietng.matsuki.work/en/) • [Quick Start](#quick-start) • [Admin Panel](#admin-panel) • [Deployment](#deployment) • [Documentation](#documentation)
+[Features](#features) • [Command List](https://jietng.matsuki.work/en/commands/) • [Online Docs](https://jietng.matsuki.work/en/) • [Quick Start](#quick-start) • [Admin Panel](#admin-panel) • [Deployment](#deployment) • [Documentation](#documentation)
 
 </div>
 
@@ -193,29 +193,52 @@ git clone https://github.com/Matsuk1/JiETNG.git
 cd JiETNG
 ```
 
-#### 2. Install Dependencies
+#### 2. Install System Dependencies
+
+This project requires `zbar` library for QR code recognition. Install system-level dependencies first:
+
+**macOS**:
+```bash
+brew install zbar
+```
+
+**Ubuntu/Debian**:
+```bash
+sudo apt-get update
+sudo apt-get install libzbar0
+```
+
+**CentOS/RHEL**:
+```bash
+sudo yum install zbar
+```
+
+**Windows**:
+Download and install binaries from [ZBar official website](http://zbar.sourceforge.net/)
+
+#### 3. Install Python Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-#### 3. Configure Database
+#### 4. Configure Database
 
 ```bash
 # Login to MySQL
 mysql -u root -p
 
 # Create database and user
-CREATE DATABASE records CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE maimai_records CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER 'jietng'@'localhost' IDENTIFIED BY 'jietng_2025';
-GRANT ALL PRIVILEGES ON records.* TO 'jietng'@'localhost';
+GRANT ALL PRIVILEGES ON maimai_records.* TO 'jietng'@'localhost';
 FLUSH PRIVILEGES;
 
 # Import database structure
-mysql -u jietng -p records < records_db.sql
+mysql -u jietng -p maimai_records < records_db.sql
 ```
 
-#### 4. Configure config.json
+#### 5. Configure config.json
 
 Edit `config.json` with your settings:
 
@@ -224,7 +247,7 @@ Edit `config.json` with your settings:
     "admin_id": ["U0123456789abcdef"],
     "admin_password": "your_admin_password",
     "domain": "your-domain.com",
-    "port": 5100,
+    "port": 5000,
     "line_channel": {
         "account_id": "@yourlineid",
         "access_token": "YOUR_CHANNEL_ACCESS_TOKEN",
@@ -234,11 +257,11 @@ Edit `config.json` with your settings:
         "host": "localhost",
         "user": "jietng",
         "password": "jietng_2025",
-        "database": "records"
+        "database": "maimai_records"
     },
     "urls": {
         "line_adding": "https://line.me/R/ti/p/@yourlineid",
-        "support_page": "https://github.com/Matsuk1/JiETNG/blob/main/COMMANDS.md",
+        "support_page": "https://jietng.matsuki.work/en/commands/",
         "dxdata": [
             "https://raw.githubusercontent.com/gekichumai/dxrating/refs/heads/main/packages/dxdata/dxdata.json",
             "https://dp4p6x0xfi5o9.cloudfront.net/maimai/data.json"
@@ -247,7 +270,7 @@ Edit `config.json` with your settings:
 }
 ```
 
-#### 5. Obtain LINE Channel Credentials
+#### 6. Obtain LINE Channel Credentials
 
 1. Visit [LINE Developers Console](https://developers.line.biz/)
 2. Create a Messaging API Channel
@@ -255,18 +278,18 @@ Edit `config.json` with your settings:
 4. Set Webhook URL: `https://your-domain.com/linebot/webhook`
 5. Enable **Use webhook**
 
-#### 6. Start Service
+#### 7. Start Service
 
 ```bash
 python main.py
 ```
 
-Service will start on `http://0.0.0.0:5100`
+Service will start on `http://0.0.0.0:5000`
 
 ### Production Deployment (Recommended)
 
 ```bash
-gunicorn -w 4 -b 0.0.0.0:5100 --timeout 120 main:app
+gunicorn -w 4 -b 0.0.0.0:5000 --timeout 120 main:app
 ```
 
 ---
@@ -297,10 +320,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Expose port
-EXPOSE 5100
+EXPOSE 5000
 
 # Start command
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5100", "--timeout", "120", "main:app"]
+CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "--timeout", "120", "main:app"]
 ```
 
 #### Create docker-compose.yml
@@ -313,7 +336,7 @@ services:
     build: .
     container_name: jietng_bot
     ports:
-      - "5100:5100"
+      - "5000:5000"
     volumes:
       - ./data:/app/data
       - ./config.json:/app/config.json
@@ -383,7 +406,7 @@ server {
     server_name your-domain.com;
 
     location /linebot {
-        proxy_pass http://127.0.0.1:5100;
+        proxy_pass http://127.0.0.1:5000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -415,41 +438,42 @@ JiETNG/
 ├── README.md                  # Chinese documentation
 ├── README_EN.md               # English documentation (this file)
 ├── README_JP.md               # Japanese documentation
-├── COMMANDS.md                # Command list (Chinese)
-├── COMMANDS_EN.md             # Command list (English)
-├── COMMANDS_JP.md             # Command list (Japanese)
 ├── requirements.txt           # Python dependencies
 ├── records_db.sql             # Database schema
 ├── modules/                   # Functional modules
+│   ├── backup_manager.py      # Backup management
+│   ├── bindtoken_manager.py   # Bind token management
 │   ├── config_loader.py       # Configuration loader
 │   ├── dbpool_manager.py      # Database connection pool
 │   ├── devtoken_manager.py    # Developer token management
-│   ├── user_manager.py        # User management + nickname cache
-│   ├── maimai_manager.py      # Maimai API interface
-│   ├── record_manager.py      # Database operations
-│   ├── record_generator.py    # Score chart generation
-│   ├── song_generator.py      # Song chart generation
-│   ├── image_manager.py       # Image processing
-│   ├── image_cache.py         # Image caching
-│   ├── image_uploader.py      # Image hosting upload (Imgur/uguu/0x0)
-│   ├── bindtoken_manager.py   # Bind token management
-│   ├── notice_manager.py      # Announcement system
 │   ├── dxdata_manager.py      # Song data management
+│   ├── image_cache.py         # Image caching
+│   ├── image_manager.py       # Image processing
+│   ├── image_uploader.py      # Image hosting upload (Imgur/uguu/0x0)
 │   ├── json_encrypt.py        # Encryption utilities
-│   ├── rate_limiter.py        # Rate limiting + request tracking
 │   ├── line_messenger.py      # LINE message sending
-│   ├── song_matcher.py        # Song search with fuzzy matching
+│   ├── maimai_manager.py      # Maimai API interface
 │   ├── memory_manager.py      # Memory management and cleanup
-│   ├── system_checker.py      # System self-check
+│   ├── message_manager.py     # Multi-language message management (with announcements)
+│   ├── notice_manager.py      # Announcement system
+│   ├── notice_stats.py        # Announcement statistics
+│   ├── perm_request_generator.py  # Permission request generator
+│   ├── perm_request_handler.py    # Permission request handler
+│   ├── rate_limiter.py        # Rate limiting + request tracking
+│   ├── record_generator.py    # Score chart generation
+│   ├── record_manager.py      # Database operations
+│   ├── song_generator.py      # Song chart generation
+│   ├── song_matcher.py        # Song search with fuzzy matching
 │   ├── storelist_generator.py # Arcade store list generation (Flex Message)
-│   └── message_manager.py     # Multi-language message management (with announcements)
+│   ├── system_checker.py      # System self-check
+│   └── user_manager.py        # User management + nickname cache
 ├── templates/                 # HTML templates
-│   ├── bind_form.html         # Account binding form
-│   ├── success.html           # Success page
-│   ├── error.html             # Error page
 │   ├── admin_login.html       # Admin login page
 │   ├── admin_panel.html       # Admin dashboard
-│   └── stats.html             # Statistics page
+│   ├── bind_form.html         # Account binding form
+│   ├── common_styles.html     # Common styles
+│   ├── error.html             # Error page
+│   └── success.html           # Success page
 ├── data/                      # Data files
 │   ├── dxdata.json            # Song database
 │   ├── notice.json            # Announcements
@@ -539,7 +563,7 @@ POST     /linebot/admin/trigger_cleanup    # Manual memory cleanup
         "intl": ["PRiSM PLUS"]             // International versions
     },
     "domain": "jietng.example.com",        // Service domain
-    "port": 5100,                          // Service port
+    "port": 5000,                          // Service port
     "file_path": {
         "dxdata_list": "./data/dxdata.json",
         "dxdata_version": "./data/dxdata_version.json",
@@ -547,17 +571,17 @@ POST     /linebot/admin/trigger_cleanup    # Manual memory cleanup
         "user_list": "./data/user.json.enc",
         "notice_file": "./data/notice.json",
         "font": "./assets/fonts/mplus-jietng.ttf",
-        "logo": "./assets/pics/logo.jpg"
+        "logo": "./assets/pics/logo.png"
     },
     "record_database": {
         "host": "localhost",
         "user": "jietng",
         "password": "your_password",
-        "database": "records"
+        "database": "maimai_records"
     },
     "urls": {
         "line_adding": "https://line.me/R/ti/p/@yourlineid",
-        "support_page": "https://github.com/Matsuk1/JiETNG/blob/main/COMMANDS.md",
+        "support_page": "https://jietng.matsuki.work/en/commands/",
         "dxdata": [
             "https://raw.githubusercontent.com/gekichumai/dxrating/refs/heads/main/packages/dxdata/dxdata.json",
             "https://dp4p6x0xfi5o9.cloudfront.net/maimai/data.json"

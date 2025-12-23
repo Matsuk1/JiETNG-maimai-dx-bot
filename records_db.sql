@@ -1,8 +1,8 @@
-CREATE DATABASE IF NOT EXISTS records
+CREATE DATABASE IF NOT EXISTS maimai_records
   DEFAULT CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
 
-USE records;
+USE maimai_records;
 
 CREATE TABLE IF NOT EXISTS best_records (
     id INT PRIMARY KEY AUTO_INCREMENT,

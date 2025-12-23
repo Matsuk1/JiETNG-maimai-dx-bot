@@ -15,7 +15,7 @@
 
 简体中文 | [English](README_EN.md) | [日本語](README_JP.md)
 
-[功能特性](#功能特性) • [命令列表](COMMANDS.md) • [在线文档](https://jietng.matsuki.work/) • [快速开始](#快速开始) • [管理后台](#管理后台) • [部署指南](#部署指南) • [开发文档](#开发文档)
+[功能特性](#功能特性) • [命令列表](https://jietng.matsuki.work/commands/) • [在线文档](https://jietng.matsuki.work/) • [快速开始](#快速开始) • [管理后台](#管理后台) • [部署指南](#部署指南) • [开发文档](#开发文档)
 
 </div>
 
@@ -55,7 +55,7 @@
 
 ### 📖 完整命令列表
 
-详细的命令说明和使用示例请查看 **[COMMANDS.md](COMMANDS.md)**
+详细的命令说明和使用示例请查看 **[在线命令文档](https://jietng.matsuki.work/commands/)**
 
 ---
 
@@ -133,29 +133,52 @@ git clone https://github.com/Matsuk1/JiETNG.git
 cd JiETNG
 ```
 
-#### 2. 安装依赖
+#### 2. 安装系统依赖
+
+本项目依赖 `zbar` 库用于二维码识别，需要先安装系统级依赖：
+
+**macOS**:
+```bash
+brew install zbar
+```
+
+**Ubuntu/Debian**:
+```bash
+sudo apt-get update
+sudo apt-get install libzbar0
+```
+
+**CentOS/RHEL**:
+```bash
+sudo yum install zbar
+```
+
+**Windows**:
+从 [ZBar 官网](http://zbar.sourceforge.net/) 下载并安装二进制文件
+
+#### 3. 安装 Python 依赖
 
 ```bash
 pip install -r requirements.txt
 ```
 
-#### 3. 配置数据库
+#### 4. 配置数据库
 
 ```bash
 # 登录 MySQL
 mysql -u root -p
 
 # 创建数据库和用户
-CREATE DATABASE records CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE maimai_records CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER 'jietng'@'localhost' IDENTIFIED BY 'jietng_2025';
-GRANT ALL PRIVILEGES ON records.* TO 'jietng'@'localhost';
+GRANT ALL PRIVILEGES ON maimai_records.* TO 'jietng'@'localhost';
 FLUSH PRIVILEGES;
 
 # 导入数据库结构
-mysql -u jietng -p records < records_db.sql
+mysql -u jietng -p maimai_records < records_db.sql
 ```
 
-#### 4. 配置 config.json
+#### 5. 配置 config.json
 
 编辑 `config.json` 文件：
 
@@ -164,7 +187,7 @@ mysql -u jietng -p records < records_db.sql
     "admin_id": ["U0123456789abcdef"],
     "admin_password": "your_admin_password",
     "domain": "your-domain.com",
-    "port": 5100,
+    "port": 5000,
     "line_channel": {
         "account_id": "@yourlineid",
         "access_token": "YOUR_CHANNEL_ACCESS_TOKEN",
@@ -174,11 +197,11 @@ mysql -u jietng -p records < records_db.sql
         "host": "localhost",
         "user": "jietng",
         "password": "jietng_2025",
-        "database": "records"
+        "database": "maimai_records"
     },
     "urls": {
         "line_adding": "https://line.me/R/ti/p/@yourlineid",
-        "support_page": "https://github.com/Matsuk1/JiETNG/blob/main/COMMANDS.md",
+        "support_page": "https://jietng.matsuki.work/commands/",
         "dxdata": [
             "https://raw.githubusercontent.com/gekichumai/dxrating/refs/heads/main/packages/dxdata/dxdata.json",
             "https://dp4p6x0xfi5o9.cloudfront.net/maimai/data.json"
@@ -192,7 +215,7 @@ mysql -u jietng -p records < records_db.sql
 }
 ```
 
-#### 5. 获取 LINE Channel 凭证
+#### 6. 获取 LINE Channel 凭证
 
 1. 访问 [LINE Developers Console](https://developers.line.biz/)
 2. 创建 Messaging API Channel
@@ -200,18 +223,18 @@ mysql -u jietng -p records < records_db.sql
 4. 设置 Webhook URL：`https://your-domain.com/linebot/webhook`
 5. 启用 **Use webhook**
 
-#### 6. 启动服务
+#### 7. 启动服务
 
 ```bash
 python main.py
 ```
 
-服务将在 `http://0.0.0.0:5100` 启动
+服务将在 `http://0.0.0.0:5000` 启动
 
 ### 生产环境部署（推荐）
 
 ```bash
-gunicorn -w 4 -b 0.0.0.0:5100 --timeout 120 main:app
+gunicorn -w 4 -b 0.0.0.0:5000 --timeout 120 main:app
 ```
 
 ---
@@ -242,10 +265,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # 暴露端口
-EXPOSE 5100
+EXPOSE 5000
 
 # 启动命令
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5100", "--timeout", "120", "main:app"]
+CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "--timeout", "120", "main:app"]
 ```
 
 #### 创建 docker-compose.yml
@@ -258,7 +281,7 @@ services:
     build: .
     container_name: jietng_bot
     ports:
-      - "5100:5100"
+      - "5000:5000"
     volumes:
       - ./data:/app/data
       - ./config.json:/app/config.json
@@ -328,7 +351,7 @@ server {
     server_name your-domain.com;
 
     location /linebot {
-        proxy_pass http://127.0.0.1:5100;
+        proxy_pass http://127.0.0.1:5000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -360,41 +383,42 @@ JiETNG/
 ├── README.md                  # 中文文档（本文件）
 ├── README_EN.md               # 英文文档
 ├── README_JP.md               # 日文文档
-├── COMMANDS.md                # 中文命令列表
-├── COMMANDS_EN.md             # 英文命令列表
-├── COMMANDS_JP.md             # 日文命令列表
 ├── requirements.txt           # Python 依赖
 ├── records_db.sql             # 数据库结构
 ├── modules/                   # 功能模块
+│   ├── backup_manager.py      # 备份管理
+│   ├── bindtoken_manager.py   # 绑定 Token 管理
 │   ├── config_loader.py       # 配置加载器
 │   ├── dbpool_manager.py      # 数据库连接池
 │   ├── devtoken_manager.py    # 开发者 Token 管理
-│   ├── user_manager.py        # 用户管理 + 昵称缓存
-│   ├── maimai_manager.py      # Maimai API 接口
-│   ├── record_manager.py      # 数据库操作
-│   ├── record_generator.py    # 成绩图生成
-│   ├── song_generator.py      # 歌曲图生成
-│   ├── image_manager.py       # 图像处理
-│   ├── image_cache.py         # 图像缓存
-│   ├── image_uploader.py      # 图床上传（Imgur/uguu/0x0）
-│   ├── bindtoken_manager.py   # 绑定 Token 管理
-│   ├── notice_manager.py      # 公告系统
 │   ├── dxdata_manager.py      # 歌曲数据管理
+│   ├── image_cache.py         # 图像缓存
+│   ├── image_manager.py       # 图像处理
+│   ├── image_uploader.py      # 图床上传（Imgur/uguu/0x0）
 │   ├── json_encrypt.py        # 加密工具
-│   ├── rate_limiter.py        # 频率限制 + 请求追踪
 │   ├── line_messenger.py      # LINE 消息发送
-│   ├── song_matcher.py        # 歌曲搜索（支持模糊匹配）
+│   ├── maimai_manager.py      # Maimai API 接口
 │   ├── memory_manager.py      # 内存管理和清理
-│   ├── system_checker.py      # 系统自检
+│   ├── message_manager.py     # 多语言消息管理（含公告）
+│   ├── notice_manager.py      # 公告系统
+│   ├── notice_stats.py        # 公告统计
+│   ├── perm_request_generator.py  # 权限请求生成器
+│   ├── perm_request_handler.py    # 权限请求处理器
+│   ├── rate_limiter.py        # 频率限制 + 请求追踪
+│   ├── record_generator.py    # 成绩图生成
+│   ├── record_manager.py      # 数据库操作
+│   ├── song_generator.py      # 歌曲图生成
+│   ├── song_matcher.py        # 歌曲搜索（支持模糊匹配）
 │   ├── storelist_generator.py # 机厅列表生成（Flex Message）
-│   └── message_manager.py     # 多语言消息管理（含公告）
+│   ├── system_checker.py      # 系统自检
+│   └── user_manager.py        # 用户管理 + 昵称缓存
 ├── templates/                 # HTML 模板
-│   ├── bind_form.html         # 账户绑定表单
-│   ├── success.html           # 成功页面
-│   ├── error.html             # 错误页面
 │   ├── admin_login.html       # 管理员登录页
 │   ├── admin_panel.html       # 管理后台界面
-│   └── stats.html             # 统计信息页面
+│   ├── bind_form.html         # 账户绑定表单
+│   ├── common_styles.html     # 通用样式
+│   ├── error.html             # 错误页面
+│   └── success.html           # 成功页面
 ├── data/                      # 数据文件
 │   ├── dxdata.json            # 歌曲数据库
 │   ├── notice.json            # 公告信息
@@ -484,7 +508,7 @@ POST     /linebot/admin/trigger_cleanup    # 手动触发内存清理
         "intl": ["PRiSM PLUS"]             // 国际服版本
     },
     "domain": "jietng.example.com",        // 服务域名
-    "port": 5100,                          // 服务端口
+    "port": 5000,                          // 服务端口
     "file_path": {
         "dxdata_list": "./data/dxdata.json",
         "dxdata_version": "./data/dxdata_version.json",
@@ -492,17 +516,17 @@ POST     /linebot/admin/trigger_cleanup    # 手动触发内存清理
         "user_list": "./data/user.json.enc",
         "notice_file": "./data/notice.json",
         "font": "./assets/fonts/mplus-jietng.ttf",
-        "logo": "./assets/pics/logo.jpg"
+        "logo": "./assets/pics/logo.png"
     },
     "record_database": {
         "host": "localhost",
         "user": "jietng",
         "password": "your_password",
-        "database": "records"
+        "database": "maimai_records"
     },
     "urls": {
         "line_adding": "https://line.me/R/ti/p/@yourlineid",
-        "support_page": "https://github.com/Matsuk1/JiETNG/blob/main/COMMANDS.md",
+        "support_page": "https://jietng.matsuki.work/commands/",
         "dxdata": [
             "https://raw.githubusercontent.com/gekichumai/dxrating/refs/heads/main/packages/dxdata/dxdata.json",
             "https://dp4p6x0xfi5o9.cloudfront.net/maimai/data.json"

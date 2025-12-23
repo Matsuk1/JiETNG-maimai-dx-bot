@@ -39,8 +39,8 @@ def create_thumbnail_in_line(song, thumb_size=(400, 100), scale=1.5):
     text_color = (0, 0, 0)
 
     # --- 基础分数 ---
-    draw.text((15, 13), song['score'], fill=text_color, font=font_huge)
-    draw.text((175, 21), song['dx_score'], fill=text_color, font=font_large)
+    draw.text((15, 13), song['score'], fill=text_color, font=font_large)
+    draw.text((175, 21), song['dx_score'], fill=text_color, font=font_stadium)
 
     # --- score_icon 图标 ---
     # 根据缩略图尺寸动态计算图标大小
@@ -102,7 +102,7 @@ def create_thumbnail_in_line(song, thumb_size=(400, 100), scale=1.5):
             logger.error(f"[RecordGenerator] ✗ Failed to calculate dx_star: error={e}")
 
     # --- 数值 ---
-    draw.text((375, 61), f"{song['internalLevelValue']:.1f} → {song['ra']}", fill=(0, 0, 0), font=font_large, anchor="ra")
+    draw.text((375, 61), f"{song['internalLevelValue']:.1f} → {song['ra']}", fill=(0, 0, 0), font=font_stadium, anchor="ra")
 
     # --- 边框 ---
     border_color = _get_difficulty_color(song['difficulty'])
@@ -159,15 +159,15 @@ def create_thumbnail(song, thumb_size=(300, 150), padding=15):
 
     # --- 歌曲标题 ---
     max_text_width = thumb_size[0] - text_x_offset - 20
-    truncated_name = truncate_text(draw, song['name'], font_large, max_text_width)
-    draw.text((text_x_offset, padding - 5), truncated_name, fill=text_color, font=font_large)
+    truncated_name = truncate_text(draw, song['name'], font_stadium, max_text_width)
+    draw.text((text_x_offset, padding - 5), truncated_name, fill=text_color, font=font_stadium)
 
     draw.line([(text_x_offset, padding + line_spacing - 2),
                (thumb_size[0] - padding, padding + line_spacing - 2)],
               fill=text_color, width=2)
 
     # --- 基础分数 ---
-    draw.text((text_x_offset, padding + line_spacing), song['score'], fill=text_color, font=font_large)
+    draw.text((text_x_offset, padding + line_spacing), song['score'], fill=text_color, font=font_stadium)
 
     # --- score_icon 图标 ---
     # 根据缩略图尺寸动态计算图标大小
@@ -248,7 +248,7 @@ def create_thumbnail(song, thumb_size=(300, 150), padding=15):
     # --- 数值 ---
     draw.text((score_x_offset + 3, thumb_size[1] - 38),
               f"{song['internalLevelValue']:.1f} → {song['ra']}",
-              fill=(0, 0, 0), font=font_large, anchor="ra")
+              fill=(0, 0, 0), font=font_stadium, anchor="ra")
 
     # --- 边框 ---
     border_color = (200, 200, 200)
@@ -322,14 +322,14 @@ def generate_records_picture(up_songs=[], down_songs=[], title="RECORD"):
             right_texts.append("")
 
     # 计算左侧最大宽度（+10px 间距，与 draw_aligned_colon_text 一致）
-    max_left_width = max(draw.textbbox((0, 0), text, font=font_huge)[2] for text in left_texts) + 10
+    max_left_width = max(draw.textbbox((0, 0), text, font=font_large)[2] for text in left_texts) + 10
     # 计算右侧最大宽度
-    max_right_width = max(draw.textbbox((0, 0), text, font=font_huge)[2] for text in right_texts) if right_texts else 0
+    max_right_width = max(draw.textbbox((0, 0), text, font=font_large)[2] for text in right_texts) if right_texts else 0
 
     # 实际文本总宽度
     max_text_width = max_left_width + max_right_width
 
-    line_height = draw.textbbox((0, 0), "TEST", font=font_huge)[3]
+    line_height = draw.textbbox((0, 0), "TEST", font=font_large)[3]
     text_total_height = len(header_text) * (line_height + 7)
 
     # 根据实际文本宽度设置卡片宽度
@@ -349,13 +349,13 @@ def generate_records_picture(up_songs=[], down_songs=[], title="RECORD"):
         draw,
         lines=header_text,
         top_left=(card_x + card_padding, card_y + card_padding - 5),
-        font=font_huge,
+        font=font_large,
         spacing=7,
         fill=(40, 40, 40)  # 深灰色文字，更柔和
     )
 
     # 绘制斜体标题
-    bbox = draw.textbbox((0, 0), title, font=font_huge_huge)
+    bbox = draw.textbbox((0, 0), title, font=font_record_title)
     title_width = bbox[2] - bbox[0]
     title_height = bbox[3] - bbox[1]
 
@@ -365,7 +365,7 @@ def generate_records_picture(up_songs=[], down_songs=[], title="RECORD"):
     title_layer = Image.new('RGBA', (layer_width, layer_height), (255, 255, 255, 0))
     title_draw = ImageDraw.Draw(title_layer)
     # 文字绘制在图层中央偏上位置
-    title_draw.text((70, 15), title, fill=(206, 206, 206, 255), font=font_huge_huge)
+    title_draw.text((70, 15), title, fill=(206, 206, 206, 255), font=font_record_title)
 
     # 应用斜体变换 (正向斜体 "/" 方向)
     title_layer = title_layer.transform(
@@ -650,7 +650,7 @@ def generate_plate_image(target_data, title, img_width=1700, img_height=600, max
         text_x = card_x + border_width + 15
         text_y = current_y + (card_height - 30) // 2
         difficulty_text = f"{key.upper()}"
-        draw.text((text_x, text_y), difficulty_text, fill=(60, 60, 60), font=font_huge)
+        draw.text((text_x, text_y), difficulty_text, fill=(60, 60, 60), font=font_large)
 
         # 判断是否全部完成
         is_completed = value['clear'] == value['all'] and value['all'] > 0
@@ -663,9 +663,9 @@ def generate_plate_image(target_data, title, img_width=1700, img_height=600, max
             # 未完成时显示进度
             data_text = f"{value['clear']} / {value['all']}"
 
-        data_text_width = draw.textlength(data_text, font=font_huge)
+        data_text_width = draw.textlength(data_text, font=font_large)
         data_x = card_x + card_width - data_text_width - 15  # 右侧对齐
-        draw.text((data_x, text_y), data_text, fill=(40, 40, 40), font=font_huge)
+        draw.text((data_x, text_y), data_text, fill=(40, 40, 40), font=font_large)
 
     final_img = final_img.convert("RGB")
     draw = ImageDraw.Draw(final_img)  # 转换后重新创建 draw 对象
@@ -692,23 +692,23 @@ def generate_plate_image(target_data, title, img_width=1700, img_height=600, max
             final_img.paste(plate_img, (plate_x, plate_y), plate_img)
         else:
             # 如果图片不存在，回退到文字显示
-            title_text_size = draw.textlength(title, font=font_huge_huge)
+            title_text_size = draw.textlength(title, font=font_record_title)
             title_x = img_width - margin - title_text_size - 30
             title_y = margin - 25
-            draw.text((title_x, title_y), title, fill=(206, 206, 206), font=font_huge_huge)
+            draw.text((title_x, title_y), title, fill=(206, 206, 206), font=font_record_title)
             logger.debug(f"[RecordGenerator] Plate image not found, using text: plate={title}")
     except Exception as e:
         # 出错时回退到文字显示
-        title_text_size = draw.textlength(title, font=font_huge_huge)
+        title_text_size = draw.textlength(title, font=font_record_title)
         title_x = img_width - margin - title_text_size - 30
         title_y = margin - 25
-        draw.text((title_x, title_y), title, fill=(206, 206, 206), font=font_huge_huge)
+        draw.text((title_x, title_y), title, fill=(206, 206, 206), font=font_record_title)
         logger.error(f"[RecordGenerator] ✗ Failed to load plate image: plate={title}, error={e}")
 
     # 渲染主体图像内容
     y_offset = margin + 30 + 180
     for level, img_list in rows:
-        draw.text((margin, y_offset + img_size // 3), level, fill="black", font=font_for_plate)
+        draw.text((margin, y_offset + img_size // 3), level, fill="black", font=font_level_badge)
 
         x_offset = level_width + margin
         for i, img in enumerate(img_list):
@@ -770,15 +770,15 @@ def generate_internallevel_image(target_data, level_name, img_width=2400, max_pe
 
     # 添加右侧标题
     title_text = f"{level_name} 定数リスト"
-    title_text_size = draw.textlength(title_text, font=font_huge_huge)
+    title_text_size = draw.textlength(title_text, font=font_record_title)
     title_x = img_width - margin - title_text_size - 30
     title_y = margin - 45
-    draw.text((title_x, title_y), title_text, fill=(206, 206, 206), font=font_huge_huge)
+    draw.text((title_x, title_y), title_text, fill=(206, 206, 206), font=font_record_title)
 
     # 渲染主体图像内容
     y_offset = margin + 30 + 140
     for level_idx, (level_str, img_list) in enumerate(rows):
-        draw.text((margin, y_offset + img_size // 3), level_str, fill="black", font=font_for_plate)
+        draw.text((margin, y_offset + img_size // 3), level_str, fill="black", font=font_level_badge)
 
         x_offset = level_width + margin
         row_count = 0  # 当前定数的行数计数

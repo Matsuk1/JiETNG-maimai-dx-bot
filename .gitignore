@@ -69,7 +69,3 @@ test_api.py
 # 上传的图片缓存
 uploads/
 temp/
-cache/
-
-# 编译的 Python 文件
-*.pyc

@@ -130,14 +130,13 @@ from modules.storelist_generator import generate_store_buttons
 DIVIDER = "-" * 33
 
 # 队列配置
-MAX_QUEUE_SIZE = 10
-MAX_CONCURRENT_IMAGE_TASKS = 5  # 图片生成并发数
-WEB_MAX_CONCURRENT_TASKS = 3    # 网络任务并发数
+MAX_QUEUE_SIZE = 15
+MAX_CONCURRENT_IMAGE_TASKS = 8  # 图片生成并发数
+WEB_MAX_CONCURRENT_TASKS = 5    # 网络任务并发数
 TASK_TIMEOUT_SECONDS = 120
 
 # 搜索结果限制
 MAX_SEARCH_RESULTS = 10
-
 # 是否启用错误通知
 ERROR_NOTIFICATION_ENABLED = True
 
@@ -1098,6 +1097,33 @@ def get_rc(level: float, user_id=None):
 
     return generate_rc_flex(level, rc_data, user_id)
 
+def random_song(user_id, key="", ver="jp"):
+    read_dxdata(ver)
+    length = len(SONGS)
+    is_exit = False
+    valid_songs = []
+
+    if key:
+        level_values = parse_level_value(key)
+
+    for song in SONGS:
+        for sheet in song['sheets']:
+            if sheet['regions']['jp']:
+                if not key or sheet['internalLevelValue'] in level_values:
+                    valid_songs.append(song)
+                    break
+
+    if not valid_songs:
+        return song_error(user_id)
+
+    song = random.choice(valid_songs)
+    song_id = song.get('id')
+
+    original_url, preview_url = smart_upload(song_info_generate(song))
+    result.append(ImageMessage(original_content_url=original_url, preview_image_url=preview_url))
+    result.append(generate_calc_button(song_id, user_id))
+    return result
+
 def search_song(user_id, acronym, ver="jp"):
     """
     搜索歌曲并返回歌曲信息图片
@@ -1214,34 +1240,6 @@ def calc_by_id(user_id, song_id, ver="jp"):
 
     calc_carousel = generate_calc_carousel(calc_data)
     return calc_carousel
-
-
-def random_song(user_id, key="", ver="jp"):
-    read_dxdata(ver)
-    length = len(SONGS)
-    is_exit = False
-    valid_songs = []
-
-    if key:
-        level_values = parse_level_value(key)
-
-
-    for song in SONGS:
-        for sheet in song['sheets']:
-            if sheet['regions']['jp']:
-                if not key or sheet['internalLevelValue'] in level_values:
-                    valid_songs.append(song)
-                    break
-
-    if not valid_songs:
-        return song_error(user_id)
-
-    song = random.choice(valid_songs)
-
-    original_url, preview_url = smart_upload(song_info_generate(song))
-    result = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
-
-    return result
 
 def get_friend_list(user_id):
     if user_id not in USERS:
@@ -1656,11 +1654,11 @@ def create_user_info_img(user_info, scale=1.7):
     char_width = 13  # 每个字符的固定宽度
     start_x = 188
     for i, char in enumerate(rating_text):
-        draw.text((start_x + i * char_width, 17), char, fill=(255, 255, 255), font=font_large)
+        draw.text((start_x + i * char_width, 17), char, fill=(255, 255, 255), font=font_stadium)
 
     # 绘制带灰色边框的圆角矩形
     draw.rounded_rectangle([129, 51, 129 + 266, 51 + 33], radius=10, fill=(255, 255, 255), outline=(180, 180, 180), width=2)
-    draw.text((138, 54), user_info['name'], fill=(0, 0, 0), font=font_large)
+    draw.text((138, 54), user_info['name'], fill=(0, 0, 0), font=font_stadium)
 
     paste_image("class_rank_url", (296, 9), (70, 40))
     paste_image("cource_rank_url", (322, 54), (69, 28))

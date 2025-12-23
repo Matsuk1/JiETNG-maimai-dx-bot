@@ -66,22 +66,22 @@ def _render_basic_info_image(song_json, cover_img):
     id = song_json.get("id", "N/A")
 
     info_text = [
-        truncate_text(draw, f"アーティスト: {artist}", font_info, canvas_width - text_x - margin),
+        truncate_text(draw, f"アーティスト: {artist}", font_song_info, canvas_width - text_x - margin),
         f"類別: {category}",
         f"BPM: {bpm}",
         f"バージョン: {version}"
     ]
 
     # 标题
-    title = truncate_text(draw, title, font_title, canvas_width - text_x - margin)
-    draw.text((text_x, text_y), title, font=font_title, fill=(0, 0, 0))
-    title_width = draw.textlength(title, font=font_title)
+    title = truncate_text(draw, title, font_song_title, canvas_width - text_x - margin)
+    draw.text((text_x, text_y), title, font=font_song_title, fill=(0, 0, 0))
+    title_width = draw.textlength(title, font=font_song_title)
 
     draw_aligned_colon_text(
         draw,
         lines=info_text,
         top_left=(text_x, text_y + 60),
-        font=font_info,
+        font=font_song_info,
         spacing=8,
         fill=(0, 0, 0)
     )
@@ -122,8 +122,8 @@ def _generate_song_table_image(song_json, scale_width=1.5, scale_height=2.0):
             block_colors["regions"]
         )
         draw.rectangle([x, 0, x + col_widths[i], row_height], fill=fill)
-        w = draw.textlength(header, font=font_huge)
-        draw.text((x + (col_widths[i] - w) // 2, row_height // 4), header, font=font_huge, fill=(0, 0, 0))
+        w = draw.textlength(header, font=font_large)
+        draw.text((x + (col_widths[i] - w) // 2, row_height // 4), header, font=font_large, fill=(0, 0, 0))
 
     # 绘制每一行
     for row_idx, sheet in enumerate(song_json["sheets"]):
@@ -157,8 +157,8 @@ def _generate_song_table_image(song_json, scale_width=1.5, scale_height=2.0):
             draw.rectangle([x, y, x + col_widths[col_idx], y + row_height], fill=fill)
 
             text = str(cell)
-            w = draw.textlength(text, font=font_huge)
-            draw.text((x + (col_widths[col_idx] - w) // 2, y + row_height // 4), text, font=font_huge, fill=(0, 0, 0))
+            w = draw.textlength(text, font=font_large)
+            draw.text((x + (col_widths[col_idx] - w) // 2, y + row_height // 4), text, font=font_large, fill=(0, 0, 0))
 
     return image
 
@@ -226,18 +226,18 @@ def _render_song_info_small_img(song_json, cover_img):
     levels_str = " / ".join(f"{level:.1f}" for level in levels)
 
     # 标题
-    draw.text((text_x, text_y), title, font=font_title, fill=(0, 0, 0))
-    title_width = draw.textlength(title, font=font_title)
+    draw.text((text_x, text_y), title, font=font_song_title, fill=(0, 0, 0))
+    title_width = draw.textlength(title, font=font_song_title)
 
     # 横线
     line_y = text_y + 45
     draw.line([(text_x, line_y), (text_x + max(title_width+10, 600), line_y)], fill=(100, 100, 100), width=2)
 
     # 其他信息
-    draw.text((text_x, line_y + 15), artist, font=font_info, fill=(0, 0, 0))
-    draw.text((text_x, line_y + 50), bpm, font=font_info, fill=(0, 0, 0))
-    draw.text((text_x, line_y + 85), category, font=font_info, fill=(0, 0, 0))
-    draw.text((text_x, line_y + 120), levels_str, font=font_info, fill=(0, 0, 0))
+    draw.text((text_x, line_y + 15), artist, font=font_song_info, fill=(0, 0, 0))
+    draw.text((text_x, line_y + 50), bpm, font=font_song_info, fill=(0, 0, 0))
+    draw.text((text_x, line_y + 85), category, font=font_song_info, fill=(0, 0, 0))
+    draw.text((text_x, line_y + 120), levels_str, font=font_song_info, fill=(0, 0, 0))
 
     return img
 
