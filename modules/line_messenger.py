@@ -21,7 +21,6 @@ from modules.config_loader import USERS
 from modules.user_manager import (
     get_user_value,
     edit_user_value,
-    _migrate_user_notice_data,
     has_user_read_notice,
     record_notice_read
 )
@@ -70,9 +69,6 @@ def smart_reply(user_id: str, reply_token: str, messages, configuration: Configu
 
         # 优先级2: 公告消息（使用新的交互追踪系统）
         if len(messages) < 5 and user_id:
-            # 执行用户数据迁移（如果需要）
-            _migrate_user_notice_data(user_id)
-
             # 获取最新已发布的公告
             latest_notice = get_latest_published_notice()
 

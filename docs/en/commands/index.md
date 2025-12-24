@@ -256,7 +256,6 @@ friend-b50 1234567890123456   # View friend's B50
 
 | Command | Description |
 |---------|-------------|
-| `upload notice [content]` | Upload new notice, reset all users' read status |
 | `dxdata update` | Manually update dxdata database and compare changes |
 
 ---

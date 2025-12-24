@@ -422,7 +422,7 @@ language_select_title = "言語選択 / Language Selection / 语言选择"
 
 language_select_description = """言語を選択 / Select language / 选择语言"""
 
-language_button_jp = "🇯🇵 日本語"
+language_button_ja = "🇯🇵 日本語"
 language_button_en = "🇺🇸 English"
 language_button_zh = "🇨🇳 中文"
 
@@ -2686,7 +2686,7 @@ def generate_search_record_results_flex(user_id, matching_songs):
     return _generate_search_results_flex_internal(user_id, matching_songs, 'record')
 
 
-def generate_friend_buttons(user_id, alt_text, friend_list, group_size=10):
+def generate_friend_buttons(user_id, alt_text, friend_list, group_size):
     """
     生成好友列表 Flex Message（极简黑白风格）
 
@@ -3103,8 +3103,11 @@ def generate_bot_status_flex(uptime_str, cpu_percent, memory_percent, memory_use
                     "color": "#000000"
                 }
             ],
-            "paddingAll": "16px",
-            "backgroundColor": "#FFFFFF"
+        "paddingTop": "16px",
+        "paddingBottom": "0px",
+        "paddingStart": "16px",
+        "paddingEnd": "16px",
+        "backgroundColor": "#FFFFFF"
         },
         "body": {
             "type": "box",

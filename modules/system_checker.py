@@ -56,6 +56,9 @@ def clean_deprecated_user_fields() -> Dict[str, Any]:
     for user_id, user_data in USERS.items():
         fields_removed = []
 
+        if user_data['language'] == "jp":
+            user_data['language'] = "ja"
+
         # 检查并删除废弃字段
         for field in deprecated_fields:
             if field in user_data:

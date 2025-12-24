@@ -1254,7 +1254,18 @@ def get_friend_list(user_id):
     if not friend_list:
         friend_list = []
 
-    return generate_friend_buttons(user_id, get_friend_list_alt_text(user_id), friend_list)
+    friend_num = len(friend_list)
+    
+    if friend_num <= 10:
+        group_size = 10
+    elif 14 < friend_num <= 16:
+        group_size = 8
+    elif 17 <= friend_num <= 18:
+        group_size = 9
+    else:
+        group_size = 7
+
+    return generate_friend_buttons(user_id, get_friend_list_alt_text(user_id), friend_list, group_size)
 
 def get_bot_status(user_id):
     """
@@ -2401,7 +2412,7 @@ def handle_sync_text_command(event):
     2. 模糊匹配命令 - 歌曲查询、Rating 对照、达成情况等
     3. B 系列命令 - b50, b100, rct50, apb50 等
     4. 特殊命令 - bind, language, calc
-    5. 管理员命令 - upload notice, dxdata update, devtoken
+    5. 管理员命令 - dxdata update, devtoken
     """
     # 记录开始时间以统计响应时间
     start_time = time.time()
@@ -2600,7 +2611,7 @@ def handle_sync_text_command(event):
                 title=language_select_title,
                 text=language_select_description,
                 actions=[
-                    MessageAction(label=language_button_jp, text="language jp"),
+                    MessageAction(label=language_button_ja, text="language jp"),
                     MessageAction(label=language_button_en, text="language en"),
                     MessageAction(label=language_button_zh, text="language zh")
                 ]
@@ -2646,8 +2657,8 @@ def handle_sync_text_command(event):
         lang_code = user_message[9:].strip().lower()
 
         # 验证语言代码
-        if lang_code not in ["jp", "en", "zh"]:
-            reply_message = TextMessage(text="Invalid language code. Please use: jp, en, or zh")
+        if lang_code not in ["ja", "en", "zh"]:
+            reply_message = TextMessage(text="Invalid language code. Please use: ja, en, or zh")
             return tracked_reply(user_id, event.reply_token, reply_message)
 
         # 设置用户语言
@@ -2683,12 +2694,6 @@ def handle_sync_text_command(event):
     # 7. 管理员命令
     # ========================================
     if user_id in ADMIN_ID:
-        if user_message.startswith("upload notice"):
-            new_notice = user_message.replace("upload notice", "").strip()
-            upload_notice(new_notice)
-            clear_user_value("notice_read", False)
-            return tracked_reply(user_id, event.reply_token, notice_upload(user_id))
-
         if user_message == "dxdata update":
             # 使用新的对比更新函数
             result = update_dxdata_with_comparison(DXDATA_URL, DXDATA_LIST)
@@ -3514,7 +3519,7 @@ def admin_delete_notice():
         return jsonify({'success': False, 'message': 'Notice ID is required'}), 400
 
     try:
-        clear_user_value("notice_read", True)
+        clear_notice_record(notice_id)
         success = delete_notice(notice_id)
 
         if success:
