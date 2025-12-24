@@ -105,7 +105,7 @@ def get_random_tip():
     Returns:
         dict: 随机选择的tip数据，如果没有启用的则返回None
     """
-    if not _ENABLED_TIPS:
+    if not _ENABLED_TIPS or random.random() > 0.75:
         return None
 
     return random.choice(_ENABLED_TIPS)
@@ -118,7 +118,7 @@ def get_random_ad():
     Returns:
         dict: 随机选择的ad数据，如果没有启用的则返回None
     """
-    if not _ENABLED_ADS:
+    if not _ENABLED_ADS or random.random() > 0.75:
         return None
 
     return random.choice(_ENABLED_ADS)

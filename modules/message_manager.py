@@ -3100,11 +3100,11 @@ def generate_bot_status_flex(uptime_str, cpu_percent, memory_percent, memory_use
                     "text": texts['title'][lang],
                     "weight": "bold",
                     "size": "lg",
-                    "color": "#FFFFFF"
+                    "color": "#000000"
                 }
             ],
             "paddingAll": "16px",
-            "backgroundColor": "#007AFF"
+            "backgroundColor": "#FFFFFF"
         },
         "body": {
             "type": "box",
