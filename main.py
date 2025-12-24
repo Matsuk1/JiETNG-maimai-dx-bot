@@ -2146,7 +2146,6 @@ IMAGE_TASK_ROUTES = {
         "ab35", "allb35", "all best 35", "オールベスト35",
         "ab50", "allb50", "all best 50", "オールベスト50",
         "ab100", "allb100", "all best 100", "オールベスト100",
-        "ab200", "allb200", "all best 200", "オールベスト200",
         "apb50", "ap50", "all perfect 50", "オールパーフェクト50",
         "fdxb50", "fdx50", "Full DX 50", "フールでらっくす50",
         "rct50", "r50", "recent50", "recent 50",
@@ -2581,7 +2580,6 @@ def handle_sync_text_command(event):
         ("ab35", "allb35", "all best 35", "オールベスト35"): "allb35",
         ("ab50", "allb50", "all best 50", "オールベスト50"): "allb50",
         ("ab100", "allb100", "all best 100", "オールベスト100"): "allb100",
-        ("ab200", "allb200", "all best 200", "オールベスト200"): "allb200",
 
         # 特殊系列
         ("apb50", "ap50", "all perfect 50", "オールパーフェクト50"): "apb50",

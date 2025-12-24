@@ -32,7 +32,6 @@ best15       # Show only top 15 current version songs
 ab35         # All Best 35  (ignore song version)
 ab50         # All Best 50  (ignore song version)
 ab100        # All Best 100 (ignore song version)
-ab200        # All Best 200 (ignore song version)
 apb50        # All Perfect Best 50 (AP/AP+ scores only)
 fdxb50       # Full DX Best 50 (FDX/FDX+ scores only)
 idlb50       # Ideal Best 50 (simulate best scores)

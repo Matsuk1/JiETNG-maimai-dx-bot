@@ -32,7 +32,6 @@ best15       # 仅显示前 15 首新曲
 ab35         # All Best 35 （忽略歌曲版本）
 ab50         # All Best 50 （忽略歌曲版本）
 ab100        # All Best 100（忽略歌曲版本）
-ab200        # All Best 200（忽略歌曲版本）
 apb50        # All Perfect Best 50（仅 AP/AP+ 成绩）
 fdxb50       # Full DX Best 50（仅 FDX/FDX+ 成绩）
 idlb50       # Ideal Best 50（模拟最好成绩）

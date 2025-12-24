@@ -68,7 +68,6 @@
 | `ab35` | `allb35`, `all best 35`, `オールベスト35` | 所有版本混合的 Best 35 |
 | `ab50` | `allb50`, `all best 50`, `オールベスト50` | 所有版本混合的 Best 50 |
 | `ab100` | `allb100`, `all best 100`, `オールベスト100` | 所有版本混合的 Best 100 |
-| `ab200` | `allb200`, `all best 200`, `オールベスト200` | 所有版本混合的 Best 200 |
 | `apb50` | `ap50`, `all perfect 50`, `オールパーフェクト50` | 仅显示 AP/AP+ 的 Best 50 |
 | `fdxb50` | `fdx50`, `full dx 50`, `フールでらっくす50` | 仅显示 FDX/FDX+ 的 Best 50 |
 | `rct50` | `r50`, `recent50`, `recent 50` | 最近 50 条游玩记录 |
