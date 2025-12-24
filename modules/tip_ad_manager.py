@@ -14,6 +14,24 @@ logger = logging.getLogger(__name__)
 
 # 全局变量
 TIP_AD_DATA = []
+_ENABLED_TIPS = []  # 缓存启用的 tip 列表
+_ENABLED_ADS = []   # 缓存启用的 ad 列表
+
+
+def _rebuild_cache():
+    """重建启用的 tip/ad 缓存"""
+    global _ENABLED_TIPS, _ENABLED_ADS
+
+    _ENABLED_TIPS = [
+        item for item in TIP_AD_DATA
+        if item.get('enabled', True) and item.get('type') == 'tip'
+    ]
+    _ENABLED_ADS = [
+        item for item in TIP_AD_DATA
+        if item.get('enabled', True) and item.get('type') == 'ad'
+    ]
+
+    logger.debug(f"[TipAd] Cache rebuilt: {len(_ENABLED_TIPS)} tips, {len(_ENABLED_ADS)} ads")
 
 
 def load_tip_ad_data():
@@ -39,6 +57,9 @@ def load_tip_ad_data():
         logger.error(f"[TipAd] Failed to load tip/ad data: {e}", exc_info=True)
         TIP_AD_DATA = []
 
+    # 重建缓存
+    _rebuild_cache()
+
     return TIP_AD_DATA
 
 
@@ -57,6 +78,10 @@ def save_tip_ad_data():
             json.dump(TIP_AD_DATA, f, ensure_ascii=False, indent=2)
 
         logger.info(f"[TipAd] Saved {len(TIP_AD_DATA)} tip/ad items to {TIP_AD_FILE}")
+
+        # 重建缓存
+        _rebuild_cache()
+
         return True
     except Exception as e:
         logger.error(f"[TipAd] Failed to save tip/ad data: {e}", exc_info=True)
@@ -73,30 +98,30 @@ def get_all_tip_ads():
     return TIP_AD_DATA.copy()
 
 
-def get_random_tip_ad(language=None):
+def get_random_tip():
     """
-    随机获取一个启用的tip/ad
-
-    Args:
-        language: 用户语言 ('ja', 'en', 'zh')，如果指定则只返回包含该语言的tip/ad
+    随机获取一个启用的tip
 
     Returns:
-        dict: 随机选择的tip/ad数据，如果没有启用的则返回None
+        dict: 随机选择的tip数据，如果没有启用的则返回None
     """
-    # 筛选出启用的tip/ad
-    enabled_tips = [tip for tip in TIP_AD_DATA if tip.get('enabled', True)]
-
-    # 如果指定了语言，进一步筛选包含该语言文本的tip/ad
-    if language:
-        enabled_tips = [
-            tip for tip in enabled_tips
-            if tip.get('text', {}).get(language)
-        ]
-
-    if not enabled_tips:
+    if not _ENABLED_TIPS:
         return None
 
-    return random.choice(enabled_tips)
+    return random.choice(_ENABLED_TIPS)
+
+
+def get_random_ad():
+    """
+    随机获取一个启用的ad
+
+    Returns:
+        dict: 随机选择的ad数据，如果没有启用的则返回None
+    """
+    if not _ENABLED_ADS:
+        return None
+
+    return random.choice(_ENABLED_ADS)
 
 
 def create_tip_ad(tip_type, text_zh, text_en, text_ja, button_type=None, button_label_zh=None,

@@ -110,7 +110,8 @@ def _generate_unique_id():
 
     return notice_id
 
-def upload_notice(content, date=None, status='published', voting_enabled=False, created_by='system'):
+def upload_notice(content, date=None, status='published', voting_enabled=False, created_by='system',
+                  button_type=None, button_label=None, button_value=None):
     """
     上传新公告
 
@@ -120,6 +121,9 @@ def upload_notice(content, date=None, status='published', voting_enabled=False, 
         status: 'draft' 或 'published'
         voting_enabled: 是否启用投票
         created_by: 创建者用户ID
+        button_type: 按钮类型 ('uri' 或 'message')
+        button_label: 按钮标签 {'ja': '...', 'en': '...', 'zh': '...'}
+        button_value: 按钮值（URI或消息文本）
 
     Returns:
         notice_id: 公告ID
@@ -158,6 +162,14 @@ def upload_notice(content, date=None, status='published', voting_enabled=False, 
         "created_by": created_by,
         "updated_at": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     }
+
+    # 添加按钮（如果提供）
+    if button_type and button_value and button_label:
+        new_notice['button'] = {
+            'type': button_type,
+            'label': button_label,
+            'value': button_value
+        }
 
     notices.insert(0, new_notice)
     _save_notices(notices)
@@ -200,13 +212,17 @@ def get_notice_by_id(notice_id):
             return notice
     return None
 
-def update_notice(notice_id, content):
+def update_notice(notice_id, content, button_type=None, button_label=None, button_value=None, remove_button=False):
     """
     更新公告
 
     Args:
         notice_id: 公告ID
         content: 多语言内容字典 或 字符串(向后兼容)
+        button_type: 按钮类型 ('uri' 或 'message')
+        button_label: 按钮标签 {'ja': '...', 'en': '...', 'zh': '...'}
+        button_value: 按钮值（URI或消息文本）
+        remove_button: 是否移除按钮
 
     Returns:
         bool: 是否成功
@@ -232,6 +248,17 @@ def update_notice(notice_id, content):
         if notice.get('id') == notice_id:
             notices[i]['content'] = content_dict
             notices[i]['updated_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+            # 处理按钮
+            if remove_button:
+                notices[i].pop('button', None)
+            elif button_type and button_value and button_label:
+                notices[i]['button'] = {
+                    'type': button_type,
+                    'label': button_label,
+                    'value': button_value
+                }
+
             _save_notices(notices)
             return True
 

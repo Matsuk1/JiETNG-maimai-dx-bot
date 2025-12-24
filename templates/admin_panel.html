@@ -1350,17 +1350,17 @@
 
             <div class="form-group">
               <label class="form-label">Button Label (Chinese):</label>
-              <input type="text" id="tipad_button_label_zh" class="form-input">
+              <input type="text" id="tipad_button_label_zh" class="form-input" placeholder="查看详情 / 尝试一下">
             </div>
 
             <div class="form-group">
               <label class="form-label">Button Label (English):</label>
-              <input type="text" id="tipad_button_label_en" class="form-input">
+              <input type="text" id="tipad_button_label_en" class="form-input" placeholder="View Details / Try it">
             </div>
 
             <div class="form-group">
               <label class="form-label">Button Label (Japanese):</label>
-              <input type="text" id="tipad_button_label_ja" class="form-input">
+              <input type="text" id="tipad_button_label_ja" class="form-input" placeholder="詳細を見る / 試してみる">
             </div>
 
             <div class="form-group">
@@ -1494,6 +1494,44 @@
           <small style="opacity: 0.6; font-size: 12px; display: block; margin-top: 4px;">
             Allow users to vote "Support" or "Oppose" on this notice
           </small>
+        </div>
+
+        <!-- Button Configuration -->
+        <div class="form-group">
+          <label class="form-label" style="display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" id="notice-has-button" onchange="toggleNoticeButtonFields()" style="width: auto;">
+            Add Button
+          </label>
+        </div>
+
+        <div id="noticeButtonFields" style="display: none; border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; margin-bottom: 20px; background-color: var(--hover-bg);">
+          <div class="form-group">
+            <label class="form-label">Button Type:</label>
+            <select id="notice-button-type" class="form-input">
+              <option value="uri">Link (URI)</option>
+              <option value="message">Message</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Button Label (Chinese):</label>
+            <input type="text" id="notice-button-label-zh" class="form-input" placeholder="查看详情 / 尝试一下">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Button Label (English):</label>
+            <input type="text" id="notice-button-label-en" class="form-input" placeholder="View Details / Try it">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Button Label (Japanese):</label>
+            <input type="text" id="notice-button-label-ja" class="form-input" placeholder="詳細を見る / 試してみる">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Button Value (URI or Message Text):</label>
+            <input type="text" id="notice-button-value" class="form-input" placeholder="https://example.com or message text">
+          </div>
         </div>
 
         <!-- Publication Status -->
@@ -2187,6 +2225,11 @@
       return div.innerHTML;
     }
 
+    function toggleNoticeButtonFields() {
+      const hasButton = document.getElementById('notice-has-button').checked;
+      document.getElementById('noticeButtonFields').style.display = hasButton ? 'block' : 'none';
+    }
+
     function showCreateNoticeModal() {
       document.getElementById('notice-modal-title').textContent = 'Create New Notice';
       document.getElementById('notice-id').value = '';
@@ -2195,6 +2238,13 @@
       document.getElementById('notice-content-en').value = '';
       document.getElementById('notice-voting-enabled').checked = false;
       document.getElementById('notice-status').value = 'published';
+      document.getElementById('notice-has-button').checked = false;
+      document.getElementById('noticeButtonFields').style.display = 'none';
+      document.getElementById('notice-button-type').value = 'uri';
+      document.getElementById('notice-button-label-zh').value = '';
+      document.getElementById('notice-button-label-ja').value = '';
+      document.getElementById('notice-button-label-en').value = '';
+      document.getElementById('notice-button-value').value = '';
       document.getElementById('notice-save-btn').textContent = 'Create';
       document.getElementById('noticeModal').style.display = 'block';
     }
@@ -2224,6 +2274,21 @@
 
               document.getElementById('notice-voting-enabled').checked = notice.voting_enabled || false;
               document.getElementById('notice-status').value = notice.status || 'published';
+
+              // Load button data
+              if (notice.button) {
+                document.getElementById('notice-has-button').checked = true;
+                document.getElementById('noticeButtonFields').style.display = 'block';
+                document.getElementById('notice-button-type').value = notice.button.type || 'uri';
+                document.getElementById('notice-button-label-zh').value = notice.button.label?.zh || '';
+                document.getElementById('notice-button-label-ja').value = notice.button.label?.ja || '';
+                document.getElementById('notice-button-label-en').value = notice.button.label?.en || '';
+                document.getElementById('notice-button-value').value = notice.button.value || '';
+              } else {
+                document.getElementById('notice-has-button').checked = false;
+                document.getElementById('noticeButtonFields').style.display = 'none';
+              }
+
               document.getElementById('notice-save-btn').textContent = 'Update';
               document.getElementById('noticeModal').style.display = 'block';
             }
@@ -2259,6 +2324,18 @@
 
       if (isUpdate) {
         payload.notice_id = noticeId;
+      }
+
+      // Add button data
+      const hasButton = document.getElementById('notice-has-button').checked;
+      if (hasButton) {
+        payload.button_type = document.getElementById('notice-button-type').value;
+        payload.button_label_zh = document.getElementById('notice-button-label-zh').value;
+        payload.button_label_ja = document.getElementById('notice-button-label-ja').value;
+        payload.button_label_en = document.getElementById('notice-button-label-en').value;
+        payload.button_value = document.getElementById('notice-button-value').value;
+      } else if (isUpdate) {
+        payload.remove_button = true;
       }
 
       const btn = document.getElementById('notice-save-btn');

@@ -142,14 +142,14 @@ def _split_song_sheets_by_type(song_list):
                 sheet["internalLevelValue"] = sheet["multiverInternalLevelValue"].get(MAIMAI_VERSION["jp"][-1], sheet["internalLevelValue"])
 
             if sheet_type in sheets_by_type:
-                new_sheet = sheet.copy()
+                new_sheet = copy.deepcopy(sheet)
                 version_by_type[sheet_type] = new_sheet.pop("version", base_info["version"])
                 new_sheet.pop("type", None)
                 sheets_by_type[sheet_type].append(new_sheet)
 
         for sheet_type, sheets in sheets_by_type.items():
             if sheets:
-                entry = base_info.copy()
+                entry = copy.deepcopy(base_info)
                 entry["type"] = sheet_type
                 entry["version"] = version_by_type.get(sheet_type, base_info["version"])
                 entry["sheets"] = sheets
@@ -211,6 +211,47 @@ def save_dxdata_version_history(stats):
         return False
 
 
+def _filter_song_fields(song):
+    """
+    过滤歌曲对象，只保留指定字段
+
+    Args:
+        song: 原始歌曲对象
+
+    Returns:
+        dict: 过滤后的歌曲对象
+    """
+    filtered_song = {
+        "title": song.get("title", ""),
+        "artist": song.get("artist", ""),
+        "id": song.get("id", ""),
+        "bpm": song.get("bpm", 0),
+        "category": song.get("category", ""),
+        "version": song.get("version", ""),
+        "cover_url": song.get("cover_url", ""),
+        "cover_name": song.get("cover_name", ""),
+        "type": song.get("type", ""),
+        "search_acronyms": song.get("search_acronyms", []),
+        "sheets": []
+    }
+
+    # 过滤 sheets 字段
+    for sheet in song.get("sheets", []):
+        filtered_sheet = {
+            "difficulty": sheet.get("difficulty", ""),
+            "level": sheet.get("level", ""),
+            "internalLevelValue": sheet.get("internalLevelValue", 0),
+            "noteDesigner": sheet.get("noteDesigner", ""),
+            "noteCounts": sheet.get("noteCounts", {}),
+            "regions": sheet.get("regions", {}),
+            "multiverInternalLevelValue": sheet.get("multiverInternalLevelValue", {}),
+            "releaseDate": sheet.get("releaseDate", "")
+        }
+        filtered_song["sheets"].append(filtered_sheet)
+
+    return filtered_song
+
+
 def update_dxdata_with_comparison(urls, save_to: str = None):
     """
     更新 dxdata 并返回与上次的对比信息
@@ -240,9 +281,9 @@ def update_dxdata_with_comparison(urls, save_to: str = None):
     for url in urls:
         new_datas.append(load_dxdata(url))
 
-    # 只合并 songs 字段
+    # 只合并 songs 字段（使用 id 去重，避免 std/dx 版本混淆）
     for i in range(1, len(new_datas)):
-        new_datas[0]['songs'] = merge_songs_list(new_datas[i]['songs'], new_datas[0]['songs'], "title")
+        new_datas[0]['songs'] = merge_songs_list(new_datas[i]['songs'], new_datas[0]['songs'], "id")
 
     new_data = new_datas[0]
 
@@ -253,8 +294,14 @@ def update_dxdata_with_comparison(urls, save_to: str = None):
 
 
     if save_to:
+        # 过滤数据，只保留指定字段
+        filtered_data = {
+            "songs": [_filter_song_fields(song) for song in new_data.get("songs", [])],
+            "versions": new_data.get("versions", [])
+        }
+
         with open(save_to, "w", encoding="utf-8") as file:
-            json.dump(new_data, file, ensure_ascii=False, indent=2)
+            json.dump(filtered_data, file, ensure_ascii=False, indent=2)
 
     # 获取新数据统计
     new_stats = get_dxdata_stats(new_data)

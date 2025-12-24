@@ -1,6 +1,6 @@
 from modules.config_loader import SUPPORT_PAGE, USERS
 from modules.user_manager import get_notice_interaction
-from modules.tip_ad_manager import get_random_tip_ad
+from modules.tip_ad_manager import get_random_tip, get_random_ad
 from linebot.v3.messaging import (
     TextMessage,
     QuickReply,
@@ -962,6 +962,71 @@ def generate_notice_flex(notice_json, user_id=None):
     notice_id = notice_json.get('id', '')
     voting_enabled = notice_json.get('voting_enabled', False)
 
+    # 基础body内容
+    body_contents = [
+        {
+            "type": "text",
+            "text": content,
+            "wrap": True,
+            "size": "sm",
+            "color": "#333333",
+            "margin": "none"
+        }
+    ]
+
+    # 如果有自定义按钮，添加按钮卡片到body
+    if 'button' in notice_json:
+        button_info = notice_json['button']
+        button_type = button_info.get('type', 'uri')
+        button_label_dict = button_info.get('label', {})
+        button_label = button_label_dict.get(lang, button_label_dict.get('ja', ''))
+        button_value = button_info.get('value', '')
+
+        # 如果label为空，使用默认值
+        if not button_label:
+            default_labels = {
+                'uri': {'ja': '詳細を見る', 'en': 'View Details', 'zh': '查看详情'},
+                'message': {'ja': '試してみる', 'en': 'Try it', 'zh': '尝试一下'}
+            }
+            button_label = default_labels.get(button_type, {}).get(lang, 'Go')
+
+        # 添加箭头到按钮标签
+        button_label_with_arrow = f"{button_label} →"
+
+        # 根据按钮类型创建action
+        if button_type == 'uri':
+            action = {
+                "type": "uri",
+                "label": button_label_with_arrow,
+                "uri": button_value
+            }
+        else:  # message
+            action = {
+                "type": "message",
+                "label": button_label_with_arrow,
+                "text": button_value
+            }
+
+        # 添加按钮卡片
+        button_box = {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+                {
+                    "type": "button",
+                    "action": action,
+                    "style": "link",
+                    "height": "sm",
+                    "color": "#FF6B35"
+                }
+            ],
+            "backgroundColor": "#FFF5F0",
+            "cornerRadius": "md",
+            "paddingAll": "12px",
+            "margin": "md"
+        }
+        body_contents.append(button_box)
+
     # 基础bubble结构
     bubble = {
         "type": "bubble",
@@ -984,16 +1049,7 @@ def generate_notice_flex(notice_json, user_id=None):
         "body": {
             "type": "box",
             "layout": "vertical",
-            "contents": [
-                {
-                    "type": "text",
-                    "text": content,
-                    "wrap": True,
-                    "size": "sm",
-                    "color": "#333333",
-                    "margin": "none"
-                }
-            ],
+            "contents": body_contents,
             "paddingAll": "20px",
             "backgroundColor": "#FFFFFF"
         },
@@ -1836,18 +1892,26 @@ def generate_update_result_flex(user_id, username, rating, update_time, elapsed_
         "contents": status_contents
     })
 
-    # 获取随机tip/ad并添加到内容中
-    tip_ad = get_random_tip_ad(language=lang)
-    if tip_ad:
-        # 添加分隔线
+    # 获取随机tip和ad并添加到内容中
+    random_tip = get_random_tip()
+    random_ad = get_random_ad()
+
+    # 分割线
+    if random_tip or random_ad:
         content_rows.append({
             "type": "separator",
             "margin": "md"
         })
 
-        # 生成tip/ad容器
-        tip_ad_box = generate_tip_ad_box(tip_ad, lang)
-        content_rows.append(tip_ad_box)
+    # 添加tip
+    if random_tip:
+        tip_box = generate_tip_ad_box(random_tip, lang)
+        content_rows.append(tip_box)
+
+    # 添加ad
+    if random_ad:
+        ad_box = generate_tip_ad_box(random_ad, lang)
+        content_rows.append(ad_box)
 
     # 创建 bubble
     title_text = texts['title_success'] if success else texts['title_error']
@@ -1936,8 +2000,16 @@ def generate_tip_ad_box(tip_ad, lang):
         button_info = tip_ad['button']
         button_type = button_info.get('type', 'uri')
         button_label_dict = button_info.get('label', {})
-        button_label = button_label_dict.get(lang, button_label_dict.get('ja', 'Go'))
+        button_label = button_label_dict.get(lang, button_label_dict.get('ja', ''))
         button_value = button_info.get('value', '')
+
+        # 如果label为空，使用默认值
+        if not button_label:
+            default_labels = {
+                'uri': {'ja': '詳細を見る', 'en': 'View Details', 'zh': '查看详情'},
+                'message': {'ja': '試してみる', 'en': 'Try it', 'zh': '尝试一下'}
+            }
+            button_label = default_labels.get(button_type, {}).get(lang, 'Go')
 
         # 添加箭头到按钮标签
         button_label_with_arrow = f"{button_label} →"
@@ -2227,6 +2299,10 @@ def _build_calc_bubble(notes, scores, difficulty=None, level=None):
     }
 
     for key in ['tap', 'hold', 'slide', 'touch', 'break']:
+        # 跳过没有 touch 数据的情况
+        if key == 'touch' and (not notes.get(key) or notes.get(key) == 0):
+            continue
+
         note_contents.append({
             "type": "box",
             "layout": "horizontal",
@@ -2280,6 +2356,10 @@ def _build_calc_bubble(notes, scores, difficulty=None, level=None):
 
     first_group = True
     for note_type, judgements in note_groups:
+        # 跳过没有 touch 数据的情况
+        if note_type == 'touch' and (not notes.get('touch') or notes.get('touch') == 0):
+            continue
+
         if not first_group:
             score_contents.append({
                 "type": "separator",
@@ -2334,6 +2414,81 @@ def _build_calc_bubble(notes, scores, difficulty=None, level=None):
         title_text = "🗒️ Note Distribution"
         header_color = "#007AFF"
 
+    # 计算 tap_great 容错数
+    tap_great_tolerance = []
+    if 'tap_great' in scores and scores['tap_great'] > 0:
+        # 从 101% 到 100.5000%
+        max_tap_great_to_half = int(0.5 / scores['tap_great'])
+        # 从 101% 到 100.0000%
+        max_tap_great_to_full = int(1.0 / scores['tap_great'])
+
+        tap_great_tolerance.append({
+            "type": "separator",
+            "margin": "lg"
+        })
+
+        tap_great_tolerance.append({
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+                {
+                    "type": "box",
+                    "layout": "horizontal",
+                    "contents": [
+                        {
+                            "type": "text",
+                            "text": "100.5000%",
+                            "size": "xs",
+                            "color": "#666666",
+                            "flex": 3,
+                            "weight": "bold"
+                        },
+                        {
+                            "type": "text",
+                            "text": f"Max {max_tap_great_to_half} TAP GREAT",
+                            "size": "xs",
+                            "color": "#FF69B4",
+                            "align": "end",
+                            "flex": 4,
+                            "weight": "bold"
+                        }
+                    ]
+                },
+                {
+                    "type": "box",
+                    "layout": "horizontal",
+                    "contents": [
+                        {
+                            "type": "text",
+                            "text": "100.0000%",
+                            "size": "xs",
+                            "color": "#666666",
+                            "flex": 3,
+                            "weight": "bold"
+                        },
+                        {
+                            "type": "text",
+                            "text": f"Max {max_tap_great_to_full} TAP GREAT",
+                            "size": "xs",
+                            "color": "#FF69B4",
+                            "align": "end",
+                            "flex": 4,
+                            "weight": "bold"
+                        }
+                    ],
+                    "margin": "sm"
+                }
+            ],
+            "backgroundColor": "#FFF5F0",
+            "cornerRadius": "md",
+            "paddingAll": "12px",
+            "margin": "md"
+        })
+
+    # 构建body内容
+    body_contents = score_contents if difficulty else (note_contents + [separator] + score_contents)
+    body_contents.extend(tap_great_tolerance)
+
     # 构建bubble
     bubble = {
         "type": "bubble",
@@ -2356,7 +2511,7 @@ def _build_calc_bubble(notes, scores, difficulty=None, level=None):
         "body": {
             "type": "box",
             "layout": "vertical",
-            "contents": score_contents if difficulty else (note_contents + [separator] + score_contents),
+            "contents": body_contents,
             "paddingAll": "16px"
         }
     }
@@ -2787,5 +2942,179 @@ def generate_rc_flex(level: float, rc_data: list, user_id=None):
 
     return FlexMessage(
         alt_text=title_text,
+        contents=FlexContainer.from_dict(bubble)
+    )
+
+def generate_bot_status_flex(uptime_str, cpu_percent, memory_percent, memory_used_gb, total_memory, avg_response_time, user_id=None):
+    """
+    生成 Bot 状态信息 Flex Message
+
+    Args:
+        uptime_str: 运行时长字符串
+        cpu_percent: CPU 使用率
+        memory_percent: 内存使用率百分比（已弃用）
+        memory_used_gb: 已使用内存（已弃用）
+        total_memory: 总内存（已弃用）
+        avg_response_time: 平均响应时间字符串
+        user_id: 用户ID（用于多语言）
+
+    Returns:
+        FlexMessage: Bot 状态信息
+    """
+    lang = get_user_language(user_id)
+
+    # 多语言文本
+    texts = {
+        'title': {
+            'ja': 'JiETNG 稼働状態',
+            'en': 'JiETNG Service Status',
+            'zh': 'JiETNG 运行状态'
+        },
+        'uptime': {
+            'ja': '稼働時間',
+            'en': 'Uptime',
+            'zh': '运行时长'
+        },
+        'cpu': {
+            'ja': 'CPU 使用率',
+            'en': 'CPU Usage',
+            'zh': 'CPU 使用率'
+        },
+        'response': {
+            'ja': '平均応答',
+            'en': 'Avg Response',
+            'zh': '平均响应'
+        }
+    }
+
+    content_rows = [
+        # Uptime
+        {
+            "type": "box",
+            "layout": "horizontal",
+            "contents": [
+                {
+                    "type": "text",
+                    "text": texts['uptime'][lang],
+                    "size": "xs",
+                    "color": "#666666",
+                    "flex": 0
+                },
+                {
+                    "type": "text",
+                    "text": uptime_str,
+                    "size": "sm",
+                    "weight": "bold",
+                    "color": "#111111",
+                    "align": "end"
+                }
+            ],
+            "margin": "none"
+        },
+        {
+            "type": "separator",
+            "margin": "md"
+        },
+        # CPU Usage
+        {
+            "type": "box",
+            "layout": "horizontal",
+            "contents": [
+                {
+                    "type": "text",
+                    "text": texts['cpu'][lang],
+                    "size": "xs",
+                    "color": "#666666",
+                    "flex": 0
+                },
+                {
+                    "type": "text",
+                    "text": f"{cpu_percent}%",
+                    "size": "sm",
+                    "weight": "bold",
+                    "color": "#FF9500" if cpu_percent > 70 else "#34C759",
+                    "align": "end"
+                }
+            ],
+            "margin": "md"
+        },
+        {
+            "type": "separator",
+            "margin": "md"
+        },
+        # Average Response Time
+        {
+            "type": "box",
+            "layout": "horizontal",
+            "contents": [
+                {
+                    "type": "text",
+                    "text": texts['response'][lang],
+                    "size": "xs",
+                    "color": "#666666",
+                    "flex": 0
+                },
+                {
+                    "type": "text",
+                    "text": avg_response_time,
+                    "size": "sm",
+                    "weight": "bold",
+                    "color": "#AF52DE",
+                    "align": "end"
+                }
+            ],
+            "margin": "md"
+        }
+    ]
+    
+    # 获取随机tip和ad并添加到内容中
+    random_tip = get_random_tip()
+    random_ad = get_random_ad()
+
+    # 分割线
+    if random_tip or random_ad:
+        content_rows.append({
+            "type": "separator",
+            "margin": "md"
+        })
+
+    # 添加tip
+    if random_tip:
+        tip_box = generate_tip_ad_box(random_tip, lang)
+        content_rows.append(tip_box)
+
+    # 添加ad
+    if random_ad:
+        ad_box = generate_tip_ad_box(random_ad, lang)
+        content_rows.append(ad_box)
+
+    bubble = {
+        "type": "bubble",
+        "size": "mega",
+        "header": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+                {
+                    "type": "text",
+                    "text": texts['title'][lang],
+                    "weight": "bold",
+                    "size": "lg",
+                    "color": "#FFFFFF"
+                }
+            ],
+            "paddingAll": "16px",
+            "backgroundColor": "#007AFF"
+        },
+        "body": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": content_rows,
+            "paddingAll": "16px"
+        }
+    }
+
+    return FlexMessage(
+        alt_text="Service Status",
         contents=FlexContainer.from_dict(bubble)
     )

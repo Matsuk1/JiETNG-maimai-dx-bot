@@ -1256,6 +1256,52 @@ def get_friend_list(user_id):
 
     return generate_friend_buttons(user_id, get_friend_list_alt_text(user_id), friend_list)
 
+def get_bot_status(user_id):
+    """
+    获取 Bot 状态信息
+
+    Args:
+        user_id: 用户ID（用于多语言）
+
+    Returns:
+        FlexMessage: Bot 状态信息
+    """
+    # 计算运行时长
+    uptime = datetime.now() - SERVICE_START_TIME
+    days = uptime.days
+    hours, remainder = divmod(uptime.seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    uptime_str = f"{days}d {hours}h {minutes}m"
+
+    # 获取系统信息
+    cpu_percent = round(psutil.cpu_percent(interval=0.1), 1)
+
+    memory = psutil.virtual_memory()
+    memory_percent = round(memory.percent, 1)
+    total_memory = round(memory.total / (1024**3), 1)  # GB
+    memory_used_gb = round(memory.used / (1024**3), 1)  # GB
+
+    # 线程安全地读取统计数据
+    with stats_lock:
+        total_tasks = STATS['tasks_processed']
+        total_time = STATS['response_time']
+
+    # 计算平均响应时间
+    if total_tasks > 0:
+        avg_response = f"{round(total_time / total_tasks, 1)} ms"
+    else:
+        avg_response = "N/A"
+
+    return generate_bot_status_flex(
+        uptime_str=uptime_str,
+        cpu_percent=cpu_percent,
+        memory_percent=memory_percent,
+        memory_used_gb=memory_used_gb,
+        total_memory=total_memory,
+        avg_response_time=avg_response,
+        user_id=user_id
+    )
+
 def get_song_record(user_id, acronym, ver="jp"):
     """
     查询用户在特定歌曲上的游玩记录
@@ -2357,6 +2403,22 @@ def handle_sync_text_command(event):
     4. 特殊命令 - bind, language, calc
     5. 管理员命令 - upload notice, dxdata update, devtoken
     """
+    # 记录开始时间以统计响应时间
+    start_time = time.time()
+
+    def tracked_reply(user_id, reply_token, reply_message):
+        """包装 smart_reply 并更新统计"""
+        # 计算响应时间
+        response_time = (time.time() - start_time) * 1000  # 转换为毫秒
+
+        # 更新统计
+        with stats_lock:
+            STATS['tasks_processed'] += 1
+            STATS['response_time'] += response_time
+            logger.debug(f"[Sync] ✓ Command processed: total={STATS['tasks_processed']}, avg_time={STATS['response_time']/STATS['tasks_processed']:.1f}ms")
+
+        return smart_reply(user_id, reply_token, reply_message, configuration, DIVIDER)
+
     user_message = event.message.text.strip().lower()
     user_id = event.source.user_id
 
@@ -2416,12 +2478,15 @@ def handle_sync_text_command(event):
         # 好友列表
         "friend list": lambda: get_friend_list(user_id),
         "フレンドリスト": lambda: get_friend_list(user_id),
-        "friendlist": lambda: get_friend_list(user_id)
+        "friendlist": lambda: get_friend_list(user_id),
+
+        # 系统状态
+        "status": lambda: get_bot_status(user_id)
     }
 
     if user_message in COMMAND_MAP:
         reply_message = COMMAND_MAP[user_message]()
-        return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
+        return tracked_reply(user_id, event.reply_token, reply_message)
 
     # ========================================
     # 2. 模糊匹配命令 - 规则匹配
@@ -2486,7 +2551,7 @@ def handle_sync_text_command(event):
     for cond, func in SPECIAL_RULES:
         if cond(user_message):
             reply_message = func(user_message)
-            return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
+            return tracked_reply(user_id, event.reply_token, reply_message)
 
     # ========================================
     # 3. B 系列命令 - 成绩排行
@@ -2518,7 +2583,7 @@ def handle_sync_text_command(event):
     for aliases, mode in RANK_COMMANDS.items():
         if first_word in aliases:
             reply_message = generate_records(id_use, mode, rest_text, mai_ver_use)
-            return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
+            return tracked_reply(user_id, event.reply_token, reply_message)
 
     # ========================================
     # 4. SEGA ID 绑定
@@ -2545,7 +2610,7 @@ def handle_sync_text_command(event):
                 template=buttons_template
             )
 
-            return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
+            return tracked_reply(user_id, event.reply_token, reply_message)
 
         # 用户已设置语言，检查是否已经绑定账号
         has_account = all(key in user_data for key in ['sega_id', 'sega_pwd', 'version'])
@@ -2553,7 +2618,7 @@ def handle_sync_text_command(event):
         if has_account:
             # 已经绑定过账号，提示先解绑
             reply_message = TextMessage(text=get_multilingual_text(already_bound_text, user_id))
-            return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
+            return tracked_reply(user_id, event.reply_token, reply_message)
 
         # 用户已设置语言且未绑定账号，显示绑定按钮
         bind_url = f"https://{DOMAIN}/linebot/sega_bind?token={generate_bind_token(user_id)}"
@@ -2572,7 +2637,7 @@ def handle_sync_text_command(event):
             template=buttons_template
         )
 
-        return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
+        return tracked_reply(user_id, event.reply_token, reply_message)
 
     # ========================================
     # 5. 语言设置
@@ -2583,7 +2648,7 @@ def handle_sync_text_command(event):
         # 验证语言代码
         if lang_code not in ["jp", "en", "zh"]:
             reply_message = TextMessage(text="Invalid language code. Please use: jp, en, or zh")
-            return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
+            return tracked_reply(user_id, event.reply_token, reply_message)
 
         # 设置用户语言
         user_set_language(user_id, lang_code)
@@ -2595,7 +2660,7 @@ def handle_sync_text_command(event):
         quick_reply = get_bind_quick_reply(user_id)
 
         reply_message = TextMessage(text=success_text, quick_reply=quick_reply)
-        return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
+        return tracked_reply(user_id, event.reply_token, reply_message)
 
     # ========================================
     # 6. Calc 计算器
@@ -2612,7 +2677,7 @@ def handle_sync_text_command(event):
             reply_message = generate_calc_result_flex(notes, scores)
         except Exception:
             reply_message = input_error(user_id)
-        return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
+        return tracked_reply(user_id, event.reply_token, reply_message)
 
     # ========================================
     # 7. 管理员命令
@@ -2622,7 +2687,7 @@ def handle_sync_text_command(event):
             new_notice = user_message.replace("upload notice", "").strip()
             upload_notice(new_notice)
             clear_user_value("notice_read", False)
-            return smart_reply(user_id, event.reply_token, notice_upload(user_id), configuration, DIVIDER)
+            return tracked_reply(user_id, event.reply_token, notice_upload(user_id))
 
         if user_message == "dxdata update":
             # 使用新的对比更新函数
@@ -2656,7 +2721,7 @@ def handle_sync_text_command(event):
             if len(parts) < 2:
                 # Show usage
                 reply_message = TextMessage(text=get_multilingual_text(devtoken_usage_text, user_id))
-                return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
+                return tracked_reply(user_id, event.reply_token, reply_message)
 
             subcommand = parts[1]
 
@@ -2674,7 +2739,7 @@ def handle_sync_text_command(event):
                     reply_message = TextMessage(text=text)
                 else:
                     reply_message = TextMessage(text=get_multilingual_text(devtoken_create_failed_text, user_id))
-                return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
+                return tracked_reply(user_id, event.reply_token, reply_message)
 
             elif subcommand == "list":
                 tokens = list_dev_tokens()
@@ -2694,7 +2759,7 @@ def handle_sync_text_command(event):
                         )
                     text = header + "\n\n" + "\n\n".join(token_lines)
                 reply_message = TextMessage(text=text)
-                return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
+                return tracked_reply(user_id, event.reply_token, reply_message)
 
             elif subcommand == "revoke" and len(parts) >= 3:
                 token_id = parts[2]
@@ -2705,7 +2770,7 @@ def handle_sync_text_command(event):
                     reply_message = TextMessage(text=text)
                 else:
                     reply_message = TextMessage(text=get_multilingual_text(devtoken_revoke_failed_text, user_id))
-                return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
+                return tracked_reply(user_id, event.reply_token, reply_message)
 
             elif subcommand == "info" and len(parts) >= 3:
                 token_id = parts[2]
@@ -2725,12 +2790,12 @@ def handle_sync_text_command(event):
                     reply_message = TextMessage(text=text)
                 else:
                     reply_message = TextMessage(text=get_multilingual_text(devtoken_info_not_found_text, user_id))
-                return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
+                return tracked_reply(user_id, event.reply_token, reply_message)
 
             else:
                 # Invalid subcommand or missing arguments
                 reply_message = TextMessage(text=get_multilingual_text(devtoken_usage_text, user_id))
-                return smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
+                return tracked_reply(user_id, event.reply_token, reply_message)
 
         if user_message == "backup":
             # 创建系统备份
@@ -3320,12 +3385,31 @@ def admin_create_notice():
     voting_enabled = data.get('voting_enabled', False)
     created_by = session.get('user_id', 'admin')
 
+    # 按钮参数
+    button_type = data.get('button_type')
+    button_label_zh = data.get('button_label_zh', '').strip()
+    button_label_ja = data.get('button_label_ja', '').strip()
+    button_label_en = data.get('button_label_en', '').strip()
+    button_value = data.get('button_value', '').strip()
+
+    # 构建按钮标签字典
+    button_label = None
+    if button_type and button_value:
+        button_label = {
+            'zh': button_label_zh,
+            'ja': button_label_ja,
+            'en': button_label_en
+        }
+
     try:
         notice_id = upload_notice(
             content=content_dict,
             status=status,
             voting_enabled=voting_enabled,
-            created_by=created_by
+            created_by=created_by,
+            button_type=button_type,
+            button_label=button_label,
+            button_value=button_value
         )
 
         # 仅发布状态的公告才清除阅读状态
@@ -3368,12 +3452,36 @@ def admin_update_notice():
         'en': content_en,
     }
 
+    # 按钮参数
+    button_type = data.get('button_type')
+    button_label_zh = data.get('button_label_zh', '').strip()
+    button_label_ja = data.get('button_label_ja', '').strip()
+    button_label_en = data.get('button_label_en', '').strip()
+    button_value = data.get('button_value', '').strip()
+    remove_button = data.get('remove_button', False)
+
+    # 构建按钮标签字典
+    button_label = None
+    if button_type and button_value:
+        button_label = {
+            'zh': button_label_zh,
+            'ja': button_label_ja,
+            'en': button_label_en
+        }
+
     try:
         # 检查是否为最新已发布公告
         latest_notice = get_latest_published_notice()
         is_latest = latest_notice and latest_notice.get('id') == notice_id
 
-        success = update_notice(notice_id, content_dict)
+        success = update_notice(
+            notice_id,
+            content_dict,
+            button_type=button_type,
+            button_label=button_label,
+            button_value=button_value,
+            remove_button=remove_button
+        )
 
         if success:
             notice = get_notice_by_id(notice_id)
