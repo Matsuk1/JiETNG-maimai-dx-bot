@@ -1166,7 +1166,7 @@ def generate_calc_button(song_id, user_id=None):
         alt_text=get_calc_button_alt_text(user_id),
         contents=FlexContainer.from_dict({
             "type": "bubble",
-            "size": "nano",
+            "size": "micro",
             "body": {
                 "type": "box",
                 "layout": "vertical",
