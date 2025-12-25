@@ -1313,12 +1313,13 @@ def get_bot_status(user_id):
         user_id=user_id
     )
 
-def get_song_record(user_id, acronym, ver="jp"):
+def get_song_record(user_id, id_use, acronym, ver="jp"):
     """
     查询用户在特定歌曲上的游玩记录
 
     Args:
         user_id: 用户ID
+        id_use: 使用的ID
         acronym: 歌曲搜索关键词
         ver: 服务器版本 (jp/intl)
 
@@ -1327,7 +1328,7 @@ def get_song_record(user_id, acronym, ver="jp"):
     """
     read_dxdata(ver)
 
-    song_record = read_record(user_id)
+    song_record = read_record(id_use)
 
     if not len(song_record):
         return record_error(user_id)
@@ -1374,12 +1375,13 @@ def get_song_record(user_id, acronym, ver="jp"):
 
     return result
 
-def get_song_record_by_id(user_id, song_id, ver="jp"):
+def get_song_record_by_id(user_id, id_use, song_id, ver="jp"):
     """
     通过歌曲ID查询用户在特定歌曲上的游玩记录
 
     Args:
         user_id: 用户ID
+        id_use: 使用的ID
         song_id: 歌曲唯一ID (6个字符)
         ver: 服务器版本 (jp/intl)
 
@@ -1421,18 +1423,18 @@ def get_song_record_by_id(user_id, song_id, ver="jp"):
 
     return result
 
-def generate_plate_rcd(user_id, title, ver="jp"):
+def generate_plate_rcd(user_id, id_use, title, ver="jp"):
     if not (len(title) == 2 or len(title) == 3):
         return plate_error(user_id)
 
     read_dxdata(ver)
 
-    song_record = read_record(user_id)
+    song_record = read_record(id_use)
 
     if not len(song_record):
         return record_error(user_id)
 
-    if "personal_info" not in USERS[user_id]:
+    if "personal_info" not in USERS[id_use]:
         return info_error(user_id)
 
     version_name = title[0]
@@ -1562,7 +1564,7 @@ def generate_plate_rcd(user_id, title, ver="jp"):
     img = generate_plate_image(target_data, title, headers = target_num)
 
     # 获取用户信息并创建用户信息图片
-    user_info = USERS[user_id]['personal_info']
+    user_info = USERS[id_use]['personal_info']
     img = compose_images([create_user_info_img(user_info), img])
 
     original_url, preview_url = smart_upload(img)
@@ -1858,15 +1860,15 @@ def select_records(song_record, type, command, ver):
 
     return up_songs, down_songs;
 
-def generate_records(user_id, type="best50", command="", ver="jp"):
-    if user_id not in USERS:
+def generate_records(user_id, id_use, type="best50", command="", ver="jp"):
+    if id_use not in USERS:
         return segaid_error(user_id)
 
-    if "personal_info" not in USERS[user_id]:
+    if "personal_info" not in USERS[id_use]:
         return info_error(user_id)
 
     recent = (type == "rct50")
-    song_record = read_record(user_id, recent=recent)
+    song_record = read_record(id_use, recent=recent)
     if not len(song_record):
         return record_error(user_id)
 
@@ -1877,7 +1879,7 @@ def generate_records(user_id, type="best50", command="", ver="jp"):
     img = generate_records_picture(up_songs, down_songs, type.upper())
 
     # 获取用户信息并创建用户信息图片
-    user_info = USERS[user_id]['personal_info']
+    user_info = USERS[id_use]['personal_info']
     img = compose_images([create_user_info_img(user_info), img])
 
     original_url, preview_url = smart_upload(img)
@@ -1936,11 +1938,11 @@ def generate_friend_b50(user_id, friend_code, ver="jp"):
     message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
     return message
 
-def generate_level_records(user_id, level, ver="jp", page=1):
-    if "personal_info" not in USERS[user_id]:
+def generate_level_records(user_id, id_use, level, ver="jp", page=1):
+    if "personal_info" not in USERS[id_use]:
         return info_error(user_id)
 
-    song_record = read_record(user_id)
+    song_record = read_record(id_use)
 
     if not len(song_record):
         return record_error(user_id)
@@ -1976,7 +1978,7 @@ def generate_level_records(user_id, level, ver="jp", page=1):
     img = generate_records_picture(up_level_list, down_level_list, title)
 
     # 获取用户信息并创建用户信息图片
-    user_info = USERS[user_id]['personal_info']
+    user_info = USERS[id_use]['personal_info']
     img = compose_images([create_user_info_img(user_info), img])
 
     original_url, preview_url = smart_upload(img)
@@ -2512,7 +2514,7 @@ def handle_sync_text_command(event):
 
         # 成绩搜索（通过ID）
         (lambda msg: msg.startswith("search-record ") and len(msg.split()) == 2 and len(msg.split()[1]) == 6,
-         lambda msg: get_song_record_by_id(id_use, msg.split()[1], mai_ver_use)),
+         lambda msg: get_song_record_by_id(user_id, id_use, msg.split()[1], mai_ver_use)),
 
         # 歌曲信息查询
         (lambda msg: msg.endswith(("ってどんな曲", "info", "song-info")),
@@ -2528,15 +2530,16 @@ def handle_sync_text_command(event):
 
         # 版本达成情况
         (lambda msg: msg.endswith(("の達成状況", "の達成情報", "の達成表", "achievement-list", "achievement")),
-         lambda msg: generate_plate_rcd(id_use, re.sub(r"\s*(の達成状況|の達成情報|の達成表|achievement-list|achievement)$", "", msg).strip(), mai_ver_use)),
+         lambda msg: generate_plate_rcd(user_id, id_use, re.sub(r"\s*(の達成状況|の達成情報|の達成表|achievement-list|achievement)$", "", msg).strip(), mai_ver_use)),
 
         # 歌曲成绩记录
         (lambda msg: msg.endswith(("のレコード", "song-record", "record")),
-         lambda msg: get_song_record(id_use, re.sub(r"\s*(のレコード|song-record|record)$", "", msg).strip(), mai_ver_use)),
+         lambda msg: get_song_record(user_id, id_use, re.sub(r"\s*(のレコード|song-record|record)$", "", msg).strip(), mai_ver_use)),
 
         # 等级成绩列表
         (lambda msg: re.match(r".+(のレコードリスト|record-list|records)[ 　]*\d*$", msg),
          lambda msg: generate_level_records(
+             user_id,
              id_use,
              re.sub(r"\s*(のレコードリスト|record-list|records)[ 　]*\d*$", "", msg).strip(),
              mai_ver_use,
@@ -2591,7 +2594,7 @@ def handle_sync_text_command(event):
 
     for aliases, mode in RANK_COMMANDS.items():
         if first_word in aliases:
-            reply_message = generate_records(id_use, mode, rest_text, mai_ver_use)
+            reply_message = generate_records(user_id, id_use, mode, rest_text, mai_ver_use)
             return tracked_reply(user_id, event.reply_token, reply_message)
 
     # ========================================
