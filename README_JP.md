@@ -417,7 +417,7 @@ JiETNG/
 ├── data/                      # データファイル
 │   ├── dxdata.json            # 楽曲データベース
 │   ├── notice.json            # お知らせ情報
-│   ├── re_dxdata.csv          # 地域データ
+│   ├── intl_override.csv      # 地域データ
 │   └── user.json.enc          # ユーザーデータ（暗号化）
 └── assets/                    # 静的リソース
     ├── fonts/                 # フォントファイル
@@ -507,7 +507,7 @@ POST     /linebot/admin/trigger_cleanup    # 手動メモリクリーンアッ�
     "file_path": {
         "dxdata_list": "./data/dxdata.json",
         "dxdata_version": "./data/dxdata_version.json",
-        "re_dxdata_list": "./data/re_dxdata.csv",
+        "override_list": "./data/intl_override.csv",
         "user_list": "./data/user.json.enc",
         "notice_file": "./data/notice.json",
         "font": "./assets/fonts/mplus-jietng.ttf",

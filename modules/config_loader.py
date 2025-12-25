@@ -32,7 +32,7 @@ default_config = {
     "file_path": {
         "dxdata_list": "./data/dxdata.json",
         "dxdata_version": "./data/dxdata_version.json",
-        "re_dxdata_list": "./data/re_dxdata.json",
+        "override_list": "./data/intl_override.json",
         "user_list": "./data/user.json.enc",
         "notice_file": "./data/notice.json",
         "tip_ad_file": "./data/tip_ad.json",
@@ -139,7 +139,7 @@ PORT = _config["port"]
 FILE_PATH = _config["file_path"]
 DXDATA_LIST = FILE_PATH["dxdata_list"]
 DXDATA_VERSION_FILE = FILE_PATH["dxdata_version"]
-RE_DXDATA_LIST = FILE_PATH["re_dxdata_list"]
+OVERRIDE_LIST = FILE_PATH["override_list"]
 USER_LIST = FILE_PATH["user_list"]
 NOTICE_FILE = FILE_PATH["notice_file"]
 TIP_AD_FILE = FILE_PATH["tip_ad_file"]
@@ -200,7 +200,7 @@ def read_dxdata(ver="jp"):
 
     if ver == "intl":
         csv_map = {}
-        with open(RE_DXDATA_LIST, 'r', encoding='utf-8') as f:
+        with open(OVERRIDE_LIST, 'r', encoding='utf-8') as f:
             for row in csv.reader(f):
                 if row:
                     csv_map[row[0]] = row[1:]

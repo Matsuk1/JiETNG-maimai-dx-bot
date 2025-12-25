@@ -2519,7 +2519,7 @@ def _build_calc_bubble(notes, scores, difficulty=None, level=None):
     return bubble
 
 
-def _generate_search_results_flex_internal(user_id, matching_songs, search_type='song'):
+def _generate_search_results_flex_internal(user_id, matching_songs, search_type='song', id_use=None):
     """
     生成搜索结果列表 Flex Message（内部通用函数）
 
@@ -2527,12 +2527,17 @@ def _generate_search_results_flex_internal(user_id, matching_songs, search_type=
         user_id: 用户ID
         matching_songs: 匹配的歌曲列表
         search_type: 搜索类型 ('song' 或 'record')
+        id_use: 使用的ID
 
     Returns:
         FlexMessage: 搜索结果列表
     """
     # 获取用户语言
     language = get_user_language(user_id)
+
+    id_use_text = ""
+    if id_use:
+        id_use_text = f"id_use={id_use}"
 
     # 构建歌曲行
     song_rows = []
@@ -2602,9 +2607,10 @@ def _generate_search_results_flex_internal(user_id, matching_songs, search_type=
                 {
                     "type": "button",
                     "action": {
-                        "type": "message",
+                        "type": "postback",
                         "label": "→",
-                        "text": f"{config['command']} {song_id}"
+                        "data": f"{config['command']} {song_id}&{id_use_text}",
+                        "displayText": f"{config['command']} {song_id}"
                     },
                     "style": "primary",
                     "height": "sm",
@@ -2672,7 +2678,7 @@ def generate_search_results_flex(user_id, matching_songs):
     return _generate_search_results_flex_internal(user_id, matching_songs, 'song')
 
 
-def generate_search_record_results_flex(user_id, matching_songs):
+def generate_search_record_results_flex(user_id, id_use, matching_songs):
     """
     生成成绩搜索结果列表 Flex Message
 
@@ -2683,7 +2689,7 @@ def generate_search_record_results_flex(user_id, matching_songs):
     Returns:
         FlexMessage: 成绩搜索结果列表
     """
-    return _generate_search_results_flex_internal(user_id, matching_songs, 'record')
+    return _generate_search_results_flex_internal(user_id, matching_songs, 'record', id_use)
 
 
 def generate_friend_buttons(user_id, alt_text, friend_list, group_size):

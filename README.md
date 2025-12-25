@@ -422,7 +422,7 @@ JiETNG/
 ├── data/                      # 数据文件
 │   ├── dxdata.json            # 歌曲数据库
 │   ├── notice.json            # 公告信息
-│   ├── re_dxdata.csv          # 区域数据
+│   ├── intl_override.csv      # 区域数据
 │   └── user.json.enc          # 用户数据（加密）
 └── assets/                    # 静态资源
     ├── fonts/                 # 字体文件
@@ -512,7 +512,7 @@ POST     /linebot/admin/trigger_cleanup    # 手动触发内存清理
     "file_path": {
         "dxdata_list": "./data/dxdata.json",
         "dxdata_version": "./data/dxdata_version.json",
-        "re_dxdata_list": "./data/re_dxdata.csv",
+        "override_list": "./data/intl_override.csv",
         "user_list": "./data/user.json.enc",
         "notice_file": "./data/notice.json",
         "font": "./assets/fonts/mplus-jietng.ttf",

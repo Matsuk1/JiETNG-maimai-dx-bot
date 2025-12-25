@@ -1356,7 +1356,7 @@ def get_song_record(user_id, id_use, acronym, ver="jp"):
 
     # 返回搜索结果列表
     if len(songs_with_records) > 1:
-        return generate_search_record_results_flex(user_id, songs_with_records)
+        return generate_search_record_results_flex(user_id, id_use, songs_with_records)
 
     # 生成图片消息列表
     result = []
@@ -1390,7 +1390,7 @@ def get_song_record_by_id(user_id, id_use, song_id, ver="jp"):
     """
     read_dxdata(ver)
 
-    song_record = read_record(user_id)
+    song_record = read_record(id_use)
 
     if not len(song_record):
         return record_error(user_id)
@@ -2431,7 +2431,7 @@ def handle_sync_text_command(event):
 
         return smart_reply(user_id, reply_token, reply_message, configuration, DIVIDER)
 
-    user_message = event.message.text.strip().lower()
+    user_message = event.message.text.strip()
     user_id = event.source.user_id
 
     # ========================================
@@ -2513,8 +2513,16 @@ def handle_sync_text_command(event):
          lambda msg: calc_by_id(user_id, msg.split()[1], mai_ver)),
 
         # 成绩搜索（通过ID）
-        (lambda msg: msg.startswith("search-record ") and len(msg.split()) == 2 and len(msg.split()[1]) == 6,
-         lambda msg: get_song_record_by_id(user_id, id_use, msg.split()[1], mai_ver_use)),
+        (lambda msg: (
+            msg.startswith("search-record ")
+            and len(msg.split()[1].split("&")[0]) == 6
+        ),
+         lambda msg: get_song_record_by_id(
+            user_id,
+            msg.split("id_use=", 1)[1] if "id_use=" in msg else id_use,
+            msg.split()[1].split("&", 1)[0],
+            mai_ver_use
+        )),
 
         # 歌曲信息查询
         (lambda msg: msg.endswith(("ってどんな曲", "info", "song-info")),

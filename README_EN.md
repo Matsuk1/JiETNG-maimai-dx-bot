@@ -477,7 +477,7 @@ JiETNG/
 ├── data/                      # Data files
 │   ├── dxdata.json            # Song database
 │   ├── notice.json            # Announcements
-│   ├── re_dxdata.csv          # Regional data
+│   ├── intl_override.csv      # Regional data
 │   └── user.json.enc          # User data (encrypted)
 └── assets/                    # Static resources
     ├── fonts/                 # Font files
@@ -567,7 +567,7 @@ POST     /linebot/admin/trigger_cleanup    # Manual memory cleanup
     "file_path": {
         "dxdata_list": "./data/dxdata.json",
         "dxdata_version": "./data/dxdata_version.json",
-        "re_dxdata_list": "./data/re_dxdata.csv",
+        "override_list": "./data/intl_override.csv",
         "user_list": "./data/user.json.enc",
         "notice_file": "./data/notice.json",
         "font": "./assets/fonts/mplus-jietng.ttf",
