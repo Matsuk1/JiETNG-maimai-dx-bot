@@ -29,7 +29,8 @@ def parse_level_value(input_str):
         try:
             return [float(input_str)]
         except ValueError:
-            raise ValueError(f"无法解析浮点数: {input_str}")
+            logger.error(f"[Maimai] ✗ Failed to parse a float number with point(.): {input_str}")
+            return None
 
     elif input_str.endswith('+'):
         try:
@@ -39,14 +40,16 @@ def parse_level_value(input_str):
                 target.append(15.0)
             return target
         except ValueError:
-            raise ValueError(f"无法解析带加号的整数: {input_str}")
+            logger.error(f"[Maimai] ✗ Failed to parse a number with plus(+): {input_str}")
+            return None
 
     else:
         try:
             base = int(input_str)
             return [round(base + i * 0.1, 1) for i in range(6)]
         except ValueError:
-            raise ValueError(f"无法解析整数: {input_str}")
+            logger.error(f"[Maimai] ✗ Failed to parse a number: {input_str}")
+            return None
 
 def extract_onclick_url_from_button(li, keyword):
     btn = li.xpath(f'.//button[contains(@class, "{keyword}")]/@onclick')

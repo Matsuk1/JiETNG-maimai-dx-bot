@@ -1107,6 +1107,8 @@ def random_song(user_id, key="", ver="jp"):
 
     if key:
         level_values = parse_level_value(key)
+        if not level_value:
+            return song_error(user_id)
 
     for song in SONGS:
         for sheet in song['sheets']:
@@ -1948,6 +1950,8 @@ def generate_level_records(user_id, id_use, level, ver="jp", page=1):
         return record_error(user_id)
 
     level_value = parse_level_value(level)
+    if not level_value:
+        return song_error(user_id)
 
     up_songs_data = list(filter(lambda x: x['new_song'] == False, song_record))
     down_songs_data = list(filter(lambda x: x['new_song'] == True, song_record))
