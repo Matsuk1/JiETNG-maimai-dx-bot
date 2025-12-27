@@ -1328,6 +1328,12 @@ def get_song_record(user_id, id_use, acronym, ver="jp"):
     Returns:
         包含用户成绩的歌曲信息图片消息列表 或搜索结果flex message 或错误消息
     """
+    if id_use not in USERS:
+        return mention_error(user_id) if id_use != user_id else segaid_error(user_id)
+
+    if "personal_info" not in USERS[id_use]:
+        return mention_error(user_id) if id_use != user_id else info_error(user_id)
+    
     read_dxdata(ver)
 
     song_record = read_record(id_use)
@@ -1390,6 +1396,12 @@ def get_song_record_by_id(user_id, id_use, song_id, ver="jp"):
     Returns:
         包含用户成绩的歌曲信息图片消息 或错误消息
     """
+    if id_use not in USERS:
+        return mention_error(user_id) if id_use != user_id else segaid_error(user_id)
+
+    if "personal_info" not in USERS[id_use]:
+        return mention_error(user_id) if id_use != user_id else info_error(user_id)
+
     read_dxdata(ver)
 
     song_record = read_record(id_use)
@@ -1426,6 +1438,12 @@ def get_song_record_by_id(user_id, id_use, song_id, ver="jp"):
     return result
 
 def generate_plate_rcd(user_id, id_use, title, ver="jp"):
+    if id_use not in USERS:
+        return mention_error(user_id) if id_use != user_id else segaid_error(user_id)
+
+    if "personal_info" not in USERS[id_use]:
+        return mention_error(user_id) if id_use != user_id else info_error(user_id)
+
     if not (len(title) == 2 or len(title) == 3):
         return plate_error(user_id)
 
@@ -1435,9 +1453,6 @@ def generate_plate_rcd(user_id, id_use, title, ver="jp"):
 
     if not len(song_record):
         return record_error(user_id)
-
-    if "personal_info" not in USERS[id_use]:
-        return info_error(user_id)
 
     version_name = title[0]
     plate_type = title[1:].replace("极", "極")
@@ -1864,10 +1879,10 @@ def select_records(song_record, type, command, ver):
 
 def generate_records(user_id, id_use, type="best50", command="", ver="jp"):
     if id_use not in USERS:
-        return segaid_error(user_id)
+        return mention_error(user_id) if id_use != user_id else segaid_error(user_id)
 
     if "personal_info" not in USERS[id_use]:
-        return info_error(user_id)
+        return mention_error(user_id) if id_use != user_id else info_error(user_id)
 
     recent = (type == "rct50")
     song_record = read_record(id_use, recent=recent)
@@ -1941,8 +1956,11 @@ def generate_friend_b50(user_id, friend_code, ver="jp"):
     return message
 
 def generate_level_records(user_id, id_use, level, ver="jp", page=1):
+    if id_use not in USERS:
+        return mention_error(user_id) if id_use != user_id else segaid_error(user_id)
+
     if "personal_info" not in USERS[id_use]:
-        return info_error(user_id)
+        return mention_error(user_id) if id_use != user_id else info_error(user_id)
 
     song_record = read_record(id_use)
 
@@ -2462,15 +2480,9 @@ def handle_sync_text_command(event):
     if user_id in USERS:
         mai_ver = USERS[user_id].get("version", "jp")
         # 只有当 mentioned_user_id 存在且已注册时才使用
-        if mentioned_user_id and mentioned_user_id in USERS:
-            id_use = mentioned_user_id
-        else:
-            id_use = user_id
+        id_use = mentioned_user_id if mentioned_user_id else user_id
         mai_ver_use = USERS[id_use].get("version", "jp") if id_use in USERS else mai_ver
 
-        # 重置 id_use（非 mention 情况）
-        if not mentioned_user_id:
-            edit_user_value(user_id, "id_use", user_id)
     else:
         id_use = user_id
         mai_ver = "jp"
