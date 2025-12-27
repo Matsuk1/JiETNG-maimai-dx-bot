@@ -5119,7 +5119,7 @@ if __name__ == "__main__":
     memory_manager.cleanup = enhanced_cleanup
 
     try:
-        app.run(host="0.0.0.0", port=PORT)
+        app.run(host=HOST, port=PORT)
     finally:
         # 停止内存管理器
         memory_manager.stop()

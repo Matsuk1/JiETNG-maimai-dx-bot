@@ -28,6 +28,7 @@ default_config = {
         "title": ""
     },
     "domain": "",
+    "host": "0.0.0.0",
     "port": 5000,
     "file_path": {
         "dxdata_list": "./data/dxdata.json",
@@ -133,6 +134,7 @@ TEMP_VERSION = _config["temp_version"]
 DOMAIN = _config["domain"]
 
 # 服务端口
+HOST = _config["host"]
 PORT = _config["port"]
 
 # 文件路径字段
