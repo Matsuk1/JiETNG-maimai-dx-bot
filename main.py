@@ -1713,7 +1713,7 @@ def create_user_info_img(user_info, scale=1.7):
     # 使用等宽方式绘制 rating 数字
     rating_text = user_info['rating'].rjust(5)
     char_width = 13  # 每个字符的固定宽度
-    start_x = 188
+    start_x = 187
     for i, char in enumerate(rating_text):
         draw.text((start_x + i * char_width, 17), char, fill=(255, 255, 255), font=font_stadium)
 

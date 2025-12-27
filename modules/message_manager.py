@@ -2537,7 +2537,7 @@ def _generate_search_results_flex_internal(user_id, matching_songs, search_type=
 
     id_use_text = ""
     if id_use:
-        id_use_text = f"id_use={id_use}"
+        id_use_text = f"&id_use={id_use}"
 
     # 构建歌曲行
     song_rows = []
@@ -2609,7 +2609,7 @@ def _generate_search_results_flex_internal(user_id, matching_songs, search_type=
                     "action": {
                         "type": "postback",
                         "label": "→",
-                        "data": f"{config['command']} {song_id}&{id_use_text}",
+                        "data": f"{config['command']} {song_id}{id_use_text}",
                         "displayText": f"{config['command']} {song_id}"
                     },
                     "style": "primary",
