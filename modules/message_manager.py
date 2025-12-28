@@ -714,23 +714,6 @@ def get_update_quick_reply(user_id=None):
         ]
     )
 
-def get_bind_quick_reply(user_id=None):
-    """获取绑定相关的 QuickReply"""
-    label = get_quick_reply_label("bind", user_id)
-    return QuickReply(
-        items=[
-            QuickReplyItem(action=MessageAction(
-                label=label,
-                text="bind",
-                display_text=label
-            )),
-            QuickReplyItem(action=URIAction(
-                label=get_quick_reply_label("support", user_id),
-                uri=SUPPORT_PAGE
-            ))
-        ]
-    )
-
 def get_update_over_quick_reply(user_id=None):
     """获取更新完成后的 QuickReply"""
     label_rct50 = get_quick_reply_label("recent_50", user_id)

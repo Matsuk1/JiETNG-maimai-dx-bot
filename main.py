@@ -2708,20 +2708,30 @@ def handle_sync_text_command(event):
         # 设置用户语言
         user_set_language(user_id, lang_code)
 
-        # 使用多语言成功消息
-        success_text = get_multilingual_text(language_set_success_text, user_id)
-
-        # 检查用户是否已绑定，只有未绑定的用户才显示绑定快捷回复
+        # 检查用户是否已绑定
         user_data = USERS.get(user_id, {})
         has_account = all(key in user_data for key in ['sega_id', 'sega_pwd', 'version'])
 
         if has_account:
-            # 已绑定，不添加快捷回复
+            # 已绑定，只显示成功消息
+            success_text = get_multilingual_text(language_set_success_text, user_id)
             reply_message = TextMessage(text=success_text)
+
         else:
-            # 未绑定，添加绑定快捷回复按钮
-            quick_reply = get_bind_quick_reply(user_id)
-            reply_message = TextMessage(text=success_text, quick_reply=quick_reply)
+            # 未绑定，直接显示绑定按钮
+            bind_url = f"https://{DOMAIN}/linebot/sega_bind?token={generate_bind_token(user_id)}"
+            buttons_template = ButtonsTemplate(
+                title=get_multilingual_text(sega_bind_title_text, user_id),
+                text=get_multilingual_text(sega_bind_description_text, user_id),
+                actions=[URIAction(
+                    label=get_multilingual_text(sega_bind_button_text, user_id),
+                    uri=bind_url
+                )]
+            )
+            reply_message = TemplateMessage(
+                alt_text=get_multilingual_text(sega_bind_alt_text, user_id),
+                template=buttons_template
+            )
 
         return tracked_reply(user_id, event.reply_token, reply_message)
 
