@@ -45,7 +45,6 @@ def clean_unbound_users() -> Dict[str, Any]:
 def clean_deprecated_user_fields() -> Dict[str, Any]:
     """
     清理用户数据中的废弃字段
-    删除不再使用的字段：friend_requests, id_use, line_friends, beta, beta_ver
     """
 
     deprecated_fields = ["friend_requests", "id_use", "line_friends", "beta", "beta_ver"]

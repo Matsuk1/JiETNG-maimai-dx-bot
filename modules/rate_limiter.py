@@ -63,7 +63,7 @@ api_limiter = RateLimiter(min_interval_seconds=0.3)
 # 用户请求频率限制配置
 user_request_tracking = {}  # {user_id: {task_type: [timestamp1, timestamp2, ...]}}
 user_request_lock = threading.Lock()
-REQUEST_LIMIT_WINDOW = 30  # 时间窗口：30秒
+REQUEST_LIMIT_WINDOW = 20  # 时间窗口
 MAX_SAME_REQUESTS = 2  # 同一时间窗口内允许的最大相同请求数
 
 

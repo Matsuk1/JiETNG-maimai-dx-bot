@@ -133,7 +133,7 @@ TEMP_VERSION = _config["temp_version"]
 # 域名字段
 DOMAIN = _config["domain"]
 
-# 服务端口
+# 服务地址端口
 HOST = _config["host"]
 PORT = _config["port"]
 
