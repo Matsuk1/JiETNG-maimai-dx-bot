@@ -429,9 +429,9 @@ language_button_zh = "🇨🇳 中文"
 language_select_alt = "Language Selection / 言語選択 / 语言选择"
 
 language_set_success_text = {
-    "ja": "✅ 言語を日本語に設定しました！\n次に SEGA アカウントを連携してください。\n（既に連携済みの場合は無視してください）",
-    "en": "✅ Language set to English!\nNext, please link your SEGA account.\n(If already linked, please ignore this message)",
-    "zh": "✅ 语言已设置为中文！\n接下来请绑定你的 SEGA 账号。\n（如已绑定，请忽略此消息）"
+    "ja": "✅ 言語を日本語に設定しました！",
+    "en": "✅ Language set to English!",
+    "zh": "✅ 语言已设置为中文！"
 }
 
 # 已绑定账号的提示
