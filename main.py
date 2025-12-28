@@ -2678,6 +2678,25 @@ def handle_sync_text_command(event):
     # ========================================
     # 5. 语言设置
     # ========================================
+    # 5.1 语言选择菜单 (不带语言代码，直接显示选择按钮)
+    LANGUAGE_COMMANDS = ["language", "lang", "言語", "语言"]
+    if user_message in LANGUAGE_COMMANDS:
+        buttons_template = ButtonsTemplate(
+            title=language_select_title,
+            text=language_select_description,
+            actions=[
+                MessageAction(label=language_button_ja, text="language jp"),
+                MessageAction(label=language_button_en, text="language en"),
+                MessageAction(label=language_button_zh, text="language zh")
+            ]
+        )
+        reply_message = TemplateMessage(
+            alt_text=language_select_alt,
+            template=buttons_template
+        )
+        return tracked_reply(user_id, event.reply_token, reply_message)
+
+    # 5.2 设置具体语言 (带语言代码)
     if user_message.startswith("language "):
         lang_code = user_message[9:].strip().lower()
 
@@ -2692,10 +2711,18 @@ def handle_sync_text_command(event):
         # 使用多语言成功消息
         success_text = get_multilingual_text(language_set_success_text, user_id)
 
-        # 添加快捷回复按钮
-        quick_reply = get_bind_quick_reply(user_id)
+        # 检查用户是否已绑定，只有未绑定的用户才显示绑定快捷回复
+        user_data = USERS.get(user_id, {})
+        has_account = all(key in user_data for key in ['sega_id', 'sega_pwd', 'version'])
 
-        reply_message = TextMessage(text=success_text, quick_reply=quick_reply)
+        if has_account:
+            # 已绑定，不添加快捷回复
+            reply_message = TextMessage(text=success_text)
+        else:
+            # 未绑定，添加绑定快捷回复按钮
+            quick_reply = get_bind_quick_reply(user_id)
+            reply_message = TextMessage(text=success_text, quick_reply=quick_reply)
+
         return tracked_reply(user_id, event.reply_token, reply_message)
 
     # ========================================
