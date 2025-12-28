@@ -2636,7 +2636,7 @@ def handle_sync_text_command(event):
                 title=language_select_title,
                 text=language_select_description,
                 actions=[
-                    MessageAction(label=language_button_ja, text="language jp"),
+                    MessageAction(label=language_button_ja, text="language ja"),
                     MessageAction(label=language_button_en, text="language en"),
                     MessageAction(label=language_button_zh, text="language zh")
                 ]
@@ -2685,7 +2685,7 @@ def handle_sync_text_command(event):
             title=language_select_title,
             text=language_select_description,
             actions=[
-                MessageAction(label=language_button_ja, text="language jp"),
+                MessageAction(label=language_button_ja, text="language ja"),
                 MessageAction(label=language_button_en, text="language en"),
                 MessageAction(label=language_button_zh, text="language zh")
             ]
