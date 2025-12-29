@@ -811,7 +811,10 @@ async def process_sega_credentials(user_id, segaid, password, ver="jp", language
     user_set_version(user_id, ver)
     user_set_language(user_id, language)
     if "registered_via_token" not in USERS[user_id]:
-        smart_push(user_id, bind_msg(user_id), configuration)
+        try:
+            smart_push(user_id, bind_msg(user_id), configuration)
+        except Exception as e:
+            logger.error(f"[Bind Task] ⚠ Cancelled: smart push to {user_id}")
     return True
 
 

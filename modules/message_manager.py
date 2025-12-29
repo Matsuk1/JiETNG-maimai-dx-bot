@@ -1326,9 +1326,9 @@ user_info_flex_text = {
         'zh': '用户信息'
     },
     'last_update_label': {
-        'ja': '最終更新',
-        'en': 'Last Update',
-        'zh': '最后更新'
+        'ja': '最終更新 (UTC+9)',
+        'en': 'Last Update (UTC+9)',
+        'zh': '最后更新 (UTC+9)'
     },
     'not_bound': {
         'ja': '未連携',
@@ -1663,9 +1663,9 @@ update_result_flex_text = {
         'zh': 'Rating'
     },
     'update_time_label': {
-        'ja': '更新日時',
-        'en': 'Update Time',
-        'zh': '更新时间'
+        'ja': '更新日時 (UTC+9)',
+        'en': 'Update Time (UTC+9)',
+        'zh': '更新时间 (UTC+9)'
     },
     'elapsed_time_label': {
         'ja': '処理時間',
