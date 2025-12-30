@@ -1110,7 +1110,7 @@ def random_song(user_id, key="", ver="jp"):
 
     if key:
         level_values = parse_level_value(key)
-        if not level_value:
+        if not level_values:
             return song_error(user_id)
 
     for song in SONGS:
