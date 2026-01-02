@@ -153,10 +153,20 @@ def _split_song_sheets_by_type(song_list):
                 entry["type"] = sheet_type
                 entry["version"] = version_by_type.get(sheet_type, base_info["version"])
                 entry["sheets"] = sheets
-                entry["id"] = generate_song_unique_id(base_info["cover_name"], sheet_type)
+                # 所有类型都使用 title 生成唯一 ID
+                entry["id"] = generate_song_unique_id(base_info["cover_name"], sheet_type, base_info["title"])
                 result.append(entry)
 
-    return result
+    # 根据 id 去重（如果存在重复 ID，保留第一个）
+    seen_ids = set()
+    deduplicated_result = []
+    for entry in result:
+        entry_id = entry.get("id")
+        if entry_id not in seen_ids:
+            seen_ids.add(entry_id)
+            deduplicated_result.append(entry)
+
+    return deduplicated_result
 
 
 def get_dxdata_stats(data):
@@ -338,29 +348,32 @@ def update_dxdata_with_comparison(urls, save_to: str = None):
         }
 
 
-def generate_song_unique_id(image_name, chart_type):
+def generate_song_unique_id(image_name, chart_type, title):
     """
     生成歌曲唯一ID（6个字符）
 
     Args:
         image_name: 封面图片文件名（如 "c22d52b387e3f829.png" 或 "c22d52b387e3f829"）
         chart_type: 谱面类型（"dx", "std", 或 "utage"）
+        title: 歌曲标题（用于确保ID唯一性）
 
     Returns:
         str: 6个字符的唯一ID
 
     Examples:
-        >>> generate_song_unique_id("c22d52b387e3f829.png", "dx")
+        >>> generate_song_unique_id("c22d52b387e3f829.png", "dx", "歌曲名")
         'a3f5e2'
-        >>> generate_song_unique_id("c22d52b387e3f829", "std")
+        >>> generate_song_unique_id("c22d52b387e3f829", "std", "歌曲名")
         'b7c1d9'
+        >>> generate_song_unique_id("c22d52b387e3f829", "utage", "utage: [好]歌曲名")
+        'f1a2b3'
     """
     # 去掉文件扩展名
     if image_name.endswith('.png'):
         image_name = image_name[:-4]
 
-    # 组合字符串并生成哈希
-    combined = f"{image_name}_{chart_type}"
+    # 组合字符串并生成哈希（所有类型都包含 title）
+    combined = f"{image_name}_{chart_type}_{title}"
     hash_obj = hashlib.md5(combined.encode())
 
     # 取前3个字节转为十六进制（6个字符）

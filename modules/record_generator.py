@@ -22,11 +22,11 @@ logger = logging.getLogger(__name__)
 
 def _get_difficulty_color(difficulty):
     colors = {
-        "basic": (149, 207, 71),     # 绿色
-        "advanced": (243, 162, 7),   # 黄色
-        "expert": (255, 129, 141),   # 红色
-        "master": (159, 81, 219),    # 紫色
-        "remaster": (239, 224, 255), # 白色
+        "basic": (117, 181, 32),      # 绿色
+        "advanced": (239, 165, 8),   # 黄色
+        "expert": (204, 77, 89),     # 红色
+        "master": (159, 81, 220),    # 紫色
+        "remaster": (233, 212, 243), # 白色
         "utage": (245, 46, 221)      # 粉色
     }
     return colors.get(difficulty.lower(), (200, 200, 200))
@@ -120,7 +120,7 @@ def create_thumbnail(song, thumb_size=(300, 150), padding=15):
     img = Image.new("RGB", thumb_size, bg_color)
     draw = ImageDraw.Draw(img)
 
-    text_color = (201, 123, 221) if song['difficulty'] == "remaster" else (255, 255, 255)
+    text_color = (114, 20, 141) if song['difficulty'] == "remaster" else (255, 255, 255)
 
     # --- 封面 ---
     # 根据缩略图尺寸动态计算封面大小 (保持比例: 80/300 ≈ 0.267)
@@ -251,8 +251,8 @@ def create_thumbnail(song, thumb_size=(300, 150), padding=15):
               fill=(0, 0, 0), font=font_stadium, anchor="ra")
 
     # --- 边框 ---
-    border_color = (200, 200, 200)
-    draw.rectangle([(0, 0), (thumb_size[0] - 1, thumb_size[1] - 1)], outline=border_color, width=5)
+    border_color = (220, 220, 220)
+    draw.rectangle([(0, 0), (thumb_size[0] - 1, thumb_size[1] - 1)], outline=border_color, width=3)
 
     final_img = img.convert("RGB")
     return final_img
@@ -589,7 +589,7 @@ def generate_plate_image(target_data, title, img_width=1700, img_height=600, max
     draw = ImageDraw.Draw(final_img)
 
     # 绘制左侧信息栏：卡片式容器（2列布局）
-    card_start_x = margin + 10  # 往左移动（从30改为10）
+    card_start_x = margin + 5
     card_y = margin + 15
     card_width = 305
     card_height = 65
@@ -684,7 +684,7 @@ def generate_plate_image(target_data, title, img_width=1700, img_height=600, max
             plate_img = plate_img.resize((target_width, target_height), Image.Resampling.LANCZOS)
 
             # 位置：右上角，横向中轴线不变（调整 y 坐标以保持中轴线）
-            plate_x = img_width - margin - target_width - 10  # 往右移动（从30改为10）
+            plate_x = img_width - margin - target_width - 5
             original_center_y = margin + 30 + 60  # 原来 120px 高度时的中心线
             plate_y = original_center_y - target_height // 2  # 新的 y 坐标
 
