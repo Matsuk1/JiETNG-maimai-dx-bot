@@ -30,8 +30,6 @@ from datetime import datetime
 from PIL import Image, ImageDraw
 from io import BytesIO
 
-from pyzbar.pyzbar import decode
-
 from flask import (
     Flask,
     request,
@@ -2907,70 +2905,6 @@ def handle_sync_text_command(event):
     # 默认：未匹配任何命令
     # ========================================
     return
-
-#图片信息处理
-@handler.add(MessageEvent, message=ImageMessageContent)
-def handle_image_message(event):
-    message_id = event.message.id
-    with ApiClient(configuration) as api_client:
-        line_bot_blob_api = MessagingApiBlob(api_client)
-        message_content = line_bot_blob_api.get_message_content(message_id)
-
-    image = Image.open(BytesIO(message_content))
-    image.load()  # 强制加载像素数据到内存，避免 BytesIO 作用域问题
-
-    qr_results = decode(image)
-
-    reply_msg = []
-
-    if qr_results:
-        # 发现 QR 码，解析并处理（同步，速度快）
-        for qr in qr_results:
-            data = qr.data.decode("utf-8")
-            new_reply_msg = handle_image_message_task(event.source.user_id, event.reply_token, data, image)
-            if new_reply_msg:
-                reply_msg.append(new_reply_msg)
-        if reply_msg:
-            smart_reply(
-                event.source.user_id,
-                event.reply_token,
-                reply_msg,
-                configuration,
-                DIVIDER
-            )
-
-def handle_image_message_task(user_id, reply_token, data, image=None):
-    """
-    处理图片消息中的数据
-
-    Args:
-        user_id: 用户ID
-        reply_token: 回复令牌
-        data: QR码解析出的数据
-        image: PIL Image 对象（用于封面匹配）
-
-    Returns:
-        消息对象或消息列表
-    """
-    if DOMAIN in data:
-        return handle_internal_link(user_id, reply_token, data)
-    else:
-        return TextMessage(text=data)
-
-def handle_internal_link(user_id, reply_token, data):
-    mai_ver = "jp"
-    if user_id in USERS:
-        if 'version' in USERS[user_id]:
-            mai_ver = USERS[user_id]['version']
-
-    URL_MAP = []
-
-    for condition, action in URL_MAP:
-        if condition(data, DOMAIN):
-            return action(data, user_id, reply_token, DOMAIN, mai_ver)
-        else:
-            return TextMessage(text=data)
-
 
 #位置信息处理
 @handler.add(MessageEvent, message=LocationMessageContent)
