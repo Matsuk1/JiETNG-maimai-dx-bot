@@ -16,73 +16,112 @@
   :root {
     color-scheme: light dark;
 
-    /* 浅色模式渐变背景 - Light Mode Gradients */
-    --bg-gradient-1: #fceef5;  /* 淡粉灰色，与你的品牌色（burgundy/crimson）协调 */
-    --bg-gradient-2: #ffffff;
-    --bg-gradient-3: #fafafa;
-    --bg-gradient-4: #f9f0f4;
+    /* 浅色模式背景 - Light Mode Backgrounds */
+    --bg-gradient-1: #FFFFFF;
+    --bg-gradient-2: #F8F9FA;
+    --bg-gradient-3: #F1F3F5;
+    --bg-gradient-4: #E9ECEF;
 
     /* 基础文字颜色 - Base Text Colors */
-    --text-color: #1a1a1a;
-    --text-secondary: rgba(0, 0, 0, 0.7);
+    --text-color: #1F2937;
+    --text-secondary: #6B7280;
+    --text-tertiary: #9CA3AF;
 
-    /* 毛玻璃效果 - Glass Effect */
-    --glass-bg: rgba(255, 255, 255, 0.9);
-    --glass-border: rgba(153, 0, 0, 0.12);
+    /* 卡片和表面 - Cards & Surfaces */
+    --glass-bg: rgba(255, 255, 255, 0.95);
+    --glass-border: rgba(0, 0, 0, 0.08);
+    --card-bg: #FFFFFF;
+    --surface-bg: #F8F9FA;
 
     /* 主题色 - Theme Colors */
-    --accent-color: #C49000;
-    --accent-glow: rgba(196, 144, 0, 0.4);
+    --accent-color: #F59E0B;
+    --accent-hover: #D97706;
+    --accent-light: #FEF3C7;
 
     /* 品牌色 - Brand Colors */
     --burgundy: #660033;
     --crimson: #990000;
     --deep-red: #810020;
 
-    /* 状态颜色 - Status Colors (Light Mode) */
-    --success-color: #059669;
-    --success-glow: rgba(5, 150, 105, 0.2);
-    --warning-color: #d97706;
-    --warning-glow: rgba(217, 119, 6, 0.2);
-    --danger-color: #dc2626;
-    --danger-glow: rgba(220, 38, 38, 0.2);
-    --error-color: #dc2626;
-    --error-glow: rgba(220, 38, 38, 0.3);
-    --info-color: #2563eb;
-    --info-glow: rgba(37, 99, 235, 0.2);
+    /* 状态颜色 - Status Colors */
+    --success-color: #10B981;
+    --success-light: #D1FAE5;
+    --warning-color: #F59E0B;
+    --warning-light: #FEF3C7;
+    --danger-color: #EF4444;
+    --danger-light: #FEE2E2;
+    --error-color: #EF4444;
+    --error-light: #FEE2E2;
+    --info-color: #3B82F6;
+    --info-light: #DBEAFE;
+
+    /* 阴影 - Shadows */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+
+    /* 边框 - Borders */
+    --border-color: #E5E7EB;
+    --border-hover: #D1D5DB;
+
+    /* 间距 - Spacing */
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+
+    /* 过渡 - Transitions */
+    --transition-fast: 0.15s ease-out;
+    --transition-base: 0.2s ease-out;
+    --transition-slow: 0.3s ease-out;
   }
 
   @media (prefers-color-scheme: dark) {
     :root {
-      /* 深色模式渐变背景 - Dark Mode Gradients */
-      --bg-gradient-1: #0f0f0f;
-      --bg-gradient-2: #1a1a1a;
-      --bg-gradient-3: #141414;
-      --bg-gradient-4: #0a0a0a;
+      /* 深色模式背景 - Dark Mode Backgrounds */
+      --bg-gradient-1: #0F172A;
+      --bg-gradient-2: #1E293B;
+      --bg-gradient-3: #334155;
+      --bg-gradient-4: #475569;
 
       /* 基础文字颜色 - Base Text Colors */
-      --text-color: #ffffff;
-      --text-secondary: rgba(255, 255, 255, 0.85);
+      --text-color: #F1F5F9;
+      --text-secondary: #CBD5E1;
+      --text-tertiary: #94A3B8;
 
-      /* 毛玻璃效果 - Glass Effect */
-      --glass-bg: rgba(102, 0, 51, 0.06);
-      --glass-border: rgba(153, 0, 0, 0.15);
+      /* 卡片和表面 - Cards & Surfaces */
+      --glass-bg: rgba(30, 41, 59, 0.8);
+      --glass-border: rgba(255, 255, 255, 0.1);
+      --card-bg: #1E293B;
+      --surface-bg: #0F172A;
 
       /* 主题色 - Theme Colors */
-      --accent-color: #EFBF04;
-      --accent-glow: rgba(239, 191, 4, 0.6);
+      --accent-color: #FBBF24;
+      --accent-hover: #F59E0B;
+      --accent-light: #451A03;
 
-      /* 状态颜色 - Status Colors (Dark Mode) */
-      --success-color: #10b981;
-      --success-glow: rgba(16, 185, 129, 0.3);
-      --warning-color: #f59e0b;
-      --warning-glow: rgba(245, 158, 11, 0.3);
-      --danger-color: #FF6B6B;
-      --danger-glow: rgba(255, 107, 107, 0.3);
-      --error-color: #FF6B6B;
-      --error-glow: rgba(255, 107, 107, 0.5);
-      --info-color: #60a5fa;
-      --info-glow: rgba(96, 165, 250, 0.3);
+      /* 状态颜色 - Status Colors */
+      --success-color: #34D399;
+      --success-light: #064E3B;
+      --warning-color: #FBBF24;
+      --warning-light: #451A03;
+      --danger-color: #F87171;
+      --danger-light: #7F1D1D;
+      --error-color: #F87171;
+      --error-light: #7F1D1D;
+      --info-color: #60A5FA;
+      --info-light: #1E3A8A;
+
+      /* 阴影 - Shadows */
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+      --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
+
+      /* 边框 - Borders */
+      --border-color: #334155;
+      --border-hover: #475569;
     }
   }
 
@@ -108,45 +147,39 @@
     background: var(--bg-gradient-1);
   }
 
-  /* Body 透明背景 - 关键！body 必须透明才能看到 html 的背景！ */
+  /* Body 样式 - Body Styles */
   body {
-    background: transparent;
+    background: var(--bg-gradient-1);
     color: var(--text-color);
-    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", "Yu Gothic", "Meiryo", sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", "Yu Gothic", "Meiryo", "Hiragino Kaku Gothic ProN", Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
     min-height: 100vh;
     min-height: -webkit-fill-available;
     position: relative;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
-  /* 渐变动画 - Gradient Animation */
-  @keyframes gradientShift {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
+  /* 全局过渡动画 - Global Transitions */
+  * {
+    transition: background-color var(--transition-base),
+                border-color var(--transition-base),
+                color var(--transition-base);
   }
 
-  /* ========================================
-     背景装饰效果 - Background Decorations
-     ======================================== */
+  /* 移除动画以减少干扰 - Remove distracting animations */
+  *:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+  }
 
-  /* iOS Safari 防白边兜底层 - 渐变背景层 */
-  body::before {
-    content: "";
-    position: fixed;
-    /* 关键：使用负值扩展到 safe-area 外 */
-    top: calc(-1 * env(safe-area-inset-top, 0px));
-    left: calc(-1 * env(safe-area-inset-left, 0px));
-    right: calc(-1 * env(safe-area-inset-right, 0px));
-    bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
-    z-index: -1;
-    background: linear-gradient(135deg,
-      var(--bg-gradient-1) 0%,
-      var(--bg-gradient-2) 25%,
-      var(--bg-gradient-3) 50%,
-      var(--bg-gradient-4) 75%,
-      var(--bg-gradient-1) 100%
-    );
-    background-size: 400% 400%;
-    animation: gradientShift 20s ease infinite;
+  *:focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  *:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
   }
 </style>

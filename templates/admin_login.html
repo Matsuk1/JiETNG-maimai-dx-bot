@@ -13,196 +13,125 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      /* safe-area padding 已在 :root 上，这里只加额外的 20px */
-      padding: 20px;
-      position: relative;
-      overflow-x: hidden;
-      overflow-y: auto;
+      padding: 24px;
+      min-height: 100vh;
+      background: var(--surface-bg);
     }
-
-    /* 背景装饰已移至 common_styles.html */
 
     .login-container {
       width: 100%;
-      max-width: 450px;
-      background: linear-gradient(135deg,
-        rgba(102, 0, 51, 0.12) 0%,
-        rgba(153, 0, 0, 0.08) 50%,
-        rgba(129, 0, 32, 0.1) 100%);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid var(--glass-border);
-      border-radius: 24px;
-      padding: 50px 40px;
-      box-shadow:
-        0 8px 32px rgba(0, 0, 0, 0.5),
-        0 0 60px rgba(129, 0, 32, 0.15),
-        inset 0 0 80px rgba(153, 0, 0, 0.02);
-      position: relative;
-      z-index: 1;
-      animation: fadeInScale 0.8s ease;
-    }
-
-    @keyframes fadeInScale {
-      from {
-        opacity: 0;
-        transform: scale(0.9);
-      }
-      to {
-        opacity: 1;
-        transform: scale(1);
-      }
+      max-width: 420px;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 48px 40px;
+      box-shadow: var(--shadow-lg);
     }
 
     .login-header {
       text-align: center;
-      margin-bottom: 40px;
+      margin-bottom: 32px;
     }
 
     .login-header h1 {
-      font-size: 36px;
+      font-size: 28px;
       font-weight: 700;
-      background: linear-gradient(135deg, var(--accent-color), var(--text-color));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin-bottom: 12px;
-      animation: glow 3s ease-in-out infinite;
-    }
-
-    @keyframes glow {
-      0%, 100% {
-        filter: drop-shadow(0 0 10px var(--accent-glow));
-      }
-      50% {
-        filter: drop-shadow(0 0 20px var(--accent-glow));
-      }
+      color: var(--text-color);
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
     }
 
     .login-header p {
       font-size: 14px;
       color: var(--text-secondary);
-      font-weight: 500;
-      letter-spacing: 1px;
+      font-weight: 400;
     }
 
     .form-group {
-      margin-bottom: 30px;
-      position: relative;
+      margin-bottom: 24px;
     }
 
     .form-label {
       display: block;
-      font-size: 12px;
+      font-size: 14px;
       font-weight: 600;
       color: var(--text-color);
-      margin-bottom: 10px;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      opacity: 0.9;
+      margin-bottom: 8px;
     }
 
     .form-input {
       width: 100%;
-      padding: 16px 20px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--glass-border);
-      border-radius: 12px;
-      font-size: 16px;
+      padding: 12px 16px;
+      background: var(--surface-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      font-size: 15px;
       color: var(--text-color);
-      transition: all 0.3s;
+      transition: all var(--transition-base);
       font-family: inherit;
+    }
+
+    .form-input:hover {
+      border-color: var(--border-hover);
     }
 
     .form-input:focus {
       outline: none;
       border-color: var(--accent-color);
-      background: rgba(255, 255, 255, 0.1);
-      box-shadow: 0 0 20px var(--accent-glow);
-      transform: translateY(-2px);
+      background: var(--card-bg);
+      box-shadow: 0 0 0 3px var(--accent-light);
     }
 
     .form-input::placeholder {
-      color: rgba(255, 255, 255, 0.4);
+      color: var(--text-tertiary);
     }
 
     .submit-btn {
       width: 100%;
-      padding: 18px;
-      background: linear-gradient(135deg, var(--accent-color), #f59e0b);
-      color: var(--text-color);
+      padding: 13px;
+      background: var(--accent-color);
+      color: #ffffff;
       border: none;
-      border-radius: 12px;
-      font-size: 16px;
-      font-weight: 700;
+      border-radius: var(--radius-md);
+      font-size: 15px;
+      font-weight: 600;
       cursor: pointer;
-      transition: all 0.3s;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      box-shadow: 0 6px 20px var(--accent-glow);
+      transition: all var(--transition-base);
       position: relative;
-      overflow: hidden;
-    }
-
-    /* 浅色模式下按钮文字为白色 */
-    @media (prefers-color-scheme: light) {
-      .submit-btn {
-        color: #ffffff;
-      }
-    }
-
-    .submit-btn::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-      transition: left 0.5s;
-    }
-
-    .submit-btn:hover::before {
-      left: 100%;
     }
 
     .submit-btn:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 25px var(--accent-glow);
-      filter: brightness(1.1);
+      background: var(--accent-hover);
+      box-shadow: var(--shadow-md);
     }
 
     .submit-btn:active {
-      transform: translateY(0);
+      transform: scale(0.98);
     }
 
     .error-message {
-      background: rgba(239, 68, 68, 0.2);
-      border: 2px solid var(--error-color);
-      color: var(--text-color);
-      padding: 16px 20px;
-      border-radius: 12px;
+      background: var(--error-light);
+      border: 1px solid var(--error-color);
+      color: var(--error-color);
+      padding: 12px 16px;
+      border-radius: var(--radius-md);
       font-size: 14px;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
       text-align: center;
-      font-weight: 600;
-      box-shadow: 0 4px 15px var(--error-glow);
-      animation: shake 0.5s ease;
+      font-weight: 500;
     }
 
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(-10px); }
-      75% { transform: translateX(10px); }
+    @media (prefers-color-scheme: dark) {
+      .error-message {
+        color: var(--text-color);
+      }
     }
 
     .footer-note {
       text-align: center;
-      margin-top: 30px;
-      font-size: 12px;
-      color: var(--text-secondary);
-      opacity: 0.7;
-      font-weight: 500;
+      margin-top: 24px;
+      font-size: 13px;
+      color: var(--text-tertiary);
     }
 
     /* Loading spinner */
@@ -212,12 +141,12 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 40px;
-      height: 40px;
-      border: 4px solid rgba(255, 255, 255, 0.2);
-      border-top-color: var(--accent-color);
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #ffffff;
       border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+      animation: spin 0.6s linear infinite;
     }
 
     @keyframes spin {
@@ -229,33 +158,12 @@
       opacity: 0.7;
     }
 
+    .submit-btn.loading span {
+      opacity: 0;
+    }
+
     .submit-btn.loading .loading {
       display: block;
-    }
-
-    /* 添加粒子效果 */
-    .particle {
-      position: fixed;
-      width: 4px;
-      height: 4px;
-      background: rgba(255, 255, 255, 0.6);
-      border-radius: 50%;
-      pointer-events: none;
-      animation: particleFloat 4s ease-in-out infinite;
-    }
-
-    @keyframes particleFloat {
-      0% {
-        transform: translateY(0) translateX(0);
-        opacity: 0;
-      }
-      50% {
-        opacity: 1;
-      }
-      100% {
-        transform: translateY(-100vh) translateX(100px);
-        opacity: 0;
-      }
     }
   </style>
 </head>
@@ -272,7 +180,7 @@
     </div>
     {% endif %}
 
-    <form method="POST" action="/linebot/admin" onsubmit="handleSubmit(event)">
+    <form method="POST" action="/admin/panel" onsubmit="handleSubmit(event)">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
       <div class="form-group">
         <label class="form-label" for="password">Password</label>
@@ -299,39 +207,11 @@
   </div>
 
   <script>
-    // 创建粒子效果
-    function createParticle() {
-      const particle = document.createElement('div');
-      particle.className = 'particle';
-      particle.style.left = Math.random() * 100 + 'vw';
-      particle.style.animationDuration = (Math.random() * 3 + 2) + 's';
-      particle.style.animationDelay = Math.random() * 2 + 's';
-      document.body.appendChild(particle);
-
-      setTimeout(() => {
-        particle.remove();
-      }, 6000);
-    }
-
-    // 每500ms创建一个粒子
-    setInterval(createParticle, 500);
-
     // 表单提交处理
     function handleSubmit(event) {
       const btn = document.getElementById('submit-btn');
       btn.classList.add('loading');
     }
-
-    // 输入框焦点动画
-    const input = document.getElementById('password');
-    input.addEventListener('focus', function() {
-      this.parentElement.style.transform = 'scale(1.02)';
-      this.parentElement.style.transition = 'transform 0.3s ease';
-    });
-
-    input.addEventListener('blur', function() {
-      this.parentElement.style.transform = 'scale(1)';
-    });
   </script>
 </body>
 </html>

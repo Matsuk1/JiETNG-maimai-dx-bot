@@ -223,7 +223,6 @@ def get_detailed_info(song_record, ver="jp"):
                     record['version'] = song['version']
                     ap_clear = "ap" in record['combo_icon']
                     record['ra'] = get_single_ra(float(record['internalLevelValue']), float(record['score'][:-1]), (ap_clear and ver == "jp"))
-                    record['id'] = sheet['internalId'] if 'internalId' in sheet else -1
                     record['cover_url'] = song['cover_url']
                     record['cover_name'] = song['cover_name']
                     break
@@ -233,7 +232,6 @@ def get_detailed_info(song_record, ver="jp"):
             record['new_song'] = True
             record['version'] = "UNKNOWN"
             record['ra'] = 0
-            record['id'] = -1
             record['cover_url'] = None
             record['cover_name'] = "UNKNOWN"
 

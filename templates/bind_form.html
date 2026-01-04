@@ -8,115 +8,62 @@
   {% include 'common_styles.html' %}
 
   <style>
-    /* 页面特定 CSS 变量 - Page-specific CSS Variables */
-    :root {
-      --card-bg: rgba(102, 0, 51, 0.04);
-      --card-border: rgba(153, 0, 0, 0.15);
-      --card-glow: rgba(129, 0, 32, 0.08);
-      --input-bg: rgba(0, 0, 0, 0.03);
-      --input-border: rgba(153, 0, 0, 0.2);
-    }
-
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --card-bg: rgba(102, 0, 51, 0.08);
-        --card-border: rgba(153, 0, 0, 0.2);
-        --card-glow: rgba(129, 0, 32, 0.15);
-        --input-bg: rgba(255, 255, 255, 0.03);
-        --input-border: rgba(153, 0, 0, 0.4);
-      }
-    }
-
     /* 页面特定样式 - Page-specific Styles */
     body {
       display: flex;
       align-items: center;
       justify-content: center;
-      /* safe-area padding 已在 :root 上，这里只加额外的 20px */
-      /* padding: 20px; */
-      position: relative;
-      overflow-x: hidden;
-      overflow-y: auto;
+      padding: 24px;
+      min-height: 100vh;
+      background: var(--surface-bg);
     }
 
-    /* 页面特定样式 - Page-specific Styles */
     .container {
       width: 100%;
-      max-width: 500px;
-      background: linear-gradient(135deg,
-        rgba(102, 0, 51, 0.12) 0%,
-        rgba(153, 0, 0, 0.08) 50%,
-        rgba(129, 0, 32, 0.1) 100%);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid var(--card-border);
-      border-radius: 24px;
-      padding: 50px 40px;
-      box-shadow:
-        0 8px 32px rgba(0, 0, 0, 0.5),
-        0 0 60px var(--card-glow),
-        inset 0 0 80px rgba(153, 0, 0, 0.02);
-      position: relative;
-      z-index: 1;
-      animation: fadeInScale 0.8s ease;
-    }
-
-    @keyframes fadeInScale {
-      from {
-        opacity: 0;
-        transform: scale(0.9);
-      }
-      to {
-        opacity: 1;
-        transform: scale(1);
-      }
+      max-width: 480px;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 40px 32px;
+      box-shadow: var(--shadow-lg);
     }
 
     h2 {
       text-align: center;
-      font-size: 32px;
+      font-size: 24px;
       font-weight: 700;
-      background: linear-gradient(135deg, var(--accent-color), var(--text-color));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin-bottom: 40px;
-      animation: glow 3s ease-in-out infinite;
-    }
-
-    @keyframes glow {
-      0%, 100% {
-        filter: drop-shadow(0 0 10px var(--accent-glow));
-      }
-      50% {
-        filter: drop-shadow(0 0 20px var(--accent-glow));
-      }
+      color: var(--text-color);
+      margin-bottom: 32px;
+      letter-spacing: -0.5px;
     }
 
     label {
       display: block;
-      font-size: 12px;
+      font-size: 14px;
       font-weight: 600;
       color: var(--text-color);
-      margin-bottom: 10px;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      opacity: 0.9;
+      margin-bottom: 8px;
     }
 
     input[type="text"],
     input[type="password"],
     select {
       width: 100%;
-      padding: 16px 20px;
-      background: var(--input-bg);
-      border: 2px solid var(--input-border);
-      border-radius: 12px;
-      font-size: 16px;
+      padding: 12px 16px;
+      background: var(--surface-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      font-size: 15px;
       color: var(--text-color);
-      transition: all 0.3s;
+      transition: all var(--transition-base);
       font-family: inherit;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
+    }
+
+    input[type="text"]:hover,
+    input[type="password"]:hover,
+    select:hover {
+      border-color: var(--border-hover);
     }
 
     input[type="text"]:focus,
@@ -124,149 +71,92 @@
     select:focus {
       outline: none;
       border-color: var(--accent-color);
-      background: rgba(255, 255, 255, 0.1);
-      box-shadow: 0 0 20px var(--accent-glow);
-      transform: translateY(-2px);
+      background: var(--card-bg);
+      box-shadow: 0 0 0 3px var(--accent-light);
     }
 
     input[type="text"]::placeholder,
     input[type="password"]::placeholder {
-      color: rgba(255, 255, 255, 0.4);
+      color: var(--text-tertiary);
     }
 
     select {
       appearance: none;
       -webkit-appearance: none;
       -moz-appearance: none;
-      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23ffffff'><polygon points='0,0 12,0 6,7'/></svg>");
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%239CA3AF'><polygon points='0,0 12,0 6,7'/></svg>");
       background-repeat: no-repeat;
-      background-position: right 20px center;
+      background-position: right 16px center;
       background-size: 12px 12px;
       cursor: pointer;
     }
 
-    input[type="submit"] {
-      width: 100%;
-      padding: 18px;
-      background: linear-gradient(135deg, var(--accent-color), #f59e0b);
-      color: #000;
-      border: none;
-      border-radius: 12px;
-      font-size: 16px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.3s;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      box-shadow: 0 6px 20px var(--accent-glow);
-      position: relative;
-      overflow: hidden;
-    }
-
-    @media (prefers-color-scheme: light) {
-      input[type="submit"] {
-        color: #fff;
+    @media (prefers-color-scheme: dark) {
+      select {
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2394A3B8'><polygon points='0,0 12,0 6,7'/></svg>");
       }
     }
 
-    input[type="submit"]::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
+    input[type="submit"] {
       width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-      transition: left 0.5s;
-    }
-
-    input[type="submit"]:hover::before {
-      left: 100%;
+      padding: 13px;
+      background: var(--accent-color);
+      color: #ffffff;
+      border: none;
+      border-radius: var(--radius-md);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--transition-base);
+      margin-top: 4px;
     }
 
     input[type="submit"]:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 25px var(--accent-glow);
-      filter: brightness(1.1);
+      background: var(--accent-hover);
+      box-shadow: var(--shadow-md);
     }
 
     input[type="submit"]:active {
-      transform: translateY(0);
+      transform: scale(0.98);
     }
 
     .notice {
-      background: rgba(102, 0, 51, 0.06);
-      border: 1px solid rgba(153, 0, 0, 0.15);
-      border-radius: 16px;
-      padding: 24px;
+      background: var(--surface-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
       font-size: 13px;
       color: var(--text-secondary);
-      margin-top: 30px;
-      line-height: 1.8;
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      box-shadow: 0 4px 15px rgba(102, 0, 51, 0.05);
+      margin-top: 24px;
+      line-height: 1.6;
     }
 
     .notice strong {
-      color: var(--accent-color);
+      color: var(--text-color);
       font-size: 14px;
-      letter-spacing: 1px;
+      font-weight: 600;
       display: block;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
     }
 
     /* 移动端优化 */
     @media (max-width: 600px) {
       body {
-        padding: 10px;
+        padding: 16px;
       }
 
       .container {
-        padding: 30px 20px;
-        max-width: 100%;
+        padding: 32px 24px;
       }
 
       h2 {
-        font-size: 24px;
-        margin-bottom: 30px;
-      }
-
-      input[type="text"],
-      input[type="password"],
-      select {
-        padding: 14px 16px;
-        font-size: 15px;
-        margin-bottom: 20px;
-      }
-
-      input[type="submit"] {
-        padding: 16px;
-        font-size: 15px;
+        font-size: 20px;
+        margin-bottom: 24px;
       }
 
       .notice {
-        padding: 20px;
+        padding: 14px 16px;
         font-size: 12px;
-      }
-
-      .shape {
-        filter: blur(40px);
-      }
-
-      .shape1 {
-        width: 200px;
-        height: 200px;
-      }
-
-      .shape2 {
-        width: 250px;
-        height: 250px;
-      }
-
-      .shape3 {
-        width: 150px;
-        height: 150px;
       }
     }
   </style>

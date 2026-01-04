@@ -66,7 +66,7 @@ Web ベースの管理インターフェースで、包括的なユーザーと�
 ### アクセス URL
 
 ```
-https://your-domain.com/linebot/admin
+https://your-domain.com/admin/panel
 ```
 
 ### 機能モジュール
@@ -105,7 +105,7 @@ https://your-domain.com/linebot/admin
 
 ### 使用方法
 
-1. `https://your-domain.com/linebot/admin` にアクセス
+1. `https://your-domain.com/admin/panel` にアクセス
 2. 管理者パスワードでログイン
 3. 5つの主要タブでナビゲーション：
    - **Users**: ユーザーリストとデータ管理
@@ -475,19 +475,19 @@ GET /linebot/add_friend?id=<friend_id>
 #### 管理パネル API
 
 ```
-GET/POST /linebot/admin                    # 管理者ログイン/ダッシュボード
-GET      /linebot/admin/logout             # ログアウト
-POST     /linebot/admin/trigger_update     # ユーザー更新トリガー
-POST     /linebot/admin/edit_user          # ユーザーデータ編集
-POST     /linebot/admin/delete_user        # ユーザー削除
-POST     /linebot/admin/get_user_data      # ユーザーデータ取得
-POST     /linebot/admin/load_nicknames     # ニックネーム一括読み込み
-POST     /linebot/admin/clear_cache        # ニックネームキャッシュクリア
-POST     /linebot/admin/cancel_task        # タスクキャンセル
-GET      /linebot/admin/task_status        # タスク状態取得
-GET      /linebot/admin/get_logs           # ログ取得
-GET      /linebot/admin/memory_stats       # メモリ統計取得
-POST     /linebot/admin/trigger_cleanup    # 手動メモリクリーンアップ
+GET/POST /admin/panel              # 管理者ログイン/ダッシュボード
+GET      /admin/logout             # ログアウト
+POST     /admin/trigger_update     # ユーザー更新トリガー
+POST     /admin/edit_user          # ユーザーデータ編集
+POST     /admin/delete_user        # ユーザー削除
+POST     /admin/get_user_data      # ユーザーデータ取得
+POST     /admin/load_nicknames     # ニックネーム一括読み込み
+POST     /admin/clear_cache        # ニックネームキャッシュクリア
+POST     /admin/cancel_task        # タスクキャンセル
+GET      /admin/task_status        # タスク状態取得
+GET      /admin/get_logs           # ログ取得
+GET      /admin/memory_stats       # メモリ統計取得
+POST     /admin/trigger_cleanup    # 手動メモリクリーンアップ
 ```
 
 ### 設定リファレンス

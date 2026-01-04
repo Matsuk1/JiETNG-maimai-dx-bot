@@ -66,7 +66,7 @@
 ### 访问地址
 
 ```
-https://your-domain.com/linebot/admin
+https://your-domain.com/admin/panel
 ```
 
 ### 功能模块
@@ -105,7 +105,7 @@ https://your-domain.com/linebot/admin
 
 ### 使用方法
 
-1. 访问 `https://your-domain.com/linebot/admin`
+1. 访问 `https://your-domain.com/admin/panel`
 2. 使用管理员密码登录
 3. 在五个主要标签页中导航：
    - **Users**: 用户列表和数据管理
@@ -480,19 +480,19 @@ GET /linebot/add_friend?id=<friend_id>
 #### 管理后台 API
 
 ```
-GET/POST /linebot/admin                    # 管理员登录/主页
-GET      /linebot/admin/logout             # 登出
-POST     /linebot/admin/trigger_update     # 触发用户更新
-POST     /linebot/admin/edit_user          # 编辑用户数据
-POST     /linebot/admin/delete_user        # 删除用户
-POST     /linebot/admin/get_user_data      # 获取用户数据
-POST     /linebot/admin/load_nicknames     # 批量加载昵称
-POST     /linebot/admin/clear_cache        # 清除昵称缓存
-POST     /linebot/admin/cancel_task        # 取消任务
-GET      /linebot/admin/task_status        # 获取任务状态
-GET      /linebot/admin/get_logs           # 获取日志
-GET      /linebot/admin/memory_stats       # 获取内存统计
-POST     /linebot/admin/trigger_cleanup    # 手动触发内存清理
+GET/POST /admin/panel              # 管理员登录/主页
+GET      /admin/logout             # 登出
+POST     /admin/trigger_update     # 触发用户更新
+POST     /admin/edit_user          # 编辑用户数据
+POST     /admin/delete_user        # 删除用户
+POST     /admin/get_user_data      # 获取用户数据
+POST     /admin/load_nicknames     # 批量加载昵称
+POST     /admin/clear_cache        # 清除昵称缓存
+POST     /admin/cancel_task        # 取消任务
+GET      /admin/task_status        # 获取任务状态
+GET      /admin/get_logs           # 获取日志
+GET      /admin/memory_stats       # 获取内存统计
+POST     /admin/trigger_cleanup    # 手动触发内存清理
 ```
 
 ### 配置参考

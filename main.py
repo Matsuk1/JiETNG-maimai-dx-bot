@@ -1375,7 +1375,6 @@ def get_song_record(user_id, id_use, acronym, ver="jp"):
         # 使用优化的精确匹配函数
         for rcd in song_record:
             if is_exact_song_match(rcd['cover_name'], song['cover_name']) and rcd['type'] == song['type']:
-                rcd['rank'] = ""
                 played_data.append(rcd)
 
         original_url, preview_url = smart_upload(song_info_generate(song, played_data))
@@ -1425,7 +1424,6 @@ def get_song_record_by_id(user_id, id_use, song_id, ver="jp"):
     played_data = []
     for rcd in song_record:
         if is_exact_song_match(rcd['cover_name'], matching_song['cover_name']) and rcd['type'] == matching_song['type']:
-            rcd['rank'] = ""
             played_data.append(rcd)
 
     # 如果该歌曲没有游玩记录
@@ -1583,7 +1581,7 @@ def generate_plate_rcd(user_id, id_use, title, ver="jp"):
 
     # 获取用户信息并创建用户信息图片
     user_info = USERS[id_use]['personal_info']
-    img = compose_images([create_user_info_img(user_info), img])
+    img = compose_images([generate_profile(user_info), img])
 
     original_url, preview_url = smart_upload(img)
     message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
@@ -1670,7 +1668,7 @@ def generate_internallevel_songs(user_id, level, ver="jp"):
         logger.error(f"[LevelList] ✗ Generation failed: user_id={user_id}, level={level}, error={e}", exc_info=True)
         return system_error(user_id)
 
-def create_user_info_img(user_info, scale=1.7):
+def generate_profile(user_info, scale=1.7):
     """
     创建用户信息图片
 
@@ -1753,7 +1751,7 @@ def create_user_info_img(user_info, scale=1.7):
     info_img = info_img.resize((int(img_width * scale), int(img_height * scale)), Image.Resampling.LANCZOS)
     return info_img
 
-def select_records(song_record, type, command, ver):
+def select_records(song_record, type="best50", command="", ver="jp"):
     if not command == "":
         cmds = re.findall(r"-(\w+)\s+([^ -][^-]*)", command)
         for cmd, cmd_num in cmds:
@@ -1898,7 +1896,7 @@ def generate_records(user_id, id_use, type="best50", command="", ver="jp"):
 
     # 获取用户信息并创建用户信息图片
     user_info = USERS[id_use]['personal_info']
-    img = compose_images([create_user_info_img(user_info), img])
+    img = compose_images([generate_profile(user_info), img])
 
     original_url, preview_url = smart_upload(img)
     message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
@@ -1948,7 +1946,7 @@ def generate_friend_b50(user_id, friend_code, ver="jp"):
 
     up_songs, down_songs = select_records(friend_records, "best50", "", ver)
 
-    user_info_img = create_user_info_img(friend_info)
+    user_info_img = generate_profile(friend_info)
     rcd_img = generate_records_picture(up_songs, down_songs, "BEST50")
     img = compose_images([user_info_img, rcd_img])
     original_url, preview_url = smart_upload(img)
@@ -2002,7 +2000,7 @@ def generate_level_records(user_id, id_use, level, ver="jp", page=1):
 
     # 获取用户信息并创建用户信息图片
     user_info = USERS[id_use]['personal_info']
-    img = compose_images([create_user_info_img(user_info), img])
+    img = compose_images([generate_profile(user_info), img])
 
     original_url, preview_url = smart_upload(img)
     message = [
@@ -3082,7 +3080,7 @@ def get_user_nickname_wrapper(user_id, use_cache=True):
 
     return nickname if nickname else f"User {user_id[:8]}..."
 
-@app.route("/linebot/admin", methods=["GET", "POST"])
+@app.route("/admin/panel", methods=["GET", "POST"])
 def admin_panel():
     """管理后台主页面"""
     if request.method == "POST":
@@ -3093,7 +3091,7 @@ def admin_panel():
         if password and password == ADMIN_PASSWORD:
             session['admin_authenticated'] = True
             session.permanent = True
-            return redirect("/linebot/admin")
+            return redirect("/admin/panel")
         else:
             return render_template("admin_login.html", error="Invalid password")
 
@@ -3203,13 +3201,13 @@ def admin_panel():
         logs=logs
     )
 
-@app.route("/linebot/admin/logout", methods=["GET"])
+@app.route("/admin/logout", methods=["GET"])
 def admin_logout():
     """管理员登出"""
     session.pop('admin_authenticated', None)
-    return redirect("/linebot/admin")
+    return redirect("/admin/panel")
 
-@app.route("/linebot/admin/trigger_update", methods=["POST"])
+@app.route("/admin/trigger_update", methods=["POST"])
 @csrf.exempt
 def admin_trigger_update():
     """触发指定用户的maimai_update"""
@@ -3266,7 +3264,7 @@ def admin_trigger_update():
             'message': str(e)
         }), 500
 
-@app.route("/linebot/admin/cancel_task", methods=["POST"])
+@app.route("/admin/cancel_task", methods=["POST"])
 @csrf.exempt
 def admin_cancel_task():
     """取消排队中的任务"""
@@ -3306,7 +3304,7 @@ def admin_cancel_task():
         'message': f'Task {task_id} marked for cancellation'
     })
 
-@app.route("/linebot/admin/get_logs", methods=["GET"])
+@app.route("/admin/get_logs", methods=["GET"])
 def admin_get_logs():
     """获取最新日志"""
     if not check_admin_auth():
@@ -3319,7 +3317,7 @@ def admin_get_logs():
     except Exception as e:
         return jsonify({'logs': f'Error reading logs: {e}'})
 
-@app.route("/linebot/admin/memory_stats", methods=["GET"])
+@app.route("/admin/memory_stats", methods=["GET"])
 def admin_memory_stats():
     """获取内存管理器状态"""
     if not check_admin_auth():
@@ -3332,7 +3330,7 @@ def admin_memory_stats():
         logger.error(f"[Admin] ✗ Memory stats error: error={e}", exc_info=True)
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route("/linebot/admin/trigger_cleanup", methods=["POST"])
+@app.route("/admin/trigger_cleanup", methods=["POST"])
 @csrf.exempt
 def admin_trigger_cleanup():
     """手动触发内存清理"""
@@ -3346,7 +3344,7 @@ def admin_trigger_cleanup():
         logger.error(f"[Admin] ✗ Cleanup trigger error: error={e}", exc_info=True)
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route("/linebot/admin/get_notices", methods=["GET"])
+@app.route("/admin/get_notices", methods=["GET"])
 def admin_get_notices():
     """获取所有公告(包括草稿)"""
     if not check_admin_auth():
@@ -3359,7 +3357,7 @@ def admin_get_notices():
         logger.error(f"[Admin] ✗ Get notices error: error={e}", exc_info=True)
         return jsonify({'success': False, 'message': str(e)}), 500
 
-@app.route("/linebot/admin/create_notice", methods=["POST"])
+@app.route("/admin/create_notice", methods=["POST"])
 @csrf.exempt
 def admin_create_notice():
     """创建新公告 - 支持多语言、草稿、投票"""
@@ -3432,7 +3430,7 @@ def admin_create_notice():
         logger.error(f"[Admin] ✗ Create notice error: error={e}", exc_info=True)
         return jsonify({'success': False, 'message': str(e)}), 500
 
-@app.route("/linebot/admin/update_notice", methods=["POST"])
+@app.route("/admin/update_notice", methods=["POST"])
 @csrf.exempt
 def admin_update_notice():
     """更新公告 - 支持多语言"""
@@ -3504,7 +3502,7 @@ def admin_update_notice():
         logger.error(f"[Admin] ✗ Update notice error: error={e}", exc_info=True)
         return jsonify({'success': False, 'message': str(e)}), 500
 
-@app.route("/linebot/admin/delete_notice", methods=["POST"])
+@app.route("/admin/delete_notice", methods=["POST"])
 @csrf.exempt
 def admin_delete_notice():
     """删除公告"""
@@ -3531,7 +3529,7 @@ def admin_delete_notice():
         logger.error(f"[Admin] ✗ Delete notice error: error={e}", exc_info=True)
         return jsonify({'success': False, 'message': str(e)}), 500
 
-@app.route("/linebot/admin/publish_notice", methods=["POST"])
+@app.route("/admin/publish_notice", methods=["POST"])
 @csrf.exempt
 def admin_publish_notice():
     """发布草稿公告"""
@@ -3559,7 +3557,7 @@ def admin_publish_notice():
         logger.error(f"[Admin] ✗ Publish notice error: error={e}", exc_info=True)
         return jsonify({'success': False, 'message': str(e)}), 500
 
-@app.route("/linebot/admin/get_notice_stats", methods=["GET"])
+@app.route("/admin/get_notice_stats", methods=["GET"])
 def admin_get_notice_stats():
     """获取公告统计数据"""
     if not check_admin_auth():
@@ -3631,7 +3629,7 @@ def notice_vote():
 
 # ==================== Tip/Ad 管理 API ====================
 
-@app.route("/linebot/admin/get_tip_ads", methods=["GET"])
+@app.route("/admin/get_tip_ads", methods=["GET"])
 def admin_get_tip_ads():
     """获取所有 tip/ad"""
     if not check_admin_auth():
@@ -3644,7 +3642,7 @@ def admin_get_tip_ads():
         logger.error(f"[Admin] ✗ Get tip/ads error: error={e}", exc_info=True)
         return jsonify({'success': False, 'message': str(e)}), 500
 
-@app.route("/linebot/admin/create_tip_ad", methods=["POST"])
+@app.route("/admin/create_tip_ad", methods=["POST"])
 @csrf.exempt
 def admin_create_tip_ad():
     """创建新的 tip/ad"""
@@ -3688,7 +3686,7 @@ def admin_create_tip_ad():
         logger.error(f"[Admin] ✗ Create tip/ad error: error={e}", exc_info=True)
         return jsonify({'success': False, 'message': str(e)}), 500
 
-@app.route("/linebot/admin/update_tip_ad", methods=["POST"])
+@app.route("/admin/update_tip_ad", methods=["POST"])
 @csrf.exempt
 def admin_update_tip_ad():
     """更新 tip/ad"""
@@ -3738,7 +3736,7 @@ def admin_update_tip_ad():
         logger.error(f"[Admin] ✗ Update tip/ad error: error={e}", exc_info=True)
         return jsonify({'success': False, 'message': str(e)}), 500
 
-@app.route("/linebot/admin/delete_tip_ad", methods=["POST"])
+@app.route("/admin/delete_tip_ad", methods=["POST"])
 @csrf.exempt
 def admin_delete_tip_ad():
     """删除 tip/ad"""
@@ -3764,7 +3762,7 @@ def admin_delete_tip_ad():
 
 # ==================== 用户管理 API ====================
 
-@app.route("/linebot/admin/edit_user", methods=["POST"])
+@app.route("/admin/edit_user", methods=["POST"])
 @csrf.exempt
 def admin_edit_user():
     """编辑用户数据"""
@@ -3809,7 +3807,7 @@ def admin_edit_user():
             'message': str(e)
         }), 500
 
-@app.route("/linebot/admin/delete_user", methods=["POST"])
+@app.route("/admin/delete_user", methods=["POST"])
 @csrf.exempt
 def admin_delete_user():
     """删除用户"""
@@ -3849,7 +3847,7 @@ def admin_delete_user():
             'message': str(e)
         }), 500
 
-@app.route("/linebot/admin/clear_cache", methods=["POST"])
+@app.route("/admin/clear_cache", methods=["POST"])
 @csrf.exempt
 def admin_clear_cache():
     """清除昵称缓存"""
@@ -3875,7 +3873,7 @@ def admin_clear_cache():
             'message': str(e)
         }), 500
 
-@app.route("/linebot/admin/get_user_data", methods=["POST"])
+@app.route("/admin/get_user_data", methods=["POST"])
 @csrf.exempt
 def admin_get_user_data():
     """获取单个用户的最新数据"""
@@ -3921,7 +3919,7 @@ def admin_get_user_data():
             'message': str(e)
         }), 500
 
-@app.route("/linebot/admin/load_nicknames", methods=["POST"])
+@app.route("/admin/load_nicknames", methods=["POST"])
 @csrf.exempt
 def admin_load_nicknames():
     """批量加载用户昵称"""
@@ -3948,7 +3946,7 @@ def admin_load_nicknames():
             'message': str(e)
         }), 500
 
-@app.route("/linebot/admin/get_backups", methods=["GET"])
+@app.route("/admin/get_backups", methods=["GET"])
 def admin_get_backups():
     """获取所有备份文件列表"""
     if not check_admin_auth():
@@ -3988,7 +3986,7 @@ def admin_get_backups():
             'message': str(e)
         }), 500
 
-@app.route("/linebot/admin/download_backup", methods=["GET"])
+@app.route("/admin/download_backup", methods=["GET"])
 def admin_download_backup():
     """下载指定的备份文件"""
     if not check_admin_auth():
@@ -4040,7 +4038,7 @@ def admin_download_backup():
             'message': str(e)
         }), 500
 
-@app.route("/linebot/admin/delete_backup", methods=["POST"])
+@app.route("/admin/delete_backup", methods=["POST"])
 @csrf.exempt
 def admin_delete_backup():
     """删除指定的备份文件"""
@@ -4096,7 +4094,7 @@ def admin_delete_backup():
             'message': str(e)
         }), 500
 
-@app.route("/linebot/admin/dxdata_status", methods=["GET"])
+@app.route("/admin/dxdata_status", methods=["GET"])
 def admin_dxdata_status():
     """获取 DXData 状态（歌曲数、谱面数、版本数）"""
     if not check_admin_auth():
@@ -4953,7 +4951,6 @@ def api_search_songs():
             # 使用优化的精确匹配函数
             for rcd in song_record:
                 if is_exact_song_match(rcd['cover_name'], song['cover_name']) and rcd['type'] == song['type']:
-                    rcd['rank'] = ""
                     played_data.append(rcd)
 
             if played_data:

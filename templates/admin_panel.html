@@ -10,185 +10,101 @@
   <style>
     /* 页面特定 CSS 变量 - Page-specific CSS Variables */
     :root {
-      --text-tertiary: rgba(0, 0, 0, 0.5);
-      --glass-shadow: rgba(0, 0, 0, 0.05);
-      --bg-color: #ffffff;
-      --card-bg: rgba(255, 255, 255, 0.95);
-      --border-color: rgba(0, 0, 0, 0.1);
-      --hover-bg: rgba(0, 0, 0, 0.05);
-      --card-hover-scale: 1.02;
-      --transition-speed: 0.3s;
+      --hover-bg: rgba(0, 0, 0, 0.04);
     }
 
     @media (prefers-color-scheme: dark) {
       :root {
-        --text-tertiary: rgba(255, 255, 255, 0.6);
-        --glass-shadow: rgba(0, 0, 0, 0.1);
-        --bg-color: #1a1a1a;
-        --card-bg: rgba(26, 26, 26, 0.8);
-        --border-color: rgba(255, 255, 255, 0.1);
-        --hover-bg: rgba(255, 255, 255, 0.05);
+        --hover-bg: rgba(255, 255, 255, 0.08);
       }
     }
 
     /* 页面特定样式 - Page-specific Styles */
     body {
-      /* safe-area padding 已在 :root 上，这里只加额外的 20px */
       padding: 20px;
-      position: relative;
-      overflow-x: hidden;
-      overflow-y: auto;
+      background: var(--surface-bg);
+      min-height: 100vh;
     }
-
-    /* 背景装饰已移至 common_styles.html */
 
     .container {
       max-width: 1400px;
       margin: 0 auto;
-      position: relative;
-      z-index: 1;
     }
 
     .header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 30px;
-      padding: 30px;
-      background: var(--glass-bg);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid var(--glass-border);
-      border-radius: 20px;
-      box-shadow: 0 8px 32px var(--glass-shadow);
-      animation: fadeInDown 0.6s ease;
-    }
-
-    @keyframes fadeInDown {
-      from {
-        opacity: 0;
-        transform: translateY(-20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      margin-bottom: 24px;
+      padding: 24px 32px;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
     }
 
     .header h1 {
-      font-size: 32px;
+      font-size: 24px;
       font-weight: 700;
-      background: linear-gradient(135deg, var(--accent-color), var(--info-color));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      text-shadow: 0 0 30px var(--accent-glow);
-      animation: float 3s ease-in-out infinite;
-    }
-
-    @keyframes float {
-      0%, 100% { transform: translateY(0px); }
-      50% { transform: translateY(-5px); }
+      color: var(--text-color);
+      letter-spacing: -0.5px;
     }
 
     .logout-btn {
-      padding: 12px 28px;
-      background: linear-gradient(135deg, var(--danger-color), #dc2626);
+      padding: 10px 20px;
+      background: var(--danger-color);
       color: white;
       border: none;
-      border-radius: 12px;
+      border-radius: var(--radius-md);
       font-size: 14px;
       font-weight: 600;
       cursor: pointer;
-      transition: all var(--transition-speed);
+      transition: all var(--transition-base);
       text-decoration: none;
       display: inline-block;
-      box-shadow: 0 4px 15px var(--danger-glow);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .logout-btn::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-      transition: left 0.5s;
-    }
-
-    .logout-btn:hover::before {
-      left: 100%;
     }
 
     .logout-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px var(--danger-glow);
+      opacity: 0.9;
+      box-shadow: var(--shadow-md);
     }
 
     .logout-btn:active {
-      transform: translateY(0);
+      transform: scale(0.98);
     }
 
     .tabs {
       display: flex;
-      gap: 8px;
+      gap: 4px;
       margin-bottom: 20px;
-      padding: 8px;
-      background: var(--glass-bg);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid var(--glass-border);
-      border-radius: 16px;
-      animation: fadeIn 0.8s ease;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
+      padding: 4px;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      overflow-x: auto;
     }
 
     .tab {
-      padding: 12px 24px;
+      padding: 10px 20px;
       background: transparent;
       border: none;
-      border-radius: 10px;
+      border-radius: var(--radius-sm);
       color: var(--text-secondary);
       font-size: 14px;
       font-weight: 600;
       cursor: pointer;
-      transition: all var(--transition-speed);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .tab::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(135deg, var(--accent-color), var(--info-color));
-      opacity: 0;
-      transition: opacity var(--transition-speed);
-      z-index: -1;
+      transition: all var(--transition-base);
+      white-space: nowrap;
     }
 
     .tab:hover {
       color: var(--text-color);
-      transform: translateY(-2px);
+      background: var(--hover-bg);
     }
 
     .tab.active {
       color: white;
-      text-shadow: 0 0 10px var(--accent-glow);
-    }
-
-    .tab.active::before {
-      opacity: 1;
+      background: var(--accent-color);
     }
 
     .tab-content {
@@ -200,38 +116,18 @@
     }
 
     .section {
-      background: var(--glass-bg);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid var(--glass-border);
-      border-radius: 20px;
-      padding: 30px;
-      margin-bottom: 20px;
-      box-shadow: 0 8px 32px var(--glass-shadow);
-      transition: all var(--transition-speed);
-      animation: fadeInUp 0.6s ease;
-    }
-
-    @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .section:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 12px 40px var(--glass-shadow);
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow-sm);
     }
 
     .section-title {
-      font-size: 18px;
-      font-weight: 600;
-      color: var(--accent-color);
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-color);
       margin-bottom: 16px;
       padding-bottom: 12px;
       border-bottom: 1px solid var(--border-color);
@@ -243,15 +139,16 @@
     }
 
     .user-item {
-      background-color: var(--bg-color);
+      background-color: var(--surface-bg);
       border: 1px solid var(--border-color);
-      border-radius: 8px;
+      border-radius: var(--radius-md);
       padding: 16px;
-      transition: all 0.3s;
+      transition: all var(--transition-base);
     }
 
     .user-item:hover {
-      border-color: var(--accent-color);
+      border-color: var(--border-hover);
+      box-shadow: var(--shadow-sm);
     }
 
     .user-header {
@@ -322,12 +219,13 @@
     .modal-content {
       background-color: var(--card-bg);
       border: 1px solid var(--border-color);
-      border-radius: 16px;
-      padding: 32px;
+      border-radius: var(--radius-lg);
+      padding: 28px;
       max-width: 600px;
       width: 90%;
       max-height: 80vh;
       overflow-y: auto;
+      box-shadow: var(--shadow-xl);
     }
 
     .modal-header {
@@ -382,14 +280,14 @@
 
     .form-input, .form-textarea {
       width: 100%;
-      padding: 12px 16px;
-      background-color: var(--bg-color);
+      padding: 10px 14px;
+      background-color: var(--surface-bg);
       border: 1px solid var(--border-color);
-      border-radius: 8px;
+      border-radius: var(--radius-md);
       font-size: 14px;
       color: var(--text-color);
       font-family: 'Courier New', monospace;
-      transition: all 0.3s;
+      transition: all var(--transition-base);
     }
 
     .form-textarea {
@@ -397,10 +295,15 @@
       resize: vertical;
     }
 
+    .form-input:hover, .form-textarea:hover {
+      border-color: var(--border-hover);
+    }
+
     .form-input:focus, .form-textarea:focus {
       outline: none;
       border-color: var(--accent-color);
-      box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+      background-color: var(--card-bg);
+      box-shadow: 0 0 0 3px var(--accent-light);
     }
 
     .form-actions {
@@ -437,64 +340,40 @@
     .btn {
       padding: 8px 16px;
       border: none;
-      border-radius: 10px;
-      font-size: 12px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
       font-weight: 600;
       cursor: pointer;
-      transition: all var(--transition-speed);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .btn::after {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 0;
-      height: 0;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.5);
-      transform: translate(-50%, -50%);
-      transition: width 0.6s, height 0.6s;
-    }
-
-    .btn:active::after {
-      width: 300px;
-      height: 300px;
+      transition: all var(--transition-base);
     }
 
     .btn-primary {
-      background: linear-gradient(135deg, var(--info-color), #2563eb);
+      background: var(--info-color);
       color: white;
-      box-shadow: 0 4px 15px var(--info-glow);
     }
 
     .btn-success {
-      background: linear-gradient(135deg, var(--success-color), #059669);
+      background: var(--success-color);
       color: white;
-      box-shadow: 0 4px 15px var(--success-glow);
     }
 
     .btn-danger {
-      background: linear-gradient(135deg, var(--danger-color), #dc2626);
+      background: var(--danger-color);
       color: white;
-      box-shadow: 0 4px 15px var(--danger-glow);
     }
 
     .btn-warning {
-      background: linear-gradient(135deg, var(--warning-color), #d97706);
+      background: var(--warning-color);
       color: white;
-      box-shadow: 0 4px 15px var(--warning-glow);
     }
 
     .btn:hover {
-      transform: translateY(-2px) scale(1.05);
-      filter: brightness(1.1);
+      opacity: 0.9;
+      box-shadow: var(--shadow-sm);
     }
 
     .btn:active {
-      transform: translateY(0) scale(0.98);
+      transform: scale(0.97);
     }
 
     .user-data {
@@ -596,97 +475,70 @@
     }
 
     .stat-card {
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
-      border: 1px solid var(--glass-border);
-      border-radius: 16px;
-      padding: 24px;
+      background: var(--surface-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 20px;
       text-align: center;
-      transition: all var(--transition-speed);
-      cursor: pointer;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .stat-card::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
-      opacity: 0;
-      transition: opacity var(--transition-speed);
-    }
-
-    .stat-card:hover::before {
-      opacity: 1;
-      animation: shimmer 2s ease infinite;
-    }
-
-    @keyframes shimmer {
-      0% { transform: translate(-50%, -50%) rotate(0deg); }
-      100% { transform: translate(-50%, -50%) rotate(360deg); }
+      transition: all var(--transition-base);
     }
 
     .stat-card:hover {
-      transform: translateY(-8px) scale(1.03);
-      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2);
-      border-color: var(--accent-color);
+      box-shadow: var(--shadow-md);
+      border-color: var(--border-hover);
     }
 
     .stat-value {
-      font-size: 36px;
+      font-size: 32px;
       font-weight: 700;
-      background: linear-gradient(135deg, var(--accent-color), var(--info-color));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      color: var(--accent-color);
       margin-bottom: 8px;
-      animation: pulse 2s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.8; }
     }
 
     .stat-label {
-      font-size: 11px;
+      font-size: 12px;
       color: var(--text-secondary);
       text-transform: uppercase;
-      letter-spacing: 1.5px;
+      letter-spacing: 0.5px;
       font-weight: 600;
     }
 
     .search-box {
       width: 100%;
-      padding: 12px 16px;
-      background-color: var(--bg-color);
+      padding: 10px 14px;
+      background-color: var(--surface-bg);
       border: 1px solid var(--border-color);
-      border-radius: 8px;
+      border-radius: var(--radius-md);
       font-size: 14px;
       color: var(--text-color);
       margin-bottom: 16px;
       font-family: inherit;
+      transition: all var(--transition-base);
+    }
+
+    .search-box:hover {
+      border-color: var(--border-hover);
     }
 
     .search-box:focus {
       outline: none;
       border-color: var(--accent-color);
+      background-color: var(--card-bg);
+      box-shadow: 0 0 0 3px var(--accent-light);
     }
 
     .log-viewer {
-      background-color: var(--bg-color);
+      background-color: var(--surface-bg);
       border: 1px solid var(--border-color);
-      border-radius: 6px;
-      padding: 12px;
-      font-family: 'Courier New', monospace;
-      font-size: 11px;
+      border-radius: var(--radius-md);
+      padding: 16px;
+      font-family: 'Courier New', Monaco, monospace;
+      font-size: 12px;
+      line-height: 1.5;
       height: 400px;
       overflow-y: auto;
       white-space: pre-wrap;
-      word-break: break-all;
+      word-break: break-word;
     }
 
     .empty-state {
@@ -935,7 +787,7 @@
   <div class="container">
     <div class="header">
       <h1>Admin Control Panel</h1>
-      <a href="/linebot/admin/logout" class="logout-btn">Logout</a>
+      <a href="/admin/logout" class="logout-btn">Logout</a>
     </div>
 
     <div class="tabs">
@@ -1677,7 +1529,7 @@
         btn.disabled = true;
         btn.textContent = 'Queuing...';
 
-        fetch('/linebot/admin/trigger_update', {
+        fetch('/admin/trigger_update', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({user_id: userId})
@@ -1705,7 +1557,7 @@
       btn.disabled = true;
       btn.textContent = 'Loading...';
 
-      fetch('/linebot/admin/get_user_data', {
+      fetch('/admin/get_user_data', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({user_id: userId})
@@ -1804,7 +1656,7 @@
           return;
         }
 
-        fetch('/linebot/admin/edit_user', {
+        fetch('/admin/edit_user', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({
@@ -1844,7 +1696,7 @@
         button.disabled = true;
         button.textContent = 'Deleting...';
 
-        fetch('/linebot/admin/delete_user', {
+        fetch('/admin/delete_user', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({user_id: userId})
@@ -1880,7 +1732,7 @@
         button.disabled = true;
         button.textContent = 'Cancelling...';
 
-        fetch('/linebot/admin/cancel_task', {
+        fetch('/admin/cancel_task', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({task_id: taskId})
@@ -1993,7 +1845,7 @@
     }
 
     function refreshLogs() {
-      fetch('/linebot/admin/get_logs')
+      fetch('/admin/get_logs')
         .then(res => res.json())
         .then(data => {
           const logViewer = document.getElementById('log-viewer');
@@ -2012,7 +1864,7 @@
 
     function clearNicknameCache() {
       if (confirm('Clear nickname cache? This will force a refresh from LINE API on next load.')) {
-        fetch('/linebot/admin/clear_cache', {
+        fetch('/admin/clear_cache', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'}
         })
@@ -2054,7 +1906,7 @@
     }
 
     function loadAllNicknames() {
-      fetch('/linebot/admin/load_nicknames', {
+      fetch('/admin/load_nicknames', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'}
       })
@@ -2107,7 +1959,7 @@
     // ==================== Notice Management Functions ====================
 
     function loadNotices() {
-      fetch('/linebot/admin/get_notices')
+      fetch('/admin/get_notices')
         .then(res => res.json())
         .then(data => {
           if (data.success) {
@@ -2250,7 +2102,7 @@
     }
 
     function editNotice(noticeId) {
-      fetch('/linebot/admin/get_notices')
+      fetch('/admin/get_notices')
         .then(res => res.json())
         .then(data => {
           if (data.success) {
@@ -2313,7 +2165,7 @@
       }
 
       const isUpdate = !!noticeId;
-      const url = isUpdate ? '/linebot/admin/update_notice' : '/linebot/admin/create_notice';
+      const url = isUpdate ? '/admin/update_notice' : '/admin/create_notice';
       const payload = {
         content_ja: contentJa,
         content_en: contentEn,
@@ -2371,7 +2223,7 @@
         return;
       }
 
-      fetch('/linebot/admin/delete_notice', {
+      fetch('/admin/delete_notice', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({notice_id: noticeId})
@@ -2396,7 +2248,7 @@
     }
 
     function showNoticeStats(noticeId) {
-      fetch(`/linebot/admin/get_notice_stats?notice_id=${noticeId}`)
+      fetch(`/admin/get_notice_stats?notice_id=${noticeId}`)
         .then(res => res.json())
         .then(data => {
           if (data.success) {
@@ -2484,7 +2336,7 @@
         return;
       }
 
-      fetch('/linebot/admin/publish_notice', {
+      fetch('/admin/publish_notice', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({notice_id: noticeId})
@@ -2529,7 +2381,7 @@
       const container = document.getElementById('memory-stats-container');
       container.innerHTML = '<div style="text-align: center; padding: 40px; opacity: 0.5;">Loading...</div>';
 
-      fetch('/linebot/admin/memory_stats')
+      fetch('/admin/memory_stats')
         .then(res => res.json())
         .then(data => {
           if (data.success) {
@@ -2613,7 +2465,7 @@
       btn.disabled = true;
       btn.textContent = 'Cleaning...';
 
-      fetch('/linebot/admin/trigger_cleanup', {
+      fetch('/admin/trigger_cleanup', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'}
       })
@@ -2642,7 +2494,7 @@
       const container = document.getElementById('dxdata-status-container');
       container.innerHTML = '<div style="text-align: center; padding: 40px; opacity: 0.5;">Loading...</div>';
 
-      fetch('/linebot/admin/dxdata_status')
+      fetch('/admin/dxdata_status')
         .then(res => res.json())
         .then(data => {
           displayDXDataStatus(data);
@@ -2733,7 +2585,7 @@
       const listEl = document.getElementById('backups-list');
       listEl.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-tertiary);">Loading backups...</div>';
 
-      fetch('/linebot/admin/get_backups')
+      fetch('/admin/get_backups')
         .then(res => res.json())
         .then(data => {
           if (!data.success) {
@@ -2803,7 +2655,7 @@
     }
 
     function downloadBackup(filename) {
-      window.location.href = `/linebot/admin/download_backup?file=${encodeURIComponent(filename)}`;
+      window.location.href = `/admin/download_backup?file=${encodeURIComponent(filename)}`;
       showToast('Downloading ' + filename);
     }
 
@@ -2812,7 +2664,7 @@
         return;
       }
 
-      fetch('/linebot/admin/delete_backup', {
+      fetch('/admin/delete_backup', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({filename: filename})
@@ -2834,7 +2686,7 @@
     // ==================== Tip/Ad Management Functions ====================
 
     function loadTipAds() {
-      fetch('/linebot/admin/get_tip_ads')
+      fetch('/admin/get_tip_ads')
         .then(response => response.json())
         .then(data => {
           if (data.success) {
@@ -2923,7 +2775,7 @@
     }
 
     function editTipAd(tipId) {
-      fetch('/linebot/admin/get_tip_ads')
+      fetch('/admin/get_tip_ads')
         .then(response => response.json())
         .then(data => {
           if (data.success) {
@@ -2996,7 +2848,7 @@
         data.remove_button = true;
       }
 
-      const url = tipId ? '/linebot/admin/update_tip_ad' : '/linebot/admin/create_tip_ad';
+      const url = tipId ? '/admin/update_tip_ad' : '/admin/create_tip_ad';
 
       fetch(url, {
         method: 'POST',
@@ -3023,7 +2875,7 @@
         return;
       }
 
-      fetch('/linebot/admin/delete_tip_ad', {
+      fetch('/admin/delete_tip_ad', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({id: tipId})

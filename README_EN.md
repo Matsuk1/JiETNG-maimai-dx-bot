@@ -126,7 +126,7 @@ Web-based administration interface providing comprehensive user and system manag
 ### Access
 
 ```
-https://your-domain.com/linebot/admin
+https://your-domain.com/admin/panel
 ```
 
 ### Features
@@ -165,7 +165,7 @@ Add admin password in `config.json`:
 
 ### Usage
 
-1. Access `https://your-domain.com/linebot/admin`
+1. Access `https://your-domain.com/admin/panel`
 2. Login with admin password
 3. Navigate through five main tabs:
    - **Users**: User list and data management
@@ -535,19 +535,19 @@ GET /linebot/add_friend?id=<friend_id>
 #### Admin Dashboard API
 
 ```
-GET/POST /linebot/admin                    # Admin login/dashboard
-GET      /linebot/admin/logout             # Logout
-POST     /linebot/admin/trigger_update     # Trigger user update
-POST     /linebot/admin/edit_user          # Edit user data
-POST     /linebot/admin/delete_user        # Delete user
-POST     /linebot/admin/get_user_data      # Get user data
-POST     /linebot/admin/load_nicknames     # Batch load nicknames
-POST     /linebot/admin/clear_cache        # Clear nickname cache
-POST     /linebot/admin/cancel_task        # Cancel task
-GET      /linebot/admin/task_status        # Get task status
-GET      /linebot/admin/get_logs           # Get logs
-GET      /linebot/admin/memory_stats       # Get memory stats
-POST     /linebot/admin/trigger_cleanup    # Manual memory cleanup
+GET/POST /admin/panel              # Admin login/dashboard
+GET      /admin/logout             # Logout
+POST     /admin/trigger_update     # Trigger user update
+POST     /admin/edit_user          # Edit user data
+POST     /admin/delete_user        # Delete user
+POST     /admin/get_user_data      # Get user data
+POST     /admin/load_nicknames     # Batch load nicknames
+POST     /admin/clear_cache        # Clear nickname cache
+POST     /admin/cancel_task        # Cancel task
+GET      /admin/task_status        # Get task status
+GET      /admin/get_logs           # Get logs
+GET      /admin/memory_stats       # Get memory stats
+POST     /admin/trigger_cleanup    # Manual memory cleanup
 ```
 
 ### Configuration Reference
