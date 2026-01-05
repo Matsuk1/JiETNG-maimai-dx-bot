@@ -227,4 +227,4 @@ def cleanup_rate_limiter_tracking(rate_limiter_module=None):
 
 
 # 全局内存管理器实例
-memory_manager = MemoryManager(interval_seconds=300)  # 5分钟清理一次
+memory_manager = MemoryManager(interval_seconds=120)  # 2分钟清理一次（优化后）

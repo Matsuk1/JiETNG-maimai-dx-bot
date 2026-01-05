@@ -23,6 +23,7 @@ import aiohttp
 import urllib3
 import time
 import subprocess
+import gc
 
 from functools import wraps
 from datetime import datetime
@@ -198,7 +199,7 @@ csrf = CSRFProtect(app)
 # 配置安全响应头
 @app.after_request
 def set_security_headers(response):
-    """设置安全响应头"""
+    """设置安全响应头 + 内存清理"""
     # 防止 XSS 攻击
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['X-Frame-Options'] = 'DENY'
@@ -215,6 +216,9 @@ def set_security_headers(response):
 
     # Strict Transport Security (如果使用 HTTPS)
     # response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+
+    # 每次请求后执行快速垃圾回收（generation 0）
+    gc.collect(0)
 
     return response
 
@@ -1577,14 +1581,23 @@ def generate_plate_rcd(user_id, id_use, title, ver="jp"):
                     "level": sheet['level']
                 })
 
-    img = generate_plate_image(target_data, title, headers = target_num)
+    plate_img = generate_plate_image(target_data, title, headers = target_num)
 
     # 获取用户信息并创建用户信息图片
     user_info = USERS[id_use]['personal_info']
-    img = compose_images([generate_profile(user_info), img])
+    profile_img = generate_profile(user_info)
+    img = compose_images([profile_img, plate_img])
+
+    # 清理中间图片对象
+    del profile_img, plate_img
+    gc.collect(0)
 
     original_url, preview_url = smart_upload(img)
     message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
+
+    # 清理最终图片对象
+    del img
+    gc.collect(0)
 
     return message
 
@@ -1659,8 +1672,16 @@ def generate_internallevel_songs(user_id, level, ver="jp"):
         # 用compose函数包装
         final_img = compose_images([level_img])
 
+        # 清理中间图片对象
+        del level_img
+        gc.collect(0)
+
         # 上传图片
         original_url, preview_url = smart_upload(final_img)
+
+        # 清理最终图片对象
+        del final_img
+        gc.collect(0)
 
         return ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
 
@@ -1892,14 +1913,24 @@ def generate_records(user_id, id_use, type="best50", command="", ver="jp"):
     if not up_songs and not down_songs:
         return picture_error(user_id)
 
-    img = generate_records_picture(up_songs, down_songs, type.upper())
+    record_img = generate_records_picture(up_songs, down_songs, type.upper())
 
     # 获取用户信息并创建用户信息图片
     user_info = USERS[id_use]['personal_info']
-    img = compose_images([generate_profile(user_info), img])
+    profile_img = generate_profile(user_info)
+    img = compose_images([profile_img, record_img])
+
+    # 清理中间图片对象
+    del profile_img, record_img
+    gc.collect(0)
 
     original_url, preview_url = smart_upload(img)
     message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
+
+    # 清理最终图片对象
+    del img
+    gc.collect(0)
+
     return message
 
 def generate_friend_b50(user_id, friend_code, ver="jp"):
@@ -1949,9 +1980,19 @@ def generate_friend_b50(user_id, friend_code, ver="jp"):
     user_info_img = generate_profile(friend_info)
     rcd_img = generate_records_picture(up_songs, down_songs, "BEST50")
     img = compose_images([user_info_img, rcd_img])
+
+    # 清理中间图片对象
+    del user_info_img, rcd_img
+    gc.collect(0)
+
     original_url, preview_url = smart_upload(img)
 
     message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
+
+    # 清理最终图片对象
+    del img
+    gc.collect(0)
+
     return message
 
 def generate_level_records(user_id, id_use, level, ver="jp", page=1):
@@ -1996,13 +2037,23 @@ def generate_level_records(user_id, id_use, level, ver="jp", page=1):
 
     title = f"Lv{level} #{page}"
 
-    img = generate_records_picture(up_level_list, down_level_list, title)
+    record_img = generate_records_picture(up_level_list, down_level_list, title)
 
     # 获取用户信息并创建用户信息图片
     user_info = USERS[id_use]['personal_info']
-    img = compose_images([generate_profile(user_info), img])
+    profile_img = generate_profile(user_info)
+    img = compose_images([profile_img, record_img])
+
+    # 清理中间图片对象
+    del profile_img, record_img
+    gc.collect(0)
 
     original_url, preview_url = smart_upload(img)
+
+    # 清理最终图片对象
+    del img
+    gc.collect(0)
+
     message = [
         ImageMessage(original_content_url=original_url, preview_image_url=preview_url),
         level_record_page_hint(page, user_id) if page == 1 else None
@@ -2042,8 +2093,19 @@ def generate_version_songs(user_id, version_title, ver="jp"):
     else:
         img = compose_images([version_img, version_list_img], border_width=0)
 
+    # 清理中间图片对象
+    if version_img is not None:
+        del version_img
+    del version_list_img
+    gc.collect(0)
+
     original_url, preview_url = smart_upload(img)
     message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
+
+    # 清理最终图片对象
+    del img
+    gc.collect(0)
+
     return message
 
 # ==================== 消息处理 ====================
