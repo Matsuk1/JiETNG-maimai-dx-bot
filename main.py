@@ -130,9 +130,9 @@ from modules.storelist_generator import generate_store_buttons
 DIVIDER = "-" * 33
 
 # 队列配置
-MAX_QUEUE_SIZE = 15
-MAX_CONCURRENT_IMAGE_TASKS = 8  # 图片生成并发数
-WEB_MAX_CONCURRENT_TASKS = 5    # 网络任务并发数
+MAX_QUEUE_SIZE = 10
+MAX_CONCURRENT_IMAGE_TASKS = 5  # 图片生成并发数
+WEB_MAX_CONCURRENT_TASKS = 2    # 网络任务并发数
 TASK_TIMEOUT_SECONDS = 120
 
 # 搜索结果限制
