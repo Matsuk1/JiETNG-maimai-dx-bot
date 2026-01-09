@@ -17,7 +17,7 @@ from modules.dbpool_manager import get_connection
 # 获取logger
 logger = logging.getLogger(__name__)
 
-def get_single_ra(level: float, score: float, ap_clear: bool = False) -> int:
+def get_single_ra(level: float, score: float, ap_clear: bool = False, recent_type: bool = False) -> int:
     """
     计算单曲Rating值
 
@@ -26,11 +26,15 @@ def get_single_ra(level: float, score: float, ap_clear: bool = False) -> int:
     Args:
         level: 谱面定数 (如 14.5)
         score: 达成率 (如 100.5000)
-        ap_clear: 是否为AP/APP (仅日服有加成)
+        ap_clear: 是否为 AP/APP
+        recent_type: 是否为 b40 计算方案
 
     Returns:
         计算得到的Rating整数值
     """
+    if recent_type:
+        return get_single_ra_recent(level, score)
+
     # Rating系数映射表
     if score >= 100.5000:
         ra_kake = 0.224
@@ -85,9 +89,68 @@ def get_single_ra(level: float, score: float, ap_clear: bool = False) -> int:
     else:
         ra = int(level * 100.5 * ra_kake)
 
-    # AP加成 (仅日服)
+    # AP加成
     if ap_clear:
         ra += 1
+
+    return ra
+
+def get_single_ra_recent(level: float, score: float) -> int:
+    """
+    计算旧版本单曲Rating值
+
+    根据谱面定数和达成率计算Rating值
+
+    Args:
+        level: 谱面定数 (如 14.5)
+        score: 达成率 (如 100.5000)
+
+    Returns:
+        计算得到的Rating整数值
+    """
+    # Rating系数映射表
+    if score >= 100.5000:
+        ra_kake = 0.14
+    elif score >= 100.0000:
+        ra_kake = 0.135
+    elif score >= 99.5000:
+        ra_kake = 0.132
+    elif score >= 99.0000:
+        ra_kake = 0.13
+    elif score >= 98.0000:
+        ra_kake = 0.127
+    elif score >= 97.0000:
+        ra_kake = 0.125
+    elif score >= 94.0000:
+        ra_kake = 0.105
+    elif score >= 90.0000:
+        ra_kake = 0.095
+    elif score >= 80.0000:
+        ra_kake = 0.085
+    elif score >= 75.0000:
+        ra_kake = 0.075
+    elif score >= 70.0000:
+        ra_kake = 0.07
+    elif score >= 60.0000:
+        ra_kake = 0.06
+    elif score >= 50.0000:
+        ra_kake = 0.05
+    elif score >= 40.0000:
+        ra_kake = 0.04
+    elif score >= 30.0000:
+        ra_kake = 0.03
+    elif score >= 20.0000:
+        ra_kake = 0.02
+    elif score >= 10.0000:
+        ra_kake = 0.01
+    else:
+        ra_kake = 0
+
+    # 计算基础Rating
+    if score <= 100.5:
+        ra = int(level * score * ra_kake)
+    else:
+        ra = int(level * 100.5 * ra_kake)
 
     return ra
 
@@ -103,7 +166,7 @@ def get_ideal_score(score: float) -> float:
     else:
         return score, None
 
-def read_record(user_id: str, recent: bool = False) -> List[Dict[str, Any]]:
+def read_record(user_id: str, recent: bool = False, recent_type: bool = False) -> List[Dict[str, Any]]:
     """
     从数据库读取用户成绩记录
 
@@ -133,7 +196,7 @@ def read_record(user_id: str, recent: bool = False) -> List[Dict[str, Any]]:
             item.pop("user_id", None)
             records.append(item)
 
-        return get_detailed_info(records, USERS[user_id].get('version', "jp"))
+        return get_detailed_info(records, USERS[user_id].get('version', "jp"), recent_type)
 
     finally:
         conn.close()
@@ -199,7 +262,7 @@ def filter_highest_achievement(data: list) -> list:
             result[key] = entry
     return list(result.values())
 
-def get_detailed_info(song_record, ver="jp"):
+def get_detailed_info(song_record, ver="jp", recent_type=False):
     read_dxdata(ver)
 
     # 构建哈希表加速查找 O(1) 而不是 O(n)
@@ -222,7 +285,7 @@ def get_detailed_info(song_record, ver="jp"):
                     record['new_song'] = True if song['version'] in MAIMAI_VERSION[ver] else False
                     record['version'] = song['version']
                     ap_clear = "ap" in record['combo_icon']
-                    record['ra'] = get_single_ra(float(record['internalLevelValue']), float(record['score'][:-1]), (ap_clear and ver == "jp"))
+                    record['ra'] = get_single_ra(float(record['internalLevelValue']), float(record['score'][:-1]), (ap_clear and ver == "jp"), recent_type)
                     record['cover_url'] = song['cover_url']
                     record['cover_name'] = song['cover_name']
                     break

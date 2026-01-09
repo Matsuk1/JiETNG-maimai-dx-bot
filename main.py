@@ -1831,6 +1831,10 @@ def select_records(song_record, type="best50", command="", ver="jp"):
         up_songs = sorted(up_songs_data, key=lambda x: -x["ra"])[:35]
         down_songs = sorted(down_songs_data, key=lambda x: -x["ra"])[:15]
 
+    elif type == "best40":
+        up_songs = sorted(up_songs_data, key=lambda x: -x["ra"])[:25]
+        down_songs = sorted(down_songs_data, key=lambda x: -x["ra"])[:15]
+
     elif type == "best100":
         up_songs = sorted(up_songs_data, key=lambda x: -x["ra"])[:70]
         down_songs = sorted(down_songs_data, key=lambda x: -x["ra"])[:30]
@@ -1905,7 +1909,8 @@ def generate_records(user_id, id_use, type="best50", command="", ver="jp"):
         return mention_error(user_id) if id_use != user_id else info_error(user_id)
 
     recent = (type == "rct50")
-    song_record = read_record(id_use, recent=recent)
+    recent_type = (type == "best40")
+    song_record = read_record(id_use, recent, recent_type)
     if not len(song_record):
         return record_error(user_id)
 
@@ -2225,6 +2230,7 @@ IMAGE_TASK_ROUTES = {
     # B系列命令 (生成图片)
     'b_commands': {
         "b50", "best50", "best 50", "ベスト50",
+        "b40", "best40", "best 40", "ベスト40",
         "b100", "best100", "best 100", "ベスト100",
         "b35", "best35", "best 35", "ベスト35",
         "b15", "best15", "best 15", "ベスト15",
@@ -2660,6 +2666,7 @@ def handle_sync_text_command(event):
     RANK_COMMANDS = {
         # Best 系列
         ("b50", "best50", "best 50", "ベスト50"): "best50",
+        ("b40", "best40", "best 40", "ベスト40"): "best40",
         ("b100", "best100", "best 100", "ベスト100"): "best100",
         ("b35", "best35", "best 35", "ベスト35"): "best35",
         ("b15", "best15", "best 15", "ベスト15"): "best15",
@@ -4864,7 +4871,7 @@ def api_get_records(user_id):
         logger.info(f"[API] Get records: user_id={user_id}, type={record_type}, token_id={token_info['token_id']}, note={token_info['note']}")
 
         # 验证 record_type
-        valid_types = ["best50", "best100", "best35", "best15", "allb50", "allb100", "allb200", "allb35", "apb50", "rct50", "idealb50", "UNKNOWN"]
+        valid_types = ["best50", "best40", "best100", "best35", "best15", "allb50", "allb100", "allb200", "allb35", "apb50", "rct50", "idealb50", "UNKNOWN"]
         if record_type not in valid_types:
             return jsonify({
                 "error": "Invalid type",
@@ -4883,7 +4890,8 @@ def api_get_records(user_id):
 
         # 读取用户记录
         recent = (record_type == "rct50")
-        song_record = read_record(user_id, recent=recent)
+        recent_type = (record_type == "best40")
+        song_record = read_record(user_id, recent, recent_type)
         if not len(song_record):
             return jsonify({
                 "error": "No records found",
@@ -5001,7 +5009,6 @@ def api_search_songs():
                 "ver": ver,
                 "songs": matching_songs
             })
-
 
         song_record = read_record(user_id)
         result = []

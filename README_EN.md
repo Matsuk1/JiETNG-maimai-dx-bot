@@ -57,6 +57,7 @@ Supports Japanese and International servers
 | Command | Description |
 |---------|-------------|
 | `b50` / `best 50` | Standard B50 (35 old charts + 15 new charts) |
+| `b40` / `best 40` | Legacy B40 (25 old charts + 15 new charts) |
 | `b100` / `best 100` | B100 (70 old charts + 30 new charts) |
 | `b35` / `b15` | View old/new charts separately |
 | `ab50` / `all best 50` | Combined B50 without chart type separation |

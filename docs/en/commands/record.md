@@ -19,8 +19,10 @@ Your **DX Rating** is the sum of these 50 scores.
 
 ```
 b50          # Generate Best 50 chart
+b40          # Generate Best 40 chart (Legacy Rating calculation)
 b100         # Generate Best 100 chart
 best50       # Alternative command for b50
+best40       # Alternative command for b40
 best100      # Alternative command for b100
 ```
 

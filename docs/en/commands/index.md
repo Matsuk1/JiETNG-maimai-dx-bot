@@ -57,6 +57,7 @@ This document lists all available commands for the JiETNG LINE Bot.
 | Command | Aliases | Description |
 |---------|---------|-------------|
 | `b50` | `best50`, `best 50`, `ベスト50` | Best 35 (old ver.) + Best 15 (new ver.) |
+| `b40` | `best40`, `best 40`, `ベスト40` | Best 25 (old ver.) + Best 15 (new ver.) - Legacy Rating calculation |
 | `b100` | `best100`, `best 100`, `ベスト100` | Best 70 (old ver.) + Best 30 (new ver.) |
 | `b35` | `best35`, `best 35`, `ベスト35` | Old version Best 35 only |
 | `b15` | `best15`, `best 15`, `ベスト15` | New version Best 15 only |
