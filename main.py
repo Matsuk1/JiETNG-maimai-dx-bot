@@ -1030,6 +1030,9 @@ def maimai_update(user_id, ver="jp"):
             success=False
         ))
 
+    if func_status["Best Records"]:
+        messages.append(generate_records(user_id, user_id))
+
     return messages
 
 def handle_rc_command(msg: str, user_id: str):
