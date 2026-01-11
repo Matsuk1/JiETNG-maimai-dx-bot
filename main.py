@@ -77,7 +77,14 @@ from modules.user_manager import *
 from modules.bindtoken_manager import generate_bind_token, get_user_id_from_token
 from modules.notice_manager import *
 from modules.notice_stats import *
-from modules.tip_ad_manager import load_tip_ad_data, get_all_tip_ads, create_tip_ad, update_tip_ad, delete_tip_ad, get_tip_ad_by_id
+from modules.tip_ad_manager import (
+    load_tip_ad_data,
+    get_all_tip_ads,
+    create_tip_ad,
+    update_tip_ad,
+    delete_tip_ad,
+    get_tip_ad_by_id
+)
 from modules.maimai_manager import *
 from modules.dxdata_manager import update_dxdata_with_comparison
 from modules.record_manager import *
