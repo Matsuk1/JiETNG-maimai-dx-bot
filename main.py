@@ -60,6 +60,7 @@ from linebot.v3.messaging import (
     FlexMessage,
     FlexContainer
 )
+from linebot.v3.messaging.models import MarkMessagesAsReadByTokenRequest
 from linebot.v3.webhooks import (
     MessageEvent,
     PostbackEvent,
@@ -2466,6 +2467,30 @@ def handle_reject_perm_request(user_id: str, request_id: str) -> TextMessage:
     return TextMessage(text=text)
 
 
+def mark_message_as_read(mark_as_read_token: str, user_id: str = None):
+    """
+    标记用户消息为已读
+
+    Args:
+        mark_as_read_token: 消息的已读标记 token
+        user_id: LINE用户ID (仅用于日志)
+    """
+    if not mark_as_read_token:
+        logger.debug(f"[MarkAsRead] ⊘ No token provided: user_id={user_id}")
+        return
+
+    try:
+        with ApiClient(configuration) as api_client:
+            line_bot_api = MessagingApi(api_client)
+            mark_request = MarkMessagesAsReadByTokenRequest(
+                mark_as_read_token=mark_as_read_token
+            )
+            line_bot_api.mark_messages_as_read_by_token(mark_request)
+            logger.info(f"[MarkAsRead] ✓ Marked messages as read: user_id={user_id}")
+    except Exception as e:
+        logger.error(f"[MarkAsRead] ✗ Failed to mark as read: user_id={user_id}, error={e}")
+
+
 @handler.add(MessageEvent, message=TextMessageContent)
 def handle_text_message(event):
     """
@@ -2476,6 +2501,10 @@ def handle_text_message(event):
     - 图片生成任务 → image_queue (图片生成，如 b50 等)
     - 其他任务 → 同步处理 (快速文本响应)
     """
+    # 标记消息为已读（使用 webhook 提供的 token）
+    mark_as_read_token = getattr(event.message, 'mark_as_read_token', None)
+    mark_message_as_read(mark_as_read_token, event.source.user_id)
+
     # 清理消息文本中的 mention 特殊字符（LINE 的 mention 格式是 \ufffd@显示名\ufffd）
     # 移除所有不可见的 Unicode 字符和 @ 后的用户名
     original_text = event.message.text
@@ -2989,6 +3018,9 @@ def handle_location_message(event):
     """
     位置消息处理 - 异步获取附近机厅
     """
+    # 标记消息为已读（使用 webhook 提供的 token）
+    mark_as_read_token = getattr(event.message, 'mark_as_read_token', None)
+    mark_message_as_read(mark_as_read_token, event.source.user_id)
 
     lat = event.message.latitude
     lng = event.message.longitude
