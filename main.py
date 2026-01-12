@@ -1604,6 +1604,155 @@ def generate_plate_rcd(user_id, id_use, title, ver="jp"):
 
     return message
 
+
+def generate_level_rank_progress(user_id, id_use, level, rank, ver="jp", page=1):
+    """
+    生成指定难度和评级的达成情况图片
+
+    参数:
+        user_id: 请求用户ID
+        id_use: 目标用户ID
+        level: 难度等级（如 "13", "13+", "14", "14+", "15"）
+        rank: 评级（如 "s", "s+", "ss", "ss+", "sss", "sss+", "ap", "ap+", "fdx", "fdx+"）
+        ver: 服务器版本（"jp" 或 "intl"）
+        page: 页码（默认为1）
+    """
+
+    if id_use not in USERS:
+        return mention_error(user_id) if id_use != user_id else segaid_error(user_id)
+
+    if "personal_info" not in USERS[id_use]:
+        return mention_error(user_id) if id_use != user_id else info_error(user_id)
+
+    # 检查等级是否支持
+    supported_levels = ["11", "11+", "12", "12+", "13", "13+", "14", "14+", "15"]
+    if level not in supported_levels:
+        return level_not_supported(user_id)
+
+    # 评级映射：用户输入 -> 内部标识
+    rank_mapping = {
+        "s": ("score", ["s", "sp", "ss", "ssp", "sss", "sssp"]),
+        "s+": ("score", ["sp", "ss", "ssp", "sss", "sssp"]),
+        "ss": ("score", ["ss", "ssp", "sss", "sssp"]),
+        "ss+": ("score", ["ssp", "sss", "sssp"]),
+        "sss": ("score", ["sss", "sssp"]),
+        "sss+": ("score", ["sssp"]),
+        "ap": ("combo", ["ap", "app"]),
+        "ap+": ("combo", ["app"]),
+        "fdx": ("sync", ["fdx", "fdxp"]),
+        "fdx+": ("sync", ["fdxp"])
+    }
+
+    if rank not in rank_mapping:
+        return song_error(user_id)
+
+    target_type, target_icons = rank_mapping[rank]
+    read_dxdata(ver)
+    song_record = read_record(id_use)
+
+    if not len(song_record):
+        return record_error(user_id)
+
+    region_key = ver
+
+    # 先统计该等级在 dxdata 中的总歌曲数
+    total_songs_in_dxdata = 0
+    for song in SONGS:
+        if song['type'] == 'utage':
+            continue
+
+        for sheet in song['sheets']:
+            if not sheet['regions'].get(region_key, False):
+                continue
+
+            if sheet['level'] == level:
+                total_songs_in_dxdata += 1
+
+    achieved_songs = []  # 已达成
+    unachieved_songs = []  # 未达成
+
+    for rcd in song_record:
+        # 只处理指定难度的记录
+        if rcd.get('internalLevelValue') not in parse_level_value(level):
+            continue
+
+        # 检查是否达到目标评级
+        user_icon = rcd.get(f'{target_type}_icon', "back")
+        if user_icon in target_icons:
+            # 已达成
+            achieved_songs.append(rcd)
+        else:
+            # 未达成（有记录但未达到目标）
+            unachieved_songs.append(rcd)
+
+    # 统计信息
+    achieved_count = len(achieved_songs)
+    unachieved_count = len(unachieved_songs)
+    unplayed_count = total_songs_in_dxdata - achieved_count - unachieved_count
+
+    if not achieved_songs and not unachieved_songs:
+        return record_error(user_id)
+
+    # 按达成率排序
+    achieved_songs.sort(key=lambda r: float(r['score'][:-1]), reverse=True)
+    unachieved_songs.sort(key=lambda r: float(r['score'][:-1]), reverse=True)
+
+    # 分页处理
+    page_size_up = 35
+    page_size_down = 15
+
+    start_up = (page - 1) * page_size_up
+    end_up = start_up + page_size_up
+
+    start_down = (page - 1) * page_size_down
+    end_down = start_down + page_size_down
+
+    up_songs = achieved_songs[start_up:end_up]
+    down_songs = unachieved_songs[start_down:end_down]
+
+    if not up_songs and not down_songs:
+        return level_record_not_found(f"{level} {rank.upper()}", page, user_id)
+
+    # 生成标题
+    level_display = level.replace("+", "⁺")
+    rank_display = rank.upper().replace("+", "⁺")
+    title = f"{level_display} {rank_display}"
+
+    # 生成图片
+    record_img = generate_records_picture(up_songs, down_songs, title)
+
+    # 获取用户信息并创建用户信息图片
+    user_info = USERS[id_use]['personal_info']
+    profile_img = generate_profile(user_info)
+    img = compose_images([profile_img, record_img])
+
+    del profile_img, record_img
+    gc.collect(0)
+
+    original_url, preview_url = smart_upload(img)
+
+    del img
+    gc.collect(0)
+
+    # 构建返回消息
+    message = [ImageMessage(original_content_url=original_url, preview_image_url=preview_url)]
+
+    if page == 1:
+        # 第1页显示统计信息和翻页提示
+        stats_text = {
+            "ja": f"完了: {achieved_count}譜面 | 未完了: {unachieved_count}譜面\n未プレイ: {unplayed_count}譜面 (合計: {total_songs_in_dxdata}譜面)",
+            "zh": f"已完成: {achieved_count}谱面 | 未完成: {unachieved_count}谱面\n未游玩: {unplayed_count}谱面 (总计: {total_songs_in_dxdata}谱面)",
+            "en": f"Completed: {achieved_count} charts | Incomplete: {unachieved_count} charts\nUnplayed: {unplayed_count} charts (Total: {total_songs_in_dxdata})"
+        }
+        message.append(TextMessage(text=get_multilingual_text(stats_text, user_id)))
+        message.append(level_record_page_hint(page, user_id))
+    else:
+        # 其他页显示当前页码（使用已定义的页码提示）
+        message.append(level_record_page_hint(page, user_id))
+
+    return message
+
+
 def generate_internallevel_songs(user_id, level, ver="jp"):
     """
     生成指定定数范围的歌曲列表图片（现场生成）
@@ -2045,7 +2194,7 @@ def generate_level_records(user_id, id_use, level, ver="jp", page=1):
 
     title = f"Lv{level} #{page}"
 
-    record_img = generate_records_picture(up_level_list, down_level_list, title)
+    record_img = generate_records_picture(up_level_list, down_level_list, title.replace("+", "⁺"))
 
     # 获取用户信息并创建用户信息图片
     user_info = USERS[id_use]['personal_info']
@@ -2674,6 +2823,18 @@ def handle_sync_text_command(event):
         # 定数查询
         (lambda msg: msg.endswith(("の定数リスト", "のレベルリスト", "level-list")),
          lambda msg: generate_internallevel_songs(user_id, re.sub(r"\s*(の定数リスト|のレベルリスト|level-list)$", "", msg), mai_ver)),
+
+        # 难度+评级达成情况（如 "13sss+進捗", "14ap progress"）
+        # 难度+评级达成情况（如 "13sss+進捗", "14AP progress 2", "15SSS進捗 3"）
+        # 支持大小写，长的评级放在前面避免被短的提前匹配，支持可选页码
+        (lambda msg: re.match(r"^(\d+\+?)\s*(sss\+|ss\+|s\+|ap\+|fdx\+|sss|ss|ap|fdx|s)\s*(progress|進捗)[ 　]*\d*$", msg.lower()),
+         lambda msg: generate_level_rank_progress(
+             user_id,
+             id_use,
+             re.match(r"^(\d+\+?)", msg.lower()).group(1),
+             re.search(r"(sss\+|ss\+|s\+|ap\+|fdx\+|sss|ss|ap|fdx|s)", msg.lower()).group(1),
+             mai_ver_use,
+             int(re.search(r"(\d+)$", msg).group(1)) if re.search(r"(\d+)$", msg) else 1)),
 
         # 权限请求管理
         (lambda msg: msg.startswith("accept-perm-request "),

@@ -167,12 +167,6 @@ store_error_text = {
     "zh": "🥹 附近没有找到游戏厅"
 }
 
-qrcode_error_text = {
-    "ja": "ん〜？よくわかんない写真だね",
-    "en": "Hmm? I can't recognize this image",
-    "zh": "嗯~？我看不懂这张图片"
-}
-
 rate_limit_msg_text = {
     "ja": "⏳ ちょっと待ってー！今同じリクエスト処理中だから！\n終わるまでちょっと待っててね〜",
     "en": "⏳ Wait a moment! I'm still processing the same request!\nPlease wait until it's done~",
@@ -855,10 +849,6 @@ def version_error(user_id=None):
 def store_error(user_id=None):
     """生成店铺错误消息"""
     return create_text_message(store_error_text, user_id)
-
-def qrcode_error(user_id=None):
-    """生成二维码错误消息"""
-    return create_text_message(qrcode_error_text, user_id)
 
 def rate_limit_msg(user_id=None):
     """生成频率限制消息"""
