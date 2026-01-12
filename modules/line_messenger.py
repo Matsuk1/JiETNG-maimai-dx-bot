@@ -32,7 +32,7 @@ from modules.message_manager import generate_notice_flex, generate_error_alert_f
 logger = logging.getLogger(__name__)
 
 
-def smart_reply(user_id: str, reply_token: str, messages, configuration: Configuration, divider: str = "-" * 33):
+def smart_reply(user_id: str, reply_token: str, messages, configuration: Configuration, addition: bool = True):
     """
     智能回复函数 - 自动附加好友申请、未读公告
 
@@ -44,7 +44,6 @@ def smart_reply(user_id: str, reply_token: str, messages, configuration: Configu
         reply_token: 回复令牌
         messages: 要发送的消息(单个或列表)
         configuration: LINE API配置对象
-        divider: 分隔线字符串
     """
     if not isinstance(messages, list):
         messages = [messages]
@@ -58,7 +57,7 @@ def smart_reply(user_id: str, reply_token: str, messages, configuration: Configu
             break
 
     # 只有当消息数量小于5时，才添加附加消息
-    if len(messages) < 5:
+    if len(messages) < 5 and addition:
         # 优先级1: 好友申请与权限申请消息
         if user_id in USERS:
             perm_requests = get_pending_perm_requests(user_id)
@@ -67,7 +66,7 @@ def smart_reply(user_id: str, reply_token: str, messages, configuration: Configu
                 if perm_request_msg:
                     messages.append(perm_request_msg)
 
-        # 优先级2: 公告消息（使用新的交互追踪系统）
+        # 优先级2: 公告消息
         if len(messages) < 5 and user_id:
             # 获取最新已发布的公告
             latest_notice = get_latest_published_notice()

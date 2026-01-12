@@ -134,9 +134,6 @@ from modules.storelist_generator import generate_store_buttons
 
 # ==================== 常量定义 ====================
 
-# 分隔线
-DIVIDER = "-" * 33
-
 # 队列配置
 MAX_QUEUE_SIZE = 10
 MAX_CONCURRENT_IMAGE_TASKS = 5  # 图片生成并发数
@@ -871,7 +868,7 @@ def async_maimai_update_task(event):
 
     reply_msg = maimai_update(user_id, ver)
     if reply_token:
-        smart_reply(user_id, reply_token, reply_msg, configuration, DIVIDER)
+        smart_reply(user_id, reply_token, reply_msg, configuration)
 
 def async_generate_friend_b50_task(event):
     """异步生成好友B50任务 - 在webtask_queue中执行"""
@@ -888,7 +885,7 @@ def async_generate_friend_b50_task(event):
     # 直接通过网页爬取获取好友信息
     reply_msg = generate_friend_b50(user_id, friend_code, ver)
 
-    smart_reply(user_id, reply_token, reply_msg, configuration, DIVIDER)
+    smart_reply(user_id, reply_token, reply_msg, configuration)
 
 def async_generate_image_task(event):
     """异步图片生成任务 - 在image_queue中执行"""
@@ -991,11 +988,6 @@ def maimai_update(user_id, ver="jp"):
     if friends_list:
         edit_user_value(user_id, "mai_friends", friends_list)
         func_status["Favorite Friends"] = len(friends_list)
-
-    details = DIVIDER
-    for func, status in func_status.items():
-        if not status and status != 0:
-            details += f"\n「{func}」Error"
 
     # 计算耗时
     elapsed_time = time.time() - start_time
@@ -2164,7 +2156,7 @@ def route_to_web_queue(event):
 
         # 频率限制检查
         if check_rate_limit(user_id, task_func.__name__):
-            smart_reply(user_id, event.reply_token, rate_limit_msg(user_id), configuration, DIVIDER)
+            smart_reply(user_id, event.reply_token, rate_limit_msg(user_id), configuration)
             return True
 
         try:
@@ -2187,7 +2179,7 @@ def route_to_web_queue(event):
             webtask_queue.put_nowait((task_func, (event,), task_id))
             return True
         except queue.Full:
-            smart_reply(user_id, event.reply_token, access_error(user_id), configuration, DIVIDER)
+            smart_reply(user_id, event.reply_token, access_error(user_id), configuration)
             return True
 
     # 检查前缀匹配的web任务
@@ -2195,7 +2187,7 @@ def route_to_web_queue(event):
         if user_message.startswith(prefix):
             # 频率限制检查
             if check_rate_limit(user_id, task_func.__name__):
-                smart_reply(user_id, event.reply_token, rate_limit_msg(user_id), configuration, DIVIDER)
+                smart_reply(user_id, event.reply_token, rate_limit_msg(user_id), configuration)
                 return True
 
             try:
@@ -2218,7 +2210,7 @@ def route_to_web_queue(event):
                 webtask_queue.put_nowait((task_func, (event,), task_id))
                 return True
             except queue.Full:
-                smart_reply(user_id, event.reply_token, access_error(user_id), configuration, DIVIDER)
+                smart_reply(user_id, event.reply_token, access_error(user_id), configuration)
                 return True
 
     # 不是web任务,返回False
@@ -2273,7 +2265,7 @@ def route_to_image_queue(event):
     if user_message in IMAGE_TASK_ROUTES['exact']:
         # 频率限制检查 - 使用消息类型作为任务类型
         if check_rate_limit(user_id, f"image:{user_message}"):
-            smart_reply(user_id, event.reply_token, rate_limit_msg(user_id), configuration, DIVIDER)
+            smart_reply(user_id, event.reply_token, rate_limit_msg(user_id), configuration)
             return True
 
         try:
@@ -2292,7 +2284,7 @@ def route_to_image_queue(event):
             image_queue.put_nowait((async_generate_image_task, (event,), task_id))
             return True
         except queue.Full:
-            smart_reply(user_id, event.reply_token, access_error(user_id), configuration, DIVIDER)
+            smart_reply(user_id, event.reply_token, access_error(user_id), configuration)
             return True
 
     # 检查后缀匹配的图片生成任务
@@ -2315,7 +2307,7 @@ def route_to_image_queue(event):
                     image_queue.put_nowait((async_generate_image_task, (event,), task_id))
                     return True
                 except queue.Full:
-                    smart_reply(user_id, event.reply_token, access_error(user_id), configuration, DIVIDER)
+                    smart_reply(user_id, event.reply_token, access_error(user_id), configuration)
                     return True
 
     # 检查レコードリスト (带数字的)
@@ -2336,7 +2328,7 @@ def route_to_image_queue(event):
             image_queue.put_nowait((async_generate_image_task, (event,), task_id))
             return True
         except queue.Full:
-            smart_reply(user_id, event.reply_token, access_error(user_id), configuration, DIVIDER)
+            smart_reply(user_id, event.reply_token, access_error(user_id), configuration)
             return True
 
     # 检查 B 系列命令
@@ -2344,7 +2336,7 @@ def route_to_image_queue(event):
     if first_word in IMAGE_TASK_ROUTES['b_commands']:
         # 频率限制检查 - B系列命令使用统一的限制
         if check_rate_limit(user_id, "image:b_series"):
-            smart_reply(user_id, event.reply_token, rate_limit_msg(user_id), configuration, DIVIDER)
+            smart_reply(user_id, event.reply_token, rate_limit_msg(user_id), configuration)
             return True
 
         try:
@@ -2363,7 +2355,7 @@ def route_to_image_queue(event):
             image_queue.put_nowait((async_generate_image_task, (event,), task_id))
             return True
         except queue.Full:
-            smart_reply(user_id, event.reply_token, access_error(user_id), configuration, DIVIDER)
+            smart_reply(user_id, event.reply_token, access_error(user_id), configuration)
             return True
 
     # 检查 ランダム曲 / random-song
@@ -2384,7 +2376,7 @@ def route_to_image_queue(event):
             image_queue.put_nowait((async_generate_image_task, (event,), task_id))
             return True
         except queue.Full:
-            smart_reply(user_id, event.reply_token, access_error(user_id), configuration, DIVIDER)
+            smart_reply(user_id, event.reply_token, access_error(user_id), configuration)
             return True
 
     # 不是图片生成任务
@@ -2546,7 +2538,7 @@ def handle_sync_text_command(event):
     # 记录开始时间以统计响应时间
     start_time = time.time()
 
-    def tracked_reply(user_id, reply_token, reply_message):
+    def tracked_reply(user_id, reply_token, reply_message, addition=True):
         """包装 smart_reply 并更新统计"""
         # 计算响应时间
         response_time = (time.time() - start_time) * 1000  # 转换为毫秒
@@ -2557,7 +2549,7 @@ def handle_sync_text_command(event):
             STATS['response_time'] += response_time
             logger.debug(f"[Sync] ✓ Command processed: total={STATS['tasks_processed']}, avg_time={STATS['response_time']/STATS['tasks_processed']:.1f}ms")
 
-        return smart_reply(user_id, reply_token, reply_message, configuration, DIVIDER)
+        return smart_reply(user_id, reply_token, reply_message, configuration, addition)
 
     user_message = event.message.text.strip()
     user_id = event.source.user_id
@@ -2753,7 +2745,7 @@ def handle_sync_text_command(event):
                 template=buttons_template
             )
 
-            return tracked_reply(user_id, event.reply_token, reply_message)
+            return tracked_reply(user_id, event.reply_token, reply_message, addition=False)
 
         # 用户已设置语言，检查是否已经绑定账号
         has_account = all(key in user_data for key in ['sega_id', 'sega_pwd', 'version'])
@@ -2761,7 +2753,7 @@ def handle_sync_text_command(event):
         if has_account:
             # 已经绑定过账号，提示先解绑
             reply_message = TextMessage(text=get_multilingual_text(already_bound_text, user_id))
-            return tracked_reply(user_id, event.reply_token, reply_message)
+            return tracked_reply(user_id, event.reply_token, reply_message, addition=False)
 
         # 用户已设置语言且未绑定账号，显示绑定按钮
         bind_url = f"https://{DOMAIN}/linebot/sega_bind?token={generate_bind_token(user_id)}"
@@ -2780,7 +2772,7 @@ def handle_sync_text_command(event):
             template=buttons_template
         )
 
-        return tracked_reply(user_id, event.reply_token, reply_message)
+        return tracked_reply(user_id, event.reply_token, reply_message, addition=False)
 
     # ========================================
     # 5. 语言设置
@@ -2801,7 +2793,7 @@ def handle_sync_text_command(event):
             alt_text=language_select_alt,
             template=buttons_template
         )
-        return tracked_reply(user_id, event.reply_token, reply_message)
+        return tracked_reply(user_id, event.reply_token, reply_message, addition=False)
 
     # 5.2 设置具体语言 (带语言代码)
     if user_message.startswith("language "):
@@ -2810,7 +2802,7 @@ def handle_sync_text_command(event):
         # 验证语言代码
         if lang_code not in ["ja", "en", "zh"]:
             reply_message = TextMessage(text="Invalid language code. Please use: ja, en, or zh")
-            return tracked_reply(user_id, event.reply_token, reply_message)
+            return tracked_reply(user_id, event.reply_token, reply_message, addition=False)
 
         # 设置用户语言
         user_set_language(user_id, lang_code)
@@ -2840,7 +2832,7 @@ def handle_sync_text_command(event):
                 template=buttons_template
             )
 
-        return tracked_reply(user_id, event.reply_token, reply_message)
+        return tracked_reply(user_id, event.reply_token, reply_message, addition=False)
 
     # ========================================
     # 6. Calc 计算器
@@ -2873,7 +2865,7 @@ def handle_sync_text_command(event):
             reply_message = TextMessage(text=message_text)
 
             # 回复执行命令的管理员
-            smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
+            smart_reply(user_id, event.reply_token, reply_message, configuration, addition=False)
 
             # 推送通知给所有其他管理员
             for admin_user_id in ADMIN_ID:
@@ -2895,7 +2887,7 @@ def handle_sync_text_command(event):
             if len(parts) < 2:
                 # Show usage
                 reply_message = TextMessage(text=get_multilingual_text(devtoken_usage_text, user_id))
-                return tracked_reply(user_id, event.reply_token, reply_message)
+                return tracked_reply(user_id, event.reply_token, reply_message, addition=False)
 
             subcommand = parts[1]
 
@@ -2913,7 +2905,7 @@ def handle_sync_text_command(event):
                     reply_message = TextMessage(text=text)
                 else:
                     reply_message = TextMessage(text=get_multilingual_text(devtoken_create_failed_text, user_id))
-                return tracked_reply(user_id, event.reply_token, reply_message)
+                return tracked_reply(user_id, event.reply_token, reply_message, addition=False)
 
             elif subcommand == "list":
                 tokens = list_dev_tokens()
@@ -2933,7 +2925,7 @@ def handle_sync_text_command(event):
                         )
                     text = header + "\n\n" + "\n\n".join(token_lines)
                 reply_message = TextMessage(text=text)
-                return tracked_reply(user_id, event.reply_token, reply_message)
+                return tracked_reply(user_id, event.reply_token, reply_message, addition=False)
 
             elif subcommand == "revoke" and len(parts) >= 3:
                 token_id = parts[2]
@@ -2944,7 +2936,7 @@ def handle_sync_text_command(event):
                     reply_message = TextMessage(text=text)
                 else:
                     reply_message = TextMessage(text=get_multilingual_text(devtoken_revoke_failed_text, user_id))
-                return tracked_reply(user_id, event.reply_token, reply_message)
+                return tracked_reply(user_id, event.reply_token, reply_message, addition=False)
 
             elif subcommand == "info" and len(parts) >= 3:
                 token_id = parts[2]
@@ -2964,12 +2956,12 @@ def handle_sync_text_command(event):
                     reply_message = TextMessage(text=text)
                 else:
                     reply_message = TextMessage(text=get_multilingual_text(devtoken_info_not_found_text, user_id))
-                return tracked_reply(user_id, event.reply_token, reply_message)
+                return tracked_reply(user_id, event.reply_token, reply_message, addition=False)
 
             else:
                 # Invalid subcommand or missing arguments
                 reply_message = TextMessage(text=get_multilingual_text(devtoken_usage_text, user_id))
-                return tracked_reply(user_id, event.reply_token, reply_message)
+                return tracked_reply(user_id, event.reply_token, reply_message, addition=False)
 
         if user_message == "backup":
             # 创建系统备份
@@ -2997,14 +2989,14 @@ def handle_sync_text_command(event):
 
                 # 发送结果消息
                 result_message = TextMessage(text=message)
-                smart_reply(user_id, event.reply_token, result_message, configuration, DIVIDER)
+                smart_reply(user_id, event.reply_token, result_message, configuration, addition=False)
 
                 return
 
             except Exception as e:
                 logger.error(f"[Backup] ✗ Backup command error: user_id={user_id}, error={e}", exc_info=True)
                 error_message = TextMessage(text=f"❌ Backup failed\nError: {str(e)}")
-                smart_reply(user_id, event.reply_token, error_message, configuration, DIVIDER)
+                smart_reply(user_id, event.reply_token, error_message, configuration, addition=False)
                 return
 
     # ========================================
@@ -3046,8 +3038,7 @@ def handle_location_message(event):
         event.source.user_id,
         event.reply_token,
         reply_message,
-        configuration,
-        DIVIDER
+        configuration
     )
 
 # Postback 事件处理
@@ -3105,7 +3096,7 @@ def handle_postback(event):
                     reply_message = TextMessage(text=vote_success_text.get(lang, vote_success_text['ja']))
 
                     # 发送回复
-                    smart_reply(user_id, event.reply_token, reply_message, configuration, DIVIDER)
+                    smart_reply(user_id, event.reply_token, reply_message, configuration, addition=False)
 
                     logger.info(f"[Notice] ✓ Vote processed: user_id={user_id}, notice_id={notice_id}, vote={vote_type}")
                     return
