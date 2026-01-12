@@ -274,6 +274,9 @@ def has_user_read_notice(user_id: str, notice_id: str) -> bool:
     Returns:
         bool: 是否已阅读
     """
+    if user_id not in USERS:
+        return True
+
     interaction = get_notice_interaction(user_id, notice_id)
     return interaction.get('read', False) if interaction else False
 
