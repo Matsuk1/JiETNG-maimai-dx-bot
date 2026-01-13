@@ -222,6 +222,58 @@ Level queries automatically use your currently selected server (JP or INTL):
 - 🎯 **Find target songs**: Find songs in specific constant ranges
 - 📊 **Compare difficulties**: Compare song counts across different levels
 
+## Level & Rank Progress
+
+View achievement progress for a specific difficulty level and rank, such as checking progress towards achieving SSS+ rank on all 13+ difficulty charts.
+
+### Command Format
+
+```
+13sss+進捗        # View 13 difficulty SSS+ rank progress
+13+sss progress   # View 13+ difficulty SSS rank progress (English)
+14AP progress 2   # View 14 difficulty AP rank progress (page 2)
+15fdx+ progress   # View 15 difficulty FDX+ rank progress
+```
+
+### Supported Ranks
+
+- **Score Ranks**: S, S+, SS, SS+, SSS, SSS+
+- **Full Combo**: AP, AP+
+- **Full Sync**: FDX, FDX+
+
+::: tip Command Notes
+- Rank names are case-insensitive (SSS equals sss)
+- Supports both Japanese (進捗) and English (progress) keywords
+- Add page number at the end to view more charts
+:::
+
+### What's Displayed
+
+- **Completed**: Charts that achieved the target rank (up to 35 per page)
+- **Incomplete**: Charts that haven't reached the target rank (up to 15 per page)
+- Sorted by achievement rate from high to low
+- First page displays statistics:
+  - Number of completed charts
+  - Number of incomplete charts
+  - Number of unplayed charts
+  - Total number of charts
+
+### Use Cases
+
+- 🎯 **Goal Tracking**: See how close you are to completing a specific rank for a difficulty
+- 📊 **Progress Statistics**: Understand overall achievement status for a difficulty rank
+- 🔍 **Find Target Charts**: Quickly find charts close to the target rank for practice
+- 📈 **Growth Tracking**: Browse through all related charts via pagination to see your progress
+
+### Examples
+
+```
+13sss進捗         # View 13 difficulty SSS rank progress (page 1)
+13sss進捗 2       # View 13 difficulty SSS rank progress (page 2)
+14+ap+ progress   # View 14+ difficulty AP+ rank progress
+15fdx progress 3  # View 15 difficulty FDX rank progress (page 3)
+```
+
 ## Related Features
 
 - 🔍 [Score Search](/en/features/search) - Search for specific songs
