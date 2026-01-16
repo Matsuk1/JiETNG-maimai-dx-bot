@@ -2646,6 +2646,37 @@ def handle_text_message(event):
     mark_as_read_token = getattr(event.message, 'mark_as_read_token', None)
     mark_message_as_read(mark_as_read_token, event.source.user_id)
 
+    # 检查 mention 情况 - @ALL 或多个 @ 时直接忽略不回复
+    if hasattr(event.message, 'mention') and event.message.mention:
+        mentionees = event.message.mention.mentionees
+        if mentionees:
+            user_id = event.source.user_id
+
+            # 统计有效的用户 mention 数量
+            user_mention_count = 0
+            has_all_mention = False
+
+            for mentionee in mentionees:
+                mention_type = getattr(mentionee, 'type', None)
+                if mention_type == 'all':
+                    has_all_mention = True
+                    break
+
+                # 统计用户 mention
+                mentionee_user_id = getattr(mentionee, 'user_id', None)
+                if mentionee_user_id:
+                    user_mention_count += 1
+
+            # @ALL 时忽略
+            if has_all_mention:
+                logger.info(f"[Mention] @ALL detected, ignoring message: user_id={user_id}, text='{event.message.text}'")
+                return
+
+            # 多个 @ 时忽略
+            if user_mention_count >= 2:
+                logger.info(f"[Mention] Multiple mentions ({user_mention_count}) detected, ignoring message: user_id={user_id}, text='{event.message.text}'")
+                return
+
     # 清理消息文本中的 mention 特殊字符（LINE 的 mention 格式是 \ufffd@显示名\ufffd）
     # 移除所有不可见的 Unicode 字符和 @ 后的用户名
     original_text = event.message.text
@@ -2707,17 +2738,17 @@ def handle_sync_text_command(event):
     # 用户上下文初始化
     # ========================================
 
-    # 检查 @ mention（仅提取信息，不阻断非命令消息）
+    # 检查 @ mention（提取被提到的用户 ID）
+    # 注意：多个 mention 和 @ALL 的情况已在 handle_text_message 中过滤
     mentioned_user_id = None
     if hasattr(event.message, 'mention') and event.message.mention:
         mentionees = event.message.mention.mentionees
-        if mentionees:
-            # 多个 mention 时只取第一个用户
-            if len(mentionees) >= 2:
-                logger.debug(f"[Mention] Multiple mentions detected, using first one: user_id={user_id}")
-            first_mention = mentionees[0]
-            if hasattr(first_mention, 'user_id') and first_mention.user_id:
-                mentioned_user_id = first_mention.user_id
+        if mentionees and len(mentionees) > 0:
+            # 此时只会有单个用户 mention
+            mentionee = mentionees[0]
+            mentioned_user_id = getattr(mentionee, 'user_id', None)
+
+            if mentioned_user_id:
                 if mentioned_user_id in USERS:
                     logger.info(f"[Mention] User mentioned: user_id={user_id}, mentioned_user_id={mentioned_user_id}")
                 else:
@@ -3211,6 +3242,9 @@ def handle_postback(event):
     支持：
     - 公告投票 (action=vote_notice)
     - 其他 Postback 事件（作为文本消息处理）
+
+    注意：PostbackEvent 不包含 message 属性和 mark_as_read_token，
+    因为它是按钮点击事件，不是用户发送的消息事件。
     """
     user_id = event.source.user_id
     postback_data = event.postback.data
