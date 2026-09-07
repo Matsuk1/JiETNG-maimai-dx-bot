@@ -214,7 +214,7 @@ python main.py
 ### 本番環境デプロイ（推奨）
 
 ```bash
-gunicorn -w 4 -b 0.0.0.0:5000 --timeout 120 main:app
+gunicorn -w 1 --threads 8 -b 0.0.0.0:5000 --timeout 120 main:app
 ```
 
 ---
@@ -248,7 +248,7 @@ COPY . .
 EXPOSE 5000
 
 # 起動コマンド
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "--timeout", "120", "main:app"]
+CMD ["gunicorn", "-w", "1", "--threads", "8", "-b", "0.0.0.0:5000", "--timeout", "120", "main:app"]
 ```
 
 #### docker-compose.yml を作成

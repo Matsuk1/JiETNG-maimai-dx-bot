@@ -2,11 +2,6 @@
 self.addEventListener('install', e => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(clients.claim()));
 
-// 网络优先，admin panel 内容需要实时性
-self.addEventListener('fetch', e => {
-    e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
-});
-
 // 收到 Web Push 时显示系统通知
 self.addEventListener('push', e => {
     let data = { title: 'JiETNG Admin', body: '' };

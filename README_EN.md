@@ -199,7 +199,7 @@ Service will start on `http://0.0.0.0:<port>` (port configured in config.json)
 ### Production Deployment (Recommended)
 
 ```bash
-gunicorn -w 4 -b 0.0.0.0:5000 --timeout 120 main:app
+gunicorn -w 1 --threads 8 -b 0.0.0.0:5000 --timeout 120 main:app
 ```
 
 ---
@@ -233,7 +233,7 @@ COPY . .
 EXPOSE 5000
 
 # Start command
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "--timeout", "120", "main:app"]
+CMD ["gunicorn", "-w", "1", "--threads", "8", "-b", "0.0.0.0:5000", "--timeout", "120", "main:app"]
 ```
 
 #### Create docker-compose.yml

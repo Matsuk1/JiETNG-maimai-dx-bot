@@ -83,6 +83,7 @@ https://your-domain.com/admin/panel
 | **业务指标** | DAU/WAU/MAU、粘性分析、今日图片/同步/绑定统计、命令分布、30 天 DAU 趋势图、小时热力图 |
 | **系统监控** | CPU/内存使用、队列状态、线程数、运行时长（可折叠） |
 | **实时日志** | 查看最近 100 行日志，支持 ANSI 颜色代码 |
+| **AI 运维** | 通过受限 Codex + MCP 查询运行状态、错误、用户和内部开发者数据，支持图片诊断及白名单文件维护 |
 | **数据刷新** | 快速刷新单个用户数据和昵称 |
 
 ### 主要特点
@@ -106,6 +107,28 @@ https://your-domain.com/admin/panel
     "admin_password": "your_secure_password"
 }
 ```
+
+AI 运维默认调用服务器上已登录的 `codex`。若 systemd 找不到命令，可设置绝对路径：
+
+```json
+{
+    "ai_monitor": {
+        "enabled": true,
+        "codex_command": "/usr/local/bin/codex",
+        "model": "",
+        "timeout_seconds": 90,
+        "session_ttl_seconds": 3600
+    }
+}
+```
+
+也可使用 `JIETNG_CODEX_COMMAND`、`JIETNG_CODEX_MODEL`、`JIETNG_CODEX_TIMEOUT` 和 `JIETNG_CODEX_SESSION_TTL` 环境变量覆盖。后台会懒启动一个常驻 `codex app-server`，同一管理员登录会话复用独立 thread，默认空闲 1 小时后释放；浏览器保留最近 20 条消息，仅用于 app-server 重启后的上下文恢复。常驻 thread 会保留完整连续上下文，并由 Codex 在接近模型上限时自动压缩。
+
+MCP 的开发者数据查询直接走本机只读数据层，不需要 API token；用户凭据、Cookie 和 token 会被递归脱敏。对话支持安全 Markdown、最多 3 张图片输入，以及由模型调用 MCP 完成的裁剪、缩放、旋转、灰度、模糊和图像增强；处理结果通过登录态保护的临时地址返回，不写入项目资源目录。
+
+AI 请求会先创建后台任务，再由页面轮询结果。iOS 主屏幕 Web App 切到后台或页面被系统重载后，会从本地保存的任务 ID 恢复查询，不要求一条 HTTP 连接持续保持。
+
+文件维护统一由一个 MCP 工具处理，仅允许 `data/dxdata/`、`assets/` 和 `languages/`。它支持目录浏览、UTF-8 文本分段读取、搜索、整文件写入及精确替换；现有文件必须带读取时得到的 SHA-256 才能修改。二进制文件只返回元数据，不支持删除、移动或创建目录。
 
 ### 使用方法
 
@@ -214,8 +237,10 @@ python main.py
 ### 生产环境部署（推荐）
 
 ```bash
-gunicorn -w 4 -b 0.0.0.0:5000 --timeout 120 main:app
+gunicorn -w 1 --threads 8 -b 0.0.0.0:5000 --timeout 120 main:app
 ```
+
+项目的任务队列、管理员会话和 AI thread 都是进程内状态，因此生产环境使用单 worker 加线程；不要直接增加 Gunicorn worker 数量。
 
 ---
 
@@ -248,7 +273,7 @@ COPY . .
 EXPOSE 5000
 
 # 启动命令
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "--timeout", "120", "main:app"]
+CMD ["gunicorn", "-w", "1", "--threads", "8", "-b", "0.0.0.0:5000", "--timeout", "120", "main:app"]
 ```
 
 #### 创建 docker-compose.yml
@@ -329,6 +354,7 @@ sudo systemctl start jietng
 server {
     listen 80;
     server_name your-domain.com;
+    client_max_body_size 16m;
 
     location /linebot {
         proxy_pass http://127.0.0.1:5000;
@@ -511,6 +537,9 @@ POST     /admin/clear_cache        # 清除昵称缓存
 POST     /admin/cancel_task        # 取消任务
 GET      /admin/task_status        # 获取任务状态
 GET      /admin/get_logs           # 获取日志
+POST     /admin/api/ai-monitor/query          # 创建 AI 运维诊断
+GET      /admin/api/ai-monitor/query/<job_id> # 查询诊断结果
+GET      /admin/api/ai-monitor/image         # 读取诊断图片
 ```
 
 ### 配置参考
@@ -583,6 +612,13 @@ GET      /admin/get_logs           # 获取日志
         "secret_access_key": "",
         "bucket_name": "",
         "public_url": ""
+    },
+    "ai_monitor": {
+        "enabled": true,
+        "codex_command": "codex",
+        "model": "",
+        "timeout_seconds": 90,
+        "session_ttl_seconds": 3600
     }
 }
 ```

@@ -69,6 +69,13 @@ DEFAULT_CONFIG = {
     "plugins": {
         "enabled": True,
         "directories": ["./plugins"]
+    },
+    "ai_monitor": {
+        "enabled": True,
+        "codex_command": "codex",
+        "model": "",
+        "timeout_seconds": 90,
+        "session_ttl_seconds": 3600
     }
 }
 
@@ -124,13 +131,15 @@ def _load_config():
     else:
         config = {}
 
+    original = copy.deepcopy(config)
     _merge_defaults(config, DEFAULT_CONFIG)
     keys = config["keys"]
     keys["bind_token"] = _ensure_bind_token(keys.get("bind_token", ""))
     web_push = config["web_push"]
     if not web_push.get("vapid_private_key") or not web_push.get("vapid_public_key"):
         web_push["vapid_private_key"], web_push["vapid_public_key"] = _generate_vapid_keys()
-    _save_config(config)
+    if config != original or not os.path.exists(CONFIG_PATH):
+        _save_config(config)
     return config
 
 
@@ -215,6 +224,43 @@ VAPID_PUBLIC_KEY = WEB_PUSH_CONFIG.get("vapid_public_key", "")
 VAPID_CONTACT = WEB_PUSH_CONFIG.get("contact", "mailto:admin@example.com")
 
 PLUGIN_CONFIG = _config.get("plugins", {})
+
+AI_MONITOR_CONFIG = _config.get("ai_monitor", {})
+AI_MONITOR_ENABLED = bool(AI_MONITOR_CONFIG.get("enabled", True))
+AI_MONITOR_CODEX_COMMAND = os.getenv(
+    "JIETNG_CODEX_COMMAND",
+    AI_MONITOR_CONFIG.get("codex_command", "codex"),
+)
+AI_MONITOR_MODEL = os.getenv(
+    "JIETNG_CODEX_MODEL",
+    AI_MONITOR_CONFIG.get("model", ""),
+).strip()
+try:
+    AI_MONITOR_TIMEOUT_SECONDS = max(
+        30,
+        min(
+            300,
+            int(os.getenv(
+                "JIETNG_CODEX_TIMEOUT",
+                AI_MONITOR_CONFIG.get("timeout_seconds", 90),
+            )),
+        ),
+    )
+except (TypeError, ValueError):
+    AI_MONITOR_TIMEOUT_SECONDS = 90
+try:
+    AI_MONITOR_SESSION_TTL_SECONDS = max(
+        300,
+        min(
+            86400,
+            int(os.getenv(
+                "JIETNG_CODEX_SESSION_TTL",
+                AI_MONITOR_CONFIG.get("session_ttl_seconds", 3600),
+            )),
+        ),
+    )
+except (TypeError, ValueError):
+    AI_MONITOR_SESSION_TTL_SECONDS = 3600
 
 
 def apply_override(songs, override_file):

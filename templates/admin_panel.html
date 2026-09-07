@@ -703,6 +703,16 @@
       flex: 0 0 auto;
     }
 
+    .tab-icon svg {
+      width: 15px;
+      height: 15px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
     .tab-copy {
       min-width: 0;
       display: grid;
@@ -905,6 +915,307 @@
       grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.9fr);
       gap: 18px;
       align-items: start;
+    }
+
+    .ai-monitor-section {
+      margin-bottom: 18px;
+    }
+
+    .ai-monitor-status {
+      color: var(--text-tertiary);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .ai-monitor-messages {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 96px;
+      max-height: 360px;
+      padding: 4px 2px 14px;
+      overflow-y: auto;
+    }
+
+    .ai-monitor-empty {
+      margin: auto;
+      color: var(--text-tertiary);
+      font-size: 13px;
+    }
+
+    .ai-monitor-message {
+      display: flex;
+      width: 100%;
+    }
+
+    .ai-monitor-message.user {
+      justify-content: flex-end;
+    }
+
+    .ai-monitor-message-body {
+      max-width: min(780px, 88%);
+      padding: 10px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      background: var(--surface-bg);
+      color: var(--text-color);
+      font-size: 13px;
+      line-height: 1.55;
+      overflow-wrap: anywhere;
+    }
+
+    .ai-monitor-message.user .ai-monitor-message-text,
+    .ai-monitor-message.error .ai-monitor-message-text {
+      white-space: pre-wrap;
+    }
+
+    .ai-monitor-message-text > :first-child {
+      margin-top: 0;
+    }
+
+    .ai-monitor-message-text > :last-child {
+      margin-bottom: 0;
+    }
+
+    .ai-monitor-message-text :is(h1, h2, h3, h4, h5, h6) {
+      margin: 10px 0 6px;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .ai-monitor-message-text :is(p, ul, ol, blockquote, pre, table) {
+      margin: 0 0 9px;
+    }
+
+    .ai-monitor-message-text :is(ul, ol) {
+      padding-left: 22px;
+    }
+
+    .ai-monitor-message-text blockquote {
+      padding-left: 10px;
+      border-left: 3px solid var(--border-color);
+      color: var(--text-secondary);
+    }
+
+    .ai-monitor-message-text :not(pre) > code {
+      padding: 1px 4px;
+      border-radius: 4px;
+      background: var(--hover-bg);
+      font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    .ai-monitor-message-text pre {
+      max-width: 100%;
+      padding: 10px;
+      overflow-x: auto;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      background: var(--hover-bg);
+      white-space: pre;
+    }
+
+    .ai-monitor-message-text pre code {
+      font: 12px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    .ai-monitor-table-scroll {
+      max-width: 100%;
+      overflow-x: auto;
+      margin: 0 0 9px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .ai-monitor-message-text table {
+      width: max-content;
+      min-width: 100%;
+      border-collapse: collapse;
+    }
+
+    .ai-monitor-message-text :is(th, td) {
+      padding: 6px 8px;
+      border: 1px solid var(--border-color);
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    .ai-monitor-message-text a {
+      color: var(--accent-color);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .ai-monitor-message-text:empty {
+      display: none;
+    }
+
+    .ai-monitor-message-media {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 240px));
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .ai-monitor-message-media:only-child {
+      margin-top: 0;
+    }
+
+    .ai-monitor-message-media img {
+      display: block;
+      width: 100%;
+      max-height: 260px;
+      object-fit: contain;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      background: var(--surface-bg);
+    }
+
+    .ai-monitor-message.user .ai-monitor-message-body {
+      border-color: var(--accent-color);
+      background: var(--accent-light);
+    }
+
+    .ai-monitor-message.error .ai-monitor-message-body {
+      border-color: var(--danger-color);
+      color: var(--danger-color);
+    }
+
+    .ai-monitor-form {
+      padding-top: 14px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .ai-monitor-composer {
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      background: var(--surface-bg);
+      transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    }
+
+    .ai-monitor-composer:focus-within {
+      border-color: var(--accent-color);
+      box-shadow: 0 0 0 3px var(--accent-light);
+    }
+
+    .ai-monitor-composer-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 10px 10px;
+    }
+
+    .ai-monitor-composer-tools {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ai-monitor-attach {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      border: 0;
+      border-radius: var(--radius-md);
+      background: rgba(118, 118, 128, 0.10);
+      color: var(--text-secondary);
+      font-size: 23px;
+      font-weight: 400;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .ai-monitor-attach:hover {
+      background: var(--accent-light);
+      color: var(--accent-color);
+    }
+
+    .ai-monitor-attach.disabled {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .ai-monitor-file-input {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .ai-monitor-attachments {
+      display: flex;
+      gap: 8px;
+      padding: 10px 10px 2px;
+      overflow-x: auto;
+    }
+
+    .ai-monitor-attachments[hidden] {
+      display: none;
+    }
+
+    .ai-monitor-attachment {
+      position: relative;
+      flex: 0 0 76px;
+      width: 76px;
+      height: 58px;
+    }
+
+    .ai-monitor-attachment img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      background: rgba(118, 118, 128, 0.10);
+    }
+
+    .ai-monitor-attachment button {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      width: 22px;
+      height: 22px;
+      min-width: 22px;
+      padding: 0 0 2px;
+      border: 2px solid var(--surface-bg);
+      border-radius: 50%;
+      background: rgba(28, 28, 30, 0.88);
+      color: #fff;
+      font-size: 16px;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .ai-monitor-input {
+      display: block;
+      width: 100%;
+      min-height: 64px;
+      max-height: 140px;
+      padding: 12px 14px 4px;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      resize: vertical;
+    }
+
+    .ai-monitor-input:hover,
+    .ai-monitor-input:focus {
+      border: 0;
+      box-shadow: none;
+      outline: none;
+    }
+
+    .ai-monitor-send {
+      min-width: 76px;
+      min-height: 34px;
+      padding: 7px 14px;
     }
 
     .operations-section {
@@ -1693,6 +2004,23 @@
       }
 
       .operations-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .ai-monitor-messages {
+        min-height: 96px;
+        max-height: 360px;
+      }
+
+      .ai-monitor-message-body {
+        max-width: 94%;
+      }
+
+      .ai-monitor-send {
+        width: auto;
+      }
+
+      .ai-monitor-message-media {
         grid-template-columns: 1fr;
       }
 
@@ -2802,6 +3130,30 @@
   </style>
 </head>
 <body class="admin-mobile-nav-collapsed">
+  <svg aria-hidden="true" width="0" height="0" style="position:absolute;overflow:hidden;">
+    <symbol id="icon-layout-dashboard" viewBox="0 0 24 24">
+      <rect width="7" height="9" x="3" y="3" rx="1"></rect>
+      <rect width="7" height="5" x="14" y="3" rx="1"></rect>
+      <rect width="7" height="9" x="14" y="12" rx="1"></rect>
+      <rect width="7" height="5" x="3" y="16" rx="1"></rect>
+    </symbol>
+    <symbol id="icon-activity" viewBox="0 0 24 24">
+      <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+    </symbol>
+    <symbol id="icon-users" viewBox="0 0 24 24">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+      <circle cx="9" cy="7" r="4"></circle>
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+      <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+    </symbol>
+    <symbol id="icon-megaphone" viewBox="0 0 24 24">
+      <path d="m3 11 18-5v12L3 14v-3z"></path>
+      <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"></path>
+    </symbol>
+    <symbol id="icon-wrench" viewBox="0 0 24 24">
+      <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"></path>
+    </symbol>
+  </svg>
   <script>
     // iOS standalone PWA 安全区域修复
     // env(safe-area-inset-top) 在某些情况下返回 0，用 JS 探测并补救
@@ -2834,11 +3186,11 @@
         <div class="side-section-label">Monitor</div>
         <div class="tabs nav-stack">
           <button class="tab active" data-tab="stats" onclick="switchTab('stats', this)">
-            <span class="tab-icon">▦</span>
+            <span class="tab-icon"><svg aria-hidden="true"><use href="#icon-layout-dashboard"></use></svg></span>
             <span class="tab-copy"><span class="tab-label">Overview</span><span class="tab-desc">health, traffic, queues</span></span>
           </button>
           <button class="tab" data-tab="operations" onclick="switchTab('operations', this)">
-            <span class="tab-icon">≋</span>
+            <span class="tab-icon"><svg aria-hidden="true"><use href="#icon-activity"></use></svg></span>
             <span class="tab-copy"><span class="tab-label">Operations <span id="notification-badge" style="display:none; background:#ff3b30; color:#fff; border-radius:999px; padding:1px 6px; font-size:11px; margin-left:4px;"></span></span><span class="tab-desc">logs and alerts</span></span>
           </button>
         </div>
@@ -2846,11 +3198,11 @@
         <div class="side-section-label">Manage</div>
         <div class="tabs nav-stack">
           <button class="tab" data-tab="users" onclick="switchTab('users', this)">
-            <span class="tab-icon">◎</span>
+            <span class="tab-icon"><svg aria-hidden="true"><use href="#icon-users"></use></svg></span>
             <span class="tab-copy"><span class="tab-label">Users</span><span class="tab-desc">accounts, sync, JSON edit</span></span>
           </button>
           <button class="tab" data-tab="content" onclick="switchTab('content', this)">
-            <span class="tab-icon">!</span>
+            <span class="tab-icon"><svg aria-hidden="true"><use href="#icon-megaphone"></use></svg></span>
             <span class="tab-copy"><span class="tab-label">Content</span><span class="tab-desc">notices, tip/ad</span></span>
           </button>
         </div>
@@ -2858,7 +3210,7 @@
         <div class="side-section-label">Maintain</div>
         <div class="tabs nav-stack">
           <button class="tab" data-tab="maintenance" onclick="switchTab('maintenance', this)">
-            <span class="tab-icon">&gt;</span>
+            <span class="tab-icon"><svg aria-hidden="true"><use href="#icon-wrench"></use></svg></span>
             <span class="tab-copy"><span class="tab-label">Maintenance</span><span class="tab-desc">data, backups, assets, tokens</span></span>
           </button>
         </div>
@@ -3249,6 +3601,48 @@
 
     <!-- Operations Tab -->
     <div id="operations-tab" class="tab-content">
+      <div class="section ai-monitor-section">
+        <div class="section-title" style="display:flex; justify-content:space-between; align-items:center;">
+          <span>AI Diagnostics</span>
+          <span class="ai-monitor-status" id="ai-monitor-status">Ready</span>
+        </div>
+        <div class="ai-monitor-messages" id="ai-monitor-messages" aria-live="polite">
+          <div class="ai-monitor-empty" id="ai-monitor-empty">Ready for a diagnosis.</div>
+        </div>
+        <form class="ai-monitor-form" id="ai-monitor-form" onsubmit="askAIMonitor(event)">
+          <div class="ai-monitor-composer">
+            <div class="ai-monitor-attachments" id="ai-monitor-attachments" hidden></div>
+            <textarea
+              class="form-input ai-monitor-input"
+              id="ai-monitor-input"
+              maxlength="2000"
+              onkeydown="handleAIMonitorKeydown(event)"
+            ></textarea>
+            <div class="ai-monitor-composer-footer">
+              <div class="ai-monitor-composer-tools">
+                <label
+                  class="ai-monitor-attach"
+                  id="ai-monitor-attach"
+                  aria-label="Add image"
+                  title="Add image"
+                >
+                  +
+                  <input
+                    class="ai-monitor-file-input"
+                    id="ai-monitor-images"
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onchange="selectAIMonitorImages(event)"
+                  >
+                </label>
+              </div>
+              <button class="btn btn-primary ai-monitor-send" id="ai-monitor-send" type="submit">Send</button>
+            </div>
+          </div>
+        </form>
+      </div>
+
       <div class="operations-grid">
         <div class="section operations-section" style="margin-bottom:0;">
           <div class="section-title" style="display:flex; justify-content:space-between; align-items:center;">
@@ -4526,8 +4920,11 @@
     // ===== Service Worker 注册（PWA 支持） =====
     let _swRegistration = null;
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js', { scope: '/admin/' })
-        .then(reg => { _swRegistration = reg; })
+      navigator.serviceWorker.register('/sw.js', { scope: '/admin/', updateViaCache: 'none' })
+        .then(reg => {
+          _swRegistration = reg;
+          reg.update().catch(() => {});
+        })
         .catch(() => {});
 
       // 收到 SW 消息（点击通知时跳转 tab 并刷新）
@@ -4679,15 +5076,376 @@
       pollNotificationBadge();
     }, 30000);
 
-    document.addEventListener('visibilitychange', function() {
-      if (!document.hidden) {
-        pollNotificationBadge();
-      }
-    });
-
     window.addEventListener('pagehide', function() {
       clearInterval(_notificationPollTimer);
     });
+
+    const _aiMonitorMessages = [];
+    let _aiMonitorPendingImages = [];
+    let _aiMonitorBusy = false;
+    const _AI_MONITOR_JOB_KEY = 'jietng.admin.aiMonitorJob';
+    let _aiMonitorActiveJobId = '';
+    let _aiMonitorPollTimer = null;
+    let _aiMonitorPollFailures = 0;
+    try {
+      _aiMonitorActiveJobId = localStorage.getItem(_AI_MONITOR_JOB_KEY) || '';
+    } catch (_) {
+    }
+
+    async function optimizeAIMonitorImage(file) {
+      if (file.size <= 850 * 1024 || !['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+        return file;
+      }
+      const source = URL.createObjectURL(file);
+      try {
+        const image = new Image();
+        image.src = source;
+        await image.decode();
+        const scale = Math.min(1, 1600 / Math.max(image.naturalWidth, image.naturalHeight));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+        canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+        const context = canvas.getContext('2d');
+        context.fillStyle = '#fff';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+        let blob = null;
+        for (const quality of [0.82, 0.68, 0.55]) {
+          blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
+          if (blob && blob.size <= 850 * 1024) break;
+        }
+        if (!blob) return file;
+        const name = file.name.replace(/\.[^.]+$/, '') + '.jpg';
+        return new File([blob], name, {type: 'image/jpeg', lastModified: file.lastModified});
+      } catch (_) {
+        return file;
+      } finally {
+        URL.revokeObjectURL(source);
+      }
+    }
+
+    function renderSafeAIHtml(container, renderedHtml, fallbackText) {
+      if (!renderedHtml) {
+        container.textContent = fallbackText;
+        return;
+      }
+      const template = document.createElement('template');
+      template.innerHTML = renderedHtml;
+      const allowedTags = new Set([
+        'A', 'BLOCKQUOTE', 'BR', 'CODE', 'DEL', 'EM', 'H1', 'H2', 'H3',
+        'H4', 'H5', 'H6', 'HR', 'LI', 'OL', 'P', 'PRE', 'S', 'STRONG', 'TABLE',
+        'TBODY', 'TD', 'TH', 'THEAD', 'TR', 'UL'
+      ]);
+      Array.from(template.content.querySelectorAll('*')).forEach((element) => {
+        if (!allowedTags.has(element.tagName)) {
+          if (['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'TEMPLATE'].includes(element.tagName)) {
+            element.remove();
+          } else {
+            element.replaceWith(document.createTextNode(element.textContent || ''));
+          }
+          return;
+        }
+        Array.from(element.attributes).forEach((attribute) => {
+          const keep = element.tagName === 'A' && ['href', 'title'].includes(attribute.name);
+          if (!keep) element.removeAttribute(attribute.name);
+        });
+        if (element.tagName === 'A') {
+          const href = element.getAttribute('href') || '';
+          let allowed = href.startsWith('#');
+          try {
+            const target = new URL(href, window.location.origin);
+            allowed = allowed || ['http:', 'https:', 'mailto:'].includes(target.protocol);
+            if (allowed && target.origin !== window.location.origin && target.protocol !== 'mailto:') {
+              element.target = '_blank';
+              element.rel = 'noopener noreferrer';
+            }
+          } catch (_) {
+            allowed = false;
+          }
+          if (!allowed) element.removeAttribute('href');
+        }
+      });
+      template.content.querySelectorAll('table').forEach((table) => {
+        const scroll = document.createElement('div');
+        scroll.className = 'ai-monitor-table-scroll';
+        table.replaceWith(scroll);
+        scroll.appendChild(table);
+      });
+      container.replaceChildren(template.content);
+    }
+
+    function appendAIMonitorMessage(role, content, images = [], renderedHtml = '') {
+      const container = document.getElementById('ai-monitor-messages');
+      const empty = document.getElementById('ai-monitor-empty');
+      if (!container) return;
+      empty?.remove();
+
+      const message = document.createElement('div');
+      message.className = 'ai-monitor-message ' + role;
+      const body = document.createElement('div');
+      body.className = 'ai-monitor-message-body';
+      const text = document.createElement('div');
+      text.className = 'ai-monitor-message-text';
+      if (role === 'assistant') {
+        renderSafeAIHtml(text, renderedHtml, content);
+      } else {
+        text.textContent = content;
+      }
+      body.appendChild(text);
+
+      if (images.length) {
+        const media = document.createElement('div');
+        media.className = 'ai-monitor-message-media';
+        images.forEach((image) => {
+          const element = document.createElement('img');
+          element.src = image.src;
+          element.alt = image.alt || 'AI monitor image';
+          element.loading = 'lazy';
+          media.appendChild(element);
+        });
+        body.appendChild(media);
+      }
+      message.appendChild(body);
+      container.appendChild(message);
+      container.scrollTop = container.scrollHeight;
+
+      if (role === 'user' || role === 'assistant') {
+        const imageNote = images.length
+          ? `\n[Images: ${images.map((image) => image.alt || 'image').join(', ')}]`
+          : '';
+        _aiMonitorMessages.push({role, content: content + imageNote});
+        if (_aiMonitorMessages.length > 20) _aiMonitorMessages.shift();
+      }
+    }
+
+    function renderAIMonitorAttachments() {
+      const container = document.getElementById('ai-monitor-attachments');
+      if (!container) return;
+      container.replaceChildren();
+      container.hidden = _aiMonitorPendingImages.length === 0;
+      _aiMonitorPendingImages.forEach((item, index) => {
+        const preview = document.createElement('div');
+        preview.className = 'ai-monitor-attachment';
+        const image = document.createElement('img');
+        image.src = item.url;
+        image.alt = item.file.name;
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.textContent = '×';
+        remove.setAttribute('aria-label', `Remove ${item.file.name}`);
+        remove.addEventListener('click', () => removeAIMonitorImage(index));
+        preview.append(image, remove);
+        container.appendChild(preview);
+      });
+    }
+
+    function selectAIMonitorImages(event) {
+      const selected = Array.from(event.target.files || []);
+      let rejected = false;
+      for (const file of selected) {
+        if (_aiMonitorPendingImages.length >= 3) {
+          rejected = true;
+          break;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          rejected = true;
+          continue;
+        }
+        _aiMonitorPendingImages.push({file, url: URL.createObjectURL(file)});
+      }
+      event.target.value = '';
+      renderAIMonitorAttachments();
+      if (rejected) {
+        appendAIMonitorMessage('error', 'Use up to 3 PNG, JPEG, WebP, or HEIC images, 5MB each.');
+      }
+    }
+
+    function removeAIMonitorImage(index) {
+      const removed = _aiMonitorPendingImages.splice(index, 1)[0];
+      if (removed) URL.revokeObjectURL(removed.url);
+      renderAIMonitorAttachments();
+    }
+
+    function setAIMonitorBusy(busy) {
+      _aiMonitorBusy = busy;
+      const input = document.getElementById('ai-monitor-input');
+      const button = document.getElementById('ai-monitor-send');
+      const imageInput = document.getElementById('ai-monitor-images');
+      const attach = document.getElementById('ai-monitor-attach');
+      const status = document.getElementById('ai-monitor-status');
+      if (input) input.disabled = busy;
+      if (imageInput) imageInput.disabled = busy;
+      attach?.classList.toggle('disabled', busy);
+      if (button) {
+        button.disabled = busy;
+        button.textContent = busy ? 'Checking...' : 'Send';
+      }
+      if (status) status.textContent = busy ? 'Checking' : 'Ready';
+    }
+
+    function setAIMonitorStatus(text) {
+      const status = document.getElementById('ai-monitor-status');
+      if (status) status.textContent = text;
+    }
+
+    function rememberAIMonitorJob(jobId) {
+      _aiMonitorActiveJobId = jobId;
+      try {
+        localStorage.setItem(_AI_MONITOR_JOB_KEY, jobId);
+      } catch (_) {
+      }
+    }
+
+    function clearAIMonitorJob() {
+      if (_aiMonitorPollTimer) clearTimeout(_aiMonitorPollTimer);
+      _aiMonitorPollTimer = null;
+      _aiMonitorActiveJobId = '';
+      _aiMonitorPollFailures = 0;
+      try {
+        localStorage.removeItem(_AI_MONITOR_JOB_KEY);
+      } catch (_) {
+      }
+    }
+
+    function aiMonitorResponseImages(images) {
+      return (images || []).map((reference) => {
+        const generated = reference.startsWith('generated:');
+        const value = generated ? reference.slice('generated:'.length) : reference;
+        return {
+          src: generated
+            ? `/admin/api/ai-monitor/image?token=${encodeURIComponent(value)}`
+            : `/admin/api/ai-monitor/image?path=${encodeURIComponent(value)}`,
+          alt: generated ? 'Generated image' : (value.split('/').pop() || 'AI monitor image')
+        };
+      });
+    }
+
+    function scheduleAIMonitorPoll(jobId, delay = 1200) {
+      if (_aiMonitorPollTimer) clearTimeout(_aiMonitorPollTimer);
+      _aiMonitorPollTimer = setTimeout(() => pollAIMonitorJob(jobId), delay);
+    }
+
+    async function pollAIMonitorJob(jobId) {
+      if (!jobId || jobId !== _aiMonitorActiveJobId) return;
+      if (document.hidden) {
+        setAIMonitorStatus('Waiting');
+        return;
+      }
+      try {
+        const response = await fetch(`/admin/api/ai-monitor/query/${encodeURIComponent(jobId)}`, {
+          cache: 'no-store'
+        });
+        const data = await response.json().catch(() => ({}));
+        _aiMonitorPollFailures = 0;
+        if (response.status === 202) {
+          setAIMonitorStatus('Checking');
+          scheduleAIMonitorPoll(jobId);
+          return;
+        }
+        if (!response.ok || !data.success) {
+          clearAIMonitorJob();
+          setAIMonitorBusy(false);
+          appendAIMonitorMessage('error', data.message || `HTTP ${response.status}`);
+          return;
+        }
+        appendAIMonitorMessage(
+          'assistant',
+          data.answer || '',
+          aiMonitorResponseImages(data.images),
+          data.answer_html || ''
+        );
+        clearAIMonitorJob();
+        setAIMonitorBusy(false);
+        document.getElementById('ai-monitor-input')?.focus();
+      } catch (_) {
+        _aiMonitorPollFailures += 1;
+        setAIMonitorStatus('Reconnecting');
+        if (_aiMonitorPollFailures >= 8) {
+          clearAIMonitorJob();
+          setAIMonitorBusy(false);
+          appendAIMonitorMessage('error', 'Could not reconnect to the diagnosis.');
+        } else {
+          scheduleAIMonitorPoll(jobId, 2000);
+        }
+      }
+    }
+
+    async function askAIMonitor(event) {
+      event.preventDefault();
+      if (_aiMonitorBusy) return;
+
+      const input = document.getElementById('ai-monitor-input');
+      const question = input?.value.trim() || '';
+      if (!question && !_aiMonitorPendingImages.length) return;
+
+      const recentMessages = _aiMonitorMessages.slice(-20);
+      const history = recentMessages.map(({role, content}) => ({role, content}));
+      const currentImages = _aiMonitorPendingImages;
+      appendAIMonitorMessage(
+        'user',
+        question,
+        currentImages.map((item) => ({src: item.url, alt: item.file.name}))
+      );
+      _aiMonitorPendingImages = [];
+      renderAIMonitorAttachments();
+      input.value = '';
+      setAIMonitorBusy(true);
+
+      const jobId = typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : Array.from(crypto.getRandomValues(new Uint8Array(18)), byte => byte.toString(16).padStart(2, '0')).join('');
+      rememberAIMonitorJob(jobId);
+      try {
+        const payload = new FormData();
+        payload.append('job_id', jobId);
+        payload.append('question', question);
+        payload.append('history', JSON.stringify(history));
+        const uploadImages = await Promise.all(
+          currentImages.map((item) => optimizeAIMonitorImage(item.file))
+        );
+        uploadImages.forEach((file) => payload.append('images', file, file.name));
+        const response = await fetch('/admin/api/ai-monitor/query', {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': '{{ csrf_token() }}'
+          },
+          body: payload
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.success) {
+          clearAIMonitorJob();
+          setAIMonitorBusy(false);
+          appendAIMonitorMessage('error', data.message || `HTTP ${response.status}`);
+          return;
+        }
+        rememberAIMonitorJob(data.job_id || jobId);
+        pollAIMonitorJob(_aiMonitorActiveJobId);
+      } catch (_) {
+        setAIMonitorStatus('Reconnecting');
+        scheduleAIMonitorPoll(jobId, 1200);
+      }
+    }
+
+    function handleAIMonitorKeydown(event) {
+      if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+        event.preventDefault();
+        document.getElementById('ai-monitor-form')?.requestSubmit();
+      }
+    }
+
+    document.addEventListener('visibilitychange', function() {
+      if (document.hidden) return;
+      pollNotificationBadge();
+      if (!_aiMonitorActiveJobId) return;
+      setAIMonitorBusy(true);
+      pollAIMonitorJob(_aiMonitorActiveJobId);
+    });
+
+    if (_aiMonitorActiveJobId) {
+      setAIMonitorBusy(true);
+      pollAIMonitorJob(_aiMonitorActiveJobId);
+    }
 
     function refreshLogs() {
       fetch('/admin/get_logs')
