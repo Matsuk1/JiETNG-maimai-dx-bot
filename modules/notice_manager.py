@@ -91,6 +91,28 @@ def _build_button(button_type, button_label, button_value):
     return None
 
 
+def _update_button(notice, button_type, button_label, button_value):
+    requested = button_type is not None or bool(button_label) or button_value is not None
+    if not requested:
+        return
+    button = notice.get("button")
+    if not isinstance(button, dict):
+        button = _build_button(button_type, button_label, button_value)
+        if button:
+            notice["button"] = button
+        return
+    if button_type is not None:
+        button["type"] = button_type
+    if button_label:
+        labels = button.get("label")
+        if not isinstance(labels, dict):
+            labels = {}
+            button["label"] = labels
+        labels.update(button_label)
+    if button_value is not None:
+        button["value"] = button_value
+
+
 def upload_notice(
     content,
     date=None,
@@ -144,7 +166,7 @@ def get_notice_by_id(notice_id):
 
 def update_notice(
     notice_id,
-    content,
+    content=None,
     status=None,
     voting_enabled=None,
     button_type=None,
@@ -158,7 +180,10 @@ def update_notice(
         if not notice:
             return False
 
-        notice["content"] = _normalize_content(content)
+        if content:
+            merged_content = dict(notice.get("content") or {})
+            merged_content.update(content)
+            notice["content"] = _normalize_content(merged_content)
         if status in {"draft", "published"}:
             notice["status"] = status
         if voting_enabled is not None:
@@ -167,9 +192,7 @@ def update_notice(
         if remove_button:
             notice.pop("button", None)
         else:
-            button = _build_button(button_type, button_label, button_value)
-            if button:
-                notice["button"] = button
+            _update_button(notice, button_type, button_label, button_value)
         _save_notices(notices)
         return True
 

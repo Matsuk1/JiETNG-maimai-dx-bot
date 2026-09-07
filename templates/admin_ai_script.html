@@ -1,0 +1,809 @@
+<script>
+(() => {
+  'use strict';
+
+  const standalone = window.navigator.standalone === true
+    || window.matchMedia('(display-mode: standalone)').matches;
+  if (standalone) document.documentElement.classList.add('ai-standalone');
+
+  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+  const messagesElement = document.getElementById('ai-monitor-messages');
+  const conversationList = document.getElementById('ai-conversation-list');
+  const currentTitle = document.getElementById('ai-current-title');
+  const inputElement = document.getElementById('ai-monitor-input');
+  const imageInput = document.getElementById('ai-monitor-images');
+  const attachButton = document.getElementById('ai-monitor-attach');
+  const sendButton = document.getElementById('ai-monitor-send');
+  const newChatButton = document.getElementById('ai-new-chat');
+  const form = document.getElementById('ai-monitor-form');
+  const CONVERSATIONS_KEY = 'jietng.admin.aiConversations.v1';
+  const ACTIVE_KEY = 'jietng.admin.aiActiveConversation.v1';
+  const MAX_CONVERSATIONS = 20;
+  const MAX_MESSAGES = 20;
+
+  let conversations = loadConversations();
+  let activeConversationId = readStorage(ACTIVE_KEY);
+  let pendingImages = [];
+  let pollTimer = null;
+  let pollFailures = 0;
+  let streamingMessage = null;
+  let busy = false;
+  let jobAccepted = false;
+  let stopRequested = false;
+  let composing = false;
+  let compositionEndedAt = 0;
+
+  function readStorage(key) {
+    try {
+      return localStorage.getItem(key) || '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function conversationId() {
+    if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+    return Array.from(crypto.getRandomValues(new Uint8Array(18)), (byte) => (
+      byte.toString(16).padStart(2, '0')
+    )).join('');
+  }
+
+  function cleanMessage(message) {
+    if (!message || !['user', 'assistant'].includes(message.role)) return null;
+    return {
+      role: message.role,
+      content: String(message.content || '').slice(0, 8000),
+      renderedHtml: String(message.renderedHtml || '').slice(0, 24000),
+      reasoning: String(message.reasoning || '').slice(0, 12000),
+      reasoningHtml: String(message.reasoningHtml || '').slice(0, 30000),
+      imageNote: String(message.imageNote || '').slice(0, 500),
+      images: Array.isArray(message.images)
+        ? message.images.filter((item) => typeof item === 'string').slice(0, 4)
+        : [],
+    };
+  }
+
+  function loadConversations() {
+    try {
+      const stored = JSON.parse(localStorage.getItem(CONVERSATIONS_KEY) || '[]');
+      if (!Array.isArray(stored)) return [];
+      return stored.map((conversation) => {
+        if (!conversation || typeof conversation.id !== 'string') return null;
+        return {
+          id: conversation.id,
+          title: String(conversation.title || 'New chat').slice(0, 60),
+          updatedAt: Number(conversation.updatedAt) || Date.now(),
+          jobId: typeof conversation.jobId === 'string' ? conversation.jobId : '',
+          messages: Array.isArray(conversation.messages)
+            ? conversation.messages.map(cleanMessage).filter(Boolean).slice(-MAX_MESSAGES)
+            : [],
+        };
+      }).filter(Boolean).slice(0, MAX_CONVERSATIONS);
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function saveConversations() {
+    conversations.sort((a, b) => b.updatedAt - a.updatedAt);
+    try {
+      localStorage.setItem(CONVERSATIONS_KEY, JSON.stringify(conversations.slice(0, MAX_CONVERSATIONS)));
+      localStorage.setItem(ACTIVE_KEY, activeConversationId);
+    } catch (_) {
+    }
+  }
+
+  function activeConversation() {
+    return conversations.find((conversation) => conversation.id === activeConversationId) || null;
+  }
+
+  function makeConversation(select = true) {
+    const conversation = {
+      id: conversationId(),
+      title: 'New chat',
+      updatedAt: Date.now(),
+      jobId: '',
+      messages: [],
+    };
+    conversations.unshift(conversation);
+    if (select) activeConversationId = conversation.id;
+    trimConversations();
+    saveConversations();
+    return conversation;
+  }
+
+  function trimConversations() {
+    if (conversations.length <= MAX_CONVERSATIONS) return;
+    const removed = conversations.splice(MAX_CONVERSATIONS);
+    removed.forEach((conversation) => releaseConversation(conversation.id));
+  }
+
+  function titleFromQuestion(question, hasImages) {
+    const plain = question
+      .replace(/[`*_>#\[\]()]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!plain) return hasImages ? 'Image request' : 'New chat';
+    return plain.length > 34 ? plain.slice(0, 34).trimEnd() + '…' : plain;
+  }
+
+  function renderConversationList() {
+    conversationList.replaceChildren();
+    conversations.forEach((conversation) => {
+      const item = document.createElement('div');
+      item.className = 'ai-conversation-item';
+      item.classList.toggle('active', conversation.id === activeConversationId);
+      item.classList.toggle('running', Boolean(conversation.jobId));
+
+      const select = document.createElement('button');
+      select.type = 'button';
+      select.className = 'ai-conversation-select';
+      select.textContent = conversation.title;
+      select.title = conversation.title;
+      select.addEventListener('click', () => switchConversation(conversation.id));
+
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'ai-conversation-delete';
+      remove.textContent = '×';
+      remove.title = 'Delete chat';
+      remove.setAttribute('aria-label', `Delete ${conversation.title}`);
+      remove.addEventListener('click', () => deleteConversation(conversation.id));
+      item.append(select, remove);
+      conversationList.appendChild(item);
+    });
+  }
+
+  function setHistoryOpen(open) {
+    document.body.classList.toggle('history-open', open);
+  }
+
+  function switchConversation(id) {
+    if (id === activeConversationId) {
+      setHistoryOpen(false);
+      return;
+    }
+    if (!conversations.some((conversation) => conversation.id === id)) return;
+    if (pollTimer) clearTimeout(pollTimer);
+    pollTimer = null;
+    activeConversationId = id;
+    pendingImages.forEach((image) => URL.revokeObjectURL(image.url));
+    pendingImages = [];
+    streamingMessage = null;
+    stopRequested = false;
+    jobAccepted = false;
+    renderAttachments();
+    saveConversations();
+    renderWorkspace();
+    setHistoryOpen(false);
+  }
+
+  function startNewChat() {
+    const current = activeConversation();
+    if (current && !current.messages.length && !current.jobId) {
+      setHistoryOpen(false);
+      inputElement.focus({preventScroll: true});
+      return;
+    }
+    makeConversation();
+    streamingMessage = null;
+    renderWorkspace();
+    setHistoryOpen(false);
+  }
+
+  async function releaseConversation(id) {
+    try {
+      await fetch(`/admin/api/ai-monitor/session?conversation_id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        headers: {'X-CSRFToken': csrfToken}
+      });
+    } catch (_) {
+    }
+  }
+
+  async function deleteConversation(id) {
+    const conversation = conversations.find((item) => item.id === id);
+    if (!conversation) return;
+    conversations = conversations.filter((item) => item.id !== id);
+    releaseConversation(id);
+    if (!conversations.length) makeConversation(false);
+    if (activeConversationId === id) activeConversationId = conversations[0].id;
+    streamingMessage = null;
+    saveConversations();
+    renderWorkspace();
+  }
+
+  function scrollToLatest() {
+    messagesElement.scrollTop = messagesElement.scrollHeight;
+  }
+
+  function autoSizeInput() {
+    inputElement.style.height = 'auto';
+    inputElement.style.height = Math.min(inputElement.scrollHeight, 180) + 'px';
+  }
+
+  async function optimizeImage(file) {
+    if (file.size <= 850 * 1024 || !['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+      return file;
+    }
+    const source = URL.createObjectURL(file);
+    try {
+      const image = new Image();
+      image.src = source;
+      await image.decode();
+      const scale = Math.min(1, 1600 / Math.max(image.naturalWidth, image.naturalHeight));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+      canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+      const context = canvas.getContext('2d');
+      context.fillStyle = '#fff';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      let blob = null;
+      for (const quality of [0.82, 0.68, 0.55]) {
+        blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
+        if (blob && blob.size <= 850 * 1024) break;
+      }
+      if (!blob) return file;
+      return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', {
+        type: 'image/jpeg',
+        lastModified: file.lastModified,
+      });
+    } catch (_) {
+      return file;
+    } finally {
+      URL.revokeObjectURL(source);
+    }
+  }
+
+  async function copyText(value, button) {
+    const original = button.textContent;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value);
+      } else {
+        const fallback = document.createElement('textarea');
+        fallback.value = value;
+        fallback.style.position = 'fixed';
+        fallback.style.opacity = '0';
+        document.body.appendChild(fallback);
+        fallback.select();
+        document.execCommand('copy');
+        fallback.remove();
+      }
+      button.textContent = 'Copied';
+    } catch (_) {
+      button.textContent = 'Copy failed';
+    }
+    setTimeout(() => { button.textContent = original; }, 1400);
+  }
+
+  function makeCopyButton(value, label, className = '') {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = `ai-copy-button ${className}`.trim();
+    button.textContent = 'Copy';
+    button.title = label;
+    button.setAttribute('aria-label', label);
+    button.addEventListener('click', () => copyText(value, button));
+    return button;
+  }
+
+  function renderSafeHtml(container, renderedHtml, fallbackText) {
+    container.classList.toggle('markdown-rendered', Boolean(renderedHtml));
+    if (!renderedHtml) {
+      container.textContent = fallbackText;
+      return;
+    }
+    const template = document.createElement('template');
+    template.innerHTML = renderedHtml;
+    const allowedTags = new Set([
+      'A', 'BLOCKQUOTE', 'BR', 'CODE', 'DEL', 'EM', 'H1', 'H2', 'H3',
+      'H4', 'H5', 'H6', 'HR', 'LI', 'OL', 'P', 'PRE', 'S', 'STRONG', 'TABLE',
+      'TBODY', 'TD', 'TH', 'THEAD', 'TR', 'UL'
+    ]);
+    Array.from(template.content.querySelectorAll('*')).forEach((element) => {
+      if (!allowedTags.has(element.tagName)) {
+        if (['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'TEMPLATE'].includes(element.tagName)) {
+          element.remove();
+        } else {
+          element.replaceWith(document.createTextNode(element.textContent || ''));
+        }
+        return;
+      }
+      Array.from(element.attributes).forEach((attribute) => {
+        const keep = element.tagName === 'A' && ['href', 'title'].includes(attribute.name);
+        if (!keep) element.removeAttribute(attribute.name);
+      });
+      if (element.tagName !== 'A') return;
+      const href = element.getAttribute('href') || '';
+      let allowed = href.startsWith('#');
+      try {
+        const target = new URL(href, window.location.origin);
+        allowed = allowed || ['http:', 'https:', 'mailto:'].includes(target.protocol);
+        if (allowed && target.origin !== window.location.origin && target.protocol !== 'mailto:') {
+          element.target = '_blank';
+          element.rel = 'noopener noreferrer';
+        }
+      } catch (_) {
+        allowed = false;
+      }
+      if (!allowed) element.removeAttribute('href');
+    });
+    template.content.querySelectorAll('table').forEach((table) => {
+      const scroll = document.createElement('div');
+      scroll.className = 'ai-table-scroll';
+      table.replaceWith(scroll);
+      scroll.appendChild(table);
+    });
+    container.replaceChildren(template.content);
+    container.querySelectorAll('pre').forEach((pre) => {
+      const code = pre.querySelector('code');
+      const value = (code || pre).textContent || '';
+      if (!value) return;
+      pre.classList.add('ai-code-block');
+      pre.appendChild(makeCopyButton(value, 'Copy code', 'ai-code-copy'));
+    });
+  }
+
+  function responseImages(images) {
+    return (images || []).map((reference) => {
+      const generated = reference.startsWith('generated:');
+      const value = generated ? reference.slice('generated:'.length) : reference;
+      return {
+        src: generated
+          ? `/admin/api/ai-monitor/image?token=${encodeURIComponent(value)}`
+          : `/admin/api/ai-monitor/image?path=${encodeURIComponent(value)}`,
+        alt: generated ? 'Generated image' : (value.split('/').pop() || 'AI image')
+      };
+    });
+  }
+
+  function renderMessageImages(body, images) {
+    body.querySelector('.ai-message-media')?.remove();
+    if (!images.length) return;
+    const media = document.createElement('div');
+    media.className = 'ai-message-media';
+    images.forEach((image) => {
+      const element = document.createElement('img');
+      element.src = image.src;
+      element.alt = image.alt || 'AI image';
+      element.loading = 'lazy';
+      media.appendChild(element);
+    });
+    body.appendChild(media);
+  }
+
+  function renderReplyActions(body, content) {
+    body.querySelector('.ai-message-actions')?.remove();
+    if (!content) return;
+    const actions = document.createElement('div');
+    actions.className = 'ai-message-actions';
+    actions.appendChild(makeCopyButton(content, 'Copy response'));
+    body.appendChild(actions);
+  }
+
+  function renderReasoning(body, reasoning, reasoningHtml) {
+    if (!reasoning) return;
+    const details = document.createElement('details');
+    details.className = 'ai-reasoning';
+    const summary = document.createElement('summary');
+    summary.textContent = 'Reasoning summary';
+    const text = document.createElement('div');
+    text.className = 'ai-reasoning-text';
+    renderSafeHtml(text, reasoningHtml, reasoning);
+    details.append(summary, text);
+    body.prepend(details);
+  }
+
+  function appendMessage(message, remember = true) {
+    const element = document.createElement('div');
+    element.className = 'ai-message ' + message.role;
+    const body = document.createElement('div');
+    body.className = 'ai-message-body';
+    const text = document.createElement('div');
+    text.className = 'ai-message-text';
+    if (message.role === 'assistant') {
+      renderSafeHtml(text, message.renderedHtml, message.content);
+    } else {
+      text.textContent = message.content;
+    }
+    body.appendChild(text);
+    renderReasoning(body, message.reasoning, message.reasoningHtml);
+    const images = message.role === 'assistant' ? responseImages(message.images) : (message.previewImages || []);
+    renderMessageImages(body, images);
+    if (message.role === 'assistant') renderReplyActions(body, message.content);
+    element.appendChild(body);
+    messagesElement.appendChild(element);
+    scrollToLatest();
+
+    if (remember && ['user', 'assistant'].includes(message.role)) {
+      const conversation = activeConversation();
+      conversation.messages.push(cleanMessage(message));
+      conversation.messages = conversation.messages.slice(-MAX_MESSAGES);
+      conversation.updatedAt = Date.now();
+      saveConversations();
+      renderConversationList();
+    }
+    return element;
+  }
+
+  function renderEmpty() {
+    const empty = document.createElement('div');
+    empty.className = 'ai-empty';
+    empty.setAttribute('aria-hidden', 'true');
+    const logo = document.createElement('img');
+    logo.src = '/static/pics/logo.png';
+    logo.alt = '';
+    empty.appendChild(logo);
+    messagesElement.appendChild(empty);
+  }
+
+  function renderWorkspace() {
+    const conversation = activeConversation();
+    messagesElement.replaceChildren();
+    currentTitle.textContent = conversation.title;
+    if (!conversation.messages.length) {
+      renderEmpty();
+    } else {
+      conversation.messages.forEach((message) => appendMessage(message, false));
+    }
+    renderConversationList();
+    setBusy(Boolean(conversation.jobId));
+    if (conversation.jobId) {
+      jobAccepted = true;
+      pollJob(conversation.jobId, conversation.id);
+    }
+  }
+
+  function createStreamingMessage() {
+    document.querySelector('.ai-empty')?.remove();
+    const message = appendMessage({role: 'assistant', content: ''}, false);
+    const body = message.querySelector('.ai-message-body');
+    const activity = document.createElement('div');
+    activity.className = 'ai-activity';
+    const reasoning = document.createElement('details');
+    reasoning.className = 'ai-reasoning';
+    const summary = document.createElement('summary');
+    summary.textContent = 'Reasoning summary';
+    const reasoningText = document.createElement('div');
+    reasoningText.className = 'ai-reasoning-text';
+    reasoning.append(summary, reasoningText);
+    body.prepend(activity, reasoning);
+    return message;
+  }
+
+  function updateStream(data, completed = false) {
+    const answer = data.answer || '';
+    const reasoning = data.reasoning || '';
+    const activity = data.activity || (answer ? 'Responding' : 'Thinking');
+    if (!streamingMessage) streamingMessage = createStreamingMessage();
+    streamingMessage.classList.toggle('streaming', !completed);
+    const body = streamingMessage.querySelector('.ai-message-body');
+    const activityElement = body.querySelector('.ai-activity');
+    const reasoningElement = body.querySelector('.ai-reasoning');
+    const stopped = data.status === 'stopped';
+    activityElement.textContent = completed ? (stopped ? 'Stopped' : '') : activity;
+    activityElement.hidden = completed && !stopped;
+    reasoningElement.hidden = !reasoning;
+    renderSafeHtml(
+      reasoningElement.querySelector('.ai-reasoning-text'),
+      data.reasoning_html || '',
+      reasoning
+    );
+    renderSafeHtml(body.querySelector('.ai-message-text'), data.answer_html || '', answer);
+    renderMessageImages(body, responseImages(data.images));
+    renderReplyActions(body, completed ? answer : '');
+    setStatus(completed ? 'Ready' : activity);
+    scrollToLatest();
+
+    if (completed) {
+      const conversation = activeConversation();
+      conversation.messages.push(cleanMessage({
+        role: 'assistant',
+        content: answer,
+        renderedHtml: data.answer_html || '',
+        reasoning,
+        reasoningHtml: data.reasoning_html || '',
+        imageNote: (data.images || []).length ? '\n[Images: AI output]' : '',
+        images: data.images || [],
+      }));
+      conversation.messages = conversation.messages.slice(-MAX_MESSAGES);
+      conversation.updatedAt = Date.now();
+      streamingMessage = null;
+      saveConversations();
+      renderConversationList();
+    }
+  }
+
+  function renderAttachments() {
+    const container = document.getElementById('ai-monitor-attachments');
+    container.replaceChildren();
+    container.hidden = pendingImages.length === 0;
+    pendingImages.forEach((item, index) => {
+      const preview = document.createElement('div');
+      preview.className = 'ai-attachment';
+      const image = document.createElement('img');
+      image.src = item.url;
+      image.alt = item.file.name;
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.textContent = '×';
+      remove.setAttribute('aria-label', `Remove ${item.file.name}`);
+      remove.addEventListener('click', () => removeImage(index));
+      preview.append(image, remove);
+      container.appendChild(preview);
+    });
+  }
+
+  function selectImages(event) {
+    let rejected = false;
+    for (const file of Array.from(event.target.files || [])) {
+      if (pendingImages.length >= 3) {
+        rejected = true;
+        break;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        rejected = true;
+        continue;
+      }
+      pendingImages.push({file, url: URL.createObjectURL(file)});
+    }
+    event.target.value = '';
+    renderAttachments();
+    if (rejected) appendMessage({role: 'error', content: 'Use up to 3 images, 5MB each.'}, false);
+  }
+
+  function removeImage(index) {
+    const removed = pendingImages.splice(index, 1)[0];
+    if (removed) URL.revokeObjectURL(removed.url);
+    renderAttachments();
+  }
+
+  function setBusy(nextBusy) {
+    busy = nextBusy;
+    inputElement.disabled = nextBusy;
+    imageInput.disabled = nextBusy;
+    attachButton.classList.toggle('disabled', nextBusy);
+    sendButton.disabled = false;
+    sendButton.classList.toggle('stop', nextBusy);
+    sendButton.querySelector('span').textContent = nextBusy ? '■' : '↑';
+    sendButton.title = nextBusy ? 'Stop' : 'Send';
+    sendButton.setAttribute('aria-label', nextBusy ? 'Stop' : 'Send');
+    setStatus(nextBusy ? 'Checking' : 'Ready');
+  }
+
+  function setStatus(text, isError = false) {
+    const status = document.getElementById('ai-monitor-status');
+    status.querySelector('span').textContent = text;
+    status.classList.toggle('busy', busy && !isError);
+    status.classList.toggle('error', isError);
+  }
+
+  function setConversationJob(conversation, jobId) {
+    conversation.jobId = jobId;
+    conversation.updatedAt = Date.now();
+    saveConversations();
+    renderConversationList();
+  }
+
+  function clearConversationJob(conversation) {
+    if (pollTimer) clearTimeout(pollTimer);
+    pollTimer = null;
+    pollFailures = 0;
+    jobAccepted = false;
+    stopRequested = false;
+    conversation.jobId = '';
+    saveConversations();
+    renderConversationList();
+  }
+
+  function schedulePoll(jobId, conversationId, delay = 400) {
+    if (pollTimer) clearTimeout(pollTimer);
+    pollTimer = setTimeout(() => pollJob(jobId, conversationId), delay);
+  }
+
+  async function pollJob(jobId, conversationId) {
+    const conversation = conversations.find((item) => item.id === conversationId);
+    if (!conversation || conversation.jobId !== jobId || activeConversationId !== conversationId) return;
+    if (document.hidden) {
+      setStatus('Waiting');
+      return;
+    }
+    try {
+      const response = await fetch(`/admin/api/ai-monitor/query/${encodeURIComponent(jobId)}`, {
+        cache: 'no-store'
+      });
+      const data = await response.json().catch(() => ({}));
+      pollFailures = 0;
+      if (response.status === 202) {
+        jobAccepted = true;
+        updateStream(data);
+        if (stopRequested) {
+          stopMonitor();
+          return;
+        }
+        schedulePoll(jobId, conversationId);
+        return;
+      }
+      if (!response.ok || !data.success) {
+        if (data.answer || data.reasoning) updateStream(data, true);
+        else streamingMessage?.remove();
+        streamingMessage = null;
+        clearConversationJob(conversation);
+        setBusy(false);
+        setStatus('Error', true);
+        appendMessage({role: 'error', content: data.message || `HTTP ${response.status}`}, false);
+        return;
+      }
+      updateStream(data, true);
+      clearConversationJob(conversation);
+      setBusy(false);
+      inputElement.focus({preventScroll: true});
+    } catch (_) {
+      pollFailures += 1;
+      setStatus('Reconnecting');
+      if (pollFailures >= 8) {
+        clearConversationJob(conversation);
+        setBusy(false);
+        setStatus('Error', true);
+        appendMessage({role: 'error', content: 'Could not reconnect to the operation.'}, false);
+      } else {
+        schedulePoll(jobId, conversationId, 2000);
+      }
+    }
+  }
+
+  async function submitMessage(event) {
+    event.preventDefault();
+    if (busy) {
+      stopMonitor();
+      return;
+    }
+    const running = conversations.find((conversation) => conversation.jobId);
+    if (running && running.id !== activeConversationId) {
+      switchConversation(running.id);
+      return;
+    }
+
+    const conversation = activeConversation();
+    const question = inputElement.value.trim();
+    if (!question && !pendingImages.length) return;
+    const history = conversation.messages.map((message) => ({
+      role: message.role,
+      content: message.content + message.imageNote,
+    }));
+    const currentImages = pendingImages;
+    appendMessage({
+      role: 'user',
+      content: question,
+      imageNote: currentImages.length
+        ? `\n[Images: ${currentImages.map((item) => item.file.name).join(', ')}]`
+        : '',
+      previewImages: currentImages.map((item) => ({src: item.url, alt: item.file.name})),
+    });
+    if (conversation.title === 'New chat') {
+      conversation.title = titleFromQuestion(question, currentImages.length > 0);
+      currentTitle.textContent = conversation.title;
+    }
+    pendingImages = [];
+    renderAttachments();
+    inputElement.value = '';
+    autoSizeInput();
+    setBusy(true);
+    streamingMessage = null;
+    jobAccepted = false;
+    stopRequested = false;
+
+    const jobId = conversationId();
+    setConversationJob(conversation, jobId);
+    try {
+      const payload = new FormData();
+      payload.append('job_id', jobId);
+      payload.append('conversation_id', conversation.id);
+      payload.append('question', question);
+      payload.append('history', JSON.stringify(history));
+      const uploadImages = await Promise.all(currentImages.map((item) => optimizeImage(item.file)));
+      if (stopRequested) {
+        clearConversationJob(conversation);
+        setBusy(false);
+        return;
+      }
+      uploadImages.forEach((file) => payload.append('images', file, file.name));
+      const response = await fetch('/admin/api/ai-monitor/query', {
+        method: 'POST',
+        headers: {'X-CSRFToken': csrfToken},
+        body: payload
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.success) {
+        clearConversationJob(conversation);
+        setBusy(false);
+        setStatus('Error', true);
+        appendMessage({role: 'error', content: data.message || `HTTP ${response.status}`}, false);
+        return;
+      }
+      setConversationJob(conversation, data.job_id || jobId);
+      jobAccepted = true;
+      if (stopRequested) {
+        stopMonitor();
+        return;
+      }
+      pollJob(conversation.jobId, conversation.id);
+    } catch (_) {
+      if (stopRequested) {
+        clearConversationJob(conversation);
+        setBusy(false);
+        return;
+      }
+      setStatus('Reconnecting');
+      schedulePoll(conversation.jobId, conversation.id, 1200);
+    }
+  }
+
+  async function stopMonitor() {
+    const conversation = activeConversation();
+    if (!conversation.jobId) return;
+    stopRequested = true;
+    sendButton.disabled = true;
+    setStatus('Stopping');
+    if (!jobAccepted) return;
+    try {
+      const response = await fetch(
+        `/admin/api/ai-monitor/query/${encodeURIComponent(conversation.jobId)}`,
+        {method: 'DELETE', headers: {'X-CSRFToken': csrfToken}}
+      );
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.success) throw new Error(data.message || `HTTP ${response.status}`);
+      schedulePoll(conversation.jobId, conversation.id, 100);
+    } catch (error) {
+      sendButton.disabled = false;
+      setStatus('Stop failed', true);
+      appendMessage({role: 'error', content: error.message || 'Could not stop the operation.'}, false);
+    }
+  }
+
+  function handleKeydown(event) {
+    const mobileInput = window.matchMedia('(max-width: 768px), (pointer: coarse)').matches;
+    if (mobileInput) return;
+    const selectingCandidate = composing
+      || event.isComposing
+      || event.keyCode === 229
+      || Date.now() - compositionEndedAt < 120;
+    if (event.key === 'Enter' && !event.shiftKey && !selectingCandidate) {
+      event.preventDefault();
+      form.requestSubmit();
+    }
+  }
+
+  if (!conversations.length) makeConversation(false);
+  if (!conversations.some((conversation) => conversation.id === activeConversationId)) {
+    activeConversationId = conversations[0].id;
+  }
+  saveConversations();
+  renderWorkspace();
+  autoSizeInput();
+
+  form.addEventListener('submit', submitMessage);
+  imageInput.addEventListener('change', selectImages);
+  newChatButton.addEventListener('click', startNewChat);
+  document.getElementById('ai-menu-button').addEventListener('click', () => setHistoryOpen(true));
+  document.getElementById('ai-sidebar-close').addEventListener('click', () => setHistoryOpen(false));
+  document.getElementById('ai-sidebar-backdrop').addEventListener('click', () => setHistoryOpen(false));
+  inputElement.addEventListener('input', autoSizeInput);
+  inputElement.addEventListener('keydown', handleKeydown);
+  inputElement.addEventListener('compositionstart', () => { composing = true; });
+  inputElement.addEventListener('compositionend', () => {
+    composing = false;
+    compositionEndedAt = Date.now();
+  });
+  document.addEventListener('visibilitychange', () => {
+    const conversation = activeConversation();
+    if (!document.hidden && conversation.jobId) pollJob(conversation.jobId, conversation.id);
+  });
+
+  if (!window.matchMedia('(max-width: 768px), (pointer: coarse)').matches && !busy) {
+    inputElement.focus({preventScroll: true});
+  }
+})();
+</script>

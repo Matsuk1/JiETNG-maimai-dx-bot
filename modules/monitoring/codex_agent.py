@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import atexit
+import hashlib
+import hmac
 import json
 import logging
 import os
 import queue
+import re
 import secrets
 import shutil
 import signal
@@ -28,6 +31,7 @@ from modules.config_loader import (
     AI_MONITOR_MODEL,
     AI_MONITOR_SESSION_TTL_SECONDS,
     AI_MONITOR_TIMEOUT_SECONDS,
+    BIND_TOKEN_KEY,
     PORT,
 )
 from modules.monitoring.file_access import PROJECT_ROOT, is_asset_image, resolve_allowed_path
@@ -51,7 +55,11 @@ MCP_TOOLS = [
     "manage_project_file",
     "process_admin_image",
 ]
-_SERVICE_BRIDGE_TOKEN = secrets.token_urlsafe(32)
+_SERVICE_BRIDGE_TOKEN = hmac.new(
+    BIND_TOKEN_KEY,
+    b"jietng-monitor-service-bridge-v1",
+    hashlib.sha256,
+).hexdigest()
 OUTPUT_SCHEMA = {
     "type": "object",
     "properties": {
@@ -78,6 +86,7 @@ DEVELOPER_INSTRUCTIONS = "\n".join([
     "Use inspect_admin_service for live tasks, notices, tips/ads, backups, DXData, and notifications.",
     "Use operate_admin_service only when the current admin message explicitly requests the exact action.",
     "Set confirmed=true only for such explicit requests. Never perform adjacent or inferred actions.",
+    "For update actions, send only changed fields. Localized dictionaries may contain one language.",
     "Only when the current admin question explicitly requests a file change, manage_project_file may",
     "modify UTF-8 text under data/dxdata, assets, or languages. Read the current file and SHA-256 first,",
     "make the smallest requested change, then read it again to verify. Never modify any other path.",
@@ -104,6 +113,10 @@ class CodexMonitorTimeout(CodexMonitorError):
     """Raised when Codex exceeds the configured deadline."""
 
 
+class CodexMonitorCancelled(CodexMonitorError):
+    """Raised when the administrator interrupts the active turn."""
+
+
 @dataclass
 class _SessionThread:
     thread_id: str
@@ -114,6 +127,35 @@ class _SessionThread:
 class _GeneratedImage:
     path: Path
     expires_at: float
+
+
+def _streamed_answer_text(raw_message: str) -> str:
+    """Extract the text field from an incomplete structured-output message."""
+    stripped = raw_message.lstrip()
+    if stripped and not stripped.startswith("{"):
+        return raw_message
+    match = re.search(r'"text"\s*:\s*"', raw_message)
+    if match is None:
+        return ""
+    start = match.end()
+    escaped = False
+    end = len(raw_message)
+    for index in range(start, len(raw_message)):
+        character = raw_message[index]
+        if escaped:
+            escaped = False
+        elif character == "\\":
+            escaped = True
+        elif character == '"':
+            end = index
+            break
+    encoded = raw_message[start:end]
+    while encoded:
+        try:
+            return json.loads(f'"{encoded}"')
+        except json.JSONDecodeError:
+            encoded = encoded[:-1]
+    return ""
 
 
 class _GeneratedImageStore:
@@ -305,6 +347,11 @@ class _CodexAppServer:
         self._stderr: deque[str] = deque(maxlen=40)
         self._sessions: dict[str, _SessionThread] = {}
         self._next_request_id = 1
+        self._request_id_lock = threading.Lock()
+        self._write_lock = threading.Lock()
+        self._active_lock = threading.Lock()
+        self._active_turn: tuple[str, str, str] | None = None
+        self._cancelled_sessions: set[str] = set()
         self._owner_pid = os.getpid()
         self._run_lock = threading.Lock()
         self._isolated_home: tempfile.TemporaryDirectory[str] | None = None
@@ -327,7 +374,12 @@ class _CodexAppServer:
             "-c",
             f"mcp_servers.jietng_monitor.cwd={_toml_string(str(PROJECT_ROOT))}",
             "-c",
-            'mcp_servers.jietng_monitor.env_vars=["JIETNG_MONITOR_PID","JIETNG_MONITOR_MEDIA_DIR"]',
+            "mcp_servers.jietng_monitor.env_vars=" + _toml_array([
+                "JIETNG_MONITOR_PID",
+                "JIETNG_MONITOR_MEDIA_DIR",
+                "JIETNG_MONITOR_BRIDGE_TOKEN",
+                "JIETNG_MONITOR_BRIDGE_URL",
+            ]),
             "-c",
             "mcp_servers.jietng_monitor.required=true",
             "-c",
@@ -354,14 +406,32 @@ class _CodexAppServer:
             self._stderr.append(line.rstrip())
 
     def _write(self, message: dict[str, Any]) -> None:
-        process = self._process
-        if process is None or process.poll() is not None or process.stdin is None:
-            raise CodexMonitorError("Codex app-server is not running")
-        try:
-            process.stdin.write(json.dumps(message, ensure_ascii=False) + "\n")
-            process.stdin.flush()
-        except (BrokenPipeError, OSError) as exc:
-            raise CodexMonitorError("Codex app-server connection closed") from exc
+        with self._write_lock:
+            process = self._process
+            if process is None or process.poll() is not None or process.stdin is None:
+                raise CodexMonitorError("Codex app-server is not running")
+            try:
+                process.stdin.write(json.dumps(message, ensure_ascii=False) + "\n")
+                process.stdin.flush()
+            except (BrokenPipeError, OSError) as exc:
+                raise CodexMonitorError("Codex app-server connection closed") from exc
+
+    def _allocate_request_id(self) -> int:
+        with self._request_id_lock:
+            request_id = self._next_request_id
+            self._next_request_id += 1
+            return request_id
+
+    def _interrupt_turn(self, thread_id: str, turn_id: str) -> None:
+        self._write({
+            "id": self._allocate_request_id(),
+            "method": "turn/interrupt",
+            "params": {"threadId": thread_id, "turnId": turn_id},
+        })
+
+    def _is_cancelled(self, session_id: str) -> bool:
+        with self._active_lock:
+            return session_id in self._cancelled_sessions
 
     def _handle_server_request(self, message: dict[str, Any]) -> bool:
         if "id" not in message or "method" not in message:
@@ -395,28 +465,51 @@ class _CodexAppServer:
         deadline: float,
         *,
         preserve_unmatched: bool = False,
+        on_message: Callable[[dict[str, Any]], None] | None = None,
+        idle_timeout: float | None = None,
+        cancel_check: Callable[[], bool] | None = None,
     ) -> dict[str, Any]:
         unmatched = []
         while True:
+            if cancel_check is not None and cancel_check():
+                raise CodexMonitorCancelled("Stopped by administrator")
             remaining = deadline - time.monotonic()
             if remaining <= 0:
+                detail = (
+                    f"Codex made no progress for {int(idle_timeout)} seconds"
+                    if idle_timeout is not None
+                    else f"Codex diagnosis exceeded {AI_MONITOR_TIMEOUT_SECONDS} seconds"
+                )
                 raise CodexMonitorTimeout(
-                    f"Codex diagnosis exceeded {AI_MONITOR_TIMEOUT_SECONDS} seconds"
+                    detail
                 )
             if self._pending:
                 message = self._pending.popleft()
             else:
                 try:
-                    message = self._messages.get(timeout=remaining)
+                    message = self._messages.get(
+                        timeout=min(remaining, 0.25) if cancel_check is not None else remaining
+                    )
                 except queue.Empty as exc:
+                    if cancel_check is not None and time.monotonic() < deadline:
+                        continue
+                    detail = (
+                        f"Codex made no progress for {int(idle_timeout)} seconds"
+                        if idle_timeout is not None
+                        else f"Codex diagnosis exceeded {AI_MONITOR_TIMEOUT_SECONDS} seconds"
+                    )
                     raise CodexMonitorTimeout(
-                        f"Codex diagnosis exceeded {AI_MONITOR_TIMEOUT_SECONDS} seconds"
+                        detail
                     ) from exc
             if message.get("_transport_closed"):
                 detail = self._stderr[-1] if self._stderr else "process exited"
                 raise CodexMonitorError(f"Codex app-server stopped: {detail[:500]}")
+            if idle_timeout is not None:
+                deadline = time.monotonic() + idle_timeout
             if self._handle_server_request(message):
                 continue
+            if on_message is not None:
+                on_message(message)
             if predicate(message):
                 if preserve_unmatched:
                     self._pending.extendleft(reversed(unmatched))
@@ -429,14 +522,15 @@ class _CodexAppServer:
         method: str,
         params: dict[str, Any],
         deadline: float,
+        cancel_check: Callable[[], bool] | None = None,
     ) -> dict[str, Any]:
-        request_id = self._next_request_id
-        self._next_request_id += 1
+        request_id = self._allocate_request_id()
         self._write({"id": request_id, "method": method, "params": params})
         response = self._wait_for(
             lambda item: item.get("id") == request_id,
             deadline,
             preserve_unmatched=True,
+            cancel_check=cancel_check,
         )
         if "error" in response:
             detail = json.dumps(response["error"], ensure_ascii=False, default=str)
@@ -444,8 +538,14 @@ class _CodexAppServer:
         result = response.get("result", {})
         return result if isinstance(result, dict) else {}
 
-    def _start(self, deadline: float) -> None:
+    def _start(
+        self,
+        deadline: float,
+        cancel_check: Callable[[], bool] | None = None,
+    ) -> None:
         self._stop()
+        if cancel_check is not None and cancel_check():
+            raise CodexMonitorCancelled("Stopped by administrator")
         environment = os.environ.copy()
         environment["JIETNG_MONITOR_PID"] = str(os.getpid())
         source_home = Path(environment.get("CODEX_HOME", Path.home() / ".codex"))
@@ -500,6 +600,7 @@ class _CodexAppServer:
                     },
                 },
                 deadline,
+                cancel_check,
             )
             self._write({"method": "initialized"})
         except Exception:
@@ -507,13 +608,17 @@ class _CodexAppServer:
             raise
         logger.info("[AIMonitor] Persistent Codex app-server started: pid=%s", process.pid)
 
-    def _ensure_started(self, deadline: float) -> None:
+    def _ensure_started(
+        self,
+        deadline: float,
+        cancel_check: Callable[[], bool] | None = None,
+    ) -> None:
         if os.getpid() != self._owner_pid:
             self._process = None
             self._sessions.clear()
             self._owner_pid = os.getpid()
         if self._process is None or self._process.poll() is not None:
-            self._start(deadline)
+            self._start(deadline, cancel_check)
 
     def _stop(self) -> None:
         process = self._process
@@ -556,7 +661,11 @@ class _CodexAppServer:
         for session_id in expired:
             self._drop_session(session_id, deadline)
 
-    def _new_thread(self, deadline: float) -> str:
+    def _new_thread(
+        self,
+        deadline: float,
+        cancel_check: Callable[[], bool] | None = None,
+    ) -> str:
         params: dict[str, Any] = {
             "cwd": str(PROJECT_ROOT),
             "approvalPolicy": "never",
@@ -567,7 +676,7 @@ class _CodexAppServer:
         }
         if AI_MONITOR_MODEL:
             params["model"] = AI_MONITOR_MODEL
-        result = self._request("thread/start", params, deadline)
+        result = self._request("thread/start", params, deadline, cancel_check)
         thread = result.get("thread", {})
         thread_id = thread.get("id") if isinstance(thread, dict) else None
         if not thread_id:
@@ -581,13 +690,15 @@ class _CodexAppServer:
         runtime_snapshot: dict[str, Any],
         history: list[dict[str, str]],
         image_inputs: list[tuple[str, bytes]],
+        progress_callback: Callable[[dict[str, str]], None] | None = None,
     ) -> dict[str, Any]:
         if not self._run_lock.acquire(blocking=False):
             raise CodexMonitorBusy("Another AI diagnosis is still running")
         started = time.monotonic()
         deadline = started + AI_MONITOR_TIMEOUT_SECONDS
+        cancel_check = lambda: self._is_cancelled(session_id)
         try:
-            self._ensure_started(deadline)
+            self._ensure_started(deadline, cancel_check)
             now = time.monotonic()
             self._cleanup_sessions(now, deadline)
             item = self._sessions.get(session_id)
@@ -596,7 +707,7 @@ class _CodexAppServer:
                 while len(self._sessions) >= MAX_SESSIONS:
                     oldest = min(self._sessions, key=lambda key: self._sessions[key].last_used)
                     self._drop_session(oldest, deadline)
-                item = _SessionThread(self._new_thread(deadline), now)
+                item = _SessionThread(self._new_thread(deadline, cancel_check), now)
                 self._sessions[session_id] = item
 
             if self._media_home is None:
@@ -631,6 +742,7 @@ class _CodexAppServer:
                         "threadId": item.thread_id,
                         "input": inputs,
                         "outputSchema": OUTPUT_SCHEMA,
+                        "summary": "concise",
                     },
                     deadline,
                 )
@@ -638,16 +750,72 @@ class _CodexAppServer:
                 turn_id = turn.get("id") if isinstance(turn, dict) else None
                 if not turn_id:
                     raise CodexMonitorError("Codex did not return a turn ID")
+                with self._active_lock:
+                    self._active_turn = (session_id, item.thread_id, str(turn_id))
+                    cancel_now = session_id in self._cancelled_sessions
+                if cancel_now:
+                    self._interrupt_turn(item.thread_id, str(turn_id))
+
+                progress = {"raw": "", "text": "", "reasoning": "", "activity": "Thinking"}
+
+                def publish_progress(message: dict[str, Any]) -> None:
+                    if progress_callback is None:
+                        return
+                    params = message.get("params", {})
+                    if params.get("threadId") != item.thread_id:
+                        return
+                    method = message.get("method")
+                    if method == "item/agentMessage/delta":
+                        progress["raw"] += str(params.get("delta", ""))
+                        progress["text"] = _streamed_answer_text(progress["raw"])
+                        progress["activity"] = "Responding"
+                    elif method == "item/reasoning/summaryTextDelta":
+                        progress["reasoning"] += str(params.get("delta", ""))
+                        progress["activity"] = "Thinking"
+                    elif method == "item/reasoning/summaryPartAdded":
+                        if progress["reasoning"] and not progress["reasoning"].endswith("\n"):
+                            progress["reasoning"] += "\n"
+                        progress["activity"] = "Thinking"
+                    elif method in {"item/started", "item/completed"}:
+                        event_item = params.get("item", {})
+                        if not isinstance(event_item, dict):
+                            return
+                        item_type = event_item.get("type")
+                        if item_type == "mcpToolCall":
+                            tool = str(event_item.get("tool") or "service tool").replace("_", " ")
+                            progress["activity"] = (
+                                f"Using {tool}" if method == "item/started" else f"Finished {tool}"
+                            )
+                        elif item_type == "imageGeneration":
+                            progress["activity"] = (
+                                "Generating image" if method == "item/started" else "Image ready"
+                            )
+                    else:
+                        return
+                    try:
+                        progress_callback({
+                            "text": progress["text"],
+                            "reasoning": progress["reasoning"],
+                            "activity": progress["activity"],
+                        })
+                    except Exception:
+                        logger.debug("[AIMonitor] Progress callback failed", exc_info=True)
+
                 completed = self._wait_for(
                     lambda message: (
                         message.get("method") == "turn/completed"
                         and message.get("params", {}).get("threadId") == item.thread_id
                         and message.get("params", {}).get("turn", {}).get("id") == turn_id
                     ),
-                    deadline,
+                    time.monotonic() + AI_MONITOR_TIMEOUT_SECONDS,
+                    on_message=publish_progress,
+                    idle_timeout=AI_MONITOR_TIMEOUT_SECONDS,
                 )
+                completed_turn = completed.get("params", {}).get("turn", {})
+                if completed_turn.get("status") == "interrupted":
+                    raise CodexMonitorCancelled("Stopped by administrator")
                 answer = _answer_from_turn(
-                    completed.get("params", {}).get("turn", {}),
+                    completed_turn,
                     media_root,
                 )
             finally:
@@ -668,6 +836,10 @@ class _CodexAppServer:
                 self._stop()
             raise
         finally:
+            with self._active_lock:
+                if self._active_turn and self._active_turn[0] == session_id:
+                    self._active_turn = None
+                self._cancelled_sessions.discard(session_id)
             self._run_lock.release()
 
     def release(self, session_id: str) -> None:
@@ -677,6 +849,16 @@ class _CodexAppServer:
             self._drop_session(session_id, time.monotonic() + 3)
         finally:
             self._run_lock.release()
+
+    def interrupt(self, session_id: str) -> bool:
+        if not session_id:
+            return False
+        with self._active_lock:
+            self._cancelled_sessions.add(session_id)
+            active_turn = self._active_turn
+        if active_turn is not None and active_turn[0] == session_id:
+            self._interrupt_turn(active_turn[1], active_turn[2])
+        return True
 
     def close(self) -> None:
         if self._owner_pid == os.getpid():
@@ -695,6 +877,7 @@ def ask_codex(
     runtime_snapshot: dict[str, Any],
     history: list[dict[str, str]] | None = None,
     image_inputs: list[tuple[str, bytes]] | None = None,
+    progress_callback: Callable[[dict[str, str]], None] | None = None,
 ) -> dict[str, Any]:
     if not AI_MONITOR_ENABLED:
         raise CodexMonitorError("AI monitor is disabled")
@@ -706,11 +889,16 @@ def ask_codex(
         runtime_snapshot,
         history or [],
         image_inputs or [],
+        progress_callback,
     )
 
 
 def release_codex_session(session_id: str) -> None:
     _app_server.release(session_id)
+
+
+def cancel_codex_session(session_id: str) -> bool:
+    return _app_server.interrupt(session_id)
 
 
 def get_generated_image(token: str) -> Path | None:

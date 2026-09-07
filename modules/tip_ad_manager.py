@@ -112,7 +112,7 @@ def _button(button_type, button_value, labels):
 
 
 def _new_id():
-    existing_ids = {item.get("id") for item in TIP_AD_DATA}
+    existing_ids = {str(item.get("id")) for item in TIP_AD_DATA}
     base = str(int(datetime.now().timestamp()))
     item_id = base
     suffix = 1
@@ -120,6 +120,33 @@ def _new_id():
         item_id = f"{base}_{suffix}"
         suffix += 1
     return item_id
+
+
+def _matches_id(item, tip_ad_id):
+    item_id = item.get("id")
+    return item_id is not None and str(item_id) == str(tip_ad_id)
+
+
+def _update_button(item, button_type, button_labels, button_value):
+    requested = button_type is not None or bool(button_labels) or button_value is not None
+    if not requested:
+        return
+    button = item.get("button")
+    if not isinstance(button, dict):
+        button = _button(button_type, button_value, button_labels)
+        if button:
+            item["button"] = button
+        return
+    if button_type is not None:
+        button["type"] = button_type
+    if button_labels:
+        labels = button.get("label")
+        if not isinstance(labels, dict):
+            labels = {}
+            button["label"] = labels
+        labels.update(button_labels)
+    if button_value is not None:
+        button["value"] = button_value
 
 
 def create_tip_ad(
@@ -160,7 +187,7 @@ def update_tip_ad(
 ):
     with _data_lock:
         _ensure_loaded()
-        item = next((item for item in TIP_AD_DATA if item.get("id") == tip_ad_id), None)
+        item = next((item for item in TIP_AD_DATA if _matches_id(item, tip_ad_id)), None)
         if not item:
             return None
 
@@ -173,9 +200,7 @@ def update_tip_ad(
         if remove_button:
             item.pop("button", None)
         else:
-            button = _button(button_type, button_value, button_labels)
-            if button:
-                item["button"] = button
+            _update_button(item, button_type, button_labels, button_value)
         item["updated_at"] = datetime.now().strftime(TIMESTAMP_FORMAT)
         return item if save_tip_ad_data() else None
 
@@ -184,7 +209,7 @@ def delete_tip_ad(tip_ad_id):
     global TIP_AD_DATA
     with _data_lock:
         _ensure_loaded()
-        remaining = [item for item in TIP_AD_DATA if item.get("id") != tip_ad_id]
+        remaining = [item for item in TIP_AD_DATA if not _matches_id(item, tip_ad_id)]
         if len(remaining) == len(TIP_AD_DATA):
             return False
         TIP_AD_DATA = remaining
@@ -194,5 +219,5 @@ def delete_tip_ad(tip_ad_id):
 def get_tip_ad_by_id(tip_ad_id):
     with _data_lock:
         _ensure_loaded()
-        item = next((item for item in TIP_AD_DATA if item.get("id") == tip_ad_id), None)
+        item = next((item for item in TIP_AD_DATA if _matches_id(item, tip_ad_id)), None)
         return item.copy() if item else None

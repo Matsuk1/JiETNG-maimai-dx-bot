@@ -126,9 +126,9 @@ AI 运维默认调用服务器上已登录的 `codex`。若 systemd 找不到命
 
 MCP 的开发者数据查询直接走本机数据层，不需要 API token；用户凭据、Cookie 和 token 会被递归脱敏。AI 可以查询最多 90 天的逐日业务指标、用户活动时间线、运行状态、任务队列、结构化日志、数据库、部署、公告及统计、Tip/Ad、备份、DXData、通知、背景、插件与非敏感配置状态。对话支持安全 Markdown、最多 3 张图片输入，以及由模型调用 MCP 完成的裁剪、缩放、旋转、灰度、模糊和图像增强；处理结果通过登录态保护的临时地址返回，不写入项目资源目录。
 
-管理员明确提出操作时，AI 还可触发用户同步、清理昵称缓存/通知、创建备份、更新 DXData，以及创建、更新、发布或删除公告和 Tip/Ad。操作通过仅接受本机回环请求的内部桥接进入正在运行的 Flask 进程；凭据在每个服务进程启动时随机生成且只传给 MCP 子进程，无需写入 `config.json`。任意 SQL、Shell、外部 URL、用户删除、账号绑定、用户字段编辑和开发者 token 管理不会开放给 AI。
+管理员明确提出操作时，AI 还可触发用户同步、清理昵称缓存/通知、创建备份、更新 DXData，以及创建、更新、发布或删除公告和 Tip/Ad。操作通过仅接受本机回环请求的内部桥接进入正在运行的 Flask 进程；桥接凭据由现有内部密钥单向派生并在 worker 间共享，只传给 MCP 子进程，无需额外配置 API token。任意 SQL、Shell、外部 URL、用户删除、账号绑定、用户字段编辑和开发者 token 管理不会开放给 AI。
 
-AI 请求会先创建后台任务，再由页面轮询结果。iOS 主屏幕 Web App 切到后台或页面被系统重载后，会从本地保存的任务 ID 恢复查询，不要求一条 HTTP 连接持续保持。
+AI 请求会先创建后台任务，再由页面轮询回答增量、可读的推理摘要和工具状态。iOS 主屏幕 Web App 切到后台或页面被系统重载后，会从本地保存的任务 ID 恢复查询，不要求一条 HTTP 连接持续保持；`timeout_seconds` 仅在 Codex 连续无任何进展时终止任务，不再限制任务总时长。
 
 文件维护统一由一个 MCP 工具处理，仅允许 `data/dxdata/`、`assets/` 和 `languages/`。它支持目录浏览、UTF-8 文本分段读取、搜索、整文件写入及精确替换；现有文件必须带读取时得到的 SHA-256 才能修改。二进制文件只返回元数据，不支持删除、移动或创建目录。
 
@@ -543,6 +543,7 @@ GET      /admin/api/users          # 分页获取用户
 GET      /admin/get_logs           # 获取日志
 POST     /admin/api/ai-monitor/query          # 创建 AI 运维诊断
 GET      /admin/api/ai-monitor/query/<job_id> # 查询诊断结果
+DELETE   /admin/api/ai-monitor/query/<job_id> # 停止正在运行的诊断
 GET      /admin/api/ai-monitor/image         # 读取诊断图片
 ```
 

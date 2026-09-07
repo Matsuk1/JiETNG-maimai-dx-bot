@@ -25,10 +25,16 @@ def register_web_i18n(app):
         }
 
 
-def localized_payload(data, key):
+def localized_payload(data, key, *, partial=False):
     values = data.get(key)
     if isinstance(values, dict):
         return {str(code): str(value or "").strip() for code, value in values.items()}
+    if partial:
+        return {
+            code: str(data.get(f"{key}_{code.replace('-', '_')}", "") or "").strip()
+            for code in language_codes()
+            if f"{key}_{code.replace('-', '_')}" in data
+        }
     return {
         code: str(data.get(f"{key}_{code.replace('-', '_')}", "") or "").strip()
         for code in language_codes()

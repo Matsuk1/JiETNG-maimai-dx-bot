@@ -94,7 +94,7 @@ MEDIA_ACCESS = ToolAnnotations(
 )
 SERVICE_ACTION = ToolAnnotations(
     readOnlyHint=False,
-    destructiveHint=True,
+    destructiveHint=False,
     idempotentHint=False,
     openWorldHint=False,
 )
@@ -802,6 +802,8 @@ def operate_admin_service(
 
     Only call after the current admin message explicitly requests this exact action,
     then set confirmed=true. Call with confirmed=false to inspect required fields.
+    Update actions are partial: send only fields that should change. Localized content
+    and button_label dictionaries may contain only the language codes being updated.
     Credentials, tokens, cookies, account binding, user edits, and user deletion are forbidden.
     """
     action = action.strip().lower()

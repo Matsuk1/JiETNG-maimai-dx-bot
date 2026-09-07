@@ -52,9 +52,11 @@ from modules.event_tracker import get_hourly_stats
 from modules.message_manager import build_dxdata_update_message
 from modules.monitoring.codex_agent import (
     CodexMonitorBusy,
+    CodexMonitorCancelled,
     CodexMonitorError,
     CodexMonitorTimeout,
     ask_codex,
+    cancel_codex_session,
     get_generated_image,
     release_codex_session,
     verify_service_bridge_token,
@@ -150,12 +152,18 @@ class _AIMonitorJob:
     result: dict | None = None
     error: str = ""
     status_code: int = 500
+    answer: str = ""
+    reasoning: str = ""
+    activity: str = "Starting"
+    cancel_requested: bool = False
 
 
 _ai_monitor_jobs: dict[str, _AIMonitorJob] = {}
 _ai_monitor_jobs_lock = threading.Lock()
 _AI_MONITOR_JOB_TTL_SECONDS = 3600
 _AI_MONITOR_JOB_ID = re.compile(r"^[A-Za-z0-9_-]{16,80}$")
+_AI_MONITOR_CONVERSATION_ID = re.compile(r"^[A-Za-z0-9_-]{8,80}$")
+_AI_MONITOR_MAX_CONVERSATIONS = 20
 
 
 def configure_admin_api(**services):
@@ -175,6 +183,24 @@ def check_admin_auth():
 def _json_body():
     data = request.get_json(silent=True)
     return data if isinstance(data, dict) else {}
+
+
+def _ai_monitor_session(conversation_id: str, *, register=False):
+    conversation_id = str(conversation_id or "").strip()
+    if not _AI_MONITOR_CONVERSATION_ID.fullmatch(conversation_id):
+        return None
+    owner_id = session.setdefault("ai_monitor_owner_id", secrets.token_urlsafe(18))
+    if register:
+        conversations = list(session.get("ai_monitor_conversations", []))
+        if conversation_id not in conversations:
+            conversations.append(conversation_id)
+            session["ai_monitor_conversations"] = conversations[-_AI_MONITOR_MAX_CONVERSATIONS:]
+    return f"{owner_id}:{conversation_id}"
+
+
+def _ai_monitor_job_belongs_to_admin(job):
+    owner_id = session.get("ai_monitor_owner_id", "")
+    return bool(owner_id) and job.session_id.startswith(f"{owner_id}:")
 
 
 def _ai_monitor_images():
@@ -233,18 +259,47 @@ def _run_ai_monitor_job(
     history: list[dict[str, str]],
     image_inputs: list[tuple[str, bytes]],
 ) -> None:
+    def finish_if_cancelled() -> bool:
+        with _ai_monitor_jobs_lock:
+            job = _ai_monitor_jobs.get(job_id)
+            if job is None or not job.cancel_requested:
+                return False
+            job.status = "stopped"
+            job.status_code = 200
+            job.activity = "Stopped"
+            job.result = {
+                "answer": job.answer,
+                "answer_html": render_markdown(job.answer) if job.answer else "",
+                "images": [],
+            }
+            return True
+
+    def report_progress(progress: dict[str, str]) -> None:
+        with _ai_monitor_jobs_lock:
+            job = _ai_monitor_jobs.get(job_id)
+            if job is None or job.status != "running":
+                return
+            job.answer = progress.get("text", job.answer)
+            job.reasoning = progress.get("reasoning", job.reasoning)
+            job.activity = progress.get("activity", job.activity)
+
     try:
+        if finish_if_cancelled():
+            return
         try:
             runtime_snapshot = _services.overview(force_refresh=False)
         except Exception as exc:
             logger.warning("[AIMonitor] In-process snapshot unavailable: %s", exc)
             runtime_snapshot = {"available": False, "error": type(exc).__name__}
+        if finish_if_cancelled():
+            return
         response = ask_codex(
             question,
             session_id=session_id,
             runtime_snapshot=runtime_snapshot,
             history=history,
             image_inputs=image_inputs,
+            progress_callback=report_progress,
         )
         update = {
             "status": "completed",
@@ -257,6 +312,8 @@ def _run_ai_monitor_job(
         }
     except CodexMonitorBusy as exc:
         update = {"status": "failed", "error": str(exc), "status_code": 429}
+    except CodexMonitorCancelled:
+        update = {"status": "stopped", "status_code": 200}
     except CodexMonitorTimeout as exc:
         logger.warning("[AIMonitor] Diagnosis timed out")
         update = {"status": "failed", "error": str(exc), "status_code": 504}
@@ -277,6 +334,16 @@ def _run_ai_monitor_job(
             job.result = update.get("result")
             job.error = update.get("error", "")[:500]
             job.status_code = update["status_code"]
+            if job.status == "completed" and job.result is not None:
+                job.answer = job.result.get("answer", job.answer)
+                job.activity = "Complete"
+            elif job.status == "stopped":
+                job.activity = "Stopped"
+                job.result = {
+                    "answer": job.answer,
+                    "answer_html": render_markdown(job.answer) if job.answer else "",
+                    "images": [],
+                }
 
 
 @admin_api.route("/admin/panel", methods=["GET", "POST"])
@@ -312,6 +379,13 @@ def admin_panel():
     )
 
 
+@admin_api.route("/admin/ai", methods=["GET"])
+def admin_ai_panel():
+    if not check_admin_auth():
+        return redirect("/admin/panel")
+    return render_template("admin_ai_panel.html")
+
+
 @admin_api.route("/admin/api/overview", methods=["GET"])
 def admin_api_overview():
     if not check_admin_auth():
@@ -322,7 +396,9 @@ def admin_api_overview():
 
 @admin_api.route("/admin/logout", methods=["GET"])
 def admin_logout():
-    release_codex_session(session.pop("ai_monitor_session_id", ""))
+    owner_id = session.pop("ai_monitor_owner_id", "")
+    for conversation_id in session.pop("ai_monitor_conversations", []):
+        release_codex_session(f"{owner_id}:{conversation_id}")
     session.pop('admin_authenticated', None)
     return redirect("/admin/panel")
 
@@ -475,7 +551,10 @@ def admin_ai_monitor_query():
     job_id = str(data.get("job_id") or secrets.token_urlsafe(24))
     if not _AI_MONITOR_JOB_ID.fullmatch(job_id):
         return jsonify({"success": False, "message": "Invalid job ID"}), 400
-    session_id = session.setdefault("ai_monitor_session_id", secrets.token_urlsafe(24))
+    conversation_id = str(data.get("conversation_id") or "").strip()
+    session_id = _ai_monitor_session(conversation_id, register=True)
+    if session_id is None:
+        return jsonify({"success": False, "message": "Invalid conversation ID"}), 400
 
     history = []
     if isinstance(raw_history, list):
@@ -510,25 +589,83 @@ def admin_ai_monitor_query():
     return jsonify({"success": True, "job_id": job_id, "status": "running"}), 202
 
 
-@admin_api.route("/admin/api/ai-monitor/query/<job_id>", methods=["GET"])
+@admin_api.route("/admin/api/ai-monitor/query/<job_id>", methods=["GET", "DELETE"])
 def admin_ai_monitor_result(job_id: str):
     if not check_admin_auth():
         return jsonify({"error": "Unauthorized"}), 401
-    session_id = session.get("ai_monitor_session_id", "")
     with _ai_monitor_jobs_lock:
         _cleanup_ai_monitor_jobs(time.monotonic())
         job = _ai_monitor_jobs.get(job_id)
-        if job is None or job.session_id != session_id:
+        if job is None or not _ai_monitor_job_belongs_to_admin(job):
             return jsonify({"success": False, "message": "Diagnosis not found"}), 404
+        session_id = job.session_id
+        if request.method == "DELETE":
+            if job.status != "running":
+                return jsonify({"success": True, "job_id": job_id, "status": job.status})
+            job.cancel_requested = True
+            job.activity = "Stopping"
+            cancel_codex_session(session_id)
+            return jsonify({"success": True, "job_id": job_id, "status": "stopping"}), 202
         status = job.status
         result = dict(job.result or {})
         error = job.error
         status_code = job.status_code
+        answer = job.answer
+        reasoning = job.reasoning
+        activity = job.activity
+    progress = {
+        "answer": answer,
+        "answer_html": render_markdown(answer) if answer else "",
+        "reasoning": reasoning,
+        "reasoning_html": render_markdown(reasoning) if reasoning else "",
+        "activity": activity,
+    }
     if status == "running":
-        return jsonify({"success": True, "job_id": job_id, "status": status}), 202
+        return jsonify({"success": True, "job_id": job_id, "status": status, **progress}), 202
     if status == "completed":
-        return jsonify({"success": True, "job_id": job_id, "status": status, **result})
-    return jsonify({"success": False, "job_id": job_id, "status": status, "message": error}), status_code
+        return jsonify({
+            "success": True,
+            "job_id": job_id,
+            "status": status,
+            "reasoning": reasoning,
+            "reasoning_html": render_markdown(reasoning) if reasoning else "",
+            "activity": activity,
+            **result,
+        })
+    if status == "stopped":
+        return jsonify({
+            "success": True,
+            "job_id": job_id,
+            "status": status,
+            "reasoning": reasoning,
+            "reasoning_html": render_markdown(reasoning) if reasoning else "",
+            "activity": activity,
+            **result,
+        })
+    return jsonify({
+        "success": False,
+        "job_id": job_id,
+        "status": status,
+        "message": error,
+        **progress,
+    }), status_code
+
+
+@admin_api.route("/admin/api/ai-monitor/session", methods=["DELETE"])
+def admin_ai_monitor_reset_session():
+    if not check_admin_auth():
+        return jsonify({"error": "Unauthorized"}), 401
+    conversation_id = request.args.get("conversation_id", "")
+    session_id = _ai_monitor_session(conversation_id)
+    if session_id is None:
+        return jsonify({"success": False, "message": "Invalid conversation ID"}), 400
+    conversations = list(session.get("ai_monitor_conversations", []))
+    session["ai_monitor_conversations"] = [
+        item for item in conversations if item != conversation_id
+    ]
+    cancel_codex_session(session_id)
+    release_codex_session(session_id)
+    return jsonify({"success": True})
 
 
 @admin_api.route("/admin/api/ai-monitor/image", methods=["GET"])
@@ -611,23 +748,53 @@ def admin_update_notice():
     data = _json_body()
     notice_id = data.get('notice_id')
 
-    content = localized_payload(data, "content")
-    if not notice_id or not any(content.values()):
-        return jsonify({'success': False, 'message': 'Notice ID and at least one language content are required'}), 400
+    content = localized_payload(data, "content", partial=True)
+    if not notice_id:
+        return jsonify({'success': False, 'message': 'Notice ID is required'}), 400
+    has_update = bool(content) or any(key.startswith('button_label_') for key in data) or any(
+        key in data
+        for key in {
+            'status', 'voting_enabled', 'button_type', 'button_label',
+            'button_value', 'remove_button',
+        }
+    )
+    if not has_update:
+        return jsonify({'success': False, 'message': 'No fields to update'}), 400
 
-    button_type = data.get('button_type')
-    button_value = data.get('button_value', '').strip()
+    status = data.get('status') if 'status' in data else None
+    if status is not None and status not in {'draft', 'published'}:
+        return jsonify({'success': False, 'message': 'Invalid notice status'}), 400
+    voting_enabled = data.get('voting_enabled') if 'voting_enabled' in data else None
+    if voting_enabled is not None and not isinstance(voting_enabled, bool):
+        return jsonify({'success': False, 'message': 'voting_enabled must be a boolean'}), 400
+
+    button_type = data.get('button_type') if 'button_type' in data else None
+    if button_type is not None and button_type not in {'uri', 'message'}:
+        return jsonify({'success': False, 'message': 'Invalid button type'}), 400
+    button_value = data.get('button_value') if 'button_value' in data else None
+    if isinstance(button_value, str):
+        button_value = button_value.strip()
     remove_button = data.get('remove_button', False)
-    button_labels = localized_payload(data, "button_label")
+    button_labels = localized_payload(data, "button_label", partial=True)
+    notice = get_notice_by_id(notice_id)
+    if not notice:
+        return jsonify({'success': False, 'message': 'Notice not found'}), 404
+    button_update = button_type is not None or bool(button_labels) or button_value is not None
+    if button_update and not remove_button and not notice.get('button'):
+        if not (button_type and button_labels and button_value):
+            return jsonify({
+                'success': False,
+                'message': 'Creating a button requires type, label, and value'
+            }), 400
 
     try:
         success = update_notice(
             notice_id,
             content,
-            status=data.get('status'),
-            voting_enabled=data.get('voting_enabled'),
+            status=status,
+            voting_enabled=voting_enabled,
             button_type=button_type,
-            button_label=button_labels if button_type and button_value else None,
+            button_label=button_labels,
             button_value=button_value,
             remove_button=remove_button
         )
@@ -829,13 +996,40 @@ def admin_put_tip_ads(tip_ad_id):
     if not tip_ad_id:
         return jsonify({'success': False, 'message': 'Missing id'}), 400
 
-    tip_type = data.get('type')
-    text = localized_payload(data, "text")
-    button_type = data.get('button_type')
-    button_labels = localized_payload(data, "button_label")
-    button_value = data.get('button_value')
-    enabled = data.get('enabled')
+    text = localized_payload(data, "text", partial=True)
+    has_update = bool(text) or any(key.startswith('button_label_') for key in data) or any(
+        key in data
+        for key in {
+            'type', 'enabled', 'button_type', 'button_label',
+            'button_value', 'remove_button',
+        }
+    )
+    if not has_update:
+        return jsonify({'success': False, 'message': 'No fields to update'}), 400
+    tip_type = data.get('type') if 'type' in data else None
+    if tip_type is not None and tip_type not in {'tip', 'ad'}:
+        return jsonify({'success': False, 'message': 'Invalid type'}), 400
+    button_type = data.get('button_type') if 'button_type' in data else None
+    if button_type is not None and button_type not in {'uri', 'message'}:
+        return jsonify({'success': False, 'message': 'Invalid button type'}), 400
+    button_labels = localized_payload(data, "button_label", partial=True)
+    button_value = data.get('button_value') if 'button_value' in data else None
+    if isinstance(button_value, str):
+        button_value = button_value.strip()
+    enabled = data.get('enabled') if 'enabled' in data else None
+    if enabled is not None and not isinstance(enabled, bool):
+        return jsonify({'success': False, 'message': 'enabled must be a boolean'}), 400
     remove_button = data.get('remove_button', False)
+    current_tip_ad = get_tip_ad_by_id(tip_ad_id)
+    if not current_tip_ad:
+        return jsonify({'success': False, 'message': 'Tip/ad not found'}), 404
+    button_update = button_type is not None or bool(button_labels) or button_value is not None
+    if button_update and not remove_button and not current_tip_ad.get('button'):
+        if not (button_type and button_labels and button_value):
+            return jsonify({
+                'success': False,
+                'message': 'Creating a button requires type, label, and value'
+            }), 400
 
     try:
         tip_ad = update_tip_ad(
