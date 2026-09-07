@@ -2454,9 +2454,13 @@ def generate_update_result_flex(
     random_ad = get_random_ad()
     extra_rows = []
     if random_tip:
-        extra_rows.append(generate_tip_ad_box(random_tip, lang))
+        tip_box = generate_tip_ad_box(random_tip, lang)
+        if tip_box:
+            extra_rows.append(tip_box)
     if random_ad:
-        extra_rows.append(generate_tip_ad_box(random_ad, lang))
+        ad_box = generate_tip_ad_box(random_ad, lang)
+        if ad_box:
+            extra_rows.append(ad_box)
     if extra_rows:
         body_contents.extend(extra_rows)
 
@@ -2490,7 +2494,9 @@ def generate_tip_ad_box(tip_ad, lang):
     """
     # 获取对应语言的文本
     text_dict = tip_ad.get('text', {})
-    text = select_text(text_dict, language=lang, default_language='ja')
+    text = str(select_text(text_dict, language=lang, default_language='ja') or '').strip()
+    if not text:
+        return None
 
     # 确定颜色和图标
     is_ad = tip_ad.get('type') == 'ad'
@@ -3553,9 +3559,13 @@ def generate_bot_status_flex(uptime_str, image_queue_size, web_queue_size,
     random_ad = get_random_ad()
     extra_rows = []
     if random_tip:
-        extra_rows.append(generate_tip_ad_box(random_tip, lang))
+        tip_box = generate_tip_ad_box(random_tip, lang)
+        if tip_box:
+            extra_rows.append(tip_box)
     if random_ad:
-        extra_rows.append(generate_tip_ad_box(random_ad, lang))
+        ad_box = generate_tip_ad_box(random_ad, lang)
+        if ad_box:
+            extra_rows.append(ad_box)
     if extra_rows:
         body_contents.extend(extra_rows)
 
