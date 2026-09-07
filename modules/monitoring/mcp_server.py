@@ -12,8 +12,11 @@ import socket
 import subprocess
 import tempfile
 import time
+import urllib.error
+import urllib.parse
+import urllib.request
 from collections import Counter, deque
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 import psutil
@@ -21,7 +24,18 @@ from PIL import Image, ImageEnhance, ImageFilter, ImageOps, UnidentifiedImageErr
 from mcp.server.mcpserver import MCPServer
 from mcp.types import ToolAnnotations
 
-from modules.config_loader import LOG_FILE
+from modules.config_loader import (
+    AI_MONITOR_ENABLED,
+    LOG_FILE,
+    MAIMAI_VERSION,
+    PLUGIN_CONFIG,
+    R2_ENABLED,
+    RICH_MENU_DEFAULT_LANGUAGE,
+    RICH_MENU_ENABLED,
+    RICH_MENU_MENUS,
+    TEMP_VERSION,
+    VAPID_PUBLIC_KEY,
+)
 from modules.dbpool_manager import database_cursor
 from modules.monitoring.file_access import (
     ALLOWED_FILE_ROOTS,
@@ -78,6 +92,12 @@ MEDIA_ACCESS = ToolAnnotations(
     idempotentHint=False,
     openWorldHint=False,
 )
+SERVICE_ACTION = ToolAnnotations(
+    readOnlyHint=False,
+    destructiveHint=True,
+    idempotentHint=False,
+    openWorldHint=False,
+)
 
 mcp = MCPServer(
     "jietng-monitor",
@@ -112,8 +132,10 @@ def _bounded(value: Any, *, depth: int = 0) -> Any:
         if len(value) > 50:
             items.append(f"[{len(value) - 50} more items]")
         return items
-    if isinstance(value, str) and len(value) > 2000:
-        return value[:2000] + "...[truncated]"
+    if isinstance(value, str):
+        value = _redact_text(value)
+        if len(value) > 2000:
+            return value[:2000] + "...[truncated]"
     return value
 
 
@@ -127,6 +149,88 @@ def _redact_text(value: str) -> str:
 def _safe_error(exc: Exception) -> str:
     message = _redact_text(str(exc))
     return f"{type(exc).__name__}: {message[:500]}"
+
+
+def _contains_sensitive_data(value: Any) -> bool:
+    if isinstance(value, dict):
+        return any(
+            any(part in str(key).lower() for part in SENSITIVE_KEY_PARTS)
+            or _contains_sensitive_data(item)
+            for key, item in value.items()
+        )
+    if isinstance(value, (list, tuple)):
+        return any(_contains_sensitive_data(item) for item in value)
+    if isinstance(value, str):
+        return _redact_text(value) != value
+    return False
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, request, fp, code, msg, headers, new_url):
+        return None
+
+
+_BRIDGE_OPENER = urllib.request.build_opener(
+    urllib.request.ProxyHandler({}),
+    _NoRedirect(),
+)
+
+
+def _bridge_request(
+    method: str,
+    path: str,
+    *,
+    query: dict[str, Any] | None = None,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    base_url = os.getenv("JIETNG_MONITOR_BRIDGE_URL", "").rstrip("/")
+    token = os.getenv("JIETNG_MONITOR_BRIDGE_TOKEN", "")
+    if not base_url or not token:
+        return {"error": "live service bridge is unavailable"}
+    parsed_base = urllib.parse.urlsplit(base_url)
+    if (
+        parsed_base.scheme != "http"
+        or parsed_base.hostname not in {"127.0.0.1", "::1", "localhost"}
+        or parsed_base.username
+        or parsed_base.password
+        or parsed_base.query
+        or parsed_base.fragment
+    ):
+        return {"error": "live service bridge must use a local HTTP address"}
+    url = base_url + path
+    if query:
+        url += "?" + urllib.parse.urlencode(query)
+    body = json.dumps(payload, ensure_ascii=False).encode("utf-8") if payload is not None else None
+    request = urllib.request.Request(
+        url,
+        data=body,
+        method=method,
+        headers={
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "X-JiETNG-Monitor-Token": token,
+        },
+    )
+    try:
+        with _BRIDGE_OPENER.open(request, timeout=80) as response:
+            raw = response.read(2 * 1024 * 1024 + 1)
+            status = response.status
+    except urllib.error.HTTPError as exc:
+        raw = exc.read(2 * 1024 * 1024 + 1)
+        status = exc.code
+    except (OSError, TimeoutError) as exc:
+        return {"error": _safe_error(exc)}
+    if len(raw) > 2 * 1024 * 1024:
+        return {"error": "service response exceeded the 2MB limit"}
+    try:
+        result = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return {"error": f"service returned a non-JSON response (HTTP {status})"}
+    sanitized = _bounded(result)
+    if not isinstance(sanitized, dict):
+        sanitized = {"result": sanitized}
+    sanitized["http_status"] = status
+    return sanitized
 
 
 def _file_sha256(path: Path) -> str:
@@ -420,6 +524,351 @@ def inspect_logs(
     }
 
 
+def _analytics_range(
+    start_date: str,
+    end_date: str,
+    days: int,
+) -> tuple[date | None, date | None, str | None]:
+    try:
+        end = date.fromisoformat(end_date) if end_date else date.today()
+        if start_date:
+            start = date.fromisoformat(start_date)
+        else:
+            days = max(1, min(int(days), 90))
+            start = end - timedelta(days=days - 1)
+    except (TypeError, ValueError):
+        return None, None, "dates must use YYYY-MM-DD"
+    if start > end:
+        return None, None, "start_date must not be after end_date"
+    if (end - start).days >= 90:
+        return None, None, "date range cannot exceed 90 days"
+    return start, end, None
+
+
+@mcp.tool(annotations=READ_ONLY, structured_output=True)
+def get_business_analytics(
+    start_date: str = "",
+    end_date: str = "",
+    days: int = 7,
+) -> dict[str, Any]:
+    """Get daily service analytics for up to 90 days, including yesterday or any exact date.
+
+    Returns DAU, first-time users, calls, sync outcomes, binds, imports/exports,
+    event types, and image-command counts. No user identifiers or event metadata are returned.
+    """
+    start, end, range_error = _analytics_range(start_date, end_date, days)
+    if range_error or start is None or end is None:
+        return {"error": range_error or "invalid date range"}
+    upper_bound = end + timedelta(days=1)
+    try:
+        with database_cursor() as (_, cursor):
+            cursor.execute(
+                """
+                SELECT DATE(ts),
+                       COUNT(DISTINCT CASE WHEN user_id IS NOT NULL THEN user_id END),
+                       SUM(event_type='image_gen'),
+                       SUM(event_type='line_webhook'),
+                       SUM(event_type='record_export'),
+                       SUM(event_type='record_import'),
+                       COUNT(DISTINCT CASE WHEN event_type IN ('user_bind','user_rebind') THEN user_id END),
+                       COUNT(DISTINCT CASE WHEN event_type='user_unbind' THEN user_id END),
+                       SUM(event_type='sync_task'),
+                       SUM(event_type='sync_task' AND JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.success'))='true')
+                FROM events
+                WHERE ts >= %s AND ts < %s
+                GROUP BY DATE(ts)
+                ORDER BY DATE(ts)
+                """,
+                (start, upper_bound),
+            )
+            daily_rows = {str(row[0]): row[1:] for row in cursor.fetchall()}
+            cursor.execute(
+                """
+                SELECT DATE(first_bind), COUNT(*)
+                FROM (
+                    SELECT user_id, MIN(ts) AS first_bind
+                    FROM events
+                    WHERE event_type='user_bind' AND user_id IS NOT NULL
+                    GROUP BY user_id
+                ) first_events
+                WHERE first_bind >= %s AND first_bind < %s
+                GROUP BY DATE(first_bind)
+                """,
+                (start, upper_bound),
+            )
+            new_users = {str(row[0]): int(row[1]) for row in cursor.fetchall()}
+            cursor.execute(
+                "SELECT event_type, COUNT(*) FROM events WHERE ts >= %s AND ts < %s "
+                "GROUP BY event_type ORDER BY COUNT(*) DESC",
+                (start, upper_bound),
+            )
+            event_types = {str(name): int(count) for name, count in cursor.fetchall()}
+            cursor.execute(
+                "SELECT JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.command')), COUNT(*) "
+                "FROM events WHERE event_type='image_gen' AND ts >= %s AND ts < %s "
+                "GROUP BY JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.command')) "
+                "ORDER BY COUNT(*) DESC LIMIT 30",
+                (start, upper_bound),
+            )
+            commands = [
+                {"command": command or "unknown", "count": int(count)}
+                for command, count in cursor.fetchall()
+            ]
+            cursor.execute(
+                "SELECT COUNT(DISTINCT user_id) FROM events "
+                "WHERE user_id IS NOT NULL AND ts >= %s AND ts < %s",
+                (start, upper_bound),
+            )
+            active_users = int((cursor.fetchone() or [0])[0])
+    except Exception as exc:
+        return {"available": False, "error": _safe_error(exc)}
+
+    series = []
+    current = start
+    while current <= end:
+        key = str(current)
+        row = daily_rows.get(key, (0,) * 9)
+        sync_total = int(row[7] or 0)
+        sync_success = int(row[8] or 0)
+        series.append({
+            "date": key,
+            "dau": int(row[0] or 0),
+            "new_users": new_users.get(key, 0),
+            "image_calls": int(row[1] or 0),
+            "webhook_messages": int(row[2] or 0),
+            "record_exports": int(row[3] or 0),
+            "record_imports": int(row[4] or 0),
+            "bindings": int(row[5] or 0),
+            "unbinds": int(row[6] or 0),
+            "sync_total": sync_total,
+            "sync_success": sync_success,
+            "sync_success_rate": round(sync_success / sync_total * 100, 1) if sync_total else 0.0,
+        })
+        current += timedelta(days=1)
+    return {
+        "range": {"start": str(start), "end": str(end), "days": len(series)},
+        "active_users": active_users,
+        "daily": series,
+        "event_types": event_types,
+        "image_commands": commands,
+    }
+
+
+@mcp.tool(annotations=READ_ONLY, structured_output=True)
+def inspect_admin_service(
+    resource: str,
+    item_id: str = "",
+    limit: int = 50,
+) -> dict[str, Any]:
+    """Inspect live admin state without exposing credentials.
+
+    Resources: capabilities, configuration, plugins, overview, tasks, notices,
+    notice_stats, tip_ads, backups, dxdata, notifications, or backgrounds. item_id is required for
+    notice_stats and optionally selects one tip_ad. Results are recursively redacted.
+    """
+    resource = resource.strip().lower()
+    limit = max(1, min(int(limit), 100))
+    item_id = item_id.strip()
+    if item_id and not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", item_id):
+        return {"error": "item_id is invalid"}
+    capabilities = {
+        "resources": [
+            "configuration", "plugins", "overview", "tasks", "notices", "notice_stats",
+            "tip_ads", "backups", "dxdata", "notifications", "backgrounds",
+        ],
+        "actions": [
+            "sync_user", "clear_nickname_cache", "clear_notifications",
+            "create_backup", "update_dxdata", "create_notice", "update_notice",
+            "publish_notice", "delete_notice", "create_tip_ad", "update_tip_ad",
+            "delete_tip_ad",
+        ],
+        "excluded": [
+            "credentials", "tokens", "cookies", "arbitrary SQL", "arbitrary shell",
+            "user deletion", "account binding", "developer-token management",
+        ],
+    }
+    if resource == "capabilities":
+        return capabilities
+
+    if resource == "configuration":
+        return {
+            "maimai_versions": _bounded(MAIMAI_VERSION),
+            "temporary_version": _bounded(TEMP_VERSION),
+            "rich_menu": {
+                "enabled": RICH_MENU_ENABLED,
+                "default_language": RICH_MENU_DEFAULT_LANGUAGE,
+                "languages": sorted(str(key) for key in RICH_MENU_MENUS),
+            },
+            "r2_enabled": R2_ENABLED,
+            "web_push_configured": bool(VAPID_PUBLIC_KEY),
+            "plugins_enabled": bool(PLUGIN_CONFIG.get("enabled", True)),
+            "ai_monitor_enabled": AI_MONITOR_ENABLED,
+        }
+    if resource == "plugins":
+        files = []
+        for raw_directory in PLUGIN_CONFIG.get("directories") or ["./plugins"]:
+            if len(files) >= 100:
+                break
+            directory = Path(str(raw_directory)).expanduser()
+            if not directory.is_absolute():
+                directory = PROJECT_ROOT / directory
+            try:
+                directory = directory.resolve()
+                directory.relative_to(PROJECT_ROOT)
+            except (OSError, RuntimeError, ValueError):
+                continue
+            if not directory.is_dir():
+                continue
+            for path in sorted(directory.rglob("*.py")):
+                if path.is_symlink() or any(part.startswith(".") for part in path.parts):
+                    continue
+                files.append(str(path.relative_to(PROJECT_ROOT)))
+                if len(files) >= 100:
+                    break
+        return {
+            "enabled": bool(PLUGIN_CONFIG.get("enabled", True)),
+            "files": files,
+            "truncated": len(files) == 100,
+        }
+
+    if resource == "overview":
+        result = _bridge_request("GET", "/admin/api/overview")
+    elif resource == "tasks":
+        result = _bridge_request("GET", "/admin/api/tasks")
+    elif resource == "notices":
+        result = _bridge_request("GET", "/admin/get_notices")
+    elif resource == "notice_stats":
+        if not item_id:
+            return {"error": "item_id is required for notice_stats"}
+        result = _bridge_request(
+            "GET",
+            "/admin/get_notice_stats",
+            query={"notice_id": item_id},
+        )
+    elif resource == "tip_ads":
+        path = "/admin/tip_ads"
+        if item_id:
+            path += "/" + urllib.parse.quote(item_id, safe="")
+        result = _bridge_request("GET", path)
+    elif resource == "backups":
+        result = _bridge_request("GET", "/admin/get_backups")
+    elif resource == "dxdata":
+        result = _bridge_request("GET", "/admin/dxdata_status")
+    elif resource == "notifications":
+        result = _bridge_request("GET", "/admin/notifications")
+    elif resource == "backgrounds":
+        result = _bridge_request("GET", "/admin/backgrounds")
+    else:
+        return {"error": "unsupported resource", **capabilities}
+
+    for key in ("notices", "tip_ads", "backups", "backgrounds", "result"):
+        if isinstance(result.get(key), list):
+            result[key] = result[key][:limit]
+    return result
+
+
+_SERVICE_ACTION_FIELDS = {
+    "sync_user": {"user_id"},
+    "clear_nickname_cache": set(),
+    "clear_notifications": set(),
+    "create_backup": set(),
+    "update_dxdata": set(),
+    "create_notice": {
+        "content", "status", "voting_enabled", "button_type", "button_label", "button_value",
+    },
+    "update_notice": {
+        "notice_id", "content", "status", "voting_enabled", "button_type", "button_label",
+        "button_value", "remove_button",
+    },
+    "publish_notice": {"notice_id"},
+    "delete_notice": {"notice_id"},
+    "create_tip_ad": {"type", "text", "enabled", "button_type", "button_label", "button_value"},
+    "update_tip_ad": {
+        "tip_ad_id", "type", "text", "enabled", "button_type", "button_label", "button_value",
+        "remove_button",
+    },
+    "delete_tip_ad": {"tip_ad_id"},
+}
+_SERVICE_ITEM_ID = re.compile(r"^[A-Za-z0-9_-]{1,128}$")
+
+
+@mcp.tool(annotations=SERVICE_ACTION, structured_output=True)
+def operate_admin_service(
+    action: str,
+    parameters: dict[str, Any] | None = None,
+    confirmed: bool = False,
+) -> dict[str, Any]:
+    """Run an allow-listed admin action against the live service.
+
+    Only call after the current admin message explicitly requests this exact action,
+    then set confirmed=true. Call with confirmed=false to inspect required fields.
+    Credentials, tokens, cookies, account binding, user edits, and user deletion are forbidden.
+    """
+    action = action.strip().lower()
+    if action not in _SERVICE_ACTION_FIELDS:
+        return {
+            "error": "unsupported action",
+            "actions": {key: sorted(fields) for key, fields in _SERVICE_ACTION_FIELDS.items()},
+        }
+    fields = _SERVICE_ACTION_FIELDS[action]
+    if not confirmed:
+        return {
+            "error": "confirmed=true is required after an explicit admin request",
+            "action": action,
+            "allowed_fields": sorted(fields),
+        }
+    parameters = dict(parameters or {})
+    unexpected = sorted(set(parameters) - fields)
+    if unexpected:
+        return {"error": "unexpected parameters", "fields": unexpected, "allowed_fields": sorted(fields)}
+    if _contains_sensitive_data(parameters):
+        return {"error": "sensitive fields are not accepted"}
+    if len(json.dumps(parameters, ensure_ascii=False).encode("utf-8")) > 50_000:
+        return {"error": "parameters exceed the 50KB limit"}
+
+    if action == "sync_user":
+        user_id = str(parameters.get("user_id", "")).strip()
+        if not _SERVICE_ITEM_ID.fullmatch(user_id):
+            return {"error": "user_id is invalid"}
+        parameters["user_id"] = user_id
+        method, path, payload = "POST", "/admin/trigger_update", parameters
+    elif action == "clear_nickname_cache":
+        method, path, payload = "POST", "/admin/clear_cache", {}
+    elif action == "clear_notifications":
+        method, path, payload = "DELETE", "/admin/notifications", None
+    elif action == "create_backup":
+        method, path, payload = "POST", "/admin/backups", {}
+    elif action == "update_dxdata":
+        method, path, payload = "POST", "/admin/update_dxdata", {}
+    elif action == "create_notice":
+        method, path, payload = "POST", "/admin/create_notice", parameters
+    elif action in {"update_notice", "publish_notice", "delete_notice"}:
+        notice_id = str(parameters.get("notice_id", "")).strip()
+        if not _SERVICE_ITEM_ID.fullmatch(notice_id):
+            return {"error": "notice_id is invalid"}
+        parameters["notice_id"] = notice_id
+        path = {
+            "update_notice": "/admin/update_notice",
+            "publish_notice": "/admin/publish_notice",
+            "delete_notice": "/admin/delete_notice",
+        }[action]
+        method, payload = "POST", parameters
+    else:
+        tip_ad_id = str(parameters.pop("tip_ad_id", "")).strip()
+        if action == "create_tip_ad":
+            method, path, payload = "POST", "/admin/tip_ads", parameters
+        else:
+            if not _SERVICE_ITEM_ID.fullmatch(tip_ad_id):
+                return {"error": "tip_ad_id is invalid"}
+            path = "/admin/tip_ads/" + urllib.parse.quote(tip_ad_id, safe="")
+            method = "PUT" if action == "update_tip_ad" else "DELETE"
+            payload = parameters if method == "PUT" else None
+
+    result = _bridge_request(method, path, payload=payload)
+    result["action"] = action
+    return result
+
+
 @mcp.tool(annotations=READ_ONLY, structured_output=True)
 def get_user_data(user_id: str, fields: list[str] | None = None) -> dict[str, Any]:
     """Get one user's stored data with credentials, secrets, cookies, and tokens redacted."""
@@ -659,12 +1108,18 @@ def manage_project_file(
 def query_developer_data(
     operation: str,
     user_id: str = "",
+    query: str = "",
+    days: int = 30,
     limit: int = 50,
     offset: int = 0,
 ) -> dict[str, Any]:
-    """Run an allow-listed developer API read operation internally without an API token."""
-    operation = operation.strip()
-    allowed_operations = {"list_users", "permission_requests"}
+    """Read the user directory, permission requests, or a user's activity without an API token.
+
+    Operations: list_users, permission_requests, or user_activity. list_users supports
+    query matching a user ID or nickname. All credentials and token-like fields are redacted.
+    """
+    operation = operation.strip().lower()
+    allowed_operations = {"list_users", "permission_requests", "user_activity"}
     if operation not in allowed_operations:
         return {
             "error": "Unsupported operation",
@@ -673,16 +1128,29 @@ def query_developer_data(
     if operation != "list_users" and not user_id.strip():
         return {"error": "user_id is required for this operation"}
     user_id = user_id.strip()
+    query = query.strip()
     limit = max(1, min(int(limit), 100))
     offset = max(0, int(offset))
+    days = max(1, min(int(days), 90))
     try:
         with database_cursor() as (_, cursor):
             if operation == "list_users":
-                cursor.execute("SELECT COUNT(*) FROM users")
+                if query:
+                    wildcard = f"%{query}%"
+                    condition = (
+                        "WHERE user_id LIKE %s OR "
+                        "JSON_UNQUOTE(JSON_EXTRACT(data, '$.nickname')) LIKE %s"
+                    )
+                    args = (wildcard, wildcard)
+                else:
+                    condition = ""
+                    args = ()
+                cursor.execute(f"SELECT COUNT(*) FROM users {condition}", args)
                 total = int(cursor.fetchone()[0])
                 cursor.execute(
-                    "SELECT user_id, data FROM users ORDER BY user_id LIMIT %s OFFSET %s",
-                    (limit, offset),
+                    f"SELECT user_id, data FROM users {condition} "
+                    "ORDER BY user_id LIMIT %s OFFSET %s",
+                    (*args, limit, offset),
                 )
                 users = []
                 for row_user_id, raw_data in cursor.fetchall():
@@ -694,10 +1162,57 @@ def query_developer_data(
                 return {
                     "transport": "internal",
                     "operation": operation,
+                    "query": query,
                     "total": total,
                     "offset": offset,
                     "returned": len(users),
                     "users": users,
+                }
+
+            if operation == "user_activity":
+                cursor.execute("SELECT 1 FROM users WHERE user_id = %s", (user_id,))
+                if not cursor.fetchone():
+                    return {
+                        "transport": "internal",
+                        "operation": operation,
+                        "user_id": user_id,
+                        "exists": False,
+                    }
+                cursor.execute(
+                    "SELECT DATE(ts), event_type, COUNT(*) FROM events "
+                    "WHERE user_id = %s AND ts >= DATE_SUB(NOW(), INTERVAL %s DAY) "
+                    "GROUP BY DATE(ts), event_type ORDER BY DATE(ts), event_type",
+                    (user_id, days),
+                )
+                daily: dict[str, dict[str, int]] = {}
+                for event_date, event_type, count in cursor.fetchall():
+                    daily.setdefault(str(event_date), {})[str(event_type)] = int(count)
+                cursor.execute(
+                    "SELECT ts, event_type, metadata FROM events "
+                    "WHERE user_id = %s AND ts >= DATE_SUB(NOW(), INTERVAL %s DAY) "
+                    "ORDER BY ts DESC LIMIT %s",
+                    (user_id, days, limit),
+                )
+                recent = []
+                for timestamp, event_type, metadata in cursor.fetchall():
+                    if isinstance(metadata, str):
+                        try:
+                            metadata = json.loads(metadata)
+                        except json.JSONDecodeError:
+                            metadata = None
+                    recent.append({
+                        "timestamp": timestamp.isoformat(timespec="seconds"),
+                        "event_type": event_type,
+                        "metadata": _bounded(metadata),
+                    })
+                return {
+                    "transport": "internal",
+                    "operation": operation,
+                    "user_id": user_id,
+                    "exists": True,
+                    "days": days,
+                    "daily": daily,
+                    "recent": recent,
                 }
 
             cursor.execute("SELECT data FROM users WHERE user_id = %s", (user_id,))

@@ -6,6 +6,7 @@ import re
 import secrets
 import threading
 import time
+from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime
 from io import BytesIO
@@ -56,6 +57,7 @@ from modules.monitoring.codex_agent import (
     ask_codex,
     get_generated_image,
     release_codex_session,
+    verify_service_bridge_token,
 )
 from modules.monitoring.file_access import is_asset_image, resolve_allowed_path
 from modules.monitoring.markdown_renderer import render_markdown
@@ -121,6 +123,8 @@ CSRF_EXEMPT_ENDPOINTS = (
     "admin_load_nicknames",
     "admin_delete_backup",
     "admin_update_dxdata",
+    "admin_create_backup",
+    "admin_clear_notifications",
 )
 
 
@@ -160,7 +164,12 @@ def configure_admin_api(**services):
 
 
 def check_admin_auth():
-    return session.get("admin_authenticated", False)
+    if session.get("admin_authenticated", False):
+        return True
+    return (
+        request.remote_addr in {"127.0.0.1", "::1"}
+        and verify_service_bridge_token(request.headers.get("X-JiETNG-Monitor-Token", ""))
+    )
 
 
 def _json_body():
@@ -325,6 +334,20 @@ def admin_api_hourly():
     if not re.match(r"^\d{4}-\d{2}-\d{2}$", date_str):
         return jsonify({"error": "Invalid date format, use YYYY-MM-DD"}), 400
     return jsonify(get_hourly_stats(date_str))
+
+
+@admin_api.route("/admin/api/tasks", methods=["GET"])
+def admin_api_tasks():
+    if not check_admin_auth():
+        return jsonify({"error": "Unauthorized"}), 401
+    with _services.task_tracking_lock:
+        tracking = deepcopy(_services.task_tracking)
+    return jsonify({
+        "success": True,
+        "running": tracking.get("running", []),
+        "queued": tracking.get("queued", []),
+        "completed": tracking.get("completed", [])[-20:],
+    })
 
 
 @admin_api.route("/admin/api/users", methods=["GET"])
@@ -598,12 +621,11 @@ def admin_update_notice():
     button_labels = localized_payload(data, "button_label")
 
     try:
-        latest_notice = get_latest_published_notice()
-        is_latest = latest_notice and latest_notice.get('id') == notice_id
-
         success = update_notice(
             notice_id,
             content,
+            status=data.get('status'),
+            voting_enabled=data.get('voting_enabled'),
             button_type=button_type,
             button_label=button_labels if button_type and button_value else None,
             button_value=button_value,
@@ -612,6 +634,8 @@ def admin_update_notice():
 
         if success:
             notice = get_notice_by_id(notice_id)
+            latest_notice = get_latest_published_notice()
+            is_latest = latest_notice and latest_notice.get('id') == notice_id
             if notice.get('status') == 'published' and is_latest:
                 clear_notice_read_status(notice_id)
                 logger.info(f"[Admin] ✓ Updated latest published notice: notice_id={notice_id}")
@@ -1363,9 +1387,10 @@ def admin_update_dxdata():
     try:
         result = update_dxdata_with_comparison(DXDATA_URL, DXDATA_FILE)
         message = build_dxdata_update_message(result, None)
-        diff = result.get('diff', {})
+        success = bool(result.get('success'))
+        diff = result.get('diff') or {}
         return jsonify({
-            'success': True,
+            'success': success,
             'message': message,
             'sheets_added': diff.get('sheets_added', 0),
             'songs_added': diff.get('songs_added', 0)

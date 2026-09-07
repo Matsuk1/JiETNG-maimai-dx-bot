@@ -145,6 +145,8 @@ def get_notice_by_id(notice_id):
 def update_notice(
     notice_id,
     content,
+    status=None,
+    voting_enabled=None,
     button_type=None,
     button_label=None,
     button_value=None,
@@ -157,6 +159,10 @@ def update_notice(
             return False
 
         notice["content"] = _normalize_content(content)
+        if status in {"draft", "published"}:
+            notice["status"] = status
+        if voting_enabled is not None:
+            notice["voting_enabled"] = bool(voting_enabled)
         notice["updated_at"] = datetime.now().strftime(TIMESTAMP_FORMAT)
         if remove_button:
             notice.pop("button", None)

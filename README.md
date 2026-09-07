@@ -122,9 +122,11 @@ AI 运维默认调用服务器上已登录的 `codex`。若 systemd 找不到命
 }
 ```
 
-也可使用 `JIETNG_CODEX_COMMAND`、`JIETNG_CODEX_MODEL`、`JIETNG_CODEX_TIMEOUT` 和 `JIETNG_CODEX_SESSION_TTL` 环境变量覆盖。后台会懒启动一个常驻 `codex app-server`，同一管理员登录会话复用独立 thread，默认空闲 1 小时后释放；浏览器保留最近 20 条消息，仅用于 app-server 重启后的上下文恢复。常驻 thread 会保留完整连续上下文，并由 Codex 在接近模型上限时自动压缩。
+也可使用 `JIETNG_CODEX_COMMAND`、`JIETNG_CODEX_MODEL`、`JIETNG_CODEX_TIMEOUT` 和 `JIETNG_CODEX_SESSION_TTL` 环境变量覆盖。后台会懒启动一个常驻 `codex app-server`，同一管理员登录会话复用独立 thread，默认空闲 1 小时后释放；浏览器保留最近 20 条消息，仅用于 app-server 重启后的上下文恢复。常驻 thread 会保留完整连续上下文，并由 Codex 在接近模型上限时自动压缩。若 Gunicorn 的本机监听地址与 `config.json` 中的端口不同，可用 `JIETNG_MONITOR_BRIDGE_URL=http://127.0.0.1:<port>` 指定内部服务地址。
 
-MCP 的开发者数据查询直接走本机只读数据层，不需要 API token；用户凭据、Cookie 和 token 会被递归脱敏。对话支持安全 Markdown、最多 3 张图片输入，以及由模型调用 MCP 完成的裁剪、缩放、旋转、灰度、模糊和图像增强；处理结果通过登录态保护的临时地址返回，不写入项目资源目录。
+MCP 的开发者数据查询直接走本机数据层，不需要 API token；用户凭据、Cookie 和 token 会被递归脱敏。AI 可以查询最多 90 天的逐日业务指标、用户活动时间线、运行状态、任务队列、结构化日志、数据库、部署、公告及统计、Tip/Ad、备份、DXData、通知、背景、插件与非敏感配置状态。对话支持安全 Markdown、最多 3 张图片输入，以及由模型调用 MCP 完成的裁剪、缩放、旋转、灰度、模糊和图像增强；处理结果通过登录态保护的临时地址返回，不写入项目资源目录。
+
+管理员明确提出操作时，AI 还可触发用户同步、清理昵称缓存/通知、创建备份、更新 DXData，以及创建、更新、发布或删除公告和 Tip/Ad。操作通过仅接受本机回环请求的内部桥接进入正在运行的 Flask 进程；凭据在每个服务进程启动时随机生成且只传给 MCP 子进程，无需写入 `config.json`。任意 SQL、Shell、外部 URL、用户删除、账号绑定、用户字段编辑和开发者 token 管理不会开放给 AI。
 
 AI 请求会先创建后台任务，再由页面轮询结果。iOS 主屏幕 Web App 切到后台或页面被系统重载后，会从本地保存的任务 ID 恢复查询，不要求一条 HTTP 连接持续保持。
 
@@ -534,8 +536,10 @@ POST     /admin/delete_user        # 删除用户
 POST     /admin/get_user_data      # 获取用户数据
 POST     /admin/load_nicknames     # 批量加载昵称
 POST     /admin/clear_cache        # 清除昵称缓存
-POST     /admin/cancel_task        # 取消任务
-GET      /admin/task_status        # 获取任务状态
+GET      /admin/api/overview       # 获取实时概览
+GET      /admin/api/hourly         # 获取指定日期活动
+GET      /admin/api/tasks          # 获取实时任务队列
+GET      /admin/api/users          # 分页获取用户
 GET      /admin/get_logs           # 获取日志
 POST     /admin/api/ai-monitor/query          # 创建 AI 运维诊断
 GET      /admin/api/ai-monitor/query/<job_id> # 查询诊断结果
