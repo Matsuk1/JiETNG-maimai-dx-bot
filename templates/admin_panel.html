@@ -998,6 +998,21 @@
       font-size: 11px;
     }
 
+    .notification-head-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex: 0 0 auto;
+    }
+
+    .notification-copy-btn {
+      min-height: 28px;
+      padding: 5px 9px;
+      border-radius: 6px;
+      font-size: 11px;
+      line-height: 1.2;
+    }
+
     .notification-detail {
       display: none;
       padding: 12px 14px;
@@ -2543,6 +2558,14 @@
     .user-list,
     .notification-stack {
       gap: 6px;
+    }
+
+    .notification-card-head > div:first-child {
+      min-width: 0;
+    }
+
+    .notification-copy-btn {
+      padding: 5px 8px;
     }
 
     .user-item,
@@ -4234,6 +4257,45 @@
     }
 
     let _notificationsLoading = false;
+    let _notificationsData = [];
+
+    function notificationCopyText(item = {}) {
+      const context = item.context || {};
+      const contextText = Object.keys(context).length
+        ? Object.entries(context).map(([key, value]) => `${key}: ${String(value)}`).join('\n')
+        : '';
+      return [
+        `Title: ${item.title || 'Notification'}`,
+        `Time: ${item.timestamp || item.time || 'Just now'}`,
+        `User: ${item.user_id || 'Unknown'}`,
+        contextText ? `Context:\n${contextText}` : '',
+        `Details:\n${item.details || item.body || 'No details'}`
+      ].filter(Boolean).join('\n\n');
+    }
+
+    function copyTextToClipboard(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        return navigator.clipboard.writeText(text);
+      }
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.top = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(textarea);
+      return ok ? Promise.resolve() : Promise.reject(new Error('Clipboard unavailable'));
+    }
+
+    function copyNotification(index) {
+      const item = _notificationsData[index];
+      if (!item) return;
+      copyTextToClipboard(notificationCopyText(item))
+        .then(() => showToast('✓ Notification copied'))
+        .catch(err => showToast('✗ Copy failed: ' + err.message, 'error'));
+    }
 
     function refreshNotifications({force = false} = {}) {
       if (_notificationsLoading && !force) return Promise.resolve(null);
@@ -4243,22 +4305,23 @@
         .then(data => {
           const list = document.getElementById('notifications-list');
           const badge = document.getElementById('notification-badge');
+          _notificationsData = Array.isArray(data) ? data : [];
 
           // 更新 badge
-          if (data.length > 0) {
-            badge.textContent = data.length;
+          if (_notificationsData.length > 0) {
+            badge.textContent = _notificationsData.length;
             badge.style.display = 'inline';
           } else {
             badge.style.display = 'none';
           }
 
-          if (data.length === 0) {
+          if (_notificationsData.length === 0) {
             list.innerHTML = '<div style="text-align:center; opacity:0.5; padding:20px;">No notifications</div>';
             return;
           }
 
           list.className = 'notification-stack';
-          list.innerHTML = data.map((n, i) => {
+          list.innerHTML = _notificationsData.map((n, i) => {
             const context = n.context || {};
             const timestamp = n.timestamp || n.time || '';
             const details = n.details || n.body || '';
@@ -4273,7 +4336,10 @@
                       ${userId !== 'Unknown' ? ` · User ${escapeHtml(userId)}` : ''}
                     </div>
                   </div>
-                  <span id="notif-arrow-${i}" style="color:var(--text-tertiary);">+</span>
+                  <div class="notification-head-actions">
+                    <button class="btn notification-copy-btn" onclick="event.stopPropagation(); copyNotification(${i})">Copy</button>
+                    <span id="notif-arrow-${i}" style="color:var(--text-tertiary);">+</span>
+                  </div>
                 </div>
                 <div id="notif-detail-${i}" class="notification-detail">
                   ${Object.keys(context).length > 0 ? `
