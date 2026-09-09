@@ -155,6 +155,7 @@ class _AIMonitorJob:
     answer: str = ""
     reasoning: str = ""
     activity: str = "Starting"
+    images: list[str] | None = None
     cancel_requested: bool = False
 
 
@@ -164,6 +165,7 @@ _AI_MONITOR_JOB_TTL_SECONDS = 3600
 _AI_MONITOR_JOB_ID = re.compile(r"^[A-Za-z0-9_-]{16,80}$")
 _AI_MONITOR_CONVERSATION_ID = re.compile(r"^[A-Za-z0-9_-]{8,80}$")
 _AI_MONITOR_MAX_CONVERSATIONS = 20
+_AI_MONITOR_EMBEDDED_CONVERSATION = "embedded-panel"
 
 
 def configure_admin_api(**services):
@@ -270,11 +272,11 @@ def _run_ai_monitor_job(
             job.result = {
                 "answer": job.answer,
                 "answer_html": render_markdown(job.answer) if job.answer else "",
-                "images": [],
+                "images": list(job.images or []),
             }
             return True
 
-    def report_progress(progress: dict[str, str]) -> None:
+    def report_progress(progress: dict) -> None:
         with _ai_monitor_jobs_lock:
             job = _ai_monitor_jobs.get(job_id)
             if job is None or job.status != "running":
@@ -282,6 +284,9 @@ def _run_ai_monitor_job(
             job.answer = progress.get("text", job.answer)
             job.reasoning = progress.get("reasoning", job.reasoning)
             job.activity = progress.get("activity", job.activity)
+            images = progress.get("images")
+            if isinstance(images, list):
+                job.images = [str(image) for image in images[:4]]
 
     try:
         if finish_if_cancelled():
@@ -309,6 +314,7 @@ def _run_ai_monitor_job(
                 "images": response["images"],
             },
             "status_code": 200,
+            "reasoning": response.get("reasoning", ""),
         }
     except CodexMonitorBusy as exc:
         update = {"status": "failed", "error": str(exc), "status_code": 429}
@@ -334,15 +340,18 @@ def _run_ai_monitor_job(
             job.result = update.get("result")
             job.error = update.get("error", "")[:500]
             job.status_code = update["status_code"]
+            if update.get("reasoning"):
+                job.reasoning = update["reasoning"]
             if job.status == "completed" and job.result is not None:
                 job.answer = job.result.get("answer", job.answer)
+                job.images = list(job.result.get("images", []))
                 job.activity = "Complete"
             elif job.status == "stopped":
                 job.activity = "Stopped"
                 job.result = {
                     "answer": job.answer,
                     "answer_html": render_markdown(job.answer) if job.answer else "",
-                    "images": [],
+                    "images": list(job.images or []),
                 }
 
 
@@ -377,13 +386,6 @@ def admin_panel():
         stats=stats,
         logs=logs
     )
-
-
-@admin_api.route("/admin/ai", methods=["GET"])
-def admin_ai_panel():
-    if not check_admin_auth():
-        return redirect("/admin/panel")
-    return render_template("admin_ai_panel.html")
 
 
 @admin_api.route("/admin/api/overview", methods=["GET"])
@@ -551,7 +553,9 @@ def admin_ai_monitor_query():
     job_id = str(data.get("job_id") or secrets.token_urlsafe(24))
     if not _AI_MONITOR_JOB_ID.fullmatch(job_id):
         return jsonify({"success": False, "message": "Invalid job ID"}), 400
-    conversation_id = str(data.get("conversation_id") or "").strip()
+    conversation_id = str(
+        data.get("conversation_id") or _AI_MONITOR_EMBEDDED_CONVERSATION
+    ).strip()
     session_id = _ai_monitor_session(conversation_id, register=True)
     if session_id is None:
         return jsonify({"success": False, "message": "Invalid conversation ID"}), 400
@@ -613,12 +617,14 @@ def admin_ai_monitor_result(job_id: str):
         answer = job.answer
         reasoning = job.reasoning
         activity = job.activity
+        images = list(job.images or [])
     progress = {
         "answer": answer,
         "answer_html": render_markdown(answer) if answer else "",
         "reasoning": reasoning,
         "reasoning_html": render_markdown(reasoning) if reasoning else "",
         "activity": activity,
+        "images": images,
     }
     if status == "running":
         return jsonify({"success": True, "job_id": job_id, "status": status, **progress}), 202

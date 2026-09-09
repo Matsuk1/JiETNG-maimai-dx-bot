@@ -6,6 +6,8 @@
   <title>Admin Panel | JiETNG</title>
   <link rel="icon" type="image/png" href="/static/pics/logo.png">
   <link rel="manifest" href="/static/manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="JiETNG Admin">
   <link rel="apple-touch-icon" href="/static/admin-icon.png">
   <meta name="theme-color" content="#0D0D0D" media="(prefers-color-scheme: dark)">
@@ -915,6 +917,467 @@
       align-items: start;
     }
 
+    .ai-monitor-section {
+      margin-bottom: 18px;
+    }
+
+    .ai-monitor-status {
+      color: var(--text-tertiary);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .ai-monitor-dots {
+      display: inline-flex;
+      width: 14px;
+      margin-left: 1px;
+      justify-content: space-between;
+    }
+
+    .ai-monitor-dots span {
+      opacity: 0.22;
+      transform: translateY(0) scale(0.88);
+      transform-origin: center bottom;
+      animation: ai-monitor-dot-wave 1.05s cubic-bezier(0.4, 0, 0.2, 1) infinite both;
+      will-change: opacity, transform;
+    }
+
+    .ai-monitor-dots span:nth-child(1) {
+      animation-delay: 0s;
+    }
+
+    .ai-monitor-dots span:nth-child(2) {
+      animation-delay: -0.7s;
+    }
+
+    .ai-monitor-dots span:nth-child(3) {
+      animation-delay: -0.35s;
+    }
+
+    @keyframes ai-monitor-dot-wave {
+      0%, 100% {
+        opacity: 1;
+        transform: translateY(-1.5px) scale(1.08);
+      }
+
+      25%, 75% {
+        opacity: 0.42;
+        transform: translateY(-0.25px) scale(0.94);
+      }
+
+      50% {
+        opacity: 0.22;
+        transform: translateY(0) scale(0.88);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .ai-monitor-dots span {
+        opacity: 0.72;
+        transform: none;
+        animation: none;
+      }
+    }
+
+    .ai-monitor-messages {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 96px;
+      max-height: min(70vh, 760px);
+      padding: 4px 2px 14px;
+      overflow-y: auto;
+    }
+
+    .ai-monitor-resize-handle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 16px;
+      border: 0;
+      background: transparent;
+      cursor: ns-resize;
+      touch-action: none;
+    }
+
+    .ai-monitor-resize-handle::before {
+      width: 42px;
+      height: 3px;
+      border-radius: 2px;
+      background: var(--border-color);
+      content: '';
+      transition: background var(--transition-fast), width var(--transition-fast);
+    }
+
+    .ai-monitor-resize-handle:hover::before,
+    .ai-monitor-resize-handle:focus-visible::before,
+    .ai-monitor-resize-handle.dragging::before {
+      width: 54px;
+      background: var(--accent-color);
+    }
+
+    .ai-monitor-resize-handle:focus-visible {
+      outline: 2px solid var(--accent-color);
+      outline-offset: -2px;
+    }
+
+    body.ai-monitor-resizing {
+      cursor: ns-resize;
+      user-select: none;
+    }
+
+    .ai-monitor-empty {
+      margin: auto;
+      color: var(--text-tertiary);
+      font-size: 13px;
+    }
+
+    .ai-monitor-message {
+      display: flex;
+      width: 100%;
+    }
+
+    .ai-monitor-message.user {
+      justify-content: flex-end;
+    }
+
+    .ai-monitor-message-body {
+      max-width: min(780px, 88%);
+      padding: 10px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      background: var(--surface-bg);
+      color: var(--text-color);
+      font-size: 13px;
+      line-height: 1.55;
+      overflow-wrap: anywhere;
+    }
+
+    .ai-monitor-activity {
+      margin-bottom: 6px;
+      color: var(--text-tertiary);
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .ai-monitor-activity:empty {
+      display: none;
+    }
+
+    .ai-monitor-reasoning {
+      margin: 0 0 9px;
+      padding-left: 10px;
+      border-left: 2px solid var(--border-color);
+      color: var(--text-secondary);
+    }
+
+    .ai-monitor-reasoning summary {
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .ai-monitor-reasoning-text {
+      margin-top: 7px;
+      color: var(--text-color);
+    }
+
+    .ai-monitor-message.user .ai-monitor-message-text,
+    .ai-monitor-message.error .ai-monitor-message-text {
+      white-space: pre-wrap;
+    }
+
+    :is(.ai-monitor-message-text, .ai-monitor-reasoning-text) > :first-child {
+      margin-top: 0;
+    }
+
+    :is(.ai-monitor-message-text, .ai-monitor-reasoning-text) > :last-child {
+      margin-bottom: 0;
+    }
+
+    :is(.ai-monitor-message-text, .ai-monitor-reasoning-text) :is(h1, h2, h3, h4, h5, h6) {
+      margin: 10px 0 6px;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    :is(.ai-monitor-message-text, .ai-monitor-reasoning-text) :is(p, ul, ol, blockquote, pre, table) {
+      margin: 0 0 9px;
+    }
+
+    :is(.ai-monitor-message-text, .ai-monitor-reasoning-text) :is(ul, ol) {
+      padding-left: 22px;
+    }
+
+    :is(.ai-monitor-message-text, .ai-monitor-reasoning-text) blockquote {
+      padding-left: 10px;
+      border-left: 3px solid var(--border-color);
+      color: var(--text-secondary);
+    }
+
+    :is(.ai-monitor-message-text, .ai-monitor-reasoning-text) :not(pre) > code {
+      padding: 1px 4px;
+      border-radius: 4px;
+      background: var(--hover-bg);
+      font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    :is(.ai-monitor-message-text, .ai-monitor-reasoning-text) pre {
+      max-width: 100%;
+      padding: 10px;
+      overflow-x: auto;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      background: var(--hover-bg);
+      white-space: pre;
+    }
+
+    :is(.ai-monitor-message-text, .ai-monitor-reasoning-text) pre code {
+      font: 12px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    .ai-monitor-table-scroll {
+      max-width: 100%;
+      overflow-x: auto;
+      margin: 0 0 9px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    :is(.ai-monitor-message-text, .ai-monitor-reasoning-text) table {
+      width: max-content;
+      min-width: 100%;
+      border-collapse: collapse;
+    }
+
+    :is(.ai-monitor-message-text, .ai-monitor-reasoning-text) :is(th, td) {
+      padding: 6px 8px;
+      border: 1px solid var(--border-color);
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    :is(.ai-monitor-message-text, .ai-monitor-reasoning-text) a {
+      color: var(--accent-color);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .ai-monitor-message-text:empty {
+      display: none;
+    }
+
+    .ai-monitor-message-media {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 240px));
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .ai-monitor-message-media:only-child {
+      margin-top: 0;
+    }
+
+    .ai-monitor-message-media img {
+      display: block;
+      width: 100%;
+      max-height: 260px;
+      object-fit: contain;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      background: var(--surface-bg);
+    }
+
+    .ai-monitor-message-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 7px;
+    }
+
+    .ai-monitor-copy {
+      min-height: 28px;
+      padding: 4px 8px;
+      border: 0;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      font-size: 11px;
+    }
+
+    .ai-monitor-copy:hover,
+    .ai-monitor-copy:focus-visible {
+      background: var(--hover-bg);
+      color: var(--text-color);
+    }
+
+    .ai-monitor-message-text pre.ai-monitor-code-block,
+    .ai-monitor-reasoning-text pre.ai-monitor-code-block {
+      position: relative;
+      padding-top: 34px;
+    }
+
+    .ai-monitor-code-copy {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+    }
+
+    .ai-monitor-message.user .ai-monitor-message-body {
+      border-color: var(--accent-color);
+      background: var(--accent-light);
+    }
+
+    .ai-monitor-message.error .ai-monitor-message-body {
+      border-color: var(--danger-color);
+      color: var(--danger-color);
+    }
+
+    .ai-monitor-form {
+      padding-top: 14px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .ai-monitor-composer {
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      background: var(--surface-bg);
+      transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    }
+
+    .ai-monitor-composer:focus-within {
+      border-color: var(--accent-color);
+      box-shadow: 0 0 0 3px var(--accent-light);
+    }
+
+    .ai-monitor-composer-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 10px 10px;
+    }
+
+    .ai-monitor-composer-tools {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ai-monitor-attach {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      border: 0;
+      border-radius: var(--radius-md);
+      background: rgba(118, 118, 128, 0.10);
+      color: var(--text-secondary);
+      font-size: 23px;
+      font-weight: 400;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .ai-monitor-attach:hover {
+      background: var(--accent-light);
+      color: var(--accent-color);
+    }
+
+    .ai-monitor-attach.disabled {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .ai-monitor-file-input {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .ai-monitor-attachments {
+      display: flex;
+      gap: 8px;
+      padding: 10px 10px 2px;
+      overflow-x: auto;
+    }
+
+    .ai-monitor-attachments[hidden] {
+      display: none;
+    }
+
+    .ai-monitor-attachment {
+      position: relative;
+      flex: 0 0 76px;
+      width: 76px;
+      height: 58px;
+    }
+
+    .ai-monitor-attachment img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      background: rgba(118, 118, 128, 0.10);
+    }
+
+    .ai-monitor-attachment button {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      width: 22px;
+      height: 22px;
+      min-width: 22px;
+      padding: 0 0 2px;
+      border: 2px solid var(--surface-bg);
+      border-radius: 50%;
+      background: rgba(28, 28, 30, 0.88);
+      color: #fff;
+      font-size: 16px;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .ai-monitor-input {
+      display: block;
+      width: 100%;
+      min-height: 64px;
+      max-height: 140px;
+      padding: 12px 14px 4px;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      resize: vertical;
+    }
+
+    .ai-monitor-input:hover,
+    .ai-monitor-input:focus {
+      border: 0;
+      box-shadow: none;
+      outline: none;
+    }
+
+    .ai-monitor-send {
+      min-width: 76px;
+      min-height: 34px;
+      padding: 7px 14px;
+    }
+
+    .ai-monitor-send.stop {
+      border-color: var(--danger-color);
+      background: var(--danger-color);
+      color: #fff;
+    }
+
     .operations-section {
       min-width: 0;
       overflow: hidden;
@@ -1134,19 +1597,6 @@
     .tipad-list {
       display: grid;
       gap: 12px;
-    }
-
-    .tipad-heading {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .tipad-heading-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
     }
 
     .tipad-card {
@@ -1717,6 +2167,23 @@
         grid-template-columns: 1fr;
       }
 
+      .ai-monitor-messages {
+        min-height: 96px;
+        max-height: min(62vh, 620px);
+      }
+
+      .ai-monitor-message-body {
+        max-width: 94%;
+      }
+
+      .ai-monitor-send {
+        width: auto;
+      }
+
+      .ai-monitor-message-media {
+        grid-template-columns: 1fr;
+      }
+
       .operations-section {
         min-width: 0;
         overflow: hidden;
@@ -1780,15 +2247,6 @@
 
       .tipad-card {
         padding: 12px;
-      }
-
-      .tipad-heading {
-        align-items: stretch;
-        flex-direction: column;
-      }
-
-      .tipad-heading-actions .btn {
-        flex: 1 1 0;
       }
 
       .tipad-card-head {
@@ -2856,6 +3314,21 @@
       <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"></path>
     </symbol>
   </svg>
+  <script>
+    // iOS standalone PWA 安全区域修复
+    // env(safe-area-inset-top) 在某些情况下返回 0，用 JS 探测并补救
+    !function() {
+      if (!navigator.standalone) return;
+      var probe = document.createElement('div');
+      probe.style.cssText = 'position:fixed;top:0;left:0;width:0;padding-top:env(safe-area-inset-top,0px);pointer-events:none;visibility:hidden;';
+      document.body.appendChild(probe);
+      var sat = parseFloat(getComputedStyle(probe).paddingTop) || 0;
+      document.body.removeChild(probe);
+      // env() 无效时的备用值（灵动岛 ≈ 59px，刘海屏 ≈ 44px）
+      if (!sat) sat = window.screen.height >= 852 ? 59 : 44;
+      document.body.style.paddingTop = (20 + sat) + 'px';
+    }();
+  </script>
   <div class="container admin-shell">
     <aside class="sidebar">
       <div class="brand-block">
@@ -2911,7 +3384,6 @@
           <div class="topbar-meta">Rendered {{ stats.timestamp }} · {{ stats.hostname }}:{{ stats.port }}</div>
         </div>
         <div class="topbar-actions">
-          <a class="icon-button" href="/admin/ai" title="Open AI Operations">AI</a>
           <button class="icon-button" id="notif-toggle-btn" onclick="toggleBrowserNotifications()" title="Enable/Disable browser notifications">
             <span id="notif-toggle-icon">✕</span>
             <span id="notif-toggle-label">Notifications</span>
@@ -3182,18 +3654,19 @@
     <!-- Tip/Ad Tab -->
     <div id="tipad-tab" class="tab-content">
       <div class="section">
-        <div class="section-title tipad-heading">
+        <div class="section-title" style="display:flex; justify-content:space-between; align-items:center;">
           <span>Tip/Ad Management</span>
-          <div class="tipad-heading-actions">
-            <button class="btn btn-primary" onclick="loadTipAds()">Refresh</button>
-            <button class="btn btn-success" onclick="showCreateTipAdForm()">Create</button>
-          </div>
+          <button class="btn btn-success" onclick="showCreateTipAdForm()">Create New Tip/Ad</button>
         </div>
 
         <div id="tipadList">
           <div style="text-align: center; padding: 40px; color: var(--text-color); opacity: 0.5;">
             Loading tip/ad items...
           </div>
+        </div>
+
+        <div style="margin-top: 12px; text-align: center;">
+          <button class="btn btn-primary" onclick="loadTipAds()">Refresh</button>
         </div>
       </div>
     </div>
@@ -3288,6 +3761,56 @@
 
     <!-- Operations Tab -->
     <div id="operations-tab" class="tab-content">
+      <div class="section ai-monitor-section">
+        <div class="section-title" style="display:flex; justify-content:space-between; align-items:center;">
+          <span>AI Diagnostics</span>
+          <span class="ai-monitor-status" id="ai-monitor-status">Ready</span>
+        </div>
+        <div class="ai-monitor-messages" id="ai-monitor-messages" aria-live="polite">
+          <div class="ai-monitor-empty" id="ai-monitor-empty">Ready for a diagnosis.</div>
+        </div>
+        <div
+          class="ai-monitor-resize-handle"
+          id="ai-monitor-resize-handle"
+          role="separator"
+          aria-label="Resize AI diagnostics"
+          aria-orientation="horizontal"
+          tabindex="0"
+        ></div>
+        <form class="ai-monitor-form" id="ai-monitor-form" onsubmit="askAIMonitor(event)">
+          <div class="ai-monitor-composer">
+            <div class="ai-monitor-attachments" id="ai-monitor-attachments" hidden></div>
+            <textarea
+              class="form-input ai-monitor-input"
+              id="ai-monitor-input"
+              maxlength="2000"
+              onkeydown="handleAIMonitorKeydown(event)"
+            ></textarea>
+            <div class="ai-monitor-composer-footer">
+              <div class="ai-monitor-composer-tools">
+                <label
+                  class="ai-monitor-attach"
+                  id="ai-monitor-attach"
+                  aria-label="Add image"
+                  title="Add image"
+                >
+                  +
+                  <input
+                    class="ai-monitor-file-input"
+                    id="ai-monitor-images"
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onchange="selectAIMonitorImages(event)"
+                  >
+                </label>
+              </div>
+              <button class="btn btn-primary ai-monitor-send" id="ai-monitor-send" type="submit">Send</button>
+            </div>
+          </div>
+        </form>
+      </div>
+
       <div class="operations-grid">
         <div class="section operations-section" style="margin-bottom:0;">
           <div class="section-title" style="display:flex; justify-content:space-between; align-items:center;">
@@ -4725,9 +5248,683 @@
       clearInterval(_notificationPollTimer);
     });
 
-    document.addEventListener('visibilitychange', function() {
-      if (!document.hidden) pollNotificationBadge();
+    const _aiMonitorMessages = [];
+    let _aiMonitorPendingImages = [];
+    let _aiMonitorBusy = false;
+    const _AI_MONITOR_JOB_KEY = 'jietng.admin.aiMonitorJob';
+    const _AI_MONITOR_HEIGHT_KEY = 'jietng.admin.aiMonitorHeight';
+    let _aiMonitorActiveJobId = '';
+    let _aiMonitorPollTimer = null;
+    let _aiMonitorPollFailures = 0;
+    let _aiMonitorComposing = false;
+    let _aiMonitorCompositionEndedAt = 0;
+    let _aiMonitorStreamingMessage = null;
+    let _aiMonitorStopRequested = false;
+    let _aiMonitorJobAccepted = false;
+    try {
+      _aiMonitorActiveJobId = localStorage.getItem(_AI_MONITOR_JOB_KEY) || '';
+    } catch (_) {
+    }
+
+    function aiMonitorHeightBounds() {
+      const mobile = window.matchMedia('(max-width: 768px), (pointer: coarse)').matches;
+      return {
+        min: 96,
+        max: Math.max(96, Math.min(mobile ? 620 : 760, window.innerHeight * (mobile ? 0.62 : 0.7)))
+      };
+    }
+
+    function setAIMonitorHeight(value, persist = false) {
+      const messages = document.getElementById('ai-monitor-messages');
+      const handle = document.getElementById('ai-monitor-resize-handle');
+      if (!messages || !handle) return;
+      const bounds = aiMonitorHeightBounds();
+      const height = Math.round(Math.min(bounds.max, Math.max(bounds.min, Number(value) || bounds.min)));
+      messages.style.height = `${height}px`;
+      handle.setAttribute('aria-valuemin', String(Math.round(bounds.min)));
+      handle.setAttribute('aria-valuemax', String(Math.round(bounds.max)));
+      handle.setAttribute('aria-valuenow', String(height));
+      if (persist) {
+        try {
+          localStorage.setItem(_AI_MONITOR_HEIGHT_KEY, String(height));
+        } catch (_) {
+        }
+      }
+    }
+
+    function initializeAIMonitorResize() {
+      const messages = document.getElementById('ai-monitor-messages');
+      const handle = document.getElementById('ai-monitor-resize-handle');
+      if (!messages || !handle) return;
+      let savedHeight = 0;
+      try {
+        savedHeight = Number(localStorage.getItem(_AI_MONITOR_HEIGHT_KEY)) || 0;
+      } catch (_) {
+      }
+      if (savedHeight) setAIMonitorHeight(savedHeight);
+
+      let drag = null;
+      handle.addEventListener('pointerdown', function(event) {
+        if (event.pointerType === 'mouse' && event.button !== 0) return;
+        event.preventDefault();
+        drag = {
+          pointerId: event.pointerId,
+          startY: event.clientY,
+          startHeight: messages.getBoundingClientRect().height
+        };
+        handle.classList.add('dragging');
+        document.body.classList.add('ai-monitor-resizing');
+        handle.setPointerCapture?.(event.pointerId);
+      });
+      handle.addEventListener('pointermove', function(event) {
+        if (!drag || event.pointerId !== drag.pointerId) return;
+        event.preventDefault();
+        setAIMonitorHeight(drag.startHeight + event.clientY - drag.startY);
+      });
+      const finishDrag = function(event) {
+        if (!drag || event.pointerId !== drag.pointerId) return;
+        const height = messages.getBoundingClientRect().height;
+        drag = null;
+        handle.classList.remove('dragging');
+        document.body.classList.remove('ai-monitor-resizing');
+        setAIMonitorHeight(height, true);
+      };
+      handle.addEventListener('pointerup', finishDrag);
+      handle.addEventListener('pointercancel', finishDrag);
+      handle.addEventListener('lostpointercapture', finishDrag);
+      handle.addEventListener('keydown', function(event) {
+        const bounds = aiMonitorHeightBounds();
+        let height = messages.getBoundingClientRect().height;
+        if (event.key === 'ArrowUp') height -= event.shiftKey ? 72 : 24;
+        else if (event.key === 'ArrowDown') height += event.shiftKey ? 72 : 24;
+        else if (event.key === 'Home') height = bounds.min;
+        else if (event.key === 'End') height = bounds.max;
+        else return;
+        event.preventDefault();
+        setAIMonitorHeight(height, true);
+      });
+      if (!savedHeight) {
+        handle.setAttribute('aria-valuenow', String(Math.round(messages.getBoundingClientRect().height)));
+      }
+    }
+
+    initializeAIMonitorResize();
+
+    async function optimizeAIMonitorImage(file) {
+      if (file.size <= 850 * 1024 || !['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+        return file;
+      }
+      const source = URL.createObjectURL(file);
+      try {
+        const image = new Image();
+        image.src = source;
+        await image.decode();
+        const scale = Math.min(1, 1600 / Math.max(image.naturalWidth, image.naturalHeight));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+        canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+        const context = canvas.getContext('2d');
+        context.fillStyle = '#fff';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+        let blob = null;
+        for (const quality of [0.82, 0.68, 0.55]) {
+          blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
+          if (blob && blob.size <= 850 * 1024) break;
+        }
+        if (!blob) return file;
+        const name = file.name.replace(/\.[^.]+$/, '') + '.jpg';
+        return new File([blob], name, {type: 'image/jpeg', lastModified: file.lastModified});
+      } catch (_) {
+        return file;
+      } finally {
+        URL.revokeObjectURL(source);
+      }
+    }
+
+    async function copyAIMonitorText(value, button) {
+      const original = button.textContent;
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(value);
+        } else {
+          const fallback = document.createElement('textarea');
+          fallback.value = value;
+          fallback.style.position = 'fixed';
+          fallback.style.opacity = '0';
+          document.body.appendChild(fallback);
+          fallback.select();
+          document.execCommand('copy');
+          fallback.remove();
+        }
+        button.textContent = 'Copied';
+      } catch (_) {
+        button.textContent = 'Copy failed';
+      }
+      setTimeout(() => { button.textContent = original; }, 1400);
+    }
+
+    function makeAIMonitorCopyButton(value, label, className = '') {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = `ai-monitor-copy ${className}`.trim();
+      button.textContent = 'Copy';
+      button.title = label;
+      button.setAttribute('aria-label', label);
+      button.addEventListener('click', () => copyAIMonitorText(value, button));
+      return button;
+    }
+
+    function renderSafeAIHtml(container, renderedHtml, fallbackText) {
+      if (!renderedHtml) {
+        container.textContent = fallbackText;
+        return;
+      }
+      const template = document.createElement('template');
+      template.innerHTML = renderedHtml;
+      const allowedTags = new Set([
+        'A', 'BLOCKQUOTE', 'BR', 'CODE', 'DEL', 'EM', 'H1', 'H2', 'H3',
+        'H4', 'H5', 'H6', 'HR', 'LI', 'OL', 'P', 'PRE', 'S', 'STRONG', 'TABLE',
+        'TBODY', 'TD', 'TH', 'THEAD', 'TR', 'UL'
+      ]);
+      Array.from(template.content.querySelectorAll('*')).forEach((element) => {
+        if (!allowedTags.has(element.tagName)) {
+          if (['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'TEMPLATE'].includes(element.tagName)) {
+            element.remove();
+          } else {
+            element.replaceWith(document.createTextNode(element.textContent || ''));
+          }
+          return;
+        }
+        Array.from(element.attributes).forEach((attribute) => {
+          const keep = element.tagName === 'A' && ['href', 'title'].includes(attribute.name);
+          if (!keep) element.removeAttribute(attribute.name);
+        });
+        if (element.tagName === 'A') {
+          const href = element.getAttribute('href') || '';
+          let allowed = href.startsWith('#');
+          try {
+            const target = new URL(href, window.location.origin);
+            allowed = allowed || ['http:', 'https:', 'mailto:'].includes(target.protocol);
+            if (allowed && target.origin !== window.location.origin && target.protocol !== 'mailto:') {
+              element.target = '_blank';
+              element.rel = 'noopener noreferrer';
+            }
+          } catch (_) {
+            allowed = false;
+          }
+          if (!allowed) element.removeAttribute('href');
+        }
+      });
+      template.content.querySelectorAll('table').forEach((table) => {
+        const scroll = document.createElement('div');
+        scroll.className = 'ai-monitor-table-scroll';
+        table.replaceWith(scroll);
+        scroll.appendChild(table);
+      });
+      container.replaceChildren(template.content);
+      container.querySelectorAll('pre').forEach((pre) => {
+        const code = pre.querySelector('code');
+        const value = (code || pre).textContent || '';
+        if (!value) return;
+        pre.classList.add('ai-monitor-code-block');
+        pre.appendChild(makeAIMonitorCopyButton(value, 'Copy code', 'ai-monitor-code-copy'));
+      });
+    }
+
+    function renderAIMonitorReasoning(body, reasoning, renderedHtml) {
+      let details = body.querySelector('.ai-monitor-reasoning');
+      if (!reasoning) {
+        details?.remove();
+        return;
+      }
+      if (!details) {
+        details = document.createElement('details');
+        details.className = 'ai-monitor-reasoning';
+        details.open = true;
+        const summary = document.createElement('summary');
+        summary.textContent = 'Reasoning summary';
+        const text = document.createElement('div');
+        text.className = 'ai-monitor-reasoning-text';
+        details.append(summary, text);
+        const answer = body.querySelector('.ai-monitor-message-text');
+        answer ? body.insertBefore(details, answer) : body.appendChild(details);
+      }
+      renderSafeAIHtml(
+        details.querySelector('.ai-monitor-reasoning-text'),
+        renderedHtml,
+        reasoning
+      );
+    }
+
+    function renderAIMonitorReplyActions(body, content) {
+      body.querySelector('.ai-monitor-message-actions')?.remove();
+      if (!content) return;
+      const actions = document.createElement('div');
+      actions.className = 'ai-monitor-message-actions';
+      actions.appendChild(makeAIMonitorCopyButton(content, 'Copy response'));
+      body.appendChild(actions);
+    }
+
+    function renderAIMonitorMedia(body, images) {
+      const signature = images.map((image) => image.src).join('\n');
+      const existing = body.querySelector('.ai-monitor-message-media');
+      if (existing?.dataset.signature === signature) return;
+      existing?.remove();
+      if (!images.length) return;
+      const media = document.createElement('div');
+      media.className = 'ai-monitor-message-media';
+      media.dataset.signature = signature;
+      images.forEach((image) => {
+        const element = document.createElement('img');
+        element.src = image.src;
+        element.alt = image.alt || 'AI monitor image';
+        element.loading = 'lazy';
+        media.appendChild(element);
+      });
+      const actions = body.querySelector('.ai-monitor-message-actions');
+      actions ? body.insertBefore(media, actions) : body.appendChild(media);
+    }
+
+    function appendAIMonitorMessage(
+      role,
+      content,
+      images = [],
+      renderedHtml = '',
+      reasoning = '',
+      reasoningHtml = '',
+      remember = true
+    ) {
+      const container = document.getElementById('ai-monitor-messages');
+      const empty = document.getElementById('ai-monitor-empty');
+      if (!container) return;
+      empty?.remove();
+
+      const message = document.createElement('div');
+      message.className = 'ai-monitor-message ' + role;
+      const body = document.createElement('div');
+      body.className = 'ai-monitor-message-body';
+      const text = document.createElement('div');
+      text.className = 'ai-monitor-message-text';
+      if (role === 'assistant') {
+        renderSafeAIHtml(text, renderedHtml, content);
+      } else {
+        text.textContent = content;
+      }
+      if (role === 'assistant') renderAIMonitorReasoning(body, reasoning, reasoningHtml);
+      body.appendChild(text);
+
+      renderAIMonitorMedia(body, images);
+      if (role === 'assistant') renderAIMonitorReplyActions(body, content);
+      message.appendChild(body);
+      container.appendChild(message);
+      container.scrollTop = container.scrollHeight;
+
+      if (remember && (role === 'user' || role === 'assistant')) {
+        const imageNote = images.length
+          ? `\n[Images: ${images.map((image) => image.alt || 'image').join(', ')}]`
+          : '';
+        _aiMonitorMessages.push({role, content: content + imageNote});
+        if (_aiMonitorMessages.length > 20) _aiMonitorMessages.shift();
+      }
+      return message;
+    }
+
+    function renderAIMonitorAttachments() {
+      const container = document.getElementById('ai-monitor-attachments');
+      if (!container) return;
+      container.replaceChildren();
+      container.hidden = _aiMonitorPendingImages.length === 0;
+      _aiMonitorPendingImages.forEach((item, index) => {
+        const preview = document.createElement('div');
+        preview.className = 'ai-monitor-attachment';
+        const image = document.createElement('img');
+        image.src = item.url;
+        image.alt = item.file.name;
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.textContent = '×';
+        remove.setAttribute('aria-label', `Remove ${item.file.name}`);
+        remove.addEventListener('click', () => removeAIMonitorImage(index));
+        preview.append(image, remove);
+        container.appendChild(preview);
+      });
+    }
+
+    function selectAIMonitorImages(event) {
+      const selected = Array.from(event.target.files || []);
+      let rejected = false;
+      for (const file of selected) {
+        if (_aiMonitorPendingImages.length >= 3) {
+          rejected = true;
+          break;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          rejected = true;
+          continue;
+        }
+        _aiMonitorPendingImages.push({file, url: URL.createObjectURL(file)});
+      }
+      event.target.value = '';
+      renderAIMonitorAttachments();
+      if (rejected) {
+        appendAIMonitorMessage('error', 'Use up to 3 PNG, JPEG, WebP, or HEIC images, 5MB each.');
+      }
+    }
+
+    function removeAIMonitorImage(index) {
+      const removed = _aiMonitorPendingImages.splice(index, 1)[0];
+      if (removed) URL.revokeObjectURL(removed.url);
+      renderAIMonitorAttachments();
+    }
+
+    function setAIMonitorBusy(busy) {
+      _aiMonitorBusy = busy;
+      const input = document.getElementById('ai-monitor-input');
+      const button = document.getElementById('ai-monitor-send');
+      const imageInput = document.getElementById('ai-monitor-images');
+      const attach = document.getElementById('ai-monitor-attach');
+      if (input) input.disabled = busy;
+      if (imageInput) imageInput.disabled = busy;
+      attach?.classList.toggle('disabled', busy);
+      if (button) {
+        button.disabled = false;
+        button.classList.toggle('stop', busy);
+        button.textContent = busy ? 'Stop' : 'Send';
+      }
+      setAIMonitorStatus(busy ? 'Checking' : 'Ready', busy);
+    }
+
+    function renderAIMonitorStatus(element, text, animated) {
+      if (!element) return;
+      const label = String(text || '').trim().replace(/[.\u2026]+$/, '') || 'Working';
+      const animationState = animated ? 'true' : 'false';
+      if (
+        element.dataset.statusLabel === label
+        && element.dataset.statusAnimated === animationState
+      ) {
+        return;
+      }
+      element.dataset.statusLabel = label;
+      element.dataset.statusAnimated = animationState;
+      element.replaceChildren(document.createTextNode(label));
+      if (animated) {
+        const dots = document.createElement('span');
+        dots.className = 'ai-monitor-dots';
+        dots.setAttribute('aria-hidden', 'true');
+        for (let index = 0; index < 3; index += 1) {
+          const dot = document.createElement('span');
+          dot.textContent = '.';
+          dots.appendChild(dot);
+        }
+        element.appendChild(dots);
+      }
+      element.setAttribute('aria-label', animated ? `${label}...` : label);
+    }
+
+    function setAIMonitorStatus(text, animated = _aiMonitorBusy) {
+      const status = document.getElementById('ai-monitor-status');
+      renderAIMonitorStatus(status, text, animated);
+    }
+
+    function rememberAIMonitorJob(jobId) {
+      _aiMonitorActiveJobId = jobId;
+      try {
+        localStorage.setItem(_AI_MONITOR_JOB_KEY, jobId);
+      } catch (_) {
+      }
+    }
+
+    function clearAIMonitorJob() {
+      if (_aiMonitorPollTimer) clearTimeout(_aiMonitorPollTimer);
+      _aiMonitorPollTimer = null;
+      _aiMonitorActiveJobId = '';
+      _aiMonitorPollFailures = 0;
+      _aiMonitorStopRequested = false;
+      _aiMonitorJobAccepted = false;
+      try {
+        localStorage.removeItem(_AI_MONITOR_JOB_KEY);
+      } catch (_) {
+      }
+    }
+
+    function clearAIMonitorProgress() {
+      _aiMonitorStreamingMessage?.remove();
+      _aiMonitorStreamingMessage = null;
+    }
+
+    function updateAIMonitorProgress(data) {
+      const answer = data.answer || '';
+      const reasoning = data.reasoning || '';
+      if (!_aiMonitorStreamingMessage) {
+        _aiMonitorStreamingMessage = appendAIMonitorMessage(
+          'assistant', '', [], '', '', '', false
+        );
+      }
+      const body = _aiMonitorStreamingMessage.querySelector('.ai-monitor-message-body');
+      let activity = body.querySelector('.ai-monitor-activity');
+      if (!activity) {
+        activity = document.createElement('div');
+        activity.className = 'ai-monitor-activity';
+        body.prepend(activity);
+      }
+      renderAIMonitorStatus(
+        activity,
+        data.activity || (answer ? 'Responding' : 'Thinking'),
+        true
+      );
+      renderAIMonitorReasoning(body, reasoning, data.reasoning_html || '');
+      renderSafeAIHtml(
+        body.querySelector('.ai-monitor-message-text'),
+        data.answer_html || '',
+        answer
+      );
+      renderAIMonitorMedia(body, aiMonitorResponseImages(data.images));
+      const container = document.getElementById('ai-monitor-messages');
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function aiMonitorResponseImages(images) {
+      return (images || []).map((reference) => {
+        const generated = reference.startsWith('generated:');
+        const value = generated ? reference.slice('generated:'.length) : reference;
+        return {
+          src: generated
+            ? `/admin/api/ai-monitor/image?token=${encodeURIComponent(value)}`
+            : `/admin/api/ai-monitor/image?path=${encodeURIComponent(value)}`,
+          alt: generated ? 'Generated image' : (value.split('/').pop() || 'AI monitor image')
+        };
+      });
+    }
+
+    function scheduleAIMonitorPoll(jobId, delay = 400) {
+      if (_aiMonitorPollTimer) clearTimeout(_aiMonitorPollTimer);
+      _aiMonitorPollTimer = setTimeout(() => pollAIMonitorJob(jobId), delay);
+    }
+
+    async function pollAIMonitorJob(jobId) {
+      if (!jobId || jobId !== _aiMonitorActiveJobId) return;
+      if (document.hidden) {
+        setAIMonitorStatus('Waiting');
+        return;
+      }
+      try {
+        const response = await fetch(`/admin/api/ai-monitor/query/${encodeURIComponent(jobId)}`, {
+          cache: 'no-store'
+        });
+        const data = await response.json().catch(() => ({}));
+        _aiMonitorPollFailures = 0;
+        if (response.status === 202) {
+          _aiMonitorJobAccepted = true;
+          updateAIMonitorProgress(data);
+          setAIMonitorStatus(data.activity || 'Checking');
+          scheduleAIMonitorPoll(jobId);
+          return;
+        }
+        if (!response.ok || !data.success) {
+          clearAIMonitorProgress();
+          clearAIMonitorJob();
+          setAIMonitorBusy(false);
+          appendAIMonitorMessage('error', data.message || `HTTP ${response.status}`);
+          return;
+        }
+        appendAIMonitorMessage(
+          'assistant',
+          data.answer || '',
+          aiMonitorResponseImages(data.images),
+          data.answer_html || '',
+          data.reasoning || '',
+          data.reasoning_html || ''
+        );
+        clearAIMonitorProgress();
+        clearAIMonitorJob();
+        setAIMonitorBusy(false);
+        document.getElementById('ai-monitor-input')?.focus();
+      } catch (_) {
+        _aiMonitorPollFailures += 1;
+        setAIMonitorStatus('Reconnecting');
+        if (_aiMonitorPollFailures >= 8) {
+          clearAIMonitorProgress();
+          clearAIMonitorJob();
+          setAIMonitorBusy(false);
+          appendAIMonitorMessage('error', 'Could not reconnect to the diagnosis.');
+        } else {
+          scheduleAIMonitorPoll(jobId, 2000);
+        }
+      }
+    }
+
+    async function stopAIMonitor() {
+      if (!_aiMonitorActiveJobId) return;
+      _aiMonitorStopRequested = true;
+      const button = document.getElementById('ai-monitor-send');
+      if (button) button.disabled = true;
+      setAIMonitorStatus('Stopping');
+      if (!_aiMonitorJobAccepted) return;
+      try {
+        const response = await fetch(
+          `/admin/api/ai-monitor/query/${encodeURIComponent(_aiMonitorActiveJobId)}`,
+          {method: 'DELETE', headers: {'X-CSRFToken': '{{ csrf_token() }}'}}
+        );
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.success) throw new Error(data.message || `HTTP ${response.status}`);
+        scheduleAIMonitorPoll(_aiMonitorActiveJobId, 100);
+      } catch (error) {
+        _aiMonitorStopRequested = false;
+        if (button) button.disabled = false;
+        setAIMonitorStatus('Stop failed', false);
+        appendAIMonitorMessage('error', error.message || 'Could not stop the operation.');
+      }
+    }
+
+    async function askAIMonitor(event) {
+      event.preventDefault();
+      if (_aiMonitorBusy) {
+        stopAIMonitor();
+        return;
+      }
+
+      const input = document.getElementById('ai-monitor-input');
+      const question = input?.value.trim() || '';
+      if (!question && !_aiMonitorPendingImages.length) return;
+
+      const recentMessages = _aiMonitorMessages.slice(-20);
+      const history = recentMessages.map(({role, content}) => ({role, content}));
+      const currentImages = _aiMonitorPendingImages;
+      appendAIMonitorMessage(
+        'user',
+        question,
+        currentImages.map((item) => ({src: item.url, alt: item.file.name}))
+      );
+      _aiMonitorPendingImages = [];
+      renderAIMonitorAttachments();
+      input.value = '';
+      clearAIMonitorProgress();
+      _aiMonitorStopRequested = false;
+      _aiMonitorJobAccepted = false;
+      setAIMonitorBusy(true);
+
+      const jobId = typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : Array.from(crypto.getRandomValues(new Uint8Array(18)), byte => byte.toString(16).padStart(2, '0')).join('');
+      rememberAIMonitorJob(jobId);
+      try {
+        const payload = new FormData();
+        payload.append('job_id', jobId);
+        payload.append('question', question);
+        payload.append('history', JSON.stringify(history));
+        const uploadImages = await Promise.all(
+          currentImages.map((item) => optimizeAIMonitorImage(item.file))
+        );
+        if (_aiMonitorStopRequested) {
+          clearAIMonitorJob();
+          setAIMonitorBusy(false);
+          return;
+        }
+        uploadImages.forEach((file) => payload.append('images', file, file.name));
+        const response = await fetch('/admin/api/ai-monitor/query', {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': '{{ csrf_token() }}'
+          },
+          body: payload
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.success) {
+          clearAIMonitorJob();
+          setAIMonitorBusy(false);
+          appendAIMonitorMessage('error', data.message || `HTTP ${response.status}`);
+          return;
+        }
+        rememberAIMonitorJob(data.job_id || jobId);
+        _aiMonitorJobAccepted = true;
+        if (_aiMonitorStopRequested) {
+          stopAIMonitor();
+          return;
+        }
+        pollAIMonitorJob(_aiMonitorActiveJobId);
+      } catch (_) {
+        setAIMonitorStatus('Reconnecting');
+        scheduleAIMonitorPoll(jobId, 1200);
+      }
+    }
+
+    function handleAIMonitorKeydown(event) {
+      const mobileInput = window.matchMedia('(max-width: 768px), (pointer: coarse)').matches;
+      if (mobileInput) return;
+      const selectingCandidate = _aiMonitorComposing
+        || event.isComposing
+        || event.keyCode === 229
+        || Date.now() - _aiMonitorCompositionEndedAt < 150;
+      if (event.key === 'Enter' && !event.shiftKey && !selectingCandidate) {
+        event.preventDefault();
+        document.getElementById('ai-monitor-form')?.requestSubmit();
+      }
+    }
+
+    const _aiMonitorInput = document.getElementById('ai-monitor-input');
+    _aiMonitorInput?.addEventListener('compositionstart', function() {
+      _aiMonitorComposing = true;
     });
+    _aiMonitorInput?.addEventListener('compositionend', function() {
+      _aiMonitorComposing = false;
+      _aiMonitorCompositionEndedAt = Date.now();
+    });
+
+    document.addEventListener('visibilitychange', function() {
+      if (document.hidden) return;
+      pollNotificationBadge();
+      if (!_aiMonitorActiveJobId) return;
+      setAIMonitorBusy(true);
+      pollAIMonitorJob(_aiMonitorActiveJobId);
+    });
+
+    if (_aiMonitorActiveJobId) {
+      _aiMonitorJobAccepted = true;
+      setAIMonitorBusy(true);
+      pollAIMonitorJob(_aiMonitorActiveJobId);
+    }
 
     function refreshLogs() {
       fetch('/admin/get_logs')
@@ -5600,6 +6797,10 @@
       if (!Object.values(data.text).some(Boolean)) {
         showToast('✗ At least one language text is required');
         return;
+      }
+
+      if (tipAdId) {
+        data.id = tipAdId;
       }
 
       if (hasButton) {
