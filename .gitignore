@@ -32,6 +32,7 @@ data/user.json.enc
 data/user.json
 data/import_tokens.json
 data/dev_tokens.json
+data/session.key
 data/dxdata.json
 data/dxdata_version.json
 config.json

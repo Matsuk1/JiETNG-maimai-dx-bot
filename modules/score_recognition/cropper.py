@@ -1314,6 +1314,9 @@ def crop_result_fields_in_memory(source_image: Image.Image) -> dict:
             sub_judgement_detector = detector
         else:
             sub_screen = detect_sub_screen(image)
+            fallback_table = detect_sub_judgement_table(image, sub_screen)
+            if is_complete_sub_judgement_table(fallback_table):
+                sub_judgement_table = fallback_table
             if sub_screen.bottom < image.height * 0.08:
                 # A portrait photo can still contain only the round main screen.
                 # Rescan from near the top instead of treating its upper half as a
@@ -1461,6 +1464,11 @@ def crop_result_fields(image_path: str | os.PathLike[str], output_dir: str | os.
     elif not is_complete_sub_judgement_table(sub_judgement_table):
         sub_judgement_table = None
         sub_judgement_image = None
+        sub_screen = detect_sub_screen(image)
+        fallback_table = detect_sub_judgement_table(image, sub_screen)
+        if is_complete_sub_judgement_table(fallback_table):
+            sub_judgement_table = fallback_table
+            sub_judgement_detector = "blue_grid"
         if sub_screen.bottom < image.height * 0.08:
             screen = detect_result_screen(image, main_screen_only=True)
     content_screen = main_content_box(screen).clamp(image.width, image.height)

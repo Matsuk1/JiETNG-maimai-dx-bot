@@ -121,7 +121,7 @@ class ResponseTests(unittest.TestCase):
                 "check_admin_auth": lambda: True,
                 "_json_body": lambda: {"user_id": "test", "user_data": {"nickname": "new"}},
                 "user_exists": lambda _: True, "get_user": lambda _: {"nickname": "old"},
-                "save_user": lambda *a: saved, "jsonify": jsonify, "logger": LOGGER,
+                "update_user_fields": lambda *a: saved, "jsonify": jsonify, "logger": LOGGER,
             })
             app = Flask(__name__)
             app.add_url_rule("/edit", view_func=handler, methods=["POST"])

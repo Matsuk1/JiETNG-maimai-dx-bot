@@ -85,6 +85,32 @@ def save_user(
         return False
 
 
+def update_user_fields(user_id: str, fields: dict) -> bool:
+    """Atomically replace supplied top-level fields, preserving concurrent edits."""
+    if not isinstance(fields, dict) or not fields:
+        raise ValueError("At least one user field is required")
+    arguments = []
+    for field, value in fields.items():
+        # Quoted JSON path members keep dots and quotes inside literal keys.
+        arguments.extend(("$." + json.dumps(field, ensure_ascii=False), _encode_json(value)))
+    pairs = ", ".join("%s, CAST(%s AS JSON)" for _ in fields)
+    try:
+        with database_cursor(write=True) as (_, cursor):
+            cursor.execute(
+                f"UPDATE users SET data = JSON_SET(data, {pairs}), "
+                "updated_at = CURRENT_TIMESTAMP WHERE user_id = %s",
+                (*arguments, user_id),
+            )
+            if cursor.rowcount:
+                return True
+            # An unchanged document can report zero affected rows.
+            cursor.execute("SELECT 1 FROM users WHERE user_id = %s", (user_id,))
+            return cursor.fetchone() is not None
+    except Exception:
+        logger.exception("[UserDB] Failed to update user fields: user_id=%s", user_id)
+        return False
+
+
 def create_user_if_missing(user_id: str, user_data: dict) -> bool:
     """Insert a user without replacing an existing document."""
     try:

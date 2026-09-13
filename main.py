@@ -39,6 +39,7 @@ from flask import (
     send_from_directory,
 )
 from flask_wtf.csrf import CSRFProtect
+from modules.session_key import load_session_key
 
 from linebot.v3 import WebhookHandler
 from linebot.v3.exceptions import InvalidSignatureError
@@ -345,7 +346,7 @@ SCORE_RECOGNITION_API_MAX_IMAGE_BYTES = int(
 logger = configure_logging(LOG_FILE, __name__)
 
 app = Flask(__name__, static_folder='assets', static_url_path='/static')
-app.secret_key = secrets.token_hex(32)  # 用于session加密
+app.secret_key = load_session_key()
 register_web_i18n(app)
 
 # 启用 CSRF 保护

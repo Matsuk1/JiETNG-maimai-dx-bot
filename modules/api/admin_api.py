@@ -91,7 +91,7 @@ from modules.tip_ad_manager import (
     get_tip_ad_by_id,
     update_tip_ad,
 )
-from modules.user_db import get_all_user_ids, get_user, load_all_users, save_user, user_exists
+from modules.user_db import get_all_user_ids, get_user, load_all_users, update_user_fields, user_exists
 from modules.user_manager import (
     clear_notice_read_status,
     clear_notice_record,
@@ -1205,6 +1205,9 @@ def admin_edit_user():
             'message': 'User ID and user data required'
         }), 400
 
+    if not isinstance(user_data, dict) or not user_data:
+        return jsonify({'success': False, 'message': 'User data must be a non-empty object'}), 400
+
     try:
         if not user_exists(user_id):
             return jsonify({
@@ -1212,9 +1215,7 @@ def admin_edit_user():
                 'message': f'User {user_id} not found'
             }), 404
 
-        existing_data = get_user(user_id) or {}
-        existing_data.update(user_data)
-        if not save_user(user_id, existing_data):
+        if not update_user_fields(user_id, user_data):
             return jsonify({
                 'success': False,
                 'message': 'Failed to save user data'

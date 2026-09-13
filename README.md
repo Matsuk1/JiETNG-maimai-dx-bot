@@ -195,6 +195,8 @@ mysql -u jietng -p maimai_records < records_db.sql
 
 #### 5. 配置 config.json
 
+后台会话签名密钥默认保存在 `data/session.key`（首次启动自动生成，文件权限为 `0600`）。请持久保留该文件，避免重启后登录失效。可通过 `JIETNG_SESSION_KEY_FILE` 指定文件路径，或通过 `JIETNG_SESSION_SECRET` 设置固定密钥；多实例部署应使用相同密钥。更换密钥会使已有登录和 CSRF Token 失效。
+
 编辑 `config.json` 文件（完整结构参见[配置参考](#完整的-configjson)）：
 
 ```json
