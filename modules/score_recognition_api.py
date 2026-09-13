@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from typing import Any
+import math
 
 
 JUDGEMENT_ROWS = ("tap", "hold", "slide", "touch", "break")
@@ -308,8 +309,22 @@ def build_score_recognition_response(result: Any) -> dict[str, Any]:
         raise ScoreRecognitionResultError("The recognized song could not be identified")
 
     achievement = parsed.get("achievement")
-    if not isinstance(achievement, (int, float)):
+    if (
+        isinstance(achievement, bool)
+        or not isinstance(achievement, (int, float))
+        or not math.isfinite(achievement)
+        or not 0 <= achievement <= 101
+    ):
         raise ScoreRecognitionResultError("Achievement was not recognized")
+
+    achievement_calc = validation.get("achievement_calc") or {}
+    if (
+        achievement_calc.get("consistent") is not True
+        or achievement_calc.get("complete") is not True
+        or validation.get("uncertain_cells")
+        or validation.get("unmatched_notes")
+    ):
+        raise ScoreRecognitionResultError("The score did not pass complete Calc validation")
 
     judgements = _complete_judgements(parsed.get("sub_judgement"))
     rank = _score_rank(achievement)

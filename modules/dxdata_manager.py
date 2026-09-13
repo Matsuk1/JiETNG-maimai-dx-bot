@@ -91,7 +91,7 @@ def merge_songs_list(source_songs, target_songs, key_field="title"):
 
 def load_dxdata(url):
     try:
-        with requests.get(url) as response:
+        with requests.get(url, timeout=(5, 30)) as response:
             response.raise_for_status()
             data = response.json()
 

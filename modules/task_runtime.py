@@ -1,4 +1,4 @@
-"""Concurrent task execution with timeout logging and admin tracking."""
+"""Bounded task waiting with concurrency ownership and admin tracking."""
 
 import threading
 import time
@@ -109,40 +109,46 @@ def execute_task(
     context = task_context(args)
     _start_tracking(task_id, func, context, tracking, tracking_lock)
     started = time.monotonic()
+    deadline = started + max(0, timeout)
+    errors = []
+    done = threading.Event()
+
+    def target():
+        try:
+            func(*args)
+        except Exception as exc:
+            errors.append((exc, traceback.format_exc()))
+            logger.exception("[Task] Execution error: function=%s", func.__name__)
+        finally:
+            # A timed-out Python thread may still be executing. It owns its
+            # capacity until it exits; releasing here prevents unbounded work.
+            semaphore.release()
+            done.set()
+
+    acquired = semaphore.acquire(timeout=max(0, deadline - time.monotonic()))
+    if acquired:
+        thread = threading.Thread(target=target, daemon=True)
+        try:
+            thread.start()
+        except Exception:
+            semaphore.release()
+            raise
+        finished = done.wait(max(0, deadline - time.monotonic()))
+    else:
+        finished = False
+
     error = None
-    timed_out = threading.Event()
-
-    with semaphore:
-        done = threading.Event()
-
-        def target():
-            try:
-                func(*args)
-            except Exception as exc:
-                nonlocal error
-                error = exc
-                logger.exception("[Task] Execution error: function=%s", func.__name__)
-                if on_error:
-                    on_error(func, exc, context, traceback.format_exc())
-            finally:
-                done.set()
-
-        thread = threading.Thread(target=target)
-        thread.start()
-
-        def mark_timeout():
-            if not done.is_set():
-                timed_out.set()
-                logger.warning("[Task] Execution timeout: timeout=%ss", timeout)
-
-        timer = threading.Timer(timeout, mark_timeout)
-        timer.start()
-        thread.join()
-        timer.cancel()
-
-    status = "failed" if error else "completed"
-    if timed_out.is_set() and not error:
+    error_traceback = ""
+    if not finished:
         status = "timed_out"
+        phase = "execution" if acquired else "capacity wait"
+        error = TimeoutError(f"Task {phase} exceeded {timeout}s")
+        logger.warning("[Task] %s: function=%s", error, func.__name__)
+    elif errors:
+        status = "failed"
+        error, error_traceback = errors[0]
+    else:
+        status = "completed"
     outcome = TaskOutcome(
         status=status,
         duration=time.monotonic() - started,
@@ -151,6 +157,8 @@ def execute_task(
     _finish_tracking(task_id, outcome, tracking, tracking_lock, max_completed)
     if on_complete:
         on_complete(func, outcome)
+    if error and on_error:
+        on_error(func, error, context, error_traceback)
     return outcome
 
 

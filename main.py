@@ -2863,7 +2863,7 @@ def generate_profile(user_info, scale=1, user_id=None):
                         "Host": "maimaidx-eng.com",
                     }
 
-                with requests.get(url, headers=headers, verify=False) as response:
+                with requests.get(url, headers=headers, timeout=(5, 20)) as response:
                     response.raise_for_status()
                     with Image.open(BytesIO(response.content)) as source_img:
                         img = source_img.copy()

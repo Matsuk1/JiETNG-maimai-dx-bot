@@ -1214,7 +1214,11 @@ def admin_edit_user():
 
         existing_data = get_user(user_id) or {}
         existing_data.update(user_data)
-        save_user(user_id, existing_data)
+        if not save_user(user_id, existing_data):
+            return jsonify({
+                'success': False,
+                'message': 'Failed to save user data'
+            }), 500
 
         logger.info(f"[Admin] ✓ User data edited: user_id={user_id}")
 

@@ -59,9 +59,9 @@ def create_score_api(max_image_bytes):
                 ),
                 ver=version,
             )
+            selected = expand_score_recognition_calc_variants(result)[0]
+            public = build_score_recognition_response(selected)
             if image_output:
-                selected = expand_score_recognition_calc_variants(result)[0]
-                public = build_score_recognition_response(selected)
                 image = generate_score_recognition_picture(
                     selected,
                     ver=version,
@@ -85,7 +85,7 @@ def create_score_api(max_image_bytes):
                 )
                 return response
 
-            response = build_score_recognition_response(result)
+            response = public
             logger.debug(
                 "[API] Score recognition completed: token_id=%s ver=%s song_id=%s elapsed=%.3fs",
                 token_id, version, response["song"]["id"], time.perf_counter() - started_at,
