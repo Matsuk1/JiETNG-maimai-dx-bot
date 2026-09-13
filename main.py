@@ -386,9 +386,6 @@ def set_security_headers(response):
     # Strict Transport Security (如果使用 HTTPS)
     # response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
 
-    # 每次请求后执行快速垃圾回收（generation 0）
-    gc.collect(0)
-
     return response
 
 # 记录服务启动时间和统计

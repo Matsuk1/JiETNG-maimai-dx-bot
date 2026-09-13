@@ -59,15 +59,12 @@ class MemoryManager:
     def cleanup(self):
         started = time.perf_counter()
         counts_before = gc.get_count()
-        collected = [gc.collect(generation) for generation in range(3)]
+        collected = gc.collect(2)
         self.last_cleanup_time = datetime.now()
         stats = {
             "timestamp": self.last_cleanup_time.strftime("%Y-%m-%d %H:%M:%S"),
-            "collected_objects": sum(collected),
-            "collected_by_generation": {
-                f"gen{generation}": count
-                for generation, count in enumerate(collected)
-            },
+            "collected_objects": collected,
+            "collected_by_generation": {"gen2": collected},
             "gc_counts_before": counts_before,
             "elapsed_ms": int((time.perf_counter() - started) * 1000),
         }

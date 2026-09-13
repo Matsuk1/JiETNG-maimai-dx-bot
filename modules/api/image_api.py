@@ -1,5 +1,4 @@
 import base64
-import gc
 import logging
 import re
 from dataclasses import dataclass
@@ -64,7 +63,6 @@ def _png_buffer(image):
         raise
     finally:
         image.close()
-        gc.collect(0)
 
 
 def _close_entry_images(entries):
