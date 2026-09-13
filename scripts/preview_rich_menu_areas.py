@@ -59,8 +59,7 @@ def action_label(action: dict) -> str:
 
 def draw_preview(setup, lang: str, page: str) -> Path:
     source = setup.image_path(lang, page)
-    support_url = "https://example.com/"
-    payload = setup.menu_payload(lang, page, support_url)
+    payload = setup.menu_payload(lang, page)
     image = Image.open(source).convert("RGBA")
 
     overlay = Image.new("RGBA", image.size, (0, 0, 0, 0))

@@ -2861,5 +2861,3 @@
     }
 
     initStatsInteractions();
-
-  

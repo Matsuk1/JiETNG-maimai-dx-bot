@@ -67,4 +67,3 @@
         alert('❌ Invalid JSON format!\n\n' + e.message);
       }
     }
-
