@@ -45,3 +45,15 @@ class OcrAdapterTests(unittest.TestCase):
                 self.assertEqual(call.kwargs['target_rows'],('hold','slide','touch','break'))
             self.assertTrue(Path(debug['ocr_fields']['main_title']['prepared']).exists())
             self.assertTrue(Path(debug['ocr_fields']['sub_judgement_table']['crop']).exists())
+
+class EngineFailureTests(unittest.TestCase):
+    def test_inference_failure_is_not_retried_via_legacy_api(self):
+        from modules.score_recognition.ocr import PaddleOcrEngine
+        from unittest.mock import Mock
+        engine=PaddleOcrEngine.__new__(PaddleOcrEngine)
+        engine.ocr=Mock()
+        engine.ocr.predict.side_effect=RuntimeError('model failed')
+        with self.assertRaisesRegex(RuntimeError,'model failed'):
+            engine.read(Image.new('RGB',(100,30)))
+        engine.ocr.predict.assert_called_once()
+        engine.ocr.ocr.assert_not_called()

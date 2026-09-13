@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import atexit
 import base64
-import inspect
 import itertools
 import json
 import logging
@@ -401,28 +400,16 @@ class PaddleOcrEngine:
         self.model_names = (detection_model, recognition_model)
         self._direct_recognition_error_logged = False
 
-        init_attempts = (
-            {
-                **model_kwargs,
-                "use_doc_orientation_classify": False,
-                "use_doc_unwarping": False,
-                "use_textline_orientation": False,
-                "enable_mkldnn": False,
-                "cpu_threads": 4,
-            },
-            {**model_kwargs, "use_textline_orientation": False, "enable_mkldnn": False},
-            {**model_kwargs, "use_angle_cls": False, "show_log": False, "enable_mkldnn": False},
-            model_kwargs,
+        # Supported runtime is pinned to PaddleOCR 3.7.x in requirements.txt.
+        # Do not retry initialization failures as legacy API incompatibilities.
+        self.ocr = PaddleOCR(
+            **model_kwargs,
+            use_doc_orientation_classify=False,
+            use_doc_unwarping=False,
+            use_textline_orientation=False,
+            enable_mkldnn=False,
+            cpu_threads=4,
         )
-        last_error: Exception | None = None
-        for kwargs in init_attempts:
-            try:
-                self.ocr = PaddleOCR(**kwargs)
-                break
-            except Exception as exc:  # pragma: no cover - depends on PaddleOCR version
-                last_error = exc
-        else:
-            raise RuntimeError(f"failed to initialize PaddleOCR: {last_error}") from last_error
 
     def read(self, image_source: str | Path | Image.Image) -> list[dict[str, Any]]:
         if isinstance(image_source, Image.Image):
@@ -431,26 +418,11 @@ class PaddleOcrEngine:
             source = np.asarray(image_source.convert("RGB"))
         else:
             source = str(image_source)
-        attempts = [
-            ("predict", lambda: self.ocr.predict(source)),
-            ("ocr", lambda: self.ocr.ocr(source)),
-        ]
-
         try:
-            ocr_parameters = inspect.signature(self.ocr.ocr).parameters
-        except (TypeError, ValueError):
-            ocr_parameters = {}
-        if "cls" in ocr_parameters:
-            attempts.append(("ocr(cls=False)", lambda: self.ocr.ocr(source, cls=False)))
-
-        errors: list[str] = []
-        for name, attempt in attempts:
-            try:
-                return extract_ocr_items(attempt())
-            except Exception as exc:  # pragma: no cover - depends on PaddleOCR version
-                errors.append(f"{name}: {type(exc).__name__}: {exc}")
-        source_name = str(image_source) if not isinstance(image_source, Image.Image) else "in-memory image"
-        raise RuntimeError(f"OCR failed for {source_name}: {'; '.join(errors)}")
+            return extract_ocr_items(self.ocr.predict(source))
+        except Exception as exc:
+            source_name = str(image_source) if not isinstance(image_source, Image.Image) else "in-memory image"
+            raise RuntimeError(f"OCR failed for {source_name}: {exc}") from exc
 
     def read_cropped_lines(
         self,
