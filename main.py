@@ -1523,17 +1523,14 @@ async def process_sega_credentials(
 
 # ==================== 异步任务处理函数 ====================
 
-def async_maimai_update_task(event):
+def async_maimai_update_task(ctx):
     """异步maimai更新任务 - 在webtask_queue中执行"""
-    user_id = event.source.user_id
-    reply_token = event.reply_token
-    source_type = getattr(event.source, 'type', 'user')
+    user_id = ctx.user_id
+    reply_token = ctx.reply_token
+    source_type = ctx.source_type
 
     # 获取用户版本
-    ver = "jp"
-    _ver = get_user_field(user_id, 'version')
-    if _ver is not None:
-        ver = _ver
+    ver = ctx.mai_ver
 
     try:
         reply_msg = asyncio.run(maimai_update(user_id, ver))
@@ -1544,12 +1541,12 @@ def async_maimai_update_task(event):
     if reply_token:
         smart_reply(user_id, reply_token, reply_msg, configuration, source_type=source_type)
 
-def async_get_friend_list_task(event):
+def async_get_friend_list_task(ctx):
     """异步获取好友列表任务 - 在webtask_queue中执行，实时登录SEGA抓取"""
-    user_id = event.source.user_id
-    reply_token = event.reply_token
+    user_id = ctx.user_id
+    reply_token = ctx.reply_token
 
-    source_type = getattr(event.source, 'type', 'user')
+    source_type = ctx.source_type
     if source_type != 'user':
         smart_reply(
             user_id,
@@ -1609,14 +1606,14 @@ def async_get_friend_list_task(event):
         logger.error(f"[FriendList] ✗ Failed to get friend list: user_id={user_id}, error={e}", exc_info=True)
         smart_reply(user_id, reply_token, friend_error(user_id), configuration, source_type=source_type)
 
-def async_generate_friend_record_task(event):
+def async_generate_friend_record_task(ctx):
     """异步生成好友成绩任务 - 在webtask_queue中执行"""
-    user_message = event.message.text.strip()
-    user_id = event.source.user_id
-    reply_token = event.reply_token
+    user_message = ctx.text
+    user_id = ctx.user_id
+    reply_token = ctx.reply_token
 
     # 检查是否在群聊中发送
-    source_type = getattr(event.source, 'type', 'user')
+    source_type = ctx.source_type
     if source_type != 'user':
         reply_message = generate_status_flex(
             language_catalog("main.private_chat_title"),
@@ -1643,10 +1640,7 @@ def async_generate_friend_record_task(event):
         record_type = "best50"
 
     # 获取用户版本
-    ver = "jp"
-    _ver = get_user_field(user_id, 'version')
-    if _ver is not None:
-        ver = _ver
+    ver = ctx.mai_ver
 
     try:
         track_event('image_gen', user_id=user_id, metadata={'command': 'friend-rcd', 'source': 'line'})
@@ -1657,41 +1651,15 @@ def async_generate_friend_record_task(event):
 
     smart_reply(user_id, reply_token, reply_msg, configuration, source_type=source_type)
 
-def async_get_song_record_task(event):
-    """异步歌曲成绩查询任务 - 在webtask_queue中执行"""
-    user_message = event.message.text.strip()
-    user_id = event.source.user_id
-    reply_token = event.reply_token
-    source_type = getattr(event.source, 'type', 'user')
-
-    # 检查 @ mention（提取被提到的用户 ID）
-    mentioned_user_id = extract_single_mention(event, user_id)
-
-    # 初始化用户版本和目标用户
-    _cur_user = get_user(user_id)
-    if _cur_user:
-        mai_ver = _cur_user.get("version", "jp")
-        # 只有当 mentioned_user_id 存在且已注册时才使用
-        id_use = mentioned_user_id if mentioned_user_id else user_id
-        _target_user = get_user(id_use) if id_use != user_id else _cur_user
-        mai_ver_use = _target_user.get("version", "jp") if _target_user else mai_ver
-    else:
-        id_use = user_id
-        mai_ver = "jp"
-        mai_ver_use = "jp"
-
-    # 提取歌曲名称（移除命令后缀）
-    acronym = re.sub(r"\s+record$", "", user_message, flags=re.IGNORECASE).strip()
-
+def async_get_song_record_task(ctx):
+    """Query using the command context resolved before queueing."""
+    acronym = re.sub(r"\s+record$", "", ctx.text, flags=re.IGNORECASE).strip()
     try:
-        track_event('image_gen', user_id=user_id, metadata={'command': 'record', 'source': 'line'})
-    except Exception: pass
-
-    # 调用实际的查询函数
-    reply_msg = asyncio.run(get_song_record(user_id, id_use, acronym, mai_ver_use))
-
-    smart_reply(user_id, reply_token, reply_msg, configuration, source_type=source_type)
-
+        track_event('image_gen', user_id=ctx.user_id, metadata={'command': 'record', 'source': 'line'})
+    except Exception:
+        pass
+    reply_msg = asyncio.run(get_song_record(ctx.user_id, ctx.id_use, acronym, ctx.mai_ver_use))
+    smart_reply(ctx.user_id, ctx.reply_token, reply_msg, configuration, source_type=ctx.source_type)
 
 def async_admin_maimai_update_task(event):
     """管理员触发的maimai更新任务 - 在webtask_queue中执行"""
@@ -3921,7 +3889,7 @@ def dispatch_command(ctx):
         elif cmd.queue == QUEUE_WEB:
             # web handler 签名 (event) → 兼容现有 async_*_task
             _enqueue_task(cmd, ctx, webtask_queue, "web",
-                          (cmd.handler, (ctx.event,)))
+                          (cmd.handler, (ctx,)))
         return True
     return False
 

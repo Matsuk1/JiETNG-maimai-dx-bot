@@ -25,6 +25,8 @@ def task_context(args):
     if not args:
         return TaskContext()
     first = args[0]
+    if hasattr(first, "user_id") and hasattr(first, "source_type"):
+        return TaskContext(first.user_id, first.reply_token, first.source_type)
     if hasattr(first, "source"):
         source = first.source
         return TaskContext(
