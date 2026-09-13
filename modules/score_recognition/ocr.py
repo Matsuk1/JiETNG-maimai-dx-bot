@@ -28,13 +28,13 @@ from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 
 try:
     from .cropper import (
-        crop_result_fields,
+        save_crop_debug,
         crop_result_fields_in_memory,
         iter_images,
     )
 except ImportError:  # Allows direct CLI execution of this file.
     from cropper import (
-        crop_result_fields,
+        save_crop_debug,
         crop_result_fields_in_memory,
         iter_images,
     )
@@ -381,15 +381,6 @@ def prepare_ocr_image_data(source_image: Image.Image, field: str) -> Image.Image
 
     image = image.filter(ImageFilter.SHARPEN)
     return image
-
-
-def prepare_ocr_image(source_path: str | Path, output_path: str | Path, field: str) -> Path:
-    with Image.open(source_path) as source:
-        image = prepare_ocr_image_data(source, field)
-    output = Path(output_path)
-    output.parent.mkdir(parents=True, exist_ok=True)
-    image.save(output)
-    return output
 
 
 class PaddleOcrEngine:
@@ -2647,10 +2638,19 @@ def process_image_data(
     source_image: Image.Image,
     fields: Iterable[str],
     engine: PaddleOcrEngine,
+    *,
+    debug_output_dir: str | Path | None = None,
 ) -> dict[str, Any]:
     """Run the production OCR pipeline entirely in memory."""
     started_at = time.perf_counter()
-    metadata = crop_result_fields_in_memory(source_image)
+    debug_images = {} if debug_output_dir is not None else None
+    metadata = crop_result_fields_in_memory(source_image, debug_images=debug_images)
+    debug_metadata = None
+    debug_input = None
+    if debug_output_dir is not None:
+        debug_metadata = save_crop_debug(source_image, metadata, debug_output_dir, debug_images=debug_images)
+        debug_input = Path(debug_output_dir) / "ocr_input"
+        debug_input.mkdir(parents=True, exist_ok=True)
     crop_seconds = time.perf_counter() - started_at
     selected_fields = tuple(fields)
     ocr_fields: dict[str, dict[str, Any]] = {}
@@ -2675,6 +2675,8 @@ def process_image_data(
                 fallback_image = table_image
                 if field_meta.get("layout_hint") not in FIXED_TABLE_LAYOUT_HINTS:
                     fallback_image = prepare_ocr_image_data(table_image, field)
+                if debug_input:
+                    fallback_image.save(debug_input / f"{field}.png")
                 fallback_target_rows = (
                     tuple(
                         row_name
@@ -2686,7 +2688,7 @@ def process_image_data(
                 )
                 column_values = recognize_judgement_by_columns(
                     fallback_image,
-                    None,
+                    debug_input / "sub_judgement_columns" if debug_input else None,
                     engine,
                     layout_hint=field_meta.get("layout_hint"),
                     confidence_out=column_confidences,
@@ -2716,15 +2718,22 @@ def process_image_data(
                 "column_values": column_values,
                 "column_confidences": column_confidences,
             }
+            if debug_metadata:
+                ocr_fields[field]["crop"] = debug_metadata["fields"][field]["path"]
+                ocr_fields[field]["prepared"] = str(debug_input / f"{field}.png") if table_backend != "table_model" else ocr_fields[field]["crop"]
             field_seconds[field] = time.perf_counter() - field_started_at
             continue
 
         prepared = prepare_ocr_image_data(field_meta["image"], field)
+        if debug_input:
+            prepared.save(debug_input / f"{field}.png")
         items = engine.read(prepared)
         ocr_fields[field] = {
             "items": items,
             "text": joined_text(items),
         }
+        if debug_metadata:
+            ocr_fields[field].update(crop=debug_metadata["fields"][field]["path"], prepared=str(debug_input / f"{field}.png"))
         field_seconds[field] = time.perf_counter() - field_started_at
 
     logger.debug(
@@ -2748,7 +2757,7 @@ def process_image_data(
     }
     return {
         "source": "memory",
-        "crop_metadata": public_metadata,
+        "crop_metadata": debug_metadata or public_metadata,
         "ocr_fields": ocr_fields,
         "parsed": parse_result(ocr_fields),
     }
@@ -2760,99 +2769,17 @@ def process_image(
     fields: Iterable[str],
     engine: PaddleOcrEngine,
 ) -> dict[str, Any]:
-    metadata = crop_result_fields(image_path, crop_output_dir)
-    selected_fields = tuple(fields)
-    output_base = Path(crop_output_dir) / Path(image_path).stem / "ocr_input"
-    ocr_fields: dict[str, dict[str, Any]] = {}
+    """Diagnostic file adapter; recognition uses the same production pipeline."""
+    import shutil
 
-    for field in selected_fields:
-        field_meta = metadata["fields"].get(field)
-        if not field_meta:
-            continue
-        if field == "sub_judgement_table":
-            table_source = field_meta["path"]
-            prepared = Path(table_source)
-            column_confidences: dict[str, dict[str, float]] = {}
-            table_partial_values: dict[str, dict[str, int]] = {}
-            with Image.open(table_source) as table_image:
-                column_values = recognize_judgement_with_table_model(
-                    table_image,
-                    partial_out=table_partial_values,
-                )
-            table_backend = "table_model"
-            if column_values is None:
-                table_backend = "column_fallback"
-                if field_meta.get("layout_hint") not in FIXED_TABLE_LAYOUT_HINTS:
-                    prepared = prepare_ocr_image(
-                        field_meta["path"],
-                        output_base / f"{field}.png",
-                        field,
-                    )
-                fallback_target_rows = (
-                    tuple(
-                        row_name
-                        for row_name in JUDGEMENT_ROW_NAMES
-                        if row_name not in table_partial_values
-                    )
-                    if table_partial_values
-                    else None
-                )
-                column_values = recognize_judgement_by_columns(
-                    prepared,
-                    output_base / "sub_judgement_columns",
-                    engine,
-                    layout_hint=field_meta.get("layout_hint"),
-                    confidence_out=column_confidences,
-                    target_rows=fallback_target_rows,
-                )
-                if table_partial_values:
-                    column_values = column_values or {}
-                    column_values = {
-                        **column_values,
-                        **table_partial_values,
-                    }
-                    for row_name, row_values in table_partial_values.items():
-                        column_confidences[row_name] = {
-                            column_name: 1.0
-                            for column_name in row_values
-                        }
-                    table_backend = "hybrid_table_column_fallback"
-            column_values = normalize_judgement_table_values(column_values)
-            logger.debug(
-                "[Recognize] Judgement OCR result: backend=%s values=%s",
-                table_backend,
-                column_values,
-            )
-            ocr_fields[field] = {
-                "crop": field_meta["path"],
-                "prepared": str(prepared),
-                "items": [],
-                "text": "",
-                "column_values": column_values,
-                "column_confidences": column_confidences,
-            }
-            continue
-
-        prepared = prepare_ocr_image(
-            field_meta["path"],
-            output_base / f"{field}.png",
-            field,
-        )
-        items = engine.read(prepared)
-        field_result = {
-            "crop": field_meta["path"],
-            "prepared": str(prepared),
-            "items": items,
-            "text": joined_text(items),
-        }
-        ocr_fields[field] = field_result
-
-    return {
-        "source": str(image_path),
-        "crop_metadata": metadata,
-        "ocr_fields": ocr_fields,
-        "parsed": parse_result(ocr_fields),
-    }
+    output = Path(crop_output_dir) / Path(image_path).stem
+    if output.exists():
+        shutil.rmtree(output)
+    with Image.open(image_path) as image:
+        result = process_image_data(image, fields, engine, debug_output_dir=output)
+    result["source"] = str(image_path)
+    result["crop_metadata"]["source"] = str(image_path)
+    return result
 
 
 def main() -> int:

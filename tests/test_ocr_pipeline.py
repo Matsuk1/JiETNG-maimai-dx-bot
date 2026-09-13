@@ -20,3 +20,28 @@ class CropAdapterTests(unittest.TestCase):
                     self.assertEqual(image.tobytes(),expected['fields'][name]['image'].tobytes())
                 self.assertEqual(field['detector'],expected['fields'][name]['detector'])
             self.assertTrue((Path(directory)/'debug/source/debug_overlay.png').exists())
+
+class OcrAdapterTests(unittest.TestCase):
+    def test_partial_table_fallback_matches_in_debug_and_memory(self):
+        from modules.score_recognition import ocr
+        from unittest.mock import Mock
+        image=Image.new('RGB',(300,100),'blue')
+        row=dict(critical_perfect=1,perfect=0,great=0,good=0,miss=0)
+        metadata={'screen':dict(left=0,top=0,right=300,bottom=100),'fields':{
+            'main_title':dict(image=image,left=0,top=0,right=300,bottom=20),
+            'sub_judgement_table':dict(image=image,left=0,top=20,right=300,bottom=100,layout_hint='dxnet')}}
+        def partial(image,partial_out):
+            partial_out['tap']=dict(row)
+            return None
+        engine=Mock()
+        engine.read.return_value=[{'text':'Test song','score':0.99}]
+        with tempfile.TemporaryDirectory() as directory, patch.object(ocr,'crop_result_fields_in_memory',return_value=metadata), patch.object(ocr,'recognize_judgement_with_table_model',side_effect=partial), patch.object(ocr,'recognize_judgement_by_columns',return_value={name:dict(row) for name in ('hold','slide','touch','break')}) as fallback:
+            path=Path(directory)/'source.png'; image.save(path)
+            memory=ocr.process_image_data(image,ocr.OCR_FIELDS,engine)
+            debug=ocr.process_image(path,Path(directory)/'debug',ocr.OCR_FIELDS,engine)
+            self.assertEqual(memory['parsed'],debug['parsed'])
+            self.assertEqual(fallback.call_count,2)
+            for call in fallback.call_args_list:
+                self.assertEqual(call.kwargs['target_rows'],('hold','slide','touch','break'))
+            self.assertTrue(Path(debug['ocr_fields']['main_title']['prepared']).exists())
+            self.assertTrue(Path(debug['ocr_fields']['sub_judgement_table']['crop']).exists())
