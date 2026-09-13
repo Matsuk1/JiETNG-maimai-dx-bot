@@ -1,0 +1,126 @@
+      .admin-bg-grid {
+        display: flex;
+        gap: 8px;
+        padding: 12px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+      }
+      .admin-bg-grid::-webkit-scrollbar { height: 4px; }
+      .admin-bg-grid::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 2px; }
+
+      .admin-bg-option {
+        position: relative;
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        border: 2px solid var(--border-color);
+        aspect-ratio: 9 / 16;
+        flex: 0 0 100px;
+      }
+      .admin-bg-option img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+      .admin-bg-option .bg-label {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(0,0,0,0.55);
+        color: #fff;
+        font-size: 9px;
+        text-align: center;
+        padding: 2px 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .admin-bg-option .bg-size {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: rgba(0,0,0,0.45);
+        color: #fff;
+        font-size: 9px;
+        text-align: center;
+        padding: 1px 0;
+      }
+      .admin-bg-option .bg-delete-btn {
+        position: absolute;
+        top: 16px;
+        right: 4px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: rgba(255,59,48,0.85);
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        font-size: 13px;
+        line-height: 22px;
+        text-align: center;
+        opacity: 0;
+        transition: opacity 0.15s;
+      }
+      .admin-bg-option:hover .bg-delete-btn { opacity: 1; }
+      @media (hover: none) {
+        .admin-bg-option .bg-delete-btn { opacity: 0.8; }
+      }
+      .admin-bg-option .bg-user-badge {
+        position: absolute;
+        top: 16px;
+        left: 4px;
+        font-size: 8px;
+        background: var(--accent-color);
+        color: #fff;
+        padding: 1px 5px;
+        border-radius: 4px;
+        opacity: 0.9;
+      }
+
+      .admin-upload-area {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        padding: 20px 16px;
+        border: 2px dashed var(--border-color);
+        border-radius: var(--radius-md);
+        margin: 12px;
+        cursor: pointer;
+        transition: border-color 0.2s, background 0.2s;
+      }
+      .admin-upload-area:hover {
+        border-color: var(--accent-color);
+        background: rgba(0, 122, 255, 0.03);
+      }
+      .admin-upload-area .upload-icon { font-size: 28px; color: var(--text-tertiary); }
+      .admin-upload-area .upload-text { font-size: 13px; color: var(--text-secondary); text-align: center; }
+      .admin-upload-area .upload-text-sub { font-size: 11px; color: var(--text-tertiary); }
+      .admin-upload-area.has-file {
+        border-color: var(--success-color);
+        background: rgba(52, 199, 89, 0.05);
+      }
+      .admin-upload-area.has-file .upload-icon { color: var(--success-color); }
+      .admin-upload-area input[type="file"] { display: none; }
+
+      .admin-upload-btn {
+        display: none;
+        width: calc(100% - 24px);
+        margin: 0 12px 12px;
+        padding: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #fff;
+        background: var(--accent-color);
+        border: none;
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        transition: opacity 0.2s;
+      }
+      .admin-upload-btn:hover { opacity: 0.85; }
+      .admin-upload-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    
