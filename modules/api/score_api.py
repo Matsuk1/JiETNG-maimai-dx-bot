@@ -4,23 +4,38 @@ from io import BytesIO
 
 from flask import Blueprint, jsonify, request, send_file
 
-from modules.api.api_auth import require_dev_token
-from modules.rate_limiter import check_rate_limit
-from modules.record_generator import generate_score_recognition_picture
+from dataclasses import dataclass
+from typing import Callable
 from modules.score_recognition_api import ScoreRecognitionResultError, build_score_recognition_response
-from modules.score_result_recognizer import (
-    InvalidScoreImageError,
-    UnsupportedScoreImageError,
-    expand_score_recognition_calc_variants,
-    recognize_score_image_bytes,
-    validate_recognized_judgement,
+from modules.score_recognition.results import (
+    InvalidScoreImageError, UnsupportedScoreImageError, expand_score_recognition_calc_variants,
 )
+
+
+@dataclass(frozen=True)
+class ScoreApiServices:
+    authorize: Callable
+    rate_limit: Callable
+    recognize: Callable
+    validate: Callable
+    render: Callable
+
+
+def _default_services():
+    from modules.api.api_auth import require_dev_token
+    from modules.rate_limiter import check_rate_limit
+    from modules.record_generator import generate_score_recognition_picture
+    from modules.score_result_recognizer import recognize_score_image_bytes, validate_recognized_judgement
+
+    return ScoreApiServices(require_dev_token, check_rate_limit, recognize_score_image_bytes,
+                            validate_recognized_judgement, generate_score_recognition_picture)
 
 
 logger = logging.getLogger(__name__)
 
 
-def create_score_api(max_image_bytes):
+def create_score_api(max_image_bytes, *, services=None):
+    services = services or _default_services()
     api = Blueprint("score_api", __name__)
 
     def error(kind, message, status):
@@ -28,11 +43,11 @@ def create_score_api(max_image_bytes):
 
     @api.post("/api/v2/score-recognition")
     @api.post("/api/v2/score-recognition/image")
-    @require_dev_token
+    @services.authorize
     def recognize_score():
         token_id = request.token_info["token_id"]
         image_output = request.path.rstrip("/").endswith("/image")
-        if check_rate_limit(token_id, "api_score_recognition"):
+        if services.rate_limit(token_id, "api_score_recognition"):
             return error("Rate limited", "Too many score recognition requests. Please retry later.", 429)
 
         if request.content_length is not None and request.content_length > max_image_bytes + 1024 * 1024:
@@ -52,8 +67,8 @@ def create_score_api(max_image_bytes):
 
         started_at = time.perf_counter()
         try:
-            result = validate_recognized_judgement(
-                recognize_score_image_bytes(
+            result = services.validate(
+                services.recognize(
                     image_bytes,
                     line_like_preprocess=True,
                 ),
@@ -62,7 +77,7 @@ def create_score_api(max_image_bytes):
             selected = expand_score_recognition_calc_variants(result)[0]
             public = build_score_recognition_response(selected)
             if image_output:
-                image = generate_score_recognition_picture(
+                image = services.render(
                     selected,
                     ver=version,
                 )

@@ -24,6 +24,7 @@ from flask import (
     session,
 )
 
+from modules.api.admin_users import create_edit_user_handler
 from modules.backup_manager import create_backup
 from modules.config_loader import (
     ADMIN_PASSWORD,
@@ -1190,51 +1191,13 @@ def admin_delete_background(filename):
 
 # ==================== 用户管理 API ====================
 
-@admin_api.route("/admin/edit_user", methods=["POST"])
-def admin_edit_user():
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
-
-    data = _json_body()
-    user_id = data.get('user_id')
-    user_data = data.get('user_data')
-
-    if not user_id or user_data is None:
-        return jsonify({
-            'success': False,
-            'message': 'User ID and user data required'
-        }), 400
-
-    if not isinstance(user_data, dict) or not user_data:
-        return jsonify({'success': False, 'message': 'User data must be a non-empty object'}), 400
-
-    try:
-        if not user_exists(user_id):
-            return jsonify({
-                'success': False,
-                'message': f'User {user_id} not found'
-            }), 404
-
-        if not update_user_fields(user_id, user_data):
-            return jsonify({
-                'success': False,
-                'message': 'Failed to save user data'
-            }), 500
-
-        logger.info(f"[Admin] ✓ User data edited: user_id={user_id}")
-
-
-        return jsonify({
-            'success': True,
-            'message': 'User data updated successfully'
-        })
-
-    except Exception as e:
-        logger.error(f"[Admin] ✗ Edit user error: user_id={user_id}, error={e}", exc_info=True)
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        }), 500
+admin_edit_user = create_edit_user_handler(
+    check_admin_auth=check_admin_auth,
+    read_body=_json_body,
+    user_exists=user_exists,
+    update_user_fields=update_user_fields,
+)
+admin_api.add_url_rule("/admin/edit_user", view_func=admin_edit_user, methods=["POST"])
 
 @admin_api.route("/admin/delete_user", methods=["POST"])
 def admin_delete_user():

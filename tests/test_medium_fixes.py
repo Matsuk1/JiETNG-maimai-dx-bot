@@ -14,7 +14,7 @@ from PIL import Image
 
 from modules.session_key import load_session_key
 from modules.score_recognition import cropper
-from test_priority_fixes import isolated_function
+from modules import user_db
 
 
 class SessionTests(unittest.TestCase):
@@ -86,10 +86,10 @@ assert.equal(sent.length, 1);
             self.assertTrue(kwargs["write"])
             yield None, cursor
 
-        return isolated_function("modules/user_db.py", "update_user_fields", {
-            "database_cursor": database_cursor, "json": json,
-            "_encode_json": json.dumps, "logger": logging.getLogger("test"),
-        })
+        def update(user_id, fields):
+            with patch.object(user_db, "database_cursor", database_cursor):
+                return user_db.update_user_fields(user_id, fields)
+        return update
 
     def test_only_submitted_fields_are_sent_to_database(self):
         cursor = Mock(rowcount=1)

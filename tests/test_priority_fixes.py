@@ -1,34 +1,23 @@
 """Regression checks without production services or OCR model initialization."""
-import ast
 import copy
 from io import BytesIO
 import logging
-from pathlib import Path
 import threading
 import time
 import unittest
 
-from flask import Blueprint, Flask, jsonify, request, send_file
+from flask import Flask, request
 from PIL import Image
 
 from modules.score_recognition_api import (
     ScoreRecognitionResultError,
     build_score_recognition_response,
 )
+from modules.api.admin_users import create_edit_user_handler
+from modules.api.score_api import create_score_api, ScoreApiServices
 from modules.task_runtime import execute_task
 
-ROOT = Path(__file__).resolve().parents[1]
 LOGGER = logging.getLogger("priority-tests")
-
-
-def isolated_function(path, name, namespace):
-    """Load a handler's actual body without importing service startup hooks."""
-    namespace.setdefault("__name__", __name__)
-    tree = ast.parse((ROOT / path).read_text())
-    node = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == name)
-    node.decorator_list = []
-    exec(compile(ast.Module(body=[node], type_ignores=[]), path, "exec"), namespace)
-    return namespace[name]
 
 
 def valid_result():
@@ -117,12 +106,11 @@ class ResponseTests(unittest.TestCase):
 
     def test_admin_save_failure_and_success(self):
         for saved in (False, True):
-            handler = isolated_function("modules/api/admin_api.py", "admin_edit_user", {
-                "check_admin_auth": lambda: True,
-                "_json_body": lambda: {"user_id": "test", "user_data": {"nickname": "new"}},
-                "user_exists": lambda _: True, "get_user": lambda _: {"nickname": "old"},
-                "update_user_fields": lambda *a: saved, "jsonify": jsonify, "logger": LOGGER,
-            })
+            handler = create_edit_user_handler(
+                check_admin_auth=lambda: True,
+                read_body=lambda: {"user_id": "test", "user_data": {"nickname": "new"}},
+                user_exists=lambda _: True, update_user_fields=lambda *a: saved,
+            )
             app = Flask(__name__)
             app.add_url_rule("/edit", view_func=handler, methods=["POST"])
             response = app.test_client().post("/edit")
@@ -132,7 +120,6 @@ class ResponseTests(unittest.TestCase):
     def test_api_rejects_invalid_result_and_uses_same_candidate(self):
         current = valid_result()
         rendered = []
-        expand = isolated_function("modules/score_result_recognizer.py", "expand_score_recognition_calc_variants", {})
 
         def auth(fn):
             def wrapped():
@@ -144,21 +131,13 @@ class ResponseTests(unittest.TestCase):
             rendered.append(copy.deepcopy(result))
             return Image.new("RGB", (2, 2))
 
-        factory = isolated_function("modules/api/score_api.py", "create_score_api", {
-            "Blueprint": Blueprint, "jsonify": jsonify, "request": request, "send_file": send_file,
-            "BytesIO": BytesIO, "time": time, "logger": LOGGER,
-            "require_dev_token": auth, "check_rate_limit": lambda *a: False,
-            "recognize_score_image_bytes": lambda *a, **kw: copy.deepcopy(current),
-            "validate_recognized_judgement": lambda r, **kw: r,
-            "expand_score_recognition_calc_variants": expand,
-            "build_score_recognition_response": build_score_recognition_response,
-            "generate_score_recognition_picture": render,
-            "UnsupportedScoreImageError": type("Unsupported", (Exception,), {}),
-            "InvalidScoreImageError": type("Invalid", (Exception,), {}),
-            "ScoreRecognitionResultError": ScoreRecognitionResultError,
-        })
+        services = ScoreApiServices(
+            authorize=auth, rate_limit=lambda *a: False,
+            recognize=lambda *a, **kw: copy.deepcopy(current),
+            validate=lambda r, **kw: r, render=render,
+        )
         app = Flask(__name__)
-        app.register_blueprint(factory(1024))
+        app.register_blueprint(create_score_api(1024, services=services))
         client = app.test_client()
 
         def post(suffix=""):

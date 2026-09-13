@@ -11,7 +11,6 @@ from typing import Iterator
 
 import pymysql
 from dbutils.pooled_db import PooledDB
-from modules.config_loader import DB_HOST, DB_USER, DB_PASSWORD, DB_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +26,8 @@ def _env_int(name: str, default: int) -> int:
 
 
 def _create_pool() -> PooledDB:
+    from modules.config_loader import DB_HOST, DB_USER, DB_PASSWORD, DB_NAME
+
     maxconnections = _env_int("JIETNG_DB_MAX_CONNECTIONS", 20)
     maxcached = min(_env_int("JIETNG_DB_MAX_CACHED", 8), maxconnections)
     mincached = min(_env_int("JIETNG_DB_MIN_CACHED", 2), maxcached)
