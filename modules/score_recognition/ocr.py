@@ -237,7 +237,7 @@ def recognize_judgement_with_table_model(
                 rss_mb = psutil.Process(process.pid).memory_info().rss / (1024**2)
             except psutil.Error:
                 rss_mb = 0.0
-            logger.debug(
+            logger.info(
                 "[Recognize] Table OCR request: reused=%s startup=%.3fs inference=%.3fs "
                 "pid=%s rss=%.1fMB requests=%s mode=%s",
                 reused_worker,
@@ -2716,7 +2716,7 @@ def process_image_data(
             ocr_fields[field].update(crop=debug_metadata["fields"][field]["path"], prepared=str(debug_input / f"{field}.png"))
         field_seconds[field] = time.perf_counter() - field_started_at
 
-    logger.debug(
+    logger.info(
         "[Recognize] Score OCR timing: layout=%s crop=%.3fs fields=%s total=%.3fs",
         metadata.get("layout", "arcade"),
         crop_seconds,

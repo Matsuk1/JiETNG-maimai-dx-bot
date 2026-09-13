@@ -2176,8 +2176,8 @@ def recognize_score_image_bytes(
     lock_started_at = time.perf_counter()
     with _OCR_LOCK:
         lock_wait_seconds = time.perf_counter() - lock_started_at
-        if lock_wait_seconds >= 0.01:
-            logger.debug("[Recognize] OCR lock wait: %.3fs", lock_wait_seconds)
+        if lock_wait_seconds >= 1.0:
+            logger.info("[Recognize] OCR lock wait: %.3fs", lock_wait_seconds)
         rss_before = _process_rss_mb()
         ocr_fields, _, process_image_data = _load_ocr_module()
         result = process_image_data(
