@@ -51,8 +51,7 @@ class SessionTests(unittest.TestCase):
 
 class UserUpdateTests(unittest.TestCase):
     def test_editor_submits_only_changed_fields(self):
-        source = (Path(__file__).resolve().parents[1] / "templates/admin_panel.html").read_text()
-        editor = source.split("    let editingUserOriginalData", 1)[1].split("    // Close modal", 1)[0]
+        editor = (Path(__file__).resolve().parents[1] / "assets/admin-user-editor.js").read_text()
         script = '''
 const assert = require('node:assert/strict');
 const elements = {
@@ -69,7 +68,7 @@ global.fetch = (url, options) => {
   sent.push(JSON.parse(options.body));
   return Promise.resolve({json: () => Promise.resolve({success: true})});
 };
-''' + "let editingUserOriginalData" + editor + '''
+''' + editor + '''
 editUser('user');
 elements['edit-user-data'].value = '{"nickname":"new","version":"jp","settings":{"a":1}}';
 saveUserData({preventDefault() {}});
