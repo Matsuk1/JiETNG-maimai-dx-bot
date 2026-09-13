@@ -47,6 +47,24 @@ class OcrAdapterTests(unittest.TestCase):
             self.assertTrue(Path(debug['ocr_fields']['sub_judgement_table']['crop']).exists())
 
 class EngineFailureTests(unittest.TestCase):
+    def test_detector_limit_preserves_recognition_input_and_coordinates(self):
+        import sys
+        from types import SimpleNamespace
+        from unittest.mock import Mock
+        from modules.score_recognition.ocr import PaddleOcrEngine
+        factory = Mock()
+        box = [100, 200, 600, 800]
+        factory.return_value.predict.return_value = [{
+            'rec_texts': ['304'], 'rec_scores': [0.99], 'rec_boxes': [box],
+        }]
+        with patch.dict(sys.modules, paddleocr=SimpleNamespace(PaddleOCR=factory)), patch.dict('os.environ', JIETNG_OCR_DET_MAX_SIDE='1280'):
+            engine = PaddleOcrEngine()
+        self.assertEqual(factory.call_args.kwargs['text_det_limit_side_len'], 1280)
+        self.assertEqual(factory.call_args.kwargs['text_det_limit_type'], 'max')
+        items = engine.read(Image.new('RGB', (1600, 2400)))
+        self.assertEqual(engine.ocr.predict.call_args.args[0].shape, (2400, 1600, 3))
+        self.assertEqual(items[0]['box'], box)
+
     def test_inference_failure_is_not_retried_via_legacy_api(self):
         from modules.score_recognition.ocr import PaddleOcrEngine
         from unittest.mock import Mock

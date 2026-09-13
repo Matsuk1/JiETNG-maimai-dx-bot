@@ -399,6 +399,9 @@ class PaddleOcrEngine:
         }
         self.model_names = (detection_model, recognition_model)
         self._direct_recognition_error_logged = False
+        detection_max_side = int(os.getenv("JIETNG_OCR_DET_MAX_SIDE", "1280"))
+        if detection_max_side < 32:
+            raise ValueError("JIETNG_OCR_DET_MAX_SIDE must be at least 32")
 
         # Supported runtime is pinned to PaddleOCR 3.7.x in requirements.txt.
         # Do not retry initialization failures as legacy API incompatibilities.
@@ -407,6 +410,11 @@ class PaddleOcrEngine:
             use_doc_orientation_classify=False,
             use_doc_unwarping=False,
             use_textline_orientation=False,
+            # Column fallback can upscale a table by 3x and then 5x. Bound
+            # detector work; PaddleOCR still crops recognition text from the
+            # original image and returns boxes in its original coordinates.
+            text_det_limit_side_len=detection_max_side,
+            text_det_limit_type="max",
             enable_mkldnn=False,
             cpu_threads=4,
         )
