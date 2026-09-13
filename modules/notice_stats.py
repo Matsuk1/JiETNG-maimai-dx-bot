@@ -1,81 +1,45 @@
-"""
-公告统计模块
-
-提供阅读率、投票统计等功能
-"""
-
-from typing import Optional, Dict
-from modules.user_db import load_all_users, get_user_count
-from modules.notice_manager import get_notice_by_id, get_all_notices
+"""Aggregate notice interactions from one consistent user snapshot."""
 
 
-def calculate_notice_stats(notice_id: str) -> Optional[Dict]:
-    """
-    计算公告统计数据
-
-    Args:
-        notice_id: 公告ID
-
-    Returns:
-        {
-            'total_users': int,           # 总用户数
-            'read_count': int,             # 已阅读数
-            'read_percentage': float,      # 阅读率百分比
-            'support_count': int,          # 支持数
-            'oppose_count': int,           # 反对数
-            'vote_percentage': float,      # 投票参与率(已投票/已阅读)
-            'no_vote_count': int          # 未投票数(已阅读但未投票)
-        }
-    """
-    notice = get_notice_by_id(notice_id)
-    if not notice:
-        return None
-
-    total_users = get_user_count()
-    read_count = 0
-    support_count = 0
-    oppose_count = 0
-
-    for user_id, user_data in load_all_users().items():
-        interactions = user_data.get('notice_interactions', {})
-        interaction = interactions.get(notice_id)
-
-        if interaction:
-            if interaction.get('read'):
-                read_count += 1
-
+def summarize_notices(notice_ids, users):
+    totals = {notice_id: {'read_count': 0, 'support_count': 0, 'oppose_count': 0}
+              for notice_id in notice_ids}
+    for user in users.values():
+        for notice_id, interaction in user.get('notice_interactions', {}).items():
+            counts = totals.get(notice_id)
+            if counts is None or not interaction:
+                continue
+            counts['read_count'] += bool(interaction.get('read'))
             vote = interaction.get('vote')
-            if vote == 'support':
-                support_count += 1
-            elif vote == 'oppose':
-                oppose_count += 1
-
-    total_votes = support_count + oppose_count
-    no_vote_count = read_count - total_votes
-
-    return {
-        'total_users': total_users,
-        'read_count': read_count,
-        'read_percentage': round((read_count / total_users * 100) if total_users > 0 else 0, 2),
-        'support_count': support_count,
-        'oppose_count': oppose_count,
-        'vote_percentage': round((total_votes / read_count * 100) if read_count > 0 else 0, 2),
-        'no_vote_count': no_vote_count
-    }
+            if vote in ('support', 'oppose'):
+                counts[f'{vote}_count'] += 1
+    total_users = len(users)
+    for counts in totals.values():
+        reads = counts['read_count']
+        votes = counts['support_count'] + counts['oppose_count']
+        counts.update(
+            total_users=total_users,
+            read_percentage=round(reads / total_users * 100, 2) if total_users else 0,
+            vote_percentage=round(votes / reads * 100, 2) if reads else 0,
+            no_vote_count=reads - votes,
+        )
+    return totals
 
 
-def get_all_notices_stats() -> Dict:
-    """
-    获取所有公告的统计数据
+def calculate_notice_stats(notice_id):
+    from modules.notice_manager import get_notice_by_id
+    from modules.user_db import load_all_users
 
-    Returns:
-        字典,key为notice_id,value为统计数据
-    """
+    if not get_notice_by_id(notice_id):
+        return None
+    return summarize_notices([notice_id], load_all_users())[notice_id]
+
+
+def get_all_notices_stats():
+    from modules.notice_manager import get_all_notices
+    from modules.user_db import load_all_users
+
     notices = get_all_notices(include_drafts=True)
-    stats = {}
-
-    for notice in notices:
-        notice_id = notice['id']
-        stats[notice_id] = calculate_notice_stats(notice_id)
-
-    return stats
+    if not notices:
+        return {}
+    return summarize_notices((notice['id'] for notice in notices), load_all_users())
