@@ -1,8 +1,9 @@
 """Presentation values derived from score-recognition results."""
 
 import re
+from modules.score_rules import (JUDGEMENT_ROWS, DIFFICULTY_LABELS, DIFFICULTY_STYLES as SHARED_DIFFICULTY_STYLES, score_rank as canonical_rank, combo_status as canonical_combo, nonnegative_count)
 
-JUDGEMENT_ROWS = ("tap", "hold", "slide", "touch", "break")
+
 
 COMBO_ICON_FILES = {
     "fc": "fc.png",
@@ -12,58 +13,24 @@ COMBO_ICON_FILES = {
     "dummy": "fc_dummy.png",
 }
 
-DIFFICULTY_STYLES = {
-    "basic": {"bg": "#75B520", "text": "#FFFFFF", "metric": "#75B520"},
-    "advanced": {"bg": "#EFA508", "text": "#111111", "metric": "#B36F00"},
-    "expert": {"bg": "#CC4D59", "text": "#FFFFFF", "metric": "#CC4D59"},
-    "master": {"bg": "#9F51DC", "text": "#FFFFFF", "metric": "#8E44AD"},
-    "remaster": {"bg": "#E9D4F3", "text": "#72148D", "metric": "#B06FD3"},
-    "utage": {"bg": "#F52EDD", "text": "#FFFFFF", "metric": "#D10FBA"},
-}
+DIFFICULTY_STYLES = {key: {"bg": value["background"], "text": value["text"], "metric": value["metric"]} for key, value in SHARED_DIFFICULTY_STYLES.items()}
 DEFAULT_DIFFICULTY_STYLE = {"bg": "#315B7D", "text": "#FFFFFF", "metric": "#315B7D"}
 
-DIFFICULTY_LABELS = {
-    "basic": "BASIC",
-    "advanced": "ADVANCED",
-    "expert": "EXPERT",
-    "master": "MASTER",
-    "remaster": "Re:MASTER",
-    "utage": "U·TA·GE",
-}
 
-RANK_THRESHOLDS = (
-    (100.5, "sssp"), (100.0, "sss"), (99.5, "ssp"), (99.0, "ss"),
-    (98.0, "sp"), (97.0, "s"), (94.0, "aaa"), (90.0, "aa"),
-    (80.0, "a"), (75.0, "bbb"), (70.0, "bb"), (60.0, "b"),
-    (50.0, "c"), (0.0, "d"),
-)
+
+
 
 
 def combo_status(judgement, achievement):
-    if any(not isinstance(judgement.get(row), dict) for row in JUDGEMENT_ROWS):
-        return None
-    totals = {field: 0 for field in ("great", "good", "miss")}
-    try:
-        for row_name in JUDGEMENT_ROWS:
-            for field in totals:
-                totals[field] += nonnegative_count(judgement[row_name].get(field))
-    except (TypeError, ValueError):
-        return None
-    if isinstance(achievement, (int, float)) and achievement >= 100.99995:
-        return "app"
-    if not any(totals.values()):
-        return "ap"
-    if totals["good"] == 0 and totals["miss"] == 0:
-        return "fcp"
-    if totals["miss"] == 0:
-        return "fc"
-    return "dummy"
+    status = canonical_combo(achievement, judgement)
+    if status is None:
+        return "dummy" if all(isinstance(judgement.get(row), dict) for row in JUDGEMENT_ROWS) else None
+    return status.replace("+", "p")
 
 
 def score_rank(achievement):
-    if not isinstance(achievement, (int, float)):
-        return None
-    return next((name for threshold, name in RANK_THRESHOLDS if achievement >= threshold), "d")
+    rank = canonical_rank(achievement)
+    return rank.replace("+", "p") if rank else None
 
 
 def difficulty_presentation(difficulty):
@@ -74,11 +41,7 @@ def difficulty_presentation(difficulty):
     )
 
 
-def nonnegative_count(value):
-    try:
-        return max(0, int(value or 0))
-    except (TypeError, ValueError):
-        return 0
+
 
 
 def format_loss_percentage(value, count=1):

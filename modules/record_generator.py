@@ -2,6 +2,7 @@ import math
 import logging
 import os
 import re
+from modules.score_rules import DIFFICULTY_LABELS, JUDGEMENT_ROWS, score_rank as canonical_rank, combo_status as canonical_combo
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -383,51 +384,15 @@ def create_thumbnail(song):
 
 
 def _score_rank_name(achievement):
-    if not isinstance(achievement, (int, float)):
-        return None
-    thresholds = (
-        (100.5, "sssplus"),
-        (100.0, "sss"),
-        (99.5, "ssplus"),
-        (99.0, "ss"),
-        (98.0, "splus"),
-        (97.0, "s"),
-        (94.0, "aaa"),
-        (90.0, "aa"),
-        (80.0, "a"),
-        (75.0, "bbb"),
-        (70.0, "bb"),
-        (60.0, "b"),
-        (50.0, "c"),
-        (0.0, "d"),
-    )
-    for threshold, icon_name in thresholds:
-        if achievement >= threshold:
-            return icon_name
-    return "d"
+    rank = canonical_rank(achievement)
+    return rank.replace("+", "plus") if rank else None
 
 
 def _score_combo_name(achievement, judgement):
-    required_rows = ("tap", "hold", "slide", "touch", "break")
-    if any(not isinstance(judgement.get(row_name), dict) for row_name in required_rows):
-        return None
-    totals = {"great": 0, "good": 0, "miss": 0}
-    try:
-        for row_name in required_rows:
-            row = judgement[row_name]
-            for field_name in totals:
-                totals[field_name] += max(0, int(row.get(field_name, 0) or 0))
-    except (TypeError, ValueError):
-        return None
-    if isinstance(achievement, (int, float)) and achievement >= 100.99995:
-        return "applus"
-    if totals["great"] == 0 and totals["good"] == 0 and totals["miss"] == 0:
-        return "ap"
-    if totals["good"] == 0 and totals["miss"] == 0:
-        return "fcplus"
-    if totals["miss"] == 0:
-        return "fc"
-    return "dummy"
+    status = canonical_combo(achievement, judgement)
+    if status is None:
+        return "dummy" if all(isinstance(judgement.get(row), dict) for row in JUDGEMENT_ROWS) else None
+    return status.replace("+", "plus")
 
 
 def _score_recognition_payload(result):
@@ -445,14 +410,7 @@ def _score_recognition_payload(result):
     achievement = parsed.get("achievement")
     judgement = parsed.get("sub_judgement") or {}
     difficulty = validation.get("difficulty")
-    difficulty_label = {
-        "basic": "BASIC",
-        "advanced": "ADVANCED",
-        "expert": "EXPERT",
-        "master": "MASTER",
-        "remaster": "Re:MASTER",
-        "utage": "U·TA·GE",
-    }.get(str(difficulty or "").lower(), str(difficulty or "").upper() or "-")
+    difficulty_label = DIFFICULTY_LABELS.get(str(difficulty or "").lower(), str(difficulty or "").upper() or "-")
     chart_type = validation.get("type")
     return {
         "title": title,
