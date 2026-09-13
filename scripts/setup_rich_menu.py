@@ -202,11 +202,9 @@ def message_action(label: str, text: str) -> dict:
     return {"type": "message", "label": label, "text": text}
 
 
-def uri_action(label: str, uri: str) -> dict:
-    return {"type": "uri", "label": label, "uri": uri}
 
 
-def page_actions(lang: str, page: str, support_url: str) -> list[dict]:
+def page_actions(lang: str, page: str) -> list[dict]:
     t = LABELS[lang]
     if page == "start":
         return [
@@ -292,14 +290,14 @@ def request_json(method: str, url: str, token: str, **kwargs) -> dict:
     return resp.json()
 
 
-def menu_payload(lang: str, page: str, support_url: str) -> dict:
+def menu_payload(lang: str, page: str) -> dict:
     areas = []
     if page in SWITCH_PAGES:
         for box, switch_page in zip(SWITCH_BOXES, SWITCH_PAGES):
             x0, y0, x1, y1 = box
             areas.append({"bounds": {"x": x0, "y": y0, "width": x1 - x0, "height": y1 - y0}, "action": switch_action(lang, switch_page)})
 
-    actions = page_actions(lang, page, support_url)
+    actions = page_actions(lang, page)
     for box, action in zip(content_boxes(page), actions):
         x0, y0, x1, y1 = box
         areas.append({"bounds": {"x": x0, "y": y0, "width": x1 - x0, "height": y1 - y0}, "action": action})
@@ -439,7 +437,7 @@ def main() -> int:
     images = ensure_images()
     payloads = {}
     for lang, page in MENU_KEYS:
-        payloads.setdefault(lang, {})[page] = menu_payload(lang, page, support_url)
+        payloads.setdefault(lang, {})[page] = menu_payload(lang, page)
 
     if args.dry_run:
         print(json.dumps(payloads, indent=2, ensure_ascii=False))

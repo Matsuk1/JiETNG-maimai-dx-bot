@@ -80,42 +80,6 @@ def resize_by_width(img, target_width):
     resized_img = img.resize((target_width, target_height), Image.Resampling.LANCZOS)
     return resized_img
 
-def wrap_in_rounded_background(content_img, padding=20, radius=30,
-                               bg_color=(0, 0, 0, 0), border_color=(0, 0, 0, 0), border_width=5):
-    """
-    将图像放入圆角白底框中（支持灰色边框，去除透明通道）
-
-    参数：
-        content_img: 原始图像 (PIL.Image)
-        padding: 内容与圆角框的间距
-        radius: 圆角半径
-        bg_color: 内部背景颜色
-        border_color: 边框颜色
-        border_width: 边框线宽
-    """
-    # 计算背景尺寸
-    bg_size = (content_img.width + 2 * padding, content_img.height + 2 * padding)
-
-    # 创建白底画布
-    bg = Image.new("RGBA", bg_size, bg_color)
-    draw = ImageDraw.Draw(bg)
-
-    # 绘制圆角矩形边框
-    x0, y0 = 0, 0
-    x1, y1 = bg_size
-    draw.rounded_rectangle(
-        [x0, y0, x1, y1],
-        radius=radius,
-        outline=border_color,
-        width=border_width,
-        fill=bg_color
-    )
-
-    # 贴上内容图
-    content_img = content_img.convert("RGBA")
-    bg.paste(content_img, (padding, padding), content_img)
-
-    return bg
 
 def compose_images(images, timezone_offset=9, bg_filter=None):
     """

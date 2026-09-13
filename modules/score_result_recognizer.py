@@ -41,7 +41,6 @@ _OCR_LOCK = threading.Lock()
 _OCR_FIELDS: tuple[str, ...] | None = None
 _PROCESS_IMAGE_DATA: Any | None = None
 _ENGINE_REQUEST_COUNT = 0
-_ENGINE_LAST_RESET_RSS_MB: float | None = None
 SUPPORTED_SCORE_IMAGE_FORMATS = {"JPEG", "PNG", "WEBP"}
 MAX_SCORE_IMAGE_PIXELS = 40_000_000
 API_LINE_LIKE_OCR_MAX_EDGE = int(
@@ -1809,7 +1808,6 @@ def validate_recognized_judgement(
                 for field_name in all_value_names
             }
     parsed["sub_judgement"] = judgement
-    corrections = {}
     song = best["song"]
     sheet = best["sheet"]
     achievement_distance = best["achievement_distance"]
@@ -1904,7 +1902,7 @@ def validate_recognized_judgement(
         "row_offset": best["row_offset"],
         "column_offset": best["column_offset"],
         "dxnet_fixed_note_counts": best.get("dxnet_fixed_note_counts", False),
-        "miss_corrections": corrections,
+        "miss_corrections": {},  # Retained for the public response contract.
         "unmatched_notes": unmatched_notes,
         "achievement_calc": {
             "observed": achievement,
@@ -2068,13 +2066,12 @@ def _engine() -> Any:
 
 
 def _reset_ocr_engine(reason: str, rss_mb: float | None = None) -> bool:
-    global _ENGINE, _ENGINE_REQUEST_COUNT, _ENGINE_LAST_RESET_RSS_MB
+    global _ENGINE, _ENGINE_REQUEST_COUNT
     with _ENGINE_LOCK:
         if _ENGINE is None:
             return False
         _ENGINE = None
         _ENGINE_REQUEST_COUNT = 0
-        _ENGINE_LAST_RESET_RSS_MB = rss_mb
     collected = gc.collect()
     logger.info(
         "[Recognize] OCR engine reset: reason=%s rss=%sMB collected=%s",

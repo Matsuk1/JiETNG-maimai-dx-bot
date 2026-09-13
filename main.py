@@ -13,7 +13,6 @@ import queue
 import psutil
 import platform
 import socket
-import secrets
 import asyncio
 import aiohttp
 import atexit
@@ -1693,45 +1692,6 @@ def async_get_song_record_task(event):
 
     smart_reply(user_id, reply_token, reply_msg, configuration, source_type=source_type)
 
-def async_get_song_record_by_id_task(event):
-    """异步歌曲成绩查询任务（通过ID）- 在webtask_queue中执行"""
-    user_message = event.message.text.strip()
-    user_id = event.source.user_id
-    reply_token = event.reply_token
-    source_type = getattr(event.source, 'type', 'user')
-
-    # 验证命令格式
-    parts = user_message.split()
-    if len(parts) < 2:
-        smart_reply(user_id, reply_token, song_error(user_id), configuration, source_type=source_type)
-        return
-
-    # 提取歌曲ID并验证长度
-    song_id = parts[1].split("&", 1)[0]
-    if len(song_id) != 6:
-        smart_reply(user_id, reply_token, song_error(user_id), configuration, source_type=source_type)
-        return
-
-    # 获取用户版本
-    ver = "jp"
-    id_use = user_id
-
-    _ver = get_user_field(user_id, 'version')
-    if _ver is not None:
-        ver = _ver
-
-    # 提取id_use参数
-    if "id_use=" in user_message:
-        id_use = user_message.split("id_use=", 1)[1]
-
-    try:
-        track_event('image_gen', user_id=user_id, metadata={'command': 'search-record', 'source': 'line'})
-    except Exception: pass
-
-    # 调用实际的查询函数
-    reply_msg = asyncio.run(get_song_record_by_id(user_id, id_use, song_id, ver))
-
-    smart_reply(user_id, reply_token, reply_msg, configuration, source_type=source_type)
 
 def async_admin_maimai_update_task(event):
     """管理员触发的maimai更新任务 - 在webtask_queue中执行"""

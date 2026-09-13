@@ -454,50 +454,6 @@ def _cropper_pose_table(image: Image.Image) -> tuple[Box | None, Image.Image | N
     return box, warped
 
 
-def detect_sub_screen_by_cropper_model(image: Image.Image) -> Box | None:
-    model = _load_cropper_model()
-    if model is None:
-        return None
-
-    try:
-        prediction = model.predict(image, imgsz=640, conf=0.15, verbose=False)[0]
-    except Exception:
-        return None
-
-    names = getattr(model, "names", {}) or getattr(prediction, "names", {}) or {}
-    width, height = image.size
-    candidates: list[tuple[float, Box]] = []
-    for raw_box in getattr(prediction, "boxes", []) or []:
-        try:
-            cls_id = int(raw_box.cls[0])
-            confidence = float(raw_box.conf[0])
-            x1, y1, x2, y2 = [float(value) for value in raw_box.xyxy[0]]
-        except (TypeError, ValueError, IndexError):
-            continue
-
-        box = Box(
-            int(round(x1)),
-            int(round(y1)),
-            int(round(x2)),
-            int(round(y2)),
-        ).clamp(width, height)
-        if box.width <= 0 or box.height <= 0:
-            continue
-
-        class_name = str(names.get(cls_id, "")).lower()
-        aspect = box.width / max(1, box.height)
-        center_y_ratio = ((box.top + box.bottom) / 2) / max(1, height)
-        if center_y_ratio > 0.42 or aspect < 1.45:
-            continue
-
-        label_score = 2.0 if "screen" in class_name or "upper" in class_name else 0.0
-        position_score = 1.0 - abs(center_y_ratio - 0.14)
-        score = confidence * 10.0 + label_score + position_score + min(aspect, 4.0) * 0.25
-        candidates.append((score, box))
-
-    if not candidates:
-        return None
-    return max(candidates, key=lambda item: item[0])[1]
 
 
 def detect_sub_judgement_table_with_cropper_model(
