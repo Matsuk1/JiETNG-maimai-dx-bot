@@ -1239,10 +1239,12 @@ def _dxnet_fields_in_memory(image: Image.Image) -> dict:
     }
 
 
-def crop_result_fields_in_memory(source_image: Image.Image) -> dict:
+def crop_result_fields_in_memory(source_image: Image.Image, *, debug_images: dict | None = None) -> dict:
     """Crop only OCR fields without creating debug files."""
     image = ImageOps.exif_transpose(source_image).convert("RGB")
     if is_dxnet_result_screenshot(image):
+        if debug_images is not None:
+            debug_images["screen"] = image.copy()
         return _dxnet_fields_in_memory(image)
     screen = detect_result_screen(image)
     main_source = image
@@ -1341,6 +1343,14 @@ def crop_result_fields_in_memory(source_image: Image.Image) -> dict:
             ),
         }
 
+    if debug_images is not None:
+        debug_images["screen"] = main_source.crop(screen.to_tuple())
+        debug_images["main_content"] = main_source.crop(main_content_box(screen).clamp(main_source.width, main_source.height).to_tuple())
+        if main_screen_image is not None:
+            debug_images["main_screen_rectified"] = main_screen_image.copy()
+        if sub_judgement_table is not None:
+            debug_images["sub_screen"] = image.crop(sub_judgement_table.to_tuple())
+
     return {
         "main_screen": {
             "left": main_screen_box.left,
@@ -1365,249 +1375,45 @@ def crop_result_fields_in_memory(source_image: Image.Image) -> dict:
     }
 
 
-def crop_result_fields(image_path: str | os.PathLike[str], output_dir: str | os.PathLike[str]) -> dict:
-    source = Path(image_path)
-    output = Path(output_dir)
+def save_crop_debug(source_image, metadata, output, *, debug_images=None):
+    """Serialize production crops and diagnostics without re-running detection."""
+    output = Path(output)
     output.mkdir(parents=True, exist_ok=True)
-
-    with Image.open(source) as raw_image:
-        image = ImageOps.exif_transpose(raw_image).convert("RGB")
-    if is_dxnet_result_screenshot(image):
-        metadata = _dxnet_fields_in_memory(image)
-        sample_dir = output / source.stem
-        if sample_dir.exists():
-            shutil.rmtree(sample_dir)
-        sample_dir.mkdir(parents=True, exist_ok=True)
-        overlay = image.copy()
-        draw = ImageDraw.Draw(overlay)
-        result = {
-            "source": str(source),
-            "layout": "dxnet",
-            "screen": metadata["screen"],
-            "fields": {},
-        }
-        for name, field in metadata["fields"].items():
-            crop_path = sample_dir / f"{name}.png"
-            field["image"].save(crop_path)
-            box = Box(field["left"], field["top"], field["right"], field["bottom"])
-            draw.rectangle(box.to_tuple(), outline=(255, 80, 0), width=2)
-            draw.text((box.left + 4, box.top + 4), name, fill=(255, 255, 255))
-            result["fields"][name] = {
-                key: value
-                for key, value in field.items()
-                if key != "image"
-            }
-            result["fields"][name]["path"] = str(crop_path)
-        overlay.save(sample_dir / "debug_overlay.png")
-        with open(sample_dir / "metadata.json", "w", encoding="utf-8") as fp:
-            json.dump(result, fp, ensure_ascii=False, indent=2)
-        return result
-    screen = detect_result_screen(image)
-    stem = source.stem
-    sample_dir = output / stem
-    if sample_dir.exists():
-        shutil.rmtree(sample_dir)
-    sample_dir.mkdir(parents=True, exist_ok=True)
-
-    sub_judgement_table, model_sub_screen, sub_judgement_detector, sub_judgement_image = (
-        detect_sub_judgement_table_with_cropper_model(image)
-    )
-    sub_screen = model_sub_screen or detect_sub_screen(image)
-    main_screen_only = image.height <= image.width * 1.16
-    if main_screen_only:
-        sub_judgement_table = None
-        sub_judgement_image = None
-    elif not is_complete_sub_judgement_table(sub_judgement_table):
-        sub_judgement_table = None
-        sub_judgement_image = None
-        sub_screen = detect_sub_screen(image)
-        fallback_table = detect_sub_judgement_table(image, sub_screen)
-        if is_complete_sub_judgement_table(fallback_table):
-            sub_judgement_table = fallback_table
-            sub_judgement_detector = "blue_grid"
-        if sub_screen.bottom < image.height * 0.08:
-            screen = detect_result_screen(image, main_screen_only=True)
-    content_screen = main_content_box(screen).clamp(image.width, image.height)
-    main_source = image
-    main_field_screen = screen
-    main_screen_box, main_screen_image = detect_main_screen_with_cropper_model(image)
-    if main_screen_image is not None:
-        main_source = main_screen_image
-        main_field_screen = Box(0, 0, main_source.width, main_source.height)
-        main_title, main_achievement = main_screen_model_field_boxes(
-            main_field_screen,
-            main_source.width,
-            main_source.height,
-        )
-    else:
-        main_achievement = detect_main_achievement(main_source, main_field_screen)
-        main_title = detect_main_title(main_source, main_field_screen, main_achievement)
-    refined_sub_screen = refine_sub_screen(sub_screen, sub_judgement_table).clamp(image.width, image.height)
-    image.crop(screen.to_tuple()).save(sample_dir / "screen.png")
-    image.crop(content_screen.to_tuple()).save(sample_dir / "main_content.png")
-    image.crop(refined_sub_screen.to_tuple()).save(sample_dir / "sub_screen.png")
-    if main_screen_image is not None:
-        main_screen_image.save(sample_dir / "main_screen_rectified.png")
-
-    overlay = image.copy()
+    overlay = ImageOps.exif_transpose(source_image).convert("RGB")
     draw = ImageDraw.Draw(overlay)
-    draw.rectangle(screen.to_tuple(), outline=(0, 255, 80), width=max(4, image.width // 300))
-    draw.rectangle(content_screen.to_tuple(), outline=(0, 255, 180), width=max(3, image.width // 420))
-
-    result = {
-        "source": str(source),
-        "screen": {
-            "left": screen.left,
-            "top": screen.top,
-            "right": screen.right,
-            "bottom": screen.bottom,
-            "width": screen.width,
-            "height": screen.height,
-        },
-        "main_content": {
-            "left": content_screen.left,
-            "top": content_screen.top,
-            "right": content_screen.right,
-            "bottom": content_screen.bottom,
-            "width": content_screen.width,
-            "height": content_screen.height,
-        },
-        "sub_screen": {
-            "left": refined_sub_screen.left,
-            "top": refined_sub_screen.top,
-            "right": refined_sub_screen.right,
-            "bottom": refined_sub_screen.bottom,
-            "width": refined_sub_screen.width,
-            "height": refined_sub_screen.height,
-        },
-        "sub_screen_raw": {
-            "left": sub_screen.left,
-            "top": sub_screen.top,
-            "right": sub_screen.right,
-            "bottom": sub_screen.bottom,
-            "width": sub_screen.width,
-            "height": sub_screen.height,
-            "detector": "cropper_pt" if model_sub_screen is not None and sub_screen == model_sub_screen else "color_scan",
-        },
-        "main_screen_model": {
-            "left": main_screen_box.left,
-            "top": main_screen_box.top,
-            "right": main_screen_box.right,
-            "bottom": main_screen_box.bottom,
-            "width": main_screen_box.width,
-            "height": main_screen_box.height,
-            "detector": "main_screen_pt_pose_warp",
-            "path": str(sample_dir / "main_screen_rectified.png"),
+    result = {key: value for key, value in metadata.items() if key != "fields"}
+    result["fields"] = {}
+    for name, field in metadata["fields"].items():
+        path = output / f"{name}.png"
+        field["image"].save(path)
+        result["fields"][name] = {
+            **{key: value for key, value in field.items() if key != "image"},
+            "path": str(path),
         }
-        if main_screen_box is not None
-        else None,
-        "fields": {},
-    }
-
-    draw.rectangle(refined_sub_screen.to_tuple(), outline=(0, 180, 255), width=max(4, image.width // 300))
-
-    if main_title is not None:
-        crop = sharpen_for_ocr(main_source.crop(main_title.to_tuple()), "main_title")
-        crop_path = sample_dir / "main_title.png"
-        crop.save(crop_path)
-        if main_screen_image is None:
-            draw.rectangle(main_title.to_tuple(), outline=(255, 80, 0), width=max(2, image.width // 500))
-            draw.text((main_title.left + 4, main_title.top + 4), "main_title", fill=(255, 255, 255))
-        result["fields"]["main_title"] = {
-            "path": str(crop_path),
-            "left": main_title.left,
-            "top": main_title.top,
-            "right": main_title.right,
-            "bottom": main_title.bottom,
-            "detector": "main_screen_pt_title_bar" if main_screen_image is not None else "title_bar",
-            "layout_hint": "main_screen_pt_pose_warp" if main_screen_image is not None else None,
-        }
-    else:
-        fallback = relative_box(main_field_screen, (0.285, 0.222, 0.790, 0.282)).clamp(
-            main_source.width,
-            main_source.height,
-        )
-        crop = sharpen_for_ocr(main_source.crop(fallback.to_tuple()), "main_title")
-        crop_path = sample_dir / "main_title.png"
-        crop.save(crop_path)
-        if main_screen_image is None:
-            draw.rectangle(fallback.to_tuple(), outline=(255, 80, 0), width=max(2, image.width // 500))
-            draw.text((fallback.left + 4, fallback.top + 4), "main_title", fill=(255, 255, 255))
-        result["fields"]["main_title"] = {
-            "path": str(crop_path),
-            "left": fallback.left,
-            "top": fallback.top,
-            "right": fallback.right,
-            "bottom": fallback.bottom,
-            "detector": "main_screen_pt_fallback_relative" if main_screen_image is not None else "fallback_relative",
-            "layout_hint": "main_screen_pt_pose_warp" if main_screen_image is not None else None,
-        }
-
-    if main_achievement is not None:
-        crop = sharpen_for_ocr(main_source.crop(main_achievement.to_tuple()), "main_achievement")
-        crop_path = sample_dir / "main_achievement.png"
-        crop.save(crop_path)
-        if main_screen_image is None:
-            draw.rectangle(main_achievement.to_tuple(), outline=(255, 80, 0), width=max(2, image.width // 500))
-            draw.text((main_achievement.left + 4, main_achievement.top + 4), "main_achievement", fill=(255, 255, 255))
-        result["fields"]["main_achievement"] = {
-            "path": str(crop_path),
-            "left": main_achievement.left,
-            "top": main_achievement.top,
-            "right": main_achievement.right,
-            "bottom": main_achievement.bottom,
-            "detector": (
-                "main_screen_pt_achievement_digits"
-                if main_screen_image is not None
-                else "orange_digits"
-            ),
-            "layout_hint": "main_screen_pt_pose_warp" if main_screen_image is not None else None,
-        }
-    else:
-        fallback = relative_box(main_field_screen, (0.055, 0.300, 0.650, 0.395)).clamp(
-            main_source.width,
-            main_source.height,
-        )
-        crop = sharpen_for_ocr(main_source.crop(fallback.to_tuple()), "main_achievement")
-        crop_path = sample_dir / "main_achievement.png"
-        crop.save(crop_path)
-        if main_screen_image is None:
-            draw.rectangle(fallback.to_tuple(), outline=(255, 80, 0), width=max(2, image.width // 500))
-            draw.text((fallback.left + 4, fallback.top + 4), "main_achievement", fill=(255, 255, 255))
-        result["fields"]["main_achievement"] = {
-            "path": str(crop_path),
-            "left": fallback.left,
-            "top": fallback.top,
-            "right": fallback.right,
-            "bottom": fallback.bottom,
-            "detector": "main_screen_pt_fallback_relative" if main_screen_image is not None else "fallback_relative",
-            "layout_hint": "main_screen_pt_pose_warp" if main_screen_image is not None else None,
-        }
-
-    if sub_judgement_table is not None:
-        crop_source = sub_judgement_image or image.crop(sub_judgement_table.to_tuple())
-        crop = sharpen_for_ocr(crop_source, "sub_judgement_table")
-        crop_path = sample_dir / "sub_judgement_table.png"
-        crop.save(crop_path)
-        draw.rectangle(sub_judgement_table.to_tuple(), outline=(255, 80, 0), width=max(2, image.width // 500))
-        draw.text((sub_judgement_table.left + 4, sub_judgement_table.top + 4), "sub_judgement_table", fill=(255, 255, 255))
-        result["fields"]["sub_judgement_table"] = {
-            "path": str(crop_path),
-            "left": sub_judgement_table.left,
-            "top": sub_judgement_table.top,
-            "right": sub_judgement_table.right,
-            "bottom": sub_judgement_table.bottom,
-            "detector": sub_judgement_detector,
-            "layout_hint": "cropper_pt_pose_warp"
-            if sub_judgement_detector == "cropper_pt_pose_warp"
-            else None,
-        }
-
-    overlay.save(sample_dir / "debug_overlay.png")
-    with open(sample_dir / "metadata.json", "w", encoding="utf-8") as fp:
-        json.dump(result, fp, ensure_ascii=False, indent=2)
-
+        # Main-screen field coordinates refer to the rectified image.
+        if field.get("layout_hint") != "main_screen_pt_pose_warp":
+            box = (field["left"], field["top"], field["right"], field["bottom"])
+            draw.rectangle(box, outline=(255, 80, 0), width=2)
+            draw.text((box[0] + 4, box[1] + 4), name, fill=(255, 255, 255))
+    for name, image in (debug_images or {}).items():
+        image.save(output / f"{name}.png")
+    overlay.save(output / "debug_overlay.png")
+    with (output / "metadata.json").open("w", encoding="utf-8") as file:
+        json.dump(result, file, ensure_ascii=False, indent=2)
     return result
+
+
+def crop_result_fields(image_path: str | os.PathLike[str], output_dir: str | os.PathLike[str]) -> dict:
+    """File-based diagnostic adapter for the production cropper."""
+    source = Path(image_path)
+    output = Path(output_dir) / source.stem
+    if output.exists():
+        shutil.rmtree(output)
+    with Image.open(source) as image:
+        debug_images = {}
+        metadata = crop_result_fields_in_memory(image, debug_images=debug_images)
+        metadata["source"] = str(source)
+        return save_crop_debug(image, metadata, output, debug_images=debug_images)
 
 
 def iter_images(paths: Iterable[str]) -> Iterable[Path]:
