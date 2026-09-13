@@ -10,7 +10,7 @@ class CropAdapterTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path=Path(directory)/'source.png'
             Image.new('RGB',(640,640),(60,70,80)).save(path)
-            with patch.object(cropper,'_load_main_screen_model',return_value=None), patch.object(cropper,'_load_cropper_model',return_value=None):
+            with patch.object(cropper,'_load_main_screen_model',return_value=None), patch.object(cropper,'_load_cropper_model',return_value=None), patch.object(cropper,'detect_result_screen',return_value=cropper.Box(0,0,640,640)):
                 with Image.open(path) as source:
                     expected=cropper.crop_result_fields_in_memory(source)
                 actual=cropper.crop_result_fields(path,Path(directory)/'debug')
