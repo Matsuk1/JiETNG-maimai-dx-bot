@@ -23,6 +23,7 @@ import base64 as b64mod
 
 from datetime import datetime
 from types import SimpleNamespace
+from urllib.parse import urlsplit
 
 from PIL import Image, ImageDraw
 from io import BytesIO
@@ -2789,7 +2790,12 @@ def generate_profile(user_info, scale=1, user_id=None):
                         "Host": "maimaidx-eng.com",
                     }
 
-                with requests.get(url, headers=headers, timeout=(5, 20)) as response:
+                with requests.get(
+                    url,
+                    headers=headers,
+                    timeout=(5, 20),
+                    verify=urlsplit(url).hostname != "maimaidx.jp",
+                ) as response:
                     response.raise_for_status()
                     with Image.open(BytesIO(response.content)) as source_img:
                         img = source_img.copy()
