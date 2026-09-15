@@ -1161,122 +1161,104 @@ def _calc_tolerance_rows(scores, lang):
     ]
 
 
-def generate_search_results_flex(user_id, matching_songs, search_type='song', id_use=None):
-    """
-    生成搜索结果列表 Flex Message
-
-    Args:
-        user_id: 用户ID
-        matching_songs: 匹配的歌曲列表
-        search_type: 搜索类型 ('song' 或 'record')
-        id_use: 使用的ID
-
-    Returns:
-        FlexMessage: 搜索结果列表
-    """
-    language = get_user_language(user_id)
-
-    id_use_text = ""
-    if id_use and search_type == 'record':
-        id_use_text = f"&id_use={id_use}"
-
-    config = {
-        'command': 'search-song' if search_type == 'song' else 'search-record',
-        'title': format_catalog(
-            f"message_manager.search_titles.{search_type}",
-            count=len(matching_songs),
-        ),
-    }
-    display_songs = matching_songs[:20]
-
-    song_rows = []
-    for idx, song in enumerate(display_songs):
-        song_id = song.get('id', '')
-        song_title = song.get('title', 'Unknown')
-        song_type = song.get('type', '')
-        artist = song.get('artist') or '-'
-        type_icon = song_type_icon(song_type, width="42px", height="12px")
-        title_contents = [
-            {
-                "type": "text",
-                "text": song_title,
-                "size": "sm",
-                "weight": "bold",
-                "color": "#000000",
-                "wrap": True,
-                "maxLines": 2,
-                "flex": 1,
-            }
-        ]
-        if type_icon:
-            title_contents.append(type_icon)
-
-        row = {
-            "type": "box",
-            "layout": "horizontal",
-            "spacing": "md",
-            "margin": "md" if idx > 0 else "none",
-            "contents": [
-                {
-                    "type": "box",
-                    "layout": "vertical",
-                    "flex": 3,
-                    "contents": [
-                        {
-                            "type": "box",
-                            "layout": "horizontal",
-                            "spacing": "xs",
-                            "alignItems": "flex-end",
-                            "contents": title_contents,
-                        },
-                        {
-                            "type": "text",
-                            "text": artist,
-                            "size": "xs",
-                            "color": "#666666",
-                            "margin": "xs",
-                            "wrap": True,
-                            "maxLines": 1
-                        },
-                    ]
-                },
-                round_icon_action(
-                    "→",
-                    {
-                        "type": "postback",
-                        "label": "→",
-                        "data": image_button_data(f"{config['command']} {song_id}{id_use_text}")
-                    }
-                )
-            ]
+def _song_row(song, subtitle, command, *, first):
+    song_title = song.get('title', 'Unknown')
+    song_type = song.get('type', '')
+    type_icon = song_type_icon(song_type, width="42px", height="12px")
+    title_contents = [
+        {
+            "type": "text",
+            "text": song_title,
+            "size": "sm",
+            "weight": "bold",
+            "color": "#000000",
+            "wrap": True,
+            "maxLines": 2,
+            "flex": 1,
         }
+    ]
+    if type_icon:
+        title_contents.append(type_icon)
 
-        song_rows.append(row)
-        if idx < len(display_songs) - 1:
-            song_rows.append({"type": "separator", "margin": "sm"})
+    row = {
+        "type": "box",
+        "layout": "horizontal",
+        "spacing": "md",
+        "margin": "md" if not first else "none",
+        "contents": [
+            {
+                "type": "box",
+                "layout": "vertical",
+                "flex": 3,
+                "contents": [
+                    {
+                        "type": "box",
+                        "layout": "horizontal",
+                        "spacing": "xs",
+                        "alignItems": "flex-end",
+                        "contents": title_contents,
+                    },
+                    {
+                        "type": "text",
+                        "text": subtitle,
+                        "size": "xs",
+                        "color": "#666666",
+                        "margin": "xs",
+                        "wrap": True,
+                        "maxLines": 1
+                    },
+                ]
+            },
+            round_icon_action(
+                "→",
+                {
+                    "type": "postback",
+                    "label": "→",
+                    "data": image_button_data(command)
+                }
+            )
+        ]
+    }
+    return row
 
-    title_text = select_text(config['title'], language=language, default_language='ja')
 
-    header_box = standard_header_box(title_text, "JiETNG")
-
+def _song_list_message(title, subtitle, rows):
     bubble = {
         "type": "bubble",
         "size": "mega",
-        "header": header_box,
+        "header": standard_header_box(title, subtitle),
         "body": {
             "type": "box",
             "layout": "vertical",
-            "contents": song_rows,
+            "contents": rows,
             "paddingAll": "16px",
             "backgroundColor": "#FFFFFF"
         },
         "styles": {"body": {"backgroundColor": "#FFFFFF"}}
     }
 
-    return FlexMessage(
-        alt_text=title_text,
-        contents=FlexContainer.from_dict(bubble)
+    return FlexMessage(alt_text=title, contents=FlexContainer.from_dict(bubble))
+
+
+def generate_search_results_flex(user_id, matching_songs, search_type='song', id_use=None):
+    """显示前 20 条搜索结果，每首歌使用独立的一次性图片按钮。"""
+    language = get_user_language(user_id)
+    command = 'search-song' if search_type == 'song' else 'search-record'
+    suffix = f"&id_use={id_use}" if id_use and search_type == 'record' else ''
+    title = select_text(
+        format_catalog(f"message_manager.search_titles.{search_type}", count=len(matching_songs)),
+        language=language,
+        default_language='ja',
     )
+    rows = []
+    for song in matching_songs[:20]:
+        if rows:
+            rows.append({"type": "separator", "margin": "sm"})
+        rows.append(_song_row(
+            song, song.get('artist') or '-',
+            f"{command} {song.get('id', '')}{suffix}", first=not rows,
+        ))
+    return _song_list_message(title, "JiETNG", rows)
 
 
 def generate_ranking_flex(user_id, top5, nearby_entries=None, ver="jp"):
@@ -1398,6 +1380,32 @@ def generate_ranking_flex(user_id, top5, nearby_entries=None, ver="jp"):
     return FlexMessage(alt_text=alt_text, contents=FlexContainer.from_dict(bubble))
 
 
+def _song_subtitle(song, command_prefix, matched_sheets_map):
+    difficulty_label_map = {
+        'basic': 'BAS',
+        'advanced': 'ADV',
+        'expert': 'EXP',
+        'master': 'MAS',
+        'remaster': 'ReMAS'
+    }
+
+    song_id = song.get('id', '')
+    if matched_sheets_map and song_id in matched_sheets_map:
+        sheets = matched_sheets_map[song_id]
+        designers = []
+        for s in sheets:
+            diff_label = difficulty_label_map.get(s.get('difficulty', ''), s.get('difficulty', ''))
+            designer_name = s.get('noteDesigner', '')
+            designers.append(f"{designer_name} [{diff_label}]")
+        sub_text = ' / '.join(designers)
+    elif command_prefix == "bpm":
+        sub_text = f"BPM: {song.get('bpm', '-')}"
+    else:
+        sub_text = song.get('artist') or '-'
+
+    return sub_text
+
+
 def generate_song_list_flex(user_id, title, matching_songs, page, command_prefix, query, matched_sheets_map=None):
     """
     生成歌曲列表 Flex Message（黑白简约风，歌曲搜索列表共用）
@@ -1414,114 +1422,28 @@ def generate_song_list_flex(user_id, title, matching_songs, page, command_prefix
     Returns:
         FlexMessage: 歌曲列表
     """
-    difficulty_label_map = {
-        'basic': 'BAS',
-        'advanced': 'ADV',
-        'expert': 'EXP',
-        'master': 'MAS',
-        'remaster': 'ReMAS'
-    }
-
     page_size = 15
     total = len(matching_songs)
-    total_pages = (total + page_size - 1) // page_size
+    total_pages = max(1, (total + page_size - 1) // page_size)
     page = max(1, min(page, total_pages))
 
     start = (page - 1) * page_size
     end = start + page_size
     has_next = end < total
 
-    # 超过每页限制时，取前19条 + 翻页按钮
-    if has_next:
-        page_songs = matching_songs[start:start + page_size - 1]
-    else:
-        page_songs = matching_songs[start:end]
-
+    page_songs = matching_songs[start:end]
     song_rows = []
-    for idx, song in enumerate(page_songs):
-        song_id = song.get('id', '')
-        song_title = song.get('title', 'Unknown')
-        type_icon = song_type_icon(song.get('type', ''), width="42px", height="12px")
-
-        # 副信息
-        if matched_sheets_map and song_id in matched_sheets_map:
-            # designer 模式：谱师名 + 匹配的难度标签
-            sheets = matched_sheets_map[song_id]
-            designers = []
-            for s in sheets:
-                diff_label = difficulty_label_map.get(s.get('difficulty', ''), s.get('difficulty', ''))
-                designer_name = s.get('noteDesigner', '')
-                designers.append(f"{designer_name} [{diff_label}]")
-            sub_text = ' / '.join(designers)
-        elif command_prefix == "bpm":
-            sub_text = f"BPM: {song.get('bpm', '-')}"
-        else:
-            # artist 模式：艺术家名
-            sub_text = song.get('artist') or '-'
-
-        title_contents = [
-            {
-                "type": "text",
-                "text": song_title,
-                "size": "sm",
-                "weight": "bold",
-                "color": "#000000",
-                "wrap": True,
-                "maxLines": 2,
-                "flex": 1,
-            }
-        ]
-        if type_icon:
-            title_contents.append(type_icon)
-
-        left_contents = [
-            {
-                "type": "box",
-                "layout": "horizontal",
-                "spacing": "xs",
-                "alignItems": "flex-end",
-                "contents": title_contents,
-            },
-            {
-                "type": "text",
-                "text": sub_text,
-                "size": "xs",
-                "color": "#666666",
-                "margin": "xs",
-                "wrap": True,
-                "maxLines": 1
-            }
-        ]
-
-        row = {
-            "type": "box",
-            "layout": "horizontal",
-            "spacing": "md",
-            "margin": "md" if idx > 0 else "none",
-            "contents": [
-                {
-                    "type": "box",
-                    "layout": "vertical",
-                    "flex": 3,
-                    "contents": left_contents
-                },
-                round_icon_action(
-                    "→",
-                    {
-                        "type": "postback",
-                        "label": "→",
-                        "data": image_button_data(f"search-song {song_id}")
-                    }
-                )
-            ]
-        }
-
-        song_rows.append(row)
-        if idx < len(page_songs) - 1 or has_next:
+    for song in page_songs:
+        if song_rows:
             song_rows.append({"type": "separator", "margin": "sm"})
+        song_rows.append(_song_row(
+            song, _song_subtitle(song, command_prefix, matched_sheets_map),
+            f"search-song {song.get('id', '')}", first=not song_rows,
+        ))
 
     # 翻页按钮
     if has_next:
+        song_rows.append({"type": "separator", "margin": "sm"})
         next_page = page + 1
         song_rows.append(pill_action_box(
             f"Next Page ({next_page}/{total_pages})",
@@ -1550,26 +1472,7 @@ def generate_song_list_flex(user_id, title, matching_songs, page, command_prefix
             margin="sm",
         ))
 
-    header_box = standard_header_box(title, f"Page {page}/{total_pages} · {total} songs")
-
-    bubble = {
-        "type": "bubble",
-        "size": "mega",
-        "header": header_box,
-        "body": {
-            "type": "box",
-            "layout": "vertical",
-            "contents": song_rows,
-            "paddingAll": "16px",
-            "backgroundColor": "#FFFFFF"
-        },
-        "styles": {"body": {"backgroundColor": "#FFFFFF"}}
-    }
-
-    return FlexMessage(
-        alt_text=title,
-        contents=FlexContainer.from_dict(bubble)
-    )
+    return _song_list_message(title, f"Page {page}/{total_pages} · {total} songs", song_rows)
 
 
 def generate_friend_buttons(user_id, alt_text, friend_list, group_size):
