@@ -385,7 +385,6 @@ JiETNG/
 │   ├── message_manager.py     # 多言語メッセージ管理
 │   ├── message_texts.py       # 多言語メッセージテキスト定義
 │   ├── notice_manager.py      # お知らせシステム
-│   ├── notice_stats.py        # お知らせ統計
 │   ├── notification_manager.py # システム通知管理（Web Push）
 │   ├── perm_request_generator.py  # 権限リクエスト生成器
 │   ├── perm_request_handler.py    # 権限リクエストハンドラー

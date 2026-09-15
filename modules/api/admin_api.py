@@ -65,6 +65,8 @@ from modules.monitoring.codex_agent import (
 from modules.monitoring.file_access import is_asset_image, resolve_allowed_path
 from modules.monitoring.markdown_renderer import render_markdown
 from modules.notice_manager import (
+    calculate_notice_stats,
+    get_all_notices_stats,
     delete_notice,
     get_all_notices,
     get_latest_published_notice,
@@ -72,10 +74,6 @@ from modules.notice_manager import (
     publish_notice,
     update_notice,
     upload_notice,
-)
-from modules.notice_stats import (
-    calculate_notice_stats,
-    get_all_notices_stats,
 )
 from modules.notification_manager import (
     add_push_subscription,

@@ -1,5 +1,5 @@
 import unittest
-from modules.notice_stats import summarize_notices
+from modules.notice_manager import summarize_notices
 
 
 class NoticeStatsTests(unittest.TestCase):

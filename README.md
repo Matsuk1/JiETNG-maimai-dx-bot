@@ -417,7 +417,6 @@ JiETNG/
 │   ├── message_manager.py     # 多语言消息管理
 │   ├── message_texts.py       # 多语言消息文本定义
 │   ├── notice_manager.py      # 公告系统
-│   ├── notice_stats.py        # 公告统计
 │   ├── notification_manager.py # 系统通知管理（Web Push）
 │   ├── perm_request_generator.py  # 权限请求生成器
 │   ├── perm_request_handler.py    # 权限请求处理器

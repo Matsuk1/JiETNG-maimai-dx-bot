@@ -370,7 +370,6 @@ JiETNG/
 │   ├── message_manager.py     # Multi-language message management
 │   ├── message_texts.py       # Multi-language message text definitions
 │   ├── notice_manager.py      # Announcement system
-│   ├── notice_stats.py        # Announcement statistics
 │   ├── notification_manager.py # System notification management (Web Push)
 │   ├── perm_request_generator.py  # Permission request generator
 │   ├── perm_request_handler.py    # Permission request handler
