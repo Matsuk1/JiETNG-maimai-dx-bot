@@ -24,3 +24,13 @@ def test_skin_selection_does_not_leak_between_callers():
     with ThreadPoolExecutor(max_workers=4) as pool:
         results = list(pool.map(render, ['default', 'missing'] * 8))
     assert len(set(results)) == 1
+
+
+def test_glass_skin_overrides_and_default_fallback():
+    assert image_skins.resolve_template('records.html', 'ios-glass') == 'skins/ios-glass/records.html'
+    assert image_skins.resolve_template('profile.html', 'ios-glass') == 'profile.html'
+    html = template('records.html', skin='ios-glass', title='<script>unsafe</script>',
+                    stats=[], rating='12345', equation='', details=[], up=['card'], down=[])
+    assert '&lt;script&gt;' in html
+    assert '<script>' not in html
+    assert 'glass-records' in html

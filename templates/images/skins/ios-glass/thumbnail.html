@@ -1,0 +1,259 @@
+{% if inline %}
+  <style>
+    .glass-inline {
+      position: relative;
+      width: 600px;
+      height: 225px;
+      overflow: hidden;
+      padding: 18px 22px;
+      border: 1px solid #ffffffeb;
+      border-radius: 30px;
+      color: #25334e;
+      background:
+        radial-gradient(ellipse at top left, #c0eafa99, transparent 70%),
+        linear-gradient(125deg, #eff7ffdd, #e7e2f4bb);
+      box-shadow: inset 0 2px 2px white;
+      backdrop-filter: blur(20px);
+    }
+
+    .glass-inline-achievement {
+      font-size: 55px;
+      line-height: 1.1;
+      letter-spacing: -2px;
+    }
+
+    .glass-inline-dx {
+      margin-top: 8px;
+      font-size: 20px;
+      color: #596e89;
+    }
+
+    .glass-inline-history {
+      margin-top: 5px;
+      font-size: 18px;
+      color: #596e89;
+    }
+
+    .glass-inline-rank {
+      position: absolute;
+      right: 22px;
+      top: 23px;
+      width: 142px;
+      height: 63px;
+      object-fit: contain;
+    }
+
+    .glass-inline-bottom {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-top: 10px;
+      border-top: 1px solid #ffffffd9;
+    }
+
+    .glass-inline-status {
+      width: 72px;
+      height: 40px;
+      object-fit: contain;
+    }
+
+    .glass-inline-star {
+      width: 96px;
+      height: 21px;
+      object-fit: contain;
+    }
+
+    .glass-inline-rating {
+      margin-left: auto;
+      padding: 7px 14px;
+      border: 1px solid white;
+      border-radius: 18px;
+      background: #ffffff80;
+      font-size: 25px;
+    }
+  </style>
+  <article class="glass-inline">
+    <div class="glass-inline-achievement">{{ song.score }}</div>
+    <div class="glass-inline-dx">DX {{ song.dx_score }} → {{ '%.1f'|format(song.dx_percentage * 100) }}%</div>
+    {% if 'last_play_time' in song and 'play_count' in song %}
+      <div class="glass-inline-history ellipsis">PC: {{ song.play_count }}　Recent: {{ song.last_play_time }}</div>
+    {% endif %}
+    {% if icons.score_icon %}
+      <img class="glass-inline-rank" src="{{ icons.score_icon }}">
+    {% endif %}
+    <div class="glass-inline-bottom">
+      {% for key in ['combo_icon', 'sync_icon'] %}
+        {% if icons[key] %}
+          <img class="glass-inline-status" src="{{ icons[key] }}">
+        {% endif %}
+      {% endfor %}
+      {% if icons.dx_star %}
+        <img class="glass-inline-star" src="{{ icons.dx_star }}">
+      {% endif %}
+      <span class="glass-inline-rating">{{ '%.1f'|format(song.internalLevelValue) }} → {{ song.ra }}</span>
+    </div>
+  </article>
+{% else %}
+  <style>
+    .glass-card {
+      position: relative;
+      width: 300px;
+      height: 150px;
+      overflow: hidden;
+      border: 1px solid #ffffffdc;
+      border-radius: 23px;
+      color: #25334e;
+      background: linear-gradient(145deg, #ffffffba, #ffffff68);
+      box-shadow: inset 0 1px 2px #fff, inset 0 -1px 1px #ffffff80;
+      backdrop-filter: blur(18px);
+    }
+
+    .glass-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(115deg, color-mix(in srgb, var(--difficulty) 13%, transparent), transparent 62%);
+    }
+
+    .glass-card-cover {
+      position: absolute;
+      left: 12px;
+      top: 12px;
+      width: 73px;
+      height: 73px;
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 4px 10px #28345c20;
+    }
+
+    .glass-card-cover-content {
+      transform: scale(.486667);
+      transform-origin: top left;
+    }
+
+    .glass-card-info {
+      position: absolute;
+      left: 97px;
+      right: 13px;
+      top: 12px;
+    }
+
+    .glass-card-title {
+      font-size: 17px;
+      line-height: 24px;
+    }
+
+    .glass-card-achievement {
+      margin-top: 3px;
+      font-size: 25px;
+      letter-spacing: -.8px;
+      line-height: 32px;
+    }
+
+    .glass-card-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 5px;
+      margin-top: 3px;
+      font-size: 11px;
+      color: #5a6b83;
+    }
+
+    .glass-card-dx {
+      flex-shrink: 0;
+    }
+
+    .glass-card-bottom {
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: 10px;
+      height: 41px;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      border-top: 1px solid #ffffffb3;
+      padding-top: 6px;
+    }
+
+    .glass-card-status {
+      width: 30px;
+      height: 34px;
+      object-fit: contain;
+    }
+
+    .glass-card-rank {
+      width: 53px;
+      height: 25px;
+      margin-left: 2px;
+      object-fit: contain;
+    }
+
+    .glass-card-rating {
+      margin-left: auto;
+      padding: 5px 9px;
+      border: 1px solid #ffffffc9;
+      border-radius: 13px;
+      background: #ffffff77;
+      font-size: 16px;
+      white-space: nowrap;
+    }
+
+    .glass-card-level {
+      color: #62728b;
+      font-size: 13px;
+    }
+
+    .glass-card-star {
+      position: absolute;
+      top: 70px;
+      left: 16px;
+      width: 64px;
+      height: 13px;
+      object-fit: contain;
+    }
+
+    .glass-card-difficulty {
+      position: absolute;
+      left: 13px;
+      top: 90px;
+      width: 71px;
+      height: 3px;
+      border-radius: 2px;
+      background: var(--difficulty);
+    }
+  </style>
+  <article class="glass-card" style="--difficulty: {{ color }};">
+    <div class="glass-card-cover">
+      <div class="glass-card-cover-content">{{ cover|safe }}</div>
+    </div>
+    <div class="glass-card-difficulty"></div>
+    <div class="glass-card-info">
+      <div class="glass-card-title ellipsis">{{ song.name }}</div>
+      <div class="glass-card-achievement">{{ song.score }}</div>
+      <div class="glass-card-meta">
+        <span class="ellipsis">{{ version }}</span>
+        <span class="glass-card-dx">DX {{ song.dx_score }}</span>
+      </div>
+    </div>
+    {% if icons.dx_star %}
+      <img class="glass-card-star" src="{{ icons.dx_star }}">
+    {% endif %}
+    <div class="glass-card-bottom">
+      {% for key in ['combo_icon', 'sync_icon'] %}
+        {% if icons[key] %}
+          <img class="glass-card-status" src="{{ icons[key] }}">
+        {% endif %}
+      {% endfor %}
+      {% if icons.score_icon %}
+        <img class="glass-card-rank" src="{{ icons.score_icon }}">
+      {% endif %}
+      <span class="glass-card-rating"><span class="glass-card-level">{{ '%.1f'|format(song.internalLevelValue) }} →</span> {{ song.ra }}</span>
+    </div>
+  </article>
+{% endif %}

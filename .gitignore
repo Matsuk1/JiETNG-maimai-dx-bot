@@ -89,3 +89,6 @@ data/score_cropper_debug/
 
 # Local image migration comparisons
 artifacts/image-migration/
+
+# Local skin comparison previews
+artifacts/skin-preview/

@@ -58,3 +58,13 @@ python scripts/compare_image_migration.py artifacts/image-migration
 调试台可切换皮肤并记住浏览器选择，递归监听皮肤模板修改。
 当前只接入成绩列表与成绩卡片；聊天命令及用户数据库的皮肤偏好尚未接入，
 业务调用可以直接传入 `skin`。
+
+内置 `ios-glass` 皮肤提供浅蓝紫渐变、半透明面板、高光边框，以及成绩列表、
+小卡片和横向卡片的玻璃样式。示例：
+
+```python
+generate_records_picture(up_songs, down_songs, title="B50", skin="ios-glass")
+```
+
+部署此皮肤时，一并上传 `modules/image_skins.py` 和
+`templates/images/skins/ios-glass/`（包含 `skin.json`）。

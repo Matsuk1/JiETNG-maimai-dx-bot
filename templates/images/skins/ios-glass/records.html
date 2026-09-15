@@ -1,0 +1,185 @@
+<style>
+  .glass-records {
+    padding: 32px 20px 28px;
+    color: #24334f;
+    background:
+      radial-gradient(ellipse at 8% 6%, #a5def5 0%, transparent 42%),
+      radial-gradient(ellipse at 97% 37%, #c7b9f4 0%, transparent 50%),
+      radial-gradient(ellipse at 12% 92%, #afe9d9 0%, transparent 48%),
+      linear-gradient(145deg, #e8effa, #e2e1f7 58%, #eaf5f9);
+  }
+
+  .glass-records-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 40px;
+    padding: 12px 22px 30px;
+  }
+
+  .glass-records-identity {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .glass-records-kicker {
+    font-size: 17px;
+    letter-spacing: 5px;
+    color: #526789;
+  }
+
+  .glass-records-title {
+    margin: 8px 0 0;
+    font-size: 100px;
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+
+  .glass-records-rating {
+    min-width: 390px;
+    padding: 20px 30px;
+    border: 1px solid #ffffffd9;
+    border-radius: 32px;
+    background: linear-gradient(145deg, #ffffff9e, #ffffff42);
+    box-shadow: inset 0 2px 2px #ffffffc9, 0 12px 30px #596e9b18;
+    backdrop-filter: blur(24px);
+    text-align: right;
+  }
+
+  .glass-records-rating-label {
+    font-size: 18px;
+    letter-spacing: 3px;
+    color: #536884;
+  }
+
+  .glass-records-rating-value {
+    font-size: 72px;
+    line-height: 1.15;
+    letter-spacing: -2px;
+  }
+
+  .glass-records-equation {
+    font-size: 21px;
+    color: #60708b;
+  }
+
+  .glass-records-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin: 0 0 26px;
+  }
+
+  .glass-records-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 22px;
+    border: 1px solid #ffffffb3;
+    border-radius: 23px;
+    background: #ffffff52;
+    box-shadow: inset 0 1px 1px white;
+  }
+
+  .glass-records-stat dt {
+    font-size: 19px;
+    color: #536581;
+  }
+
+  .glass-records-stat dd {
+    margin: 0;
+    font-size: 27px;
+  }
+
+  .glass-records-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 24px;
+    margin: 0 8px 24px;
+    font-size: 20px;
+  }
+
+  .glass-records-dot {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+  }
+
+  .glass-records-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 22px 8px 14px;
+    font-size: 18px;
+    letter-spacing: 2px;
+    color: #586b89;
+  }
+
+  .glass-records-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 300px);
+    gap: 16px 10px;
+  }
+
+  .glass-records-footer {
+    margin: 28px 8px 0;
+    font-size: 14px;
+    letter-spacing: 3px;
+    color: #62758f;
+    text-align: right;
+  }
+</style>
+<section class="glass-records">
+  <header class="glass-records-header">
+    <div class="glass-records-identity">
+      <div class="glass-records-kicker">MAIMAI / RECORD COLLECTION</div>
+      <h1 class="glass-records-title" data-fit="38">{{ title }}</h1>
+    </div>
+    <div class="glass-records-rating">
+      <div class="glass-records-rating-label">DX RATING</div>
+      <div class="glass-records-rating-value">{{ rating|trim }}</div>
+      {% if equation %}
+        <div class="glass-records-equation">{{ equation }}</div>
+      {% endif %}
+    </div>
+  </header>
+  <dl class="glass-records-stats">
+    {% for label, value in stats %}
+      <div class="glass-records-stat">
+        <dt>{{ label }}</dt>
+        <dd>{{ value }}</dd>
+      </div>
+    {% endfor %}
+  </dl>
+  {% if details %}
+    <div class="glass-records-details">
+      {% for key, tokens in details %}
+        <div>{{ key }}:
+          {% for text, color in tokens %}
+            {% if color %}
+              <span class="glass-records-dot" style="background: {{ color }};"></span>
+            {% else %}
+              {{ text }}
+            {% endif %}
+          {% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+  {% for cards in [up, down] %}
+    {% if cards %}
+      <div class="glass-records-section">
+        <span>{{ '01' if loop.first else '02' }} / {{ 'B35' if title == 'B50' and loop.first else 'B15' if title == 'B50' else 'RECORDS' }}</span>
+        <span>{{ cards|length }} TRACKS</span>
+      </div>
+      <div class="glass-records-grid">
+        {% for card in cards %}
+          {{ card|safe }}
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endfor %}
+  <footer class="glass-records-footer">JiETNG · GLASS</footer>
+</section>
