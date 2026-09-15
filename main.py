@@ -550,7 +550,7 @@ def linebot_reply():
 @app.route("/static/admin-icon.png")
 def admin_pwa_icon():
     """Serve the cached HTML-rendered PWA icon."""
-    from modules.static_image_generator import admin_icon_png
+    from modules.image_manager import admin_icon_png
     return send_file(BytesIO(admin_icon_png(LOGO_FILE)), mimetype='image/png')
 
 
@@ -2754,7 +2754,7 @@ async def generate_level_rank_progress(user_id, id_use, level, rank=None, ver="j
 
 @user_image
 def generate_profile(user_info, scale=1, user_id=None):
-    from modules.profile_generator import generate_profile_image
+    from modules.image_manager import generate_profile_image
     # icon_url 为默认值时，尝试使用 LINE 头像
     default_icon = [
         "https://maimaidx.jp/maimai-mobile/img/Icon/",

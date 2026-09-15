@@ -18,8 +18,7 @@ python -m playwright install --with-deps chromium
 
 - `modules/html_renderer.py`：每进程一个专用工作线程，最多接纳 8 个渲染任务；复用 Chromium 页面与字体；进程退出关闭浏览器，fork 后重新初始化。模板转义外部文本，素材嵌入 data URI，截图页不访问网络。
 - `modules/html_cards.py`：复用封面和成绩卡片 HTML；成绩列表、版本列表与单曲成绩整页渲染。素材下载继续使用现有缓存。外部传入的进度封面仍保持 Pillow 图片接口。
-- `modules/profile_generator.py`：保持现有头像和资料素材下载逻辑。LINE 头像选择仍在 `main.py`。固定字体行高匹配原资料卡的文字基线。
-- `modules/image_manager.py`：公共背景、模糊、拼接与页脚。`compose_images` 不关闭输入；`compose_generated_images` 在成功或失败后释放输入。
+- `modules/image_manager.py`：集中提供资料卡、缓存图标、公共背景、模糊、拼接与页脚。保持原素材下载逻辑，LINE 头像选择仍在 `main.py`。`compose_images` 不关闭输入；`compose_generated_images` 在成功或失败后释放输入。
 
 返回值仍为 Pillow 图像，上传、编码、压缩和 OCR 裁切/增强接口保持兼容。OCR 调试图和菜单点击区域诊断工具继续使用图像处理代码。
 

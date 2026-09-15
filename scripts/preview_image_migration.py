@@ -22,7 +22,12 @@ revision = None
 if args.ref:
     revision = subprocess.check_output(['git', 'rev-parse', '--verify', args.ref + '^{commit}'], text=True).strip()
     import modules
-    for name in ('image_manager', 'record_generator', 'song_generator'):
+    archived_files = set(subprocess.check_output(
+        ['git', 'ls-tree', '-r', '--name-only', revision, 'modules'], text=True).splitlines())
+    for name in ('user_image_skin', 'profile_generator', 'static_image_generator',
+                 'image_manager', 'record_generator', 'song_generator'):
+        if f'modules/{name}.py' not in archived_files:
+            continue
         source = subprocess.check_output(['git', 'show', f'{revision}:modules/{name}.py'], text=True)
         module = types.ModuleType('modules.' + name)
         module.__file__ = str(Path('modules') / (name + '.py'))
@@ -72,6 +77,7 @@ with patch('modules.image_cache.download_and_cache_icon', side_effect=cached), p
 # Isolate profile rendering from main.py application startup.
 source = subprocess.check_output(['git','show',f'{revision}:main.py'], text=True) if revision else Path('main.py').read_text()
 fn=next(n for n in ast.parse(source).body if isinstance(n,ast.FunctionDef) and n.name=='generate_profile')
+fn.decorator_list = []
 profile_files = {'fixture:nameplate': Path('data/images/keep_nameplate.png'),
                  'fixture:class': args.profile_assets / 'class.png',
                  'fixture:course': args.profile_assets / 'course.png',
@@ -93,7 +99,7 @@ ns.update({key:getattr(m,key) for key in ['font_profile','font_trophy','round_co
 from PIL import ImageDraw
 ns['ImageDraw']=ImageDraw
 exec(compile(ast.Module(body=[fn],type_ignores=[]),'profile','exec'),ns)
-with patch('modules.profile_generator.requests.get', side_effect=Requests().get):
+with patch('requests.get', side_effect=Requests().get):
     save('profile',ns['generate_profile'](dict(name='JiETNG サンプル',rating='15678',trophy_content='舞い踊る挑戦者',icon_url='fixture',nameplate_url='fixture:nameplate', class_rank_url='fixture:class', cource_rank_url='fixture:course', trophy_url='fixture:trophy',rating_block_path='assets/pics/rating/gold_2.png')))
 
 if revision:
@@ -114,6 +120,6 @@ if revision:
     with Image.open(ns['admin_pwa_icon']()) as im:
         save('admin_icon', im.copy())
 else:
-    from modules.static_image_generator import admin_icon_png
+    from modules.image_manager import admin_icon_png
     with Image.open(BytesIO(admin_icon_png('assets/pics/logo.png'))) as im:
         save('admin_icon', im.copy())
