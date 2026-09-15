@@ -86,3 +86,31 @@ def test_background_disabled_skin_does_not_read_background_files():
                 pass
             scan.assert_not_called()
             assert render.call_args.kwargs['background']==''
+
+
+def test_skin_translations_on_initial_load_without_interaction(tmp_path):
+    import pytest
+    if os.getenv('JIETNG_RENDER_TESTS') != '1':
+        pytest.skip('requires installed Chromium')
+    from playwright.sync_api import sync_playwright
+    from modules.i18n import language_catalog
+
+    app, user = settings_app(tmp_path)
+    client = app.test_client()
+    translations = language_catalog('web.settings')
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        for language in ['en', 'ja', 'zh', 'zh-tw']:
+            page = browser.new_page()
+            page.route('**/*', lambda route: route.abort())
+            user['language'] = language
+            html = client.get('/linebot/settings?token=test').get_data(as_text=True)
+            page.set_content(html, wait_until='domcontentloaded')
+            expected = translations[language]
+            assert page.locator('#skin-section-title').inner_text() == expected['skinSection']
+            assert page.locator('#label-image-skin').inner_text() == expected['labelSkin']
+            assert page.locator('#skin-background-note').inner_text() == expected['skinBackgroundHint']
+            assert page.locator('#image_skin optgroup').first.get_attribute('label') == expected['skinUsesBackground']
+            assert page.locator('#submit-btn').is_hidden()
+            page.close()
+        browser.close()

@@ -838,10 +838,10 @@
       updateSaveButtonVisibility();
     }
 
-    function updateSkinSettings() {
+    function updateSkinSettings(lang = document.getElementById('language').value || defaultLanguage) {
       const selected = document.getElementById('image_skin').selectedOptions[0];
       const supportsBackground = selected?.dataset.usesBackground === 'true';
-      const t = translationFor(translations, document.getElementById('language').value || defaultLanguage);
+      const t = translationFor(translations, lang);
       document.getElementById('skin-section-title').textContent = t.skinSection;
       document.getElementById('label-image-skin').textContent = t.labelSkin;
       document.querySelectorAll('#image_skin optgroup').forEach(group => {
@@ -883,7 +883,7 @@
       document.getElementById('language-platform-hint').textContent = t.languagePlatformHint;
       document.getElementById('label-timezone').textContent = t.labelTimezone;
       document.getElementById('label-bg-enabled').textContent = t.labelBgEnabled;
-      updateSkinSettings();
+      updateSkinSettings(lang);
       document.getElementById('privacy-panel-title').textContent = t.privacyPanelTitle;
       document.getElementById('ranking-panel-title').textContent = t.rankingPanelTitle;
       document.getElementById('label-mention-score-query').textContent = t.labelMentionScoreQuery;
@@ -1295,10 +1295,9 @@
 
     window.addEventListener('DOMContentLoaded', function() {
       const userLanguage = {{ (user_language or default_language) | tojson }};
-      updateLanguage(userLanguage);
-
       const languageSelect = document.getElementById('language');
       languageSelect.value = userLanguage;
+      updateLanguage(userLanguage);
       languageSelect.addEventListener('change', function() {
         updateLanguage(this.value);
         updateSaveButtonVisibility();
