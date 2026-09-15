@@ -1017,101 +1017,103 @@ def _select_validation_candidate(candidates, title_match_type, achievement):
     return best
 
 
-def validate_recognized_judgement(
-    result,
-    ver="jp",
-    allow_ocr_alignment=True,
-    preserve_input=False,
-):
-    parsed = result.get("parsed") or {}
-    title = str(parsed.get("title") or "").strip()
-    judgement = parsed.get("sub_judgement") or {}
-    source_layout = str(
-        (result.get("crop_metadata") or {}).get("layout") or ""
-    ).lower()
-    if not judgement:
-        return result
-
-    songs, _ = read_dxdata(ver)
-    if title:
-        matching_songs, title_match_type = match_recognized_song_title(
-            title,
-            songs,
-            max_results=120,
-        )
-    else:
-        matching_songs = [
-            song for song in songs
-            if not str(song.get("title") or "").strip()
-        ]
-        title_match_type = "blank"
-    if not matching_songs:
-        return result
-    title_candidate_ranks = {
-        song_identity_key(song): index
-        for index, song in enumerate(matching_songs)
-    }
-
+def _repair_overfull_normal_row(row_name, source_row, source_rows, note_counts, achievement):
+    """Recover a JPEG-damaged normal row using chart totals and Calc."""
     row_names = JUDGEMENT_ROW_NAMES
     value_names = JUDGEMENT_VALUE_NAMES
     all_value_names = ALL_JUDGEMENT_VALUE_NAMES
+    if row_name == "break":
+        return None
+    try:
+        expected = max(0, int(note_counts.get(row_name, 0) or 0))
+        original = {
+            name: max(0, int(source_row.get(name, 0) or 0))
+            for name in all_value_names
+        }
+    except (TypeError, ValueError):
+        return None
+    if expected <= 0 or sum(original[name] for name in value_names) <= expected:
+        return None
 
-    def repair_overfull_normal_row(row_name, source_row, source_rows, note_counts):
-        """Recover a JPEG-damaged normal row using chart totals and Calc."""
-        if row_name == "break":
-            return None
+    # JPEG artifacts sometimes prepend grid fragments to a value (16 ->
+    # 1016). Keep plausible numeric suffixes as repair starting points.
+    bases = [original]
+    for field_name in value_names:
+        current = original[field_name]
+        digits = str(current)
+        if current <= expected or len(digits) < 4:
+            continue
+        for length in range(1, min(3, len(digits) - 1) + 1):
+            suffix = int(digits[-length:])
+            if suffix <= expected and suffix != current:
+                candidate = dict(original)
+                candidate[field_name] = suffix
+                bases.append(candidate)
+
+    row_candidates = {}
+    for base in bases:
+        known = sum(base[name] for name in value_names)
+        if known <= expected:
+            candidate = dict(base)
+            candidate["miss"] = expected - known
+            row_candidates[tuple(candidate[name] for name in all_value_names)] = candidate
+        if known < expected:
+            continue
+        for field_name in value_names:
+            other_total = sum(
+                base[name] for name in value_names if name != field_name
+            )
+            replacement = expected - other_total
+            if 0 <= replacement < base[field_name]:
+                candidate = dict(base)
+                candidate[field_name] = replacement
+                candidate["miss"] = 0
+                row_candidates[tuple(candidate[name] for name in all_value_names)] = candidate
+
+    if not row_candidates:
+        return None
+
+    reference_counts = {name: 0 for name in all_value_names}
+    for other_name, other_row in source_rows.items():
+        if other_name == row_name or not isinstance(other_row, dict):
+            continue
         try:
-            expected = max(0, int(note_counts.get(row_name, 0) or 0))
-            original = {
-                name: max(0, int(source_row.get(name, 0) or 0))
+            other_expected = max(0, int(note_counts.get(other_name, 0) or 0))
+            normalized = {
+                name: max(0, int(other_row.get(name, 0) or 0))
                 for name in all_value_names
             }
         except (TypeError, ValueError):
-            return None
-        if expected <= 0 or sum(original[name] for name in value_names) <= expected:
-            return None
+            continue
+        other_known = sum(normalized[name] for name in value_names)
+        if other_expected <= 0 or other_known > other_expected:
+            continue
+        normalized["miss"] = other_expected - other_known
+        for name in all_value_names:
+            reference_counts[name] += normalized[name]
 
-        # JPEG artifacts sometimes prepend grid fragments to a value (16 ->
-        # 1016). Keep plausible numeric suffixes as repair starting points.
-        bases = [original]
-        for field_name in value_names:
-            current = original[field_name]
-            digits = str(current)
-            if current <= expected or len(digits) < 4:
-                continue
-            for length in range(1, min(3, len(digits) - 1) + 1):
-                suffix = int(digits[-length:])
-                if suffix <= expected and suffix != current:
-                    candidate = dict(original)
-                    candidate[field_name] = suffix
-                    bases.append(candidate)
+    reference_total = sum(reference_counts.values())
+    probabilities = {
+        name: (reference_counts[name] + 1.0)
+        / (reference_total + len(all_value_names))
+        for name in all_value_names
+    }
 
-        row_candidates = {}
-        for base in bases:
-            known = sum(base[name] for name in value_names)
-            if known <= expected:
-                candidate = dict(base)
-                candidate["miss"] = expected - known
-                row_candidates[tuple(candidate[name] for name in all_value_names)] = candidate
-            if known < expected:
-                continue
-            for field_name in value_names:
-                other_total = sum(
-                    base[name] for name in value_names if name != field_name
-                )
-                replacement = expected - other_total
-                if 0 <= replacement < base[field_name]:
-                    candidate = dict(base)
-                    candidate[field_name] = replacement
-                    candidate["miss"] = 0
-                    row_candidates[tuple(candidate[name] for name in all_value_names)] = candidate
+    def distribution_penalty(candidate):
+        counts = [candidate[name] for name in all_value_names]
+        total = sum(counts)
+        log_probability = math.lgamma(total + 1)
+        log_probability -= sum(math.lgamma(count + 1) for count in counts)
+        log_probability += sum(
+            count * math.log(probabilities[name])
+            for name, count in zip(all_value_names, counts)
+        )
+        return -log_probability
 
-        if not row_candidates:
-            return None
-
-        reference_counts = {name: 0 for name in all_value_names}
+    def calc_distance(candidate):
+        tentative = {}
         for other_name, other_row in source_rows.items():
-            if other_name == row_name or not isinstance(other_row, dict):
+            if not isinstance(other_row, dict):
                 continue
             try:
                 other_expected = max(0, int(note_counts.get(other_name, 0) or 0))
@@ -1120,109 +1122,263 @@ def validate_recognized_judgement(
                     for name in all_value_names
                 }
             except (TypeError, ValueError):
-                continue
-            other_known = sum(normalized[name] for name in value_names)
-            if other_expected <= 0 or other_known > other_expected:
-                continue
-            normalized["miss"] = other_expected - other_known
-            for name in all_value_names:
-                reference_counts[name] += normalized[name]
-
-        reference_total = sum(reference_counts.values())
-        probabilities = {
-            name: (reference_counts[name] + 1.0)
-            / (reference_total + len(all_value_names))
-            for name in all_value_names
-        }
-
-        def distribution_penalty(candidate):
-            counts = [candidate[name] for name in all_value_names]
-            total = sum(counts)
-            log_probability = math.lgamma(total + 1)
-            log_probability -= sum(math.lgamma(count + 1) for count in counts)
-            log_probability += sum(
-                count * math.log(probabilities[name])
-                for name, count in zip(all_value_names, counts)
-            )
-            return -log_probability
-
-        def calc_distance(candidate):
-            tentative = {}
-            for other_name, other_row in source_rows.items():
-                if not isinstance(other_row, dict):
-                    continue
-                try:
-                    other_expected = max(0, int(note_counts.get(other_name, 0) or 0))
-                    normalized = {
-                        name: max(0, int(other_row.get(name, 0) or 0))
+                return float("inf")
+            if other_name == row_name:
+                normalized = dict(candidate)
+            else:
+                missing_fields = [
+                    name for name in all_value_names if name not in other_row
+                ]
+                if len(missing_fields) == 1:
+                    observed = sum(
+                        normalized[name]
                         for name in all_value_names
-                    }
-                except (TypeError, ValueError):
+                        if name != missing_fields[0]
+                    )
+                    inferred = other_expected - observed
+                    if inferred >= 0:
+                        normalized[missing_fields[0]] = inferred
+                other_known = sum(normalized[name] for name in value_names)
+                if other_known > other_expected:
                     return float("inf")
-                if other_name == row_name:
-                    normalized = dict(candidate)
-                else:
-                    missing_fields = [
-                        name for name in all_value_names if name not in other_row
-                    ]
-                    if len(missing_fields) == 1:
-                        observed = sum(
-                            normalized[name]
-                            for name in all_value_names
-                            if name != missing_fields[0]
-                        )
-                        inferred = other_expected - observed
-                        if inferred >= 0:
-                            normalized[missing_fields[0]] = inferred
-                    other_known = sum(normalized[name] for name in value_names)
-                    if other_known > other_expected:
-                        return float("inf")
-                    normalized["miss"] = other_expected - other_known
-                tentative[other_name] = normalized
-            score_range = calc_judgement_achievement_range(
-                {
-                    name: max(0, int(note_counts.get(name, 0) or 0))
-                    for name in row_names
-                },
-                tentative,
-            )
-            distance = _calc_achievement_distance(achievement, score_range)
-            return float("inf") if distance is None else distance
-
-        ranked = sorted(
-            row_candidates.values(),
-            key=lambda candidate: (
-                calc_distance(candidate),
-                sum(candidate[name] != original[name] for name in all_value_names),
-                sum(
-                    {
-                        "critical_perfect": 4,
-                        "perfect": 3,
-                        "great": 2,
-                        "good": 1,
-                        "miss": 1,
-                    }[name]
-                    for name in all_value_names
-                    if candidate[name] != original[name]
-                ),
-                sum(abs(candidate[name] - original[name]) for name in all_value_names),
-                distribution_penalty(candidate),
-            ),
-        )
-        repaired = ranked[0]
-        corrections = [
+                normalized["miss"] = other_expected - other_known
+            tentative[other_name] = normalized
+        score_range = calc_judgement_achievement_range(
             {
-                "row": row_name,
-                "field": name,
-                "ocr": original[name],
-                "validated": repaired[name],
-                "overfull_repair": True,
-            }
-            for name in value_names
-            if repaired[name] != original[name]
-        ]
-        return repaired, corrections
+                name: max(0, int(note_counts.get(name, 0) or 0))
+                for name in row_names
+            },
+            tentative,
+        )
+        distance = _calc_achievement_distance(achievement, score_range)
+        return float("inf") if distance is None else distance
 
+    ranked = sorted(
+        row_candidates.values(),
+        key=lambda candidate: (
+            calc_distance(candidate),
+            sum(candidate[name] != original[name] for name in all_value_names),
+            sum(
+                {
+                    "critical_perfect": 4,
+                    "perfect": 3,
+                    "great": 2,
+                    "good": 1,
+                    "miss": 1,
+                }[name]
+                for name in all_value_names
+                if candidate[name] != original[name]
+            ),
+            sum(abs(candidate[name] - original[name]) for name in all_value_names),
+            distribution_penalty(candidate),
+        ),
+    )
+    repaired = ranked[0]
+    corrections = [
+        {
+            "row": row_name,
+            "field": name,
+            "ocr": original[name],
+            "validated": repaired[name],
+            "overfull_repair": True,
+        }
+        for name in value_names
+        if repaired[name] != original[name]
+    ]
+    return repaired, corrections
+
+def _evaluate_judgement_alignment(
+    row_aligned, note_counts, achievement, *, row_offset, column_offset,
+    title_match_type, allow_ocr_alignment, preserve_input,
+):
+    """Validate one alignment; invalid candidates return None, input rows stay intact."""
+    row_names = JUDGEMENT_ROW_NAMES
+    value_names = JUDGEMENT_VALUE_NAMES
+    all_value_names = ALL_JUDGEMENT_VALUE_NAMES
+    aligned = {}
+    dropped_cells = 0
+    ignored_impossible_rows = []
+    inferred_single_cells = []
+    valid = True
+    for row_name, row in row_aligned.items():
+        shifted_row = {name: 0 for name in all_value_names}
+        try:
+            for source_index, source_name in enumerate(all_value_names):
+                value = max(0, int(row.get(source_name, 0)))
+                target_index = source_index + column_offset
+                if 0 <= target_index < len(all_value_names):
+                    shifted_row[all_value_names[target_index]] = value
+                elif value:
+                    dropped_cells += value
+        except (TypeError, ValueError):
+            valid = False
+            break
+        missing_fields = [
+            name for name in all_value_names
+            if name not in row
+        ]
+        if (
+            title_match_type == "exact"
+            and row_offset == 0
+            and column_offset == 0
+            and len(missing_fields) == 1
+        ):
+            expected = max(0, int(note_counts.get(row_name, 0) or 0))
+            observed = sum(
+                max(0, int(row.get(name, 0) or 0))
+                for name in all_value_names
+                if name in row
+            )
+            inferred = expected - observed
+            if inferred >= 0:
+                field_name = missing_fields[0]
+                shifted_row[field_name] = inferred
+                inferred_single_cells.append({
+                    "row": row_name,
+                    "field": field_name,
+                    "validated": inferred,
+                })
+        aligned[row_name] = shifted_row
+    if not valid:
+        return None
+
+    unmatched_notes = {}
+    compared_rows = 0
+    matching_rows = 0
+    total_delta = 0
+    for row_name, row in list(aligned.items()):
+        expected = note_counts.get(row_name)
+        if expected is None:
+            expected = 0
+        try:
+            expected = int(expected)
+            known = sum(max(0, int(row.get(name, 0))) for name in value_names)
+            observed_miss = max(0, int(row.get("miss", 0)))
+        except (TypeError, ValueError):
+            valid = False
+            break
+        if (
+            expected <= 0
+            and (known > 0 or observed_miss > 0)
+            and not preserve_input
+            and title_match_type == "exact"
+            and row_offset == 0
+            and column_offset == 0
+        ):
+            for field_name in all_value_names:
+                previous = max(0, int(row.get(field_name, 0) or 0))
+                row[field_name] = 0
+                if previous:
+                    inferred_single_cells.append({
+                        "row": row_name,
+                        "field": field_name,
+                        "ocr": previous,
+                        "validated": 0,
+                        "zero_note_row_repair": True,
+                    })
+            known = 0
+            observed_miss = 0
+        if known > expected:
+            if (
+                not preserve_input
+                and title_match_type in OVERFULL_REPAIR_TITLE_MATCH_TYPES
+                and row_offset == 0
+                and column_offset == 0
+            ):
+                repair = _repair_overfull_normal_row(
+                    row_name,
+                    row,
+                    row_aligned,
+                    note_counts,
+                    achievement,
+                )
+                if repair:
+                    repaired_row, row_corrections = repair
+                    row.update(repaired_row)
+                    known = sum(
+                        max(0, int(row.get(name, 0)))
+                        for name in value_names
+                    )
+                    inferred_single_cells.extend(row_corrections)
+            if known > expected:
+                if (
+                    allow_ocr_alignment
+                    and not preserve_input
+                    and title_match_type == "exact"
+                    and row_offset == 0
+                    and column_offset == 0
+                    and row_name == "break"
+                    and len(aligned) >= 5
+                ):
+                    ignored_impossible_rows.append(row_name)
+                    del aligned[row_name]
+                    continue
+                valid = False
+                break
+        row_unmatched_notes = expected - known - observed_miss
+        unmatched_notes[row_name] = row_unmatched_notes
+        compared_rows += 1
+        total_delta += abs(row_unmatched_notes)
+        if row_unmatched_notes == 0:
+            matching_rows += 1
+    if not valid or compared_rows < 3:
+        return None
+    calculated_rows = {
+        row_name: dict(row)
+        for row_name, row in aligned.items()
+    }
+    notes = {
+        row_name: int(note_counts.get(row_name, 0) or 0)
+        for row_name in row_names
+    }
+    achievement_range = calc_judgement_achievement_range(
+        notes,
+        calculated_rows,
+    )
+    achievement_distance = _calc_achievement_distance(
+        achievement,
+        achievement_range,
+    )
+    return {
+        "aligned": aligned,
+        "row_offset": row_offset,
+        "column_offset": column_offset,
+        "dropped_cells": dropped_cells,
+        "ignored_impossible_rows": ignored_impossible_rows,
+        "inferred_single_cells": inferred_single_cells,
+        "overfull_repair_count": sum(
+            bool(item.get("overfull_repair"))
+            for item in inferred_single_cells
+        ),
+        "overfull_repair_delta": sum(
+            abs(
+                int(item.get("validated", 0) or 0)
+                - int(item.get("ocr", 0) or 0)
+            )
+            for item in inferred_single_cells
+            if item.get("overfull_repair")
+        ),
+        "unmatched_notes": unmatched_notes,
+        "compared_rows": compared_rows,
+        "matching_rows": matching_rows,
+        "delta": total_delta,
+        "notes": notes,
+        "achievement_range": achievement_range,
+        "achievement_distance": achievement_distance,
+    }
+
+
+def _judgement_validation_candidates(
+    judgement, matching_songs, title_match_type, achievement, source_layout,
+    *, allow_ocr_alignment, preserve_input,
+):
+    """Score possible chart, row and column alignments without changing OCR input."""
+    row_names = JUDGEMENT_ROW_NAMES
+    all_value_names = ALL_JUDGEMENT_VALUE_NAMES
+    title_candidate_ranks = {
+        song_identity_key(song): index
+        for index, song in enumerate(matching_songs)
+    }
     source_row_count = sum(
         1 for row in judgement.values()
         if isinstance(row, dict) and (
@@ -1230,7 +1386,6 @@ def validate_recognized_judgement(
             or any(int(value or 0) != 0 for value in row.values())
         )
     )
-    achievement = parsed.get("achievement")
     candidates = []
     for song in matching_songs:
         for sheet in song.get("sheets", []):
@@ -1276,205 +1431,41 @@ def validate_recognized_judgement(
                         row_aligned[row_names[target_index]] = dict(row)
 
                 for column_offset in column_offsets:
-                    aligned = {}
-                    dropped_cells = 0
-                    ignored_impossible_rows = []
-                    inferred_single_cells = []
-                    valid = True
-                    for row_name, row in row_aligned.items():
-                        shifted_row = {name: 0 for name in all_value_names}
-                        try:
-                            for source_index, source_name in enumerate(all_value_names):
-                                value = max(0, int(row.get(source_name, 0)))
-                                target_index = source_index + column_offset
-                                if 0 <= target_index < len(all_value_names):
-                                    shifted_row[all_value_names[target_index]] = value
-                                elif value:
-                                    dropped_cells += value
-                        except (TypeError, ValueError):
-                            valid = False
-                            break
-                        missing_fields = [
-                            name for name in all_value_names
-                            if name not in row
-                        ]
-                        if (
-                            title_match_type == "exact"
-                            and row_offset == 0
-                            and column_offset == 0
-                            and len(missing_fields) == 1
-                        ):
-                            expected = max(0, int(note_counts.get(row_name, 0) or 0))
-                            observed = sum(
-                                max(0, int(row.get(name, 0) or 0))
-                                for name in all_value_names
-                                if name in row
-                            )
-                            inferred = expected - observed
-                            if inferred >= 0:
-                                field_name = missing_fields[0]
-                                shifted_row[field_name] = inferred
-                                inferred_single_cells.append({
-                                    "row": row_name,
-                                    "field": field_name,
-                                    "validated": inferred,
-                                })
-                        aligned[row_name] = shifted_row
-                    if not valid:
+                    candidate = _evaluate_judgement_alignment(
+                        row_aligned, note_counts, achievement,
+                        row_offset=row_offset, column_offset=column_offset,
+                        title_match_type=title_match_type,
+                        allow_ocr_alignment=allow_ocr_alignment,
+                        preserve_input=preserve_input,
+                    )
+                    if candidate is None:
                         continue
+                    dropped_rows = source_row_count - len(candidate["aligned"])
+                    candidates.append({
+                        **candidate,
+                        "song": song,
+                        "sheet": sheet,
+                        "dropped_rows": dropped_rows,
+                        "unexpected_dropped_rows": max(
+                            0, dropped_rows - len(candidate["ignored_impossible_rows"]),
+                        ),
+                        "raw_overfull_rows": raw_overfull_rows,
+                        "raw_matching_rows": raw_matching_rows,
+                        "dxnet_fixed_note_counts": dxnet_fixed_note_counts,
+                        "title_candidate_rank": title_candidate_ranks.get(
+                            song_identity_key(song), len(title_candidate_ranks),
+                        ),
+                    })
 
-                    unmatched_notes = {}
-                    compared_rows = 0
-                    matching_rows = 0
-                    total_delta = 0
-                    for row_name, row in list(aligned.items()):
-                        expected = note_counts.get(row_name)
-                        if expected is None:
-                            expected = 0
-                        try:
-                            expected = int(expected)
-                            known = sum(max(0, int(row.get(name, 0))) for name in value_names)
-                            observed_miss = max(0, int(row.get("miss", 0)))
-                        except (TypeError, ValueError):
-                            valid = False
-                            break
-                        if (
-                            expected <= 0
-                            and (known > 0 or observed_miss > 0)
-                            and not preserve_input
-                            and title_match_type == "exact"
-                            and row_offset == 0
-                            and column_offset == 0
-                        ):
-                            for field_name in all_value_names:
-                                previous = max(0, int(row.get(field_name, 0) or 0))
-                                row[field_name] = 0
-                                if previous:
-                                    inferred_single_cells.append({
-                                        "row": row_name,
-                                        "field": field_name,
-                                        "ocr": previous,
-                                        "validated": 0,
-                                        "zero_note_row_repair": True,
-                                    })
-                            known = 0
-                            observed_miss = 0
-                        if known > expected:
-                            repaired_field = None
-                            if (
-                                not preserve_input
-                                and title_match_type in OVERFULL_REPAIR_TITLE_MATCH_TYPES
-                                and row_offset == 0
-                                and column_offset == 0
-                            ):
-                                repair = repair_overfull_normal_row(
-                                    row_name,
-                                    row,
-                                    row_aligned,
-                                    note_counts,
-                                )
-                                if repair:
-                                    repaired_row, row_corrections = repair
-                                    row.update(repaired_row)
-                                    known = sum(
-                                        max(0, int(row.get(name, 0)))
-                                        for name in value_names
-                                    )
-                                    repaired_field = row_name
-                                    inferred_single_cells.extend(row_corrections)
-                            if repaired_field is not None and known <= expected:
-                                row_unmatched_notes = expected - known - observed_miss
-                                unmatched_notes[row_name] = row_unmatched_notes
-                                compared_rows += 1
-                                total_delta += abs(row_unmatched_notes)
-                                if row_unmatched_notes == 0:
-                                    matching_rows += 1
-                                continue
-                            if (
-                                allow_ocr_alignment
-                                and not preserve_input
-                                and title_match_type == "exact"
-                                and row_offset == 0
-                                and column_offset == 0
-                                and row_name == "break"
-                                and len(aligned) >= 5
-                            ):
-                                ignored_impossible_rows.append(row_name)
-                                del aligned[row_name]
-                                continue
-                            valid = False
-                            break
-                        row_unmatched_notes = expected - known - observed_miss
-                        unmatched_notes[row_name] = row_unmatched_notes
-                        compared_rows += 1
-                        total_delta += abs(row_unmatched_notes)
-                        if row_unmatched_notes == 0:
-                            matching_rows += 1
-                    if valid and compared_rows >= 3:
-                        calculated_rows = {
-                            row_name: dict(row)
-                            for row_name, row in aligned.items()
-                        }
-                        notes = {
-                            row_name: int(note_counts.get(row_name, 0) or 0)
-                            for row_name in row_names
-                        }
-                        achievement_range = calc_judgement_achievement_range(
-                            notes,
-                            calculated_rows,
-                        )
-                        achievement_distance = _calc_achievement_distance(
-                            achievement,
-                            achievement_range,
-                        )
-                        candidates.append({
-                            "song": song,
-                            "sheet": sheet,
-                            "aligned": aligned,
-                            "row_offset": row_offset,
-                            "column_offset": column_offset,
-                            "dropped_rows": source_row_count - len(aligned),
-                            "unexpected_dropped_rows": max(
-                                0,
-                                source_row_count
-                                - len(aligned)
-                                - len(ignored_impossible_rows),
-                            ),
-                            "dropped_cells": dropped_cells,
-                            "ignored_impossible_rows": ignored_impossible_rows,
-                            "inferred_single_cells": inferred_single_cells,
-                            "overfull_repair_count": sum(
-                                bool(item.get("overfull_repair"))
-                                for item in inferred_single_cells
-                            ),
-                            "overfull_repair_delta": sum(
-                                abs(
-                                    int(item.get("validated", 0) or 0)
-                                    - int(item.get("ocr", 0) or 0)
-                                )
-                                for item in inferred_single_cells
-                                if item.get("overfull_repair")
-                            ),
-                            "unmatched_notes": unmatched_notes,
-                            "compared_rows": compared_rows,
-                            "matching_rows": matching_rows,
-                            "delta": total_delta,
-                            "notes": notes,
-                            "achievement_range": achievement_range,
-                            "achievement_distance": achievement_distance,
-                            "raw_overfull_rows": raw_overfull_rows,
-                            "raw_matching_rows": raw_matching_rows,
-                            "dxnet_fixed_note_counts": dxnet_fixed_note_counts,
-                            "title_candidate_rank": title_candidate_ranks.get(
-                                song_identity_key(song),
-                                len(title_candidate_ranks),
-                            ),
-                        })
+    return candidates
 
-    best = _select_validation_candidate(candidates, title_match_type, achievement)
-    if best is None:
-        return result
 
+def _apply_judgement_validation(result, best, title_match_type, *, preserve_input):
+    """Apply the selected chart and publish corrections, uncertainty and Calc details."""
+    parsed = result.get("parsed") or {}
+    title = str(parsed.get("title") or "").strip()
+    achievement = parsed.get("achievement")
+    all_value_names = ALL_JUDGEMENT_VALUE_NAMES
     judgement = best["aligned"]
     for row_name, expected_notes in best["notes"].items():
         if int(expected_notes or 0) == 0 and not isinstance(judgement.get(row_name), dict):
@@ -1605,6 +1596,44 @@ def validate_recognized_judgement(
     return result
 
 
+def validate_recognized_judgement(
+    result,
+    ver="jp",
+    allow_ocr_alignment=True,
+    preserve_input=False,
+):
+    parsed = result.get("parsed") or {}
+    title = str(parsed.get("title") or "").strip()
+    judgement = parsed.get("sub_judgement") or {}
+    source_layout = str(
+        (result.get("crop_metadata") or {}).get("layout") or ""
+    ).lower()
+    if not judgement:
+        return result
+
+    songs, _ = read_dxdata(ver)
+    if title:
+        matching_songs, title_match_type = match_recognized_song_title(
+            title,
+            songs,
+            max_results=120,
+        )
+    else:
+        matching_songs = [
+            song for song in songs
+            if not str(song.get("title") or "").strip()
+        ]
+        title_match_type = "blank"
+    if not matching_songs:
+        return result
+    candidates = _judgement_validation_candidates(
+        judgement, matching_songs, title_match_type, parsed.get("achievement"), source_layout,
+        allow_ocr_alignment=allow_ocr_alignment, preserve_input=preserve_input,
+    )
+    best = _select_validation_candidate(candidates, title_match_type, parsed.get("achievement"))
+    if best is None:
+        return result
+    return _apply_judgement_validation(result, best, title_match_type, preserve_input=preserve_input)
 
 
 def score_recognition_needs_manual_fix(result) -> bool:
