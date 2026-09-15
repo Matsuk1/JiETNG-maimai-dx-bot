@@ -23,7 +23,7 @@ class ScoreApiServices:
 
 def _default_services():
     from modules.api.api_auth import require_dev_token
-    from modules.rate_limiter import check_rate_limit
+    from modules.task_runtime import check_rate_limit
     from modules.record_generator import generate_score_recognition_picture
     from modules.score_result_recognizer import recognize_score_image_bytes, validate_recognized_judgement
 

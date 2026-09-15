@@ -1,11 +1,20 @@
-"""Bounded task waiting with concurrency ownership and admin tracking."""
+"""Request throttling, bounded task execution, and admin tracking."""
 
+import logging
 import threading
 import time
 import traceback
 from dataclasses import dataclass
 from datetime import datetime
 
+
+logger = logging.getLogger(__name__)
+
+# Per-user, per-task timestamps; reads and cleanup share this lock.
+user_request_tracking = {}
+user_request_lock = threading.Lock()
+REQUEST_LIMIT_WINDOW = 20
+MAX_SAME_REQUESTS = 4
 
 @dataclass(frozen=True, slots=True)
 class TaskContext:
@@ -171,3 +180,63 @@ def queue_worker(task_queue, run_item):
             run_item(item)
         finally:
             task_queue.task_done()
+
+
+def check_rate_limit(user_id: str, task_type: str) -> bool:
+    """
+    检查用户请求是否超过频率限制
+
+    Args:
+        user_id: 用户ID
+        task_type: 任务类型（如 'maimai_update', 'b50' 等）
+
+    Returns:
+        bool: True 表示超过限制（应该拒绝），False 表示可以继续
+    """
+    current_time = time.time()
+
+    with user_request_lock:
+        # 初始化用户追踪
+        if user_id not in user_request_tracking:
+            user_request_tracking[user_id] = {}
+
+        if task_type not in user_request_tracking[user_id]:
+            user_request_tracking[user_id][task_type] = []
+
+        # 清理过期的请求记录
+        user_request_tracking[user_id][task_type] = [
+            ts for ts in user_request_tracking[user_id][task_type]
+            if current_time - ts < REQUEST_LIMIT_WINDOW
+        ]
+
+        # 检查是否超过限制
+        if len(user_request_tracking[user_id][task_type]) >= MAX_SAME_REQUESTS:
+            logger.warning(f"[RateLimit] ⚠ Limit exceeded: user_id={user_id}, task_type={task_type}")
+            return True  # 超过限制
+
+        # 记录本次请求
+        user_request_tracking[user_id][task_type].append(current_time)
+        return False  # 未超过限制
+
+
+def cleanup_rate_limiter_tracking():
+    """Discard expired request timestamps and empty user entries."""
+    now = time.time()
+    tracking = user_request_tracking
+    window = REQUEST_LIMIT_WINDOW
+    cleaned = 0
+    with user_request_lock:
+        for user_id, task_types in list(tracking.items()):
+            for task_type, timestamps in list(task_types.items()):
+                valid = [timestamp for timestamp in timestamps if now - timestamp < window]
+                cleaned += len(timestamps) - len(valid)
+                if valid:
+                    task_types[task_type] = valid
+                else:
+                    task_types.pop(task_type, None)
+            if not task_types:
+                tracking.pop(user_id, None)
+                cleaned += 1
+    if cleaned:
+        logger.debug("[Memory] Cleaned rate-limit tracking: count=%s", cleaned)
+    return cleaned

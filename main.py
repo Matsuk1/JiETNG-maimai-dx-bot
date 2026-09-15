@@ -252,7 +252,6 @@ from modules.event_tracker import (
     shutdown_event_tracker,
     track_event,
 )
-from modules.rate_limiter import check_rate_limit
 from modules.line_messenger import smart_reply, smart_push, notify_admins_error, notify_on_error
 from modules.rich_menu_manager import (
     link_bound_rich_menu,
@@ -261,7 +260,7 @@ from modules.rich_menu_manager import (
     unlink_rich_menu,
 )
 from modules.song_matcher import find_matching_songs, normalize_text
-from modules.memory_manager import memory_manager, cleanup_user_caches, cleanup_rate_limiter_tracking
+from modules.memory_manager import memory_manager, cleanup_user_caches
 from modules.i18n import (
     DEFAULT_LANGUAGE,
     DEFAULT_WEB_LANGUAGE,
@@ -299,6 +298,8 @@ from modules.commands.progress_parser import (
     resolve_progress_category as _resolve_progress_category,
 )
 from modules.task_runtime import (
+    check_rate_limit,
+    cleanup_rate_limiter_tracking,
     TaskOutcome,
     discard_queued,
     execute_task,
@@ -320,7 +321,6 @@ from modules.commands.mention_parser import (
 
 # Module aliases for specific use cases
 import modules.user_manager as user_manager_module
-import modules.rate_limiter as rate_limiter_module
 
 from modules.storelist_generator import generate_store_buttons
 
@@ -4605,7 +4605,7 @@ def start_runtime():
             cleaned_nicknames = cleanup_user_caches(user_manager_module)
 
             # 清理频率限制追踪数据
-            cleaned_rate_limits = cleanup_rate_limiter_tracking(rate_limiter_module)
+            cleaned_rate_limits = cleanup_rate_limiter_tracking()
 
             # 清理空闲的 API 同步锁
             cleaned_api_sync_locks = cleanup_api_sync_locks()

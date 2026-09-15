@@ -419,7 +419,6 @@ JiETNG/
 │   ├── notification_manager.py # 系统通知管理（Web Push）
 │   ├── perm_request_generator.py  # 权限请求生成器
 │   ├── perm_request_handler.py    # 权限请求处理器
-│   ├── rate_limiter.py        # 频率限制 + 请求追踪
 │   ├── record_generator.py    # 成绩图生成
 │   ├── record_manager.py      # 数据库操作
 │   ├── score_recognition/     # 成绩图 OCR 运行时管线与模型

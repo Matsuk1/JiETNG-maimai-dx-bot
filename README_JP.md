@@ -387,7 +387,6 @@ JiETNG/
 │   ├── notification_manager.py # システム通知管理（Web Push）
 │   ├── perm_request_generator.py  # 権限リクエスト生成器
 │   ├── perm_request_handler.py    # 権限リクエストハンドラー
-│   ├── rate_limiter.py        # 頻度制限 + リクエスト追跡
 │   ├── record_generator.py    # スコアチャート生成
 │   ├── record_manager.py      # データベース操作
 │   ├── score_recognition/     # スコア OCR ランタイムパイプラインとモデル

@@ -27,7 +27,7 @@ from modules.perm_request_handler import (
     reject_perm_request,
     send_perm_request,
 )
-from modules.rate_limiter import check_rate_limit
+from modules.task_runtime import check_rate_limit
 from modules.rich_menu_manager import link_bound_rich_menu, link_unbound_rich_menu
 from modules.user_db import get_all_user_ids, get_user, get_user_field, user_exists
 from modules.user_manager import add_user, delete_user, edit_user_value

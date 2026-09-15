@@ -372,7 +372,6 @@ JiETNG/
 │   ├── notification_manager.py # System notification management (Web Push)
 │   ├── perm_request_generator.py  # Permission request generator
 │   ├── perm_request_handler.py    # Permission request handler
-│   ├── rate_limiter.py        # Rate limiting + request tracking
 │   ├── record_generator.py    # Score chart generation
 │   ├── record_manager.py      # Database operations
 │   ├── score_recognition/     # Score OCR runtime pipeline and models

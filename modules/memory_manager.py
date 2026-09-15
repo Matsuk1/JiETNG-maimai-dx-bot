@@ -121,28 +121,4 @@ def cleanup_user_caches(user_manager_module=None):
     return len(expired)
 
 
-def cleanup_rate_limiter_tracking(rate_limiter_module=None):
-    if rate_limiter_module is None or not hasattr(rate_limiter_module, "user_request_tracking"):
-        return 0
-    now = time.time()
-    tracking = rate_limiter_module.user_request_tracking
-    window = rate_limiter_module.REQUEST_LIMIT_WINDOW
-    cleaned = 0
-    with rate_limiter_module.user_request_lock:
-        for user_id, task_types in list(tracking.items()):
-            for task_type, timestamps in list(task_types.items()):
-                valid = [timestamp for timestamp in timestamps if now - timestamp < window]
-                cleaned += len(timestamps) - len(valid)
-                if valid:
-                    task_types[task_type] = valid
-                else:
-                    task_types.pop(task_type, None)
-            if not task_types:
-                tracking.pop(user_id, None)
-                cleaned += 1
-    if cleaned:
-        logger.debug("[Memory] Cleaned rate-limit tracking: count=%s", cleaned)
-    return cleaned
-
-
 memory_manager = MemoryManager(interval_seconds=120)

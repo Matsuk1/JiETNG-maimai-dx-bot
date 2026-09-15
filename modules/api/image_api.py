@@ -13,7 +13,7 @@ from modules.config_loader import TEMP_VERSION, read_dxdata
 from modules.event_tracker import track_event
 from modules.image_skins import user_image
 from modules.image_manager import compose_generated_images
-from modules.rate_limiter import check_rate_limit
+from modules.task_runtime import check_rate_limit
 from modules.record_generator import (
     generate_cover,
     generate_level_rank_progress_image,

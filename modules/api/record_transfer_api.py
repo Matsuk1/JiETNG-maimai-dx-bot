@@ -12,7 +12,7 @@ from modules.api.api_auth import (
 from modules.event_tracker import track_event
 from modules.export_manager import _build_friendly_name, build_payload, to_json_bytes, to_xml_bytes
 from modules.import_manager import ImportValidationError, import_processed_payload
-from modules.rate_limiter import check_rate_limit
+from modules.task_runtime import check_rate_limit
 
 
 logger = logging.getLogger(__name__)
