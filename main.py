@@ -203,7 +203,7 @@ from modules.message_manager import (
 )
 
 # Image processing
-from modules.image_uploader import upload_generated_image, _start_periodic_cleanup
+from modules.image_uploader import upload_generated_image, _start_periodic_cleanup, _encode_jpeg
 from modules.export_manager import (
     export_records,
     shutdown_periodic_cleanup as shutdown_export_cleanup,
@@ -1372,11 +1372,8 @@ def api_web_session_image():
     data = request.get_json(silent=True) or {}
     try:
         result, filename = _generate_session_image_from_payload(data)
-        buf = BytesIO()
-        if result.mode == "RGBA":
-            result = Image.alpha_composite(Image.new("RGBA", result.size, (255, 255, 255, 255)), result)
-        result.convert("RGB").save(buf, "JPEG", quality=88, optimize=True, progressive=True)
-        buf.seek(0)
+        with result:
+            buf = BytesIO(_encode_jpeg(result))
         response = send_file(buf, mimetype="image/jpeg", as_attachment=False, download_name=filename)
         return _maimai_session_cors(response)
     except ValueError as e:
@@ -1452,11 +1449,8 @@ def demo_page():
             return _demo_cors(jsonify({"error": "The official website is under maintenance. Please try again later."})), 503
         if not result:
             return _demo_cors(jsonify({"error": "Login failed. Please check your SEGA ID and password."})), 401
-        buf = BytesIO()
-        if result.mode == "RGBA":
-            result = Image.alpha_composite(Image.new("RGBA", result.size, (255, 255, 255, 255)), result)
-        result.convert("RGB").save(buf, "JPEG", quality=88, optimize=True, progressive=True)
-        buf.seek(0)
+        with result:
+            buf = BytesIO(_encode_jpeg(result))
         return _demo_cors(send_file(buf, mimetype="image/jpeg"))
     except ValueError as e:
         return _demo_cors(jsonify({"error": str(e)})), 400

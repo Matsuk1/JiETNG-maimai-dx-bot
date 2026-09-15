@@ -79,12 +79,16 @@ def _start_periodic_cleanup():
 
 
 def _encode_jpeg(image):
-    with BytesIO() as buffer:
-        image = image.convert("RGB") if image.mode != "RGBA" else Image.alpha_composite(
-            Image.new("RGBA", image.size, (255, 255, 255, 255)),
-            image,
-        ).convert("RGB")
-        image.save(buffer, format="JPEG", quality=88, optimize=True, progressive=True)
+    """Preserve small text and colored icons with high-quality 4:4:4 JPEG."""
+    if image.mode == "RGBA":
+        with Image.new("RGBA", image.size, (255, 255, 255, 255)) as background:
+            background.alpha_composite(image)
+            rgb = background.convert("RGB")
+    else:
+        rgb = image.convert("RGB")
+    with rgb, BytesIO() as buffer:
+        rgb.save(buffer, format="JPEG", quality=95, subsampling=0,
+                 optimize=True, progressive=True)
         return buffer.getvalue()
 
 
