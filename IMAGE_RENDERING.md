@@ -35,3 +35,9 @@ python scripts/compare_image_migration.py artifacts/image-migration
 样例只使用公开歌曲和合成成绩，图标读取本地缓存。完整资料卡样例使用 `data/images/keep_nameplate.png`，并从 `--profile-assets` 指定的目录读取 `class.png`、`course.png`、`trophy.png`；默认目录为 `artifacts/image-migration/profile-assets`。这些对比产物不提交到 Git。
 
 生产运行需要先安装 Chromium；首次启动耗时、内存占用和字体抗锯齿与 Pillow 不同。新模板根据内容自动计算部分图片高度，因此前后高度可能略有差异。
+
+## 实时调试页面
+
+运行 `.venv/bin/python -m devtools.image_preview.server`，打开 <http://127.0.0.1:5088>。
+提供 12 套固定 JSON 示例、快捷字段、自动渲染、模板保存监听、缩放与 PNG 下载。
+具体说明见 [本地图片调试台](devtools/image_preview/README.md)。

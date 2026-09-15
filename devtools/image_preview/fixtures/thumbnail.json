@@ -1,0 +1,117 @@
+{
+  "record": {
+    "title": "1/3の純情な感情",
+    "artist": "SIAM SHADE [covered by 湯毛]",
+    "id": "9a7dcb",
+    "bpm": 152,
+    "category": "POPS＆アニメ",
+    "version": "ORANGE PLUS",
+    "cover_url": null,
+    "cover_name": "cover.png",
+    "type": "std",
+    "search_acronyms": [],
+    "sheets": [
+      {
+        "difficulty": "basic",
+        "level": "5",
+        "internalLevelValue": 5,
+        "noteDesigner": "-",
+        "noteCounts": {
+          "tap": 150,
+          "hold": 3,
+          "slide": 3,
+          "touch": null,
+          "break": 4,
+          "total": 160
+        },
+        "regions": {
+          "jp": false,
+          "intl": false,
+          "usa": false,
+          "cn": false
+        },
+        "multiverInternalLevelValue": {},
+        "releaseDate": "2015-07-16"
+      },
+      {
+        "difficulty": "advanced",
+        "level": "6",
+        "internalLevelValue": 6,
+        "noteDesigner": "-",
+        "noteCounts": {
+          "tap": 208,
+          "hold": 2,
+          "slide": 9,
+          "touch": null,
+          "break": 2,
+          "total": 221
+        },
+        "regions": {
+          "jp": false,
+          "intl": false,
+          "usa": false,
+          "cn": false
+        },
+        "multiverInternalLevelValue": {},
+        "releaseDate": "2015-07-16"
+      },
+      {
+        "difficulty": "expert",
+        "level": "10",
+        "internalLevelValue": 10,
+        "noteDesigner": "Techno Kitchen",
+        "noteCounts": {
+          "tap": 249,
+          "hold": 46,
+          "slide": 25,
+          "touch": null,
+          "break": 23,
+          "total": 343
+        },
+        "regions": {
+          "jp": false,
+          "intl": false,
+          "usa": false,
+          "cn": false
+        },
+        "multiverInternalLevelValue": {},
+        "releaseDate": "2015-07-16"
+      },
+      {
+        "difficulty": "master",
+        "level": "12",
+        "internalLevelValue": 12,
+        "noteDesigner": "mai-Star",
+        "noteCounts": {
+          "tap": 340,
+          "hold": 65,
+          "slide": 46,
+          "touch": null,
+          "break": 16,
+          "total": 467
+        },
+        "regions": {
+          "jp": false,
+          "intl": false,
+          "usa": false,
+          "cn": false
+        },
+        "multiverInternalLevelValue": {},
+        "releaseDate": "2015-07-16"
+      }
+    ],
+    "name": "1/3の純情な感情",
+    "score": "100.0844%",
+    "dx_score": "1234 / 1300",
+    "dx_percentage": 0.949,
+    "difficulty": "master",
+    "internalLevelValue": 14.0,
+    "ra": 302,
+    "score_icon": "sssp",
+    "combo_icon": "fcp",
+    "sync_icon": "fdx",
+    "dx_star": "4",
+    "play_count": 12,
+    "last_play_time": "2026/09/15"
+  }
+}

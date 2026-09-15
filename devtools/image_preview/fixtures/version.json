@@ -1,0 +1,1315 @@
+{
+  "songs": [
+    {
+      "title": "君の知らない物語",
+      "artist": "supercell「化物語」",
+      "id": "2b33b1",
+      "bpm": 181,
+      "category": "POPS＆アニメ",
+      "version": "maimaiでらっくす PLUS",
+      "cover_url": null,
+      "cover_name": "cover.png",
+      "type": "dx",
+      "search_acronyms": [],
+      "sheets": [
+        {
+          "difficulty": "basic",
+          "level": "3",
+          "internalLevelValue": 3,
+          "noteDesigner": "-",
+          "noteCounts": {
+            "tap": 53,
+            "hold": 18,
+            "slide": 4,
+            "touch": 6,
+            "break": 3,
+            "total": 84
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2020-07-30"
+        },
+        {
+          "difficulty": "advanced",
+          "level": "6",
+          "internalLevelValue": 6,
+          "noteDesigner": "-",
+          "noteCounts": {
+            "tap": 163,
+            "hold": 18,
+            "slide": 15,
+            "touch": 9,
+            "break": 4,
+            "total": 209
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2020-07-30"
+        },
+        {
+          "difficulty": "expert",
+          "level": "8",
+          "internalLevelValue": 8,
+          "noteDesigner": "はっぴー",
+          "noteCounts": {
+            "tap": 190,
+            "hold": 31,
+            "slide": 10,
+            "touch": 22,
+            "break": 5,
+            "total": 258
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2020-07-30"
+        },
+        {
+          "difficulty": "master",
+          "level": "12",
+          "internalLevelValue": 12,
+          "noteDesigner": "某S氏",
+          "noteCounts": {
+            "tap": 233,
+            "hold": 18,
+            "slide": 78,
+            "touch": 29,
+            "break": 14,
+            "total": 372
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2020-07-30"
+        }
+      ]
+    },
+    {
+      "title": "君の知らない物語",
+      "artist": "supercell「化物語」",
+      "id": "e5056c",
+      "bpm": 181,
+      "category": "POPS＆アニメ",
+      "version": "GreeN",
+      "cover_url": null,
+      "cover_name": "cover.png",
+      "type": "std",
+      "search_acronyms": [],
+      "sheets": [
+        {
+          "difficulty": "basic",
+          "level": "2",
+          "internalLevelValue": 2,
+          "noteDesigner": "-",
+          "noteCounts": {
+            "tap": 47,
+            "hold": 18,
+            "slide": 2,
+            "touch": null,
+            "break": 3,
+            "total": 70
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2013-07-11"
+        },
+        {
+          "difficulty": "advanced",
+          "level": "7",
+          "internalLevelValue": 7,
+          "noteDesigner": "-",
+          "noteCounts": {
+            "tap": 151,
+            "hold": 13,
+            "slide": 11,
+            "touch": null,
+            "break": 9,
+            "total": 184
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2013-07-11"
+        },
+        {
+          "difficulty": "expert",
+          "level": "9",
+          "internalLevelValue": 9,
+          "noteDesigner": "はっぴー",
+          "noteCounts": {
+            "tap": 197,
+            "hold": 29,
+            "slide": 21,
+            "touch": null,
+            "break": 4,
+            "total": 251
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2013-07-11"
+        },
+        {
+          "difficulty": "master",
+          "level": "11+",
+          "internalLevelValue": 11.6,
+          "noteDesigner": "某S氏",
+          "noteCounts": {
+            "tap": 187,
+            "hold": 17,
+            "slide": 61,
+            "touch": null,
+            "break": 10,
+            "total": 275
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2013-07-11"
+        }
+      ]
+    },
+    {
+      "title": "Our Fighting",
+      "artist": "クーナ(CV 喜多村英梨)「PHANTASY STAR ONLINE 2」",
+      "id": "3fbaab",
+      "bpm": 165,
+      "category": "ゲーム＆バラエティ",
+      "version": "ORANGE PLUS",
+      "cover_url": null,
+      "cover_name": "cover.png",
+      "type": "std",
+      "search_acronyms": [],
+      "sheets": [
+        {
+          "difficulty": "basic",
+          "level": "5",
+          "internalLevelValue": 5,
+          "noteDesigner": "-",
+          "noteCounts": {
+            "tap": 176,
+            "hold": 13,
+            "slide": 8,
+            "touch": null,
+            "break": 6,
+            "total": 203
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2015-06-05"
+        },
+        {
+          "difficulty": "advanced",
+          "level": "7",
+          "internalLevelValue": 7,
+          "noteDesigner": "-",
+          "noteCounts": {
+            "tap": 295,
+            "hold": 18,
+            "slide": 12,
+            "touch": null,
+            "break": 10,
+            "total": 335
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2015-06-05"
+        },
+        {
+          "difficulty": "expert",
+          "level": "10+",
+          "internalLevelValue": 10.6,
+          "noteDesigner": "Jack",
+          "noteCounts": {
+            "tap": 374,
+            "hold": 31,
+            "slide": 58,
+            "touch": null,
+            "break": 9,
+            "total": 472
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2015-06-05"
+        },
+        {
+          "difficulty": "master",
+          "level": "12",
+          "internalLevelValue": 12.5,
+          "noteDesigner": "某S氏",
+          "noteCounts": {
+            "tap": 511,
+            "hold": 31,
+            "slide": 73,
+            "touch": null,
+            "break": 24,
+            "total": 639
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {
+            "FESTiVAL PLUS": 12.5
+          },
+          "releaseDate": "2015-06-05"
+        }
+      ]
+    },
+    {
+      "title": "1/3の純情な感情",
+      "artist": "SIAM SHADE [covered by 湯毛]",
+      "id": "9a7dcb",
+      "bpm": 152,
+      "category": "POPS＆アニメ",
+      "version": "ORANGE PLUS",
+      "cover_url": null,
+      "cover_name": "cover.png",
+      "type": "std",
+      "search_acronyms": [],
+      "sheets": [
+        {
+          "difficulty": "basic",
+          "level": "5",
+          "internalLevelValue": 5,
+          "noteDesigner": "-",
+          "noteCounts": {
+            "tap": 150,
+            "hold": 3,
+            "slide": 3,
+            "touch": null,
+            "break": 4,
+            "total": 160
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2015-07-16"
+        },
+        {
+          "difficulty": "advanced",
+          "level": "6",
+          "internalLevelValue": 6,
+          "noteDesigner": "-",
+          "noteCounts": {
+            "tap": 208,
+            "hold": 2,
+            "slide": 9,
+            "touch": null,
+            "break": 2,
+            "total": 221
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2015-07-16"
+        },
+        {
+          "difficulty": "expert",
+          "level": "10",
+          "internalLevelValue": 10,
+          "noteDesigner": "Techno Kitchen",
+          "noteCounts": {
+            "tap": 249,
+            "hold": 46,
+            "slide": 25,
+            "touch": null,
+            "break": 23,
+            "total": 343
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2015-07-16"
+        },
+        {
+          "difficulty": "master",
+          "level": "12",
+          "internalLevelValue": 12,
+          "noteDesigner": "mai-Star",
+          "noteCounts": {
+            "tap": 340,
+            "hold": 65,
+            "slide": 46,
+            "touch": null,
+            "break": 16,
+            "total": 467
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2015-07-16"
+        }
+      ]
+    },
+    {
+      "title": "毒占欲",
+      "artist": "DECO*27",
+      "id": "dda253",
+      "bpm": 117,
+      "category": "niconico＆ボーカロイド",
+      "version": "ORANGE",
+      "cover_url": null,
+      "cover_name": "cover.png",
+      "type": "std",
+      "search_acronyms": [],
+      "sheets": [
+        {
+          "difficulty": "basic",
+          "level": "3",
+          "internalLevelValue": 3,
+          "noteDesigner": "-",
+          "noteCounts": {
+            "tap": 116,
+            "hold": 3,
+            "slide": 4,
+            "touch": null,
+            "break": 4,
+            "total": 127
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2014-11-13"
+        },
+        {
+          "difficulty": "advanced",
+          "level": "7",
+          "internalLevelValue": 7,
+          "noteDesigner": "-",
+          "noteCounts": {
+            "tap": 287,
+            "hold": 16,
+            "slide": 9,
+            "touch": null,
+            "break": 4,
+            "total": 316
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2014-11-13"
+        },
+        {
+          "difficulty": "expert",
+          "level": "10+",
+          "internalLevelValue": 10.6,
+          "noteDesigner": "rioN",
+          "noteCounts": {
+            "tap": 310,
+            "hold": 42,
+            "slide": 27,
+            "touch": null,
+            "break": 11,
+            "total": 390
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2014-11-13"
+        },
+        {
+          "difficulty": "master",
+          "level": "13",
+          "internalLevelValue": 13.6,
+          "noteDesigner": "mai-Star",
+          "noteCounts": {
+            "tap": 502,
+            "hold": 46,
+            "slide": 58,
+            "touch": null,
+            "break": 11,
+            "total": 617
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {
+            "Splash": 13.2,
+            "Splash PLUS": 13.3,
+            "UNiVERSE": 13.3,
+            "UNiVERSE PLUS": 13.6,
+            "maimaiでらっくす PLUS": 13
+          },
+          "releaseDate": "2014-11-13"
+        }
+      ]
+    },
+    {
+      "title": "おじゃま虫",
+      "artist": "DECO*27",
+      "id": "3fc015",
+      "bpm": 143,
+      "category": "niconico＆ボーカロイド",
+      "version": "ORANGE PLUS",
+      "cover_url": null,
+      "cover_name": "cover.png",
+      "type": "std",
+      "search_acronyms": [],
+      "sheets": [
+        {
+          "difficulty": "basic",
+          "level": "2",
+          "internalLevelValue": 2,
+          "noteDesigner": "-",
+          "noteCounts": {
+            "tap": 127,
+            "hold": 2,
+            "slide": 4,
+            "touch": null,
+            "break": 3,
+            "total": 136
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2015-09-17"
+        },
+        {
+          "difficulty": "advanced",
+          "level": "7",
+          "internalLevelValue": 7,
+          "noteDesigner": "-",
+          "noteCounts": {
+            "tap": 304,
+            "hold": 24,
+            "slide": 12,
+            "touch": null,
+            "break": 12,
+            "total": 352
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2015-09-17"
+        },
+        {
+          "difficulty": "expert",
+          "level": "9+",
+          "internalLevelValue": 9.6,
+          "noteDesigner": "某S氏",
+          "noteCounts": {
+            "tap": 323,
+            "hold": 32,
+            "slide": 25,
+            "touch": null,
+            "break": 9,
+            "total": 389
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2015-09-17"
+        },
+        {
+          "difficulty": "master",
+          "level": "12",
+          "internalLevelValue": 12,
+          "noteDesigner": "mai-Star",
+          "noteCounts": {
+            "tap": 563,
+            "hold": 34,
+            "slide": 77,
+            "touch": null,
+            "break": 15,
+            "total": 689
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2015-09-17"
+        }
+      ]
+    },
+    {
+      "title": "はじめまして地球人さん",
+      "artist": "ピノキオピー",
+      "id": "7478da",
+      "bpm": 175,
+      "category": "niconico＆ボーカロイド",
+      "version": "ORANGE PLUS",
+      "cover_url": null,
+      "cover_name": "cover.png",
+      "type": "std",
+      "search_acronyms": [],
+      "sheets": [
+        {
+          "difficulty": "basic",
+          "level": "5",
+          "internalLevelValue": 5,
+          "noteDesigner": "-",
+          "noteCounts": {
+            "tap": 127,
+            "hold": 13,
+            "slide": 3,
+            "touch": null,
+            "break": 4,
+            "total": 147
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2015-07-16"
+        },
+        {
+          "difficulty": "advanced",
+          "level": "7",
+          "internalLevelValue": 7,
+          "noteDesigner": "-",
+          "noteCounts": {
+            "tap": 201,
+            "hold": 13,
+            "slide": 19,
+            "touch": null,
+            "break": 6,
+            "total": 239
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2015-07-16"
+        },
+        {
+          "difficulty": "expert",
+          "level": "10",
+          "internalLevelValue": 10,
+          "noteDesigner": "はっぴー",
+          "noteCounts": {
+            "tap": 289,
+            "hold": 45,
+            "slide": 20,
+            "touch": null,
+            "break": 8,
+            "total": 362
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2015-07-16"
+        },
+        {
+          "difficulty": "master",
+          "level": "13",
+          "internalLevelValue": 13,
+          "noteDesigner": "某S氏",
+          "noteCounts": {
+            "tap": 461,
+            "hold": 11,
+            "slide": 46,
+            "touch": null,
+            "break": 14,
+            "total": 532
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {
+            "BUDDiES": 13,
+            "FESTiVAL": 13,
+            "FESTiVAL PLUS": 13,
+            "Splash": 12.4
+          },
+          "releaseDate": "2015-07-16"
+        }
+      ]
+    },
+    {
+      "title": "ヒビカセ",
+      "artist": "GigaReol",
+      "id": "1a0862",
+      "bpm": 140,
+      "category": "niconico＆ボーカロイド",
+      "version": "MiLK PLUS",
+      "cover_url": null,
+      "cover_name": "cover.png",
+      "type": "std",
+      "search_acronyms": [
+        "hibikase",
+        "Hibikase",
+        "no title",
+        "匕匕力",
+        "匕匕力七",
+        "匕匕力也",
+        "比力也",
+        "比比力也",
+        "让其响彻"
+      ],
+      "sheets": [
+        {
+          "difficulty": "basic",
+          "level": "4",
+          "internalLevelValue": 4,
+          "noteDesigner": "-",
+          "noteCounts": {
+            "tap": 189,
+            "hold": 11,
+            "slide": 4,
+            "touch": null,
+            "break": 10,
+            "total": 214
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2018-08-09"
+        },
+        {
+          "difficulty": "advanced",
+          "level": "7+",
+          "internalLevelValue": 7.6,
+          "noteDesigner": "-",
+          "noteCounts": {
+            "tap": 386,
+            "hold": 15,
+            "slide": 6,
+            "touch": null,
+            "break": 13,
+            "total": 420
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2018-08-09"
+        },
+        {
+          "difficulty": "expert",
+          "level": "11",
+          "internalLevelValue": 11,
+          "noteDesigner": "はっぴー",
+          "noteCounts": {
+            "tap": 381,
+            "hold": 43,
+            "slide": 54,
+            "touch": null,
+            "break": 12,
+            "total": 490
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2018-08-09"
+        },
+        {
+          "difficulty": "master",
+          "level": "13",
+          "internalLevelValue": 13.1,
+          "noteDesigner": "サファ太",
+          "noteCounts": {
+            "tap": 615,
+            "hold": 67,
+            "slide": 71,
+            "touch": null,
+            "break": 14,
+            "total": 767
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {
+            "BUDDiES": 13.1,
+            "FESTiVAL": 13.1,
+            "FESTiVAL PLUS": 13.1,
+            "Splash": 12.6,
+            "UNiVERSE PLUS": 13.1
+          },
+          "releaseDate": "2018-08-09"
+        }
+      ]
+    },
+    {
+      "title": "ブリキノダンス",
+      "artist": "日向電工",
+      "id": "ddee8e",
+      "bpm": 172,
+      "category": "niconico＆ボーカロイド",
+      "version": "MiLK PLUS",
+      "cover_url": null,
+      "cover_name": "cover.png",
+      "type": "std",
+      "search_acronyms": [
+        "BURIKI NO DANCE"
+      ],
+      "sheets": [
+        {
+          "difficulty": "basic",
+          "level": "5",
+          "internalLevelValue": 5,
+          "noteDesigner": "-",
+          "noteCounts": {
+            "tap": 202,
+            "hold": 12,
+            "slide": 8,
+            "touch": null,
+            "break": 6,
+            "total": 228
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2018-08-07"
+        },
+        {
+          "difficulty": "advanced",
+          "level": "7+",
+          "internalLevelValue": 7.6,
+          "noteDesigner": "-",
+          "noteCounts": {
+            "tap": 418,
+            "hold": 25,
+            "slide": 6,
+            "touch": null,
+            "break": 11,
+            "total": 460
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2018-08-07"
+        },
+        {
+          "difficulty": "expert",
+          "level": "10+",
+          "internalLevelValue": 10.6,
+          "noteDesigner": "サファ太",
+          "noteCounts": {
+            "tap": 480,
+            "hold": 53,
+            "slide": 22,
+            "touch": null,
+            "break": 20,
+            "total": 575
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2018-08-07"
+        },
+        {
+          "difficulty": "master",
+          "level": "12",
+          "internalLevelValue": 12.5,
+          "noteDesigner": "緑風 犬三郎",
+          "noteCounts": {
+            "tap": 625,
+            "hold": 5,
+            "slide": 116,
+            "touch": null,
+            "break": 6,
+            "total": 752
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {
+            "BUDDiES": 12.5,
+            "CiRCLE": 12.5,
+            "FESTiVAL": 12.5,
+            "PRiSM PLUS": 12.5,
+            "UNiVERSE PLUS": 12.5
+          },
+          "releaseDate": "2018-08-07"
+        },
+        {
+          "difficulty": "remaster",
+          "level": "13",
+          "internalLevelValue": 13.4,
+          "noteDesigner": "はっぴー",
+          "noteCounts": {
+            "tap": 763,
+            "hold": 32,
+            "slide": 93,
+            "touch": null,
+            "break": 12,
+            "total": 900
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {
+            "BUDDiES": 13.4,
+            "CiRCLE": 13.4,
+            "FESTiVAL": 13.4,
+            "FESTiVAL PLUS": 13.4,
+            "PRiSM PLUS": 13.4,
+            "Splash": 12.9,
+            "UNiVERSE PLUS": 13.4,
+            "maimaiでらっくす PLUS": 12.9
+          },
+          "releaseDate": "2018-08-07"
+        }
+      ]
+    },
+    {
+      "title": "ファッとして桃源郷",
+      "artist": "新庄かなえ(CV:三森すずこ)「てーきゅう」",
+      "id": "a268d3",
+      "bpm": 160,
+      "category": "POPS＆アニメ",
+      "version": "MURASAKi",
+      "cover_url": null,
+      "cover_name": "cover.png",
+      "type": "std",
+      "search_acronyms": [],
+      "sheets": [
+        {
+          "difficulty": "basic",
+          "level": "6",
+          "internalLevelValue": 6,
+          "noteDesigner": "-",
+          "noteCounts": {
+            "tap": 169,
+            "hold": 15,
+            "slide": 4,
+            "touch": null,
+            "break": 2,
+            "total": 190
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2016-12-15"
+        },
+        {
+          "difficulty": "advanced",
+          "level": "6",
+          "internalLevelValue": 6,
+          "noteDesigner": "-",
+          "noteCounts": {
+            "tap": 251,
+            "hold": 10,
+            "slide": 16,
+            "touch": null,
+            "break": 9,
+            "total": 286
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2016-12-15"
+        },
+        {
+          "difficulty": "expert",
+          "level": "10",
+          "internalLevelValue": 10,
+          "noteDesigner": "rioN",
+          "noteCounts": {
+            "tap": 322,
+            "hold": 28,
+            "slide": 39,
+            "touch": null,
+            "break": 16,
+            "total": 405
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2016-12-15"
+        },
+        {
+          "difficulty": "master",
+          "level": "13",
+          "internalLevelValue": 13.3,
+          "noteDesigner": "はっぴー",
+          "noteCounts": {
+            "tap": 452,
+            "hold": 34,
+            "slide": 98,
+            "touch": null,
+            "break": 47,
+            "total": 631
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {
+            "Splash": 12.8,
+            "UNiVERSE PLUS": 13.3,
+            "maimaiでらっくす PLUS": 12.7
+          },
+          "releaseDate": "2016-12-15"
+        }
+      ]
+    },
+    {
+      "title": "Paradisus-Paradoxum",
+      "artist": "MYTH & ROID「Re：ゼロから始める異世界生活」",
+      "id": "ed5652",
+      "bpm": 201,
+      "category": "POPS＆アニメ",
+      "version": "maimaiでらっくす PLUS",
+      "cover_url": null,
+      "cover_name": "cover.png",
+      "type": "dx",
+      "search_acronyms": [],
+      "sheets": [
+        {
+          "difficulty": "basic",
+          "level": "4",
+          "internalLevelValue": 4,
+          "noteDesigner": "-",
+          "noteCounts": {
+            "tap": 79,
+            "hold": 9,
+            "slide": 4,
+            "touch": 9,
+            "break": 2,
+            "total": 103
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2017-06-22"
+        },
+        {
+          "difficulty": "advanced",
+          "level": "7",
+          "internalLevelValue": 7,
+          "noteDesigner": "-",
+          "noteCounts": {
+            "tap": 134,
+            "hold": 16,
+            "slide": 5,
+            "touch": 26,
+            "break": 2,
+            "total": 183
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2017-06-22"
+        },
+        {
+          "difficulty": "expert",
+          "level": "9+",
+          "internalLevelValue": 9.6,
+          "noteDesigner": "サファ太",
+          "noteCounts": {
+            "tap": 235,
+            "hold": 33,
+            "slide": 33,
+            "touch": 10,
+            "break": 14,
+            "total": 325
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2017-06-22"
+        },
+        {
+          "difficulty": "master",
+          "level": "12+",
+          "internalLevelValue": 12.8,
+          "noteDesigner": "シチミヘルツ",
+          "noteCounts": {
+            "tap": 320,
+            "hold": 20,
+            "slide": 100,
+            "touch": 40,
+            "break": 20,
+            "total": 500
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {
+            "Splash": 12.8,
+            "UNiVERSE": 12.8,
+            "UNiVERSE PLUS": 12.8,
+            "maimaiでらっくす PLUS": 12.8
+          },
+          "releaseDate": "2017-06-22"
+        }
+      ]
+    },
+    {
+      "title": "Paradisus-Paradoxum",
+      "artist": "MYTH & ROID「Re：ゼロから始める異世界生活」",
+      "id": "75dc0b",
+      "bpm": 201,
+      "category": "POPS＆アニメ",
+      "version": "MURASAKi PLUS",
+      "cover_url": null,
+      "cover_name": "cover.png",
+      "type": "std",
+      "search_acronyms": [],
+      "sheets": [
+        {
+          "difficulty": "basic",
+          "level": "5",
+          "internalLevelValue": 5,
+          "noteDesigner": "-",
+          "noteCounts": {
+            "tap": 121,
+            "hold": 11,
+            "slide": 4,
+            "touch": null,
+            "break": 9,
+            "total": 145
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2017-06-22"
+        },
+        {
+          "difficulty": "advanced",
+          "level": "8",
+          "internalLevelValue": 8,
+          "noteDesigner": "-",
+          "noteCounts": {
+            "tap": 188,
+            "hold": 27,
+            "slide": 9,
+            "touch": null,
+            "break": 10,
+            "total": 234
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2017-06-22"
+        },
+        {
+          "difficulty": "expert",
+          "level": "10+",
+          "internalLevelValue": 10.6,
+          "noteDesigner": "玉子豆腐",
+          "noteCounts": {
+            "tap": 254,
+            "hold": 27,
+            "slide": 33,
+            "touch": null,
+            "break": 6,
+            "total": 320
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {},
+          "releaseDate": "2017-06-22"
+        },
+        {
+          "difficulty": "master",
+          "level": "13",
+          "internalLevelValue": 13.2,
+          "noteDesigner": "はっぴー",
+          "noteCounts": {
+            "tap": 381,
+            "hold": 16,
+            "slide": 113,
+            "touch": null,
+            "break": 12,
+            "total": 522
+          },
+          "regions": {
+            "jp": false,
+            "intl": false,
+            "usa": false,
+            "cn": false
+          },
+          "multiverInternalLevelValue": {
+            "FESTiVAL": 13.2,
+            "Splash": 12.7,
+            "UNiVERSE PLUS": 13.2,
+            "maimaiでらっくす PLUS": 12.4
+          },
+          "releaseDate": "2017-06-22"
+        }
+      ]
+    }
+  ],
+  "version_info": {
+    "version": "maimai",
+    "abbr": "（真）"
+  },
+  "ver": "jp"
+}

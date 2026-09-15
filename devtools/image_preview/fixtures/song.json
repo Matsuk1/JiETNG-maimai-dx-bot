@@ -1,0 +1,105 @@
+{
+  "song": {
+    "title": "君の知らない物語",
+    "artist": "supercell「化物語」",
+    "id": "2b33b1",
+    "bpm": 181,
+    "category": "POPS＆アニメ",
+    "version": "maimaiでらっくす PLUS",
+    "cover_url": null,
+    "cover_name": "cover.png",
+    "type": "dx",
+    "search_acronyms": [],
+    "sheets": [
+      {
+        "difficulty": "basic",
+        "level": "3",
+        "internalLevelValue": 3,
+        "noteDesigner": "-",
+        "noteCounts": {
+          "tap": 53,
+          "hold": 18,
+          "slide": 4,
+          "touch": 6,
+          "break": 3,
+          "total": 84
+        },
+        "regions": {
+          "jp": false,
+          "intl": false,
+          "usa": false,
+          "cn": false
+        },
+        "multiverInternalLevelValue": {},
+        "releaseDate": "2020-07-30"
+      },
+      {
+        "difficulty": "advanced",
+        "level": "6",
+        "internalLevelValue": 6,
+        "noteDesigner": "-",
+        "noteCounts": {
+          "tap": 163,
+          "hold": 18,
+          "slide": 15,
+          "touch": 9,
+          "break": 4,
+          "total": 209
+        },
+        "regions": {
+          "jp": false,
+          "intl": false,
+          "usa": false,
+          "cn": false
+        },
+        "multiverInternalLevelValue": {},
+        "releaseDate": "2020-07-30"
+      },
+      {
+        "difficulty": "expert",
+        "level": "8",
+        "internalLevelValue": 8,
+        "noteDesigner": "はっぴー",
+        "noteCounts": {
+          "tap": 190,
+          "hold": 31,
+          "slide": 10,
+          "touch": 22,
+          "break": 5,
+          "total": 258
+        },
+        "regions": {
+          "jp": false,
+          "intl": false,
+          "usa": false,
+          "cn": false
+        },
+        "multiverInternalLevelValue": {},
+        "releaseDate": "2020-07-30"
+      },
+      {
+        "difficulty": "master",
+        "level": "12",
+        "internalLevelValue": 12,
+        "noteDesigner": "某S氏",
+        "noteCounts": {
+          "tap": 233,
+          "hold": 18,
+          "slide": 78,
+          "touch": 29,
+          "break": 14,
+          "total": 372
+        },
+        "regions": {
+          "jp": false,
+          "intl": false,
+          "usa": false,
+          "cn": false
+        },
+        "multiverInternalLevelValue": {},
+        "releaseDate": "2020-07-30"
+      }
+    ]
+  },
+  "ver": "jp"
+}

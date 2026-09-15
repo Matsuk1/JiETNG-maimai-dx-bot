@@ -1,0 +1,66 @@
+{
+  "result": {
+    "parsed": {
+      "title": "君の知らない物語",
+      "achievement": 99.1234,
+      "sub_judgement": {
+        "tap": {
+          "critical_perfect": 100,
+          "perfect": 5,
+          "great": 2,
+          "good": 1,
+          "miss": 0
+        },
+        "hold": {
+          "critical_perfect": 100,
+          "perfect": 5,
+          "great": 2,
+          "good": 1,
+          "miss": 0
+        },
+        "slide": {
+          "critical_perfect": 100,
+          "perfect": 5,
+          "great": 2,
+          "good": 1,
+          "miss": 0
+        },
+        "touch": {
+          "critical_perfect": 100,
+          "perfect": 5,
+          "great": 2,
+          "good": 1,
+          "miss": 0
+        },
+        "break": {
+          "critical_perfect": 100,
+          "perfect": 5,
+          "great": 2,
+          "good": 1,
+          "miss": 0
+        }
+      }
+    },
+    "validation": {
+      "difficulty": "master",
+      "type": "dx",
+      "cover_name": "cover.png",
+      "internal_level": 13.7,
+      "loss_percentages": {
+        "tap_great": 0.01,
+        "tap_good": 0.01,
+        "tap_miss": 0.01,
+        "hold_great": 0.01,
+        "hold_good": 0.01,
+        "hold_miss": 0.01,
+        "slide_great": 0.01,
+        "slide_good": 0.01,
+        "slide_miss": 0.01,
+        "touch_great": 0.01,
+        "touch_good": 0.01,
+        "touch_miss": 0.01
+      }
+    }
+  },
+  "ver": "jp"
+}

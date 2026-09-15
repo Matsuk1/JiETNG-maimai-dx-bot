@@ -1,0 +1,134 @@
+{
+  "targets": [
+    {
+      "cover_name": "cover.png",
+      "type": "dx",
+      "song_title": "君の知らない物語",
+      "difficulty": "basic",
+      "level": "14",
+      "internal_level": 14.1,
+      "achieved": true,
+      "achievement_rate": 100.0
+    },
+    {
+      "cover_name": "cover.png",
+      "type": "dx",
+      "song_title": "君の知らない物語",
+      "difficulty": "advanced",
+      "level": "14",
+      "internal_level": 14.1,
+      "achieved": false,
+      "achievement_rate": 99.9
+    },
+    {
+      "cover_name": "cover.png",
+      "type": "dx",
+      "song_title": "Our Fighting",
+      "difficulty": "expert",
+      "level": "14",
+      "internal_level": 14.1,
+      "achieved": true,
+      "achievement_rate": 99.8
+    },
+    {
+      "cover_name": "cover.png",
+      "type": "dx",
+      "song_title": "1/3の純情な感情",
+      "difficulty": "master",
+      "level": "14",
+      "internal_level": 14.1,
+      "achieved": false,
+      "achievement_rate": 99.7
+    },
+    {
+      "cover_name": "cover.png",
+      "type": "dx",
+      "song_title": "毒占欲",
+      "difficulty": "remaster",
+      "level": "14",
+      "internal_level": 14.1,
+      "achieved": true,
+      "achievement_rate": 99.6
+    },
+    {
+      "cover_name": "cover.png",
+      "type": "dx",
+      "song_title": "おじゃま虫",
+      "difficulty": "basic",
+      "level": "14",
+      "internal_level": 14.1,
+      "achieved": false,
+      "achievement_rate": 99.5
+    },
+    {
+      "cover_name": "cover.png",
+      "type": "dx",
+      "song_title": "はじめまして地球人さん",
+      "difficulty": "advanced",
+      "level": "13+",
+      "internal_level": 13.8,
+      "achieved": true,
+      "achievement_rate": 99.4
+    },
+    {
+      "cover_name": "cover.png",
+      "type": "dx",
+      "song_title": "ヒビカセ",
+      "difficulty": "expert",
+      "level": "13+",
+      "internal_level": 13.8,
+      "achieved": false,
+      "achievement_rate": 99.3
+    },
+    {
+      "cover_name": "cover.png",
+      "type": "dx",
+      "song_title": "ブリキノダンス",
+      "difficulty": "master",
+      "level": "13+",
+      "internal_level": 13.8,
+      "achieved": true,
+      "achievement_rate": 99.2
+    },
+    {
+      "cover_name": "cover.png",
+      "type": "dx",
+      "song_title": "ファッとして桃源郷",
+      "difficulty": "remaster",
+      "level": "13+",
+      "internal_level": 13.8,
+      "achieved": false,
+      "achievement_rate": 99.1
+    },
+    {
+      "cover_name": "cover.png",
+      "type": "dx",
+      "song_title": "Paradisus-Paradoxum",
+      "difficulty": "basic",
+      "level": "13+",
+      "internal_level": 13.8,
+      "achieved": true,
+      "achievement_rate": 99.0
+    },
+    {
+      "cover_name": "cover.png",
+      "type": "dx",
+      "song_title": "Paradisus-Paradoxum",
+      "difficulty": "advanced",
+      "level": "13+",
+      "internal_level": 13.8,
+      "achieved": false,
+      "achievement_rate": 98.9
+    }
+  ],
+  "level_name": "13+ / 14",
+  "rank_name": "SSS",
+  "stats": {
+    "achieved": 6,
+    "unachieved": 4,
+    "unplayed": 2,
+    "total": 12
+  },
+  "group_by": "internal_level",
+  "ver": "jp"
+}
