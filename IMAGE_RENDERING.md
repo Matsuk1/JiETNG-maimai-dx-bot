@@ -39,7 +39,7 @@ python scripts/compare_image_migration.py artifacts/image-migration
 ## 实时调试页面
 
 运行 `.venv/bin/python -m devtools.image_preview.server`，打开 <http://127.0.0.1:5088>。
-提供 14 套固定 JSON 示例、快捷字段、自动渲染、模板保存监听、缩放与 PNG 下载。
+提供 12 套固定 JSON 示例、快捷字段、自动渲染、模板保存监听、缩放与 PNG 下载。
 具体说明见 [本地图片调试台](devtools/image_preview/README.md)。
 
 ## 成绩图皮肤
@@ -57,8 +57,8 @@ python scripts/compare_image_migration.py artifacts/image-migration
 成绩列表宽度保持 1580；列表高度由内容决定。
 
 调试台可切换皮肤并记住浏览器选择，递归监听皮肤模板修改。
-成绩列表、卡片、封面、单曲、资料、进度、版本、识别结果、合成页脚、
-404 和后台图标均已接入。聊天命令及用户数据库的皮肤偏好尚未接入，
+成绩列表、卡片、封面、单曲、资料、进度、版本、识别结果和合成页脚均已接入。
+后台图标和 404 占位图不参与皮肤切换。聊天命令及用户数据库的皮肤偏好尚未接入，
 业务生成器可以传入 `skin`；组合调用也可用 `with use_skin("ios-glass"):`。
 `document.html`（浏览器基础字体和画布）与 `stack.html`（图片堆叠）
 是共享结构，不另复制皮肤版本，堆叠中的图片会继承当前皮肤。
