@@ -34,7 +34,8 @@
   position: absolute;
   left: {{ left - 6 }}px;
   top: {{ text_y - 8 }}px;
-  width: {{ text_width + 12 }}px;
+  width: max-content;
+  max-width: {{ text_width }}px;
   font-size: {{ font_size }}px;
   line-height: {{ line_spacing }}px;
   color: #334c6d;
