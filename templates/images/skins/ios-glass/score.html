@@ -1,0 +1,51 @@
+<div class="glass-score">
+  {% include 'score.html' %}
+</div>
+<style>
+  .glass-score {
+    display: flow-root;
+    color: #293954;
+    background: linear-gradient(145deg, #d9f0fa, #e8e2f8 60%, #e0f4ed);
+  }
+
+  .glass-score .score-page {
+    border: 1px solid #ffffffd9;
+    background: #ffffff66;
+    box-shadow: inset 0 2px 2px white;
+  }
+
+  .glass-score .score-header {
+    border: 3px solid {{ color }};
+    border-radius: 26px;
+    color: #293954;
+    background: linear-gradient(135deg, #ffffffbb, #ffffff55);
+  }
+
+  .glass-score .score-cover {
+    border: 3px solid {{ color }};
+    border-radius: 18px;
+  }
+
+  .glass-score .metric,
+  .glass-score .dx-progress,
+  .glass-score .loss-row {
+    border: 1px solid #ffffffe0;
+    border-radius: 22px;
+    background: #ffffff80;
+    box-shadow: inset 0 1px 1px white;
+  }
+
+  .glass-score .judgements {
+    border: 1px solid #ffffffd9;
+    border-radius: 20px;
+    background: #ffffff66;
+  }
+
+  .glass-score .judgements th {
+    background: #dce6f3a6;
+  }
+
+  .glass-score .judgements tr:nth-child(even) {
+    background: #ffffff55;
+  }
+</style>
