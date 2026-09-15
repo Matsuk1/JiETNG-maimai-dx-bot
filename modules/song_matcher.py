@@ -181,3 +181,324 @@ def find_matching_songs(query: str, SONGS: list, max_results: int = 6, threshold
                 break
 
     return matching_songs
+
+
+_TITLE_OCR_CONFUSABLES = str.maketrans({
+    "极": "極",
+    "圈": "圏",
+    "園": "圏",
+    "雜": "雑",
+})
+
+
+def _normalize_title_for_ocr(text):
+    return normalize_text(str(text or "")).translate(_TITLE_OCR_CONFUSABLES)
+
+
+def _rolling_title_parts(title):
+    parts = []
+    for part in re.split(r"\s+", str(title or "").strip()):
+        normalized = _normalize_title_for_ocr(part)
+        if len(normalized) >= 2:
+            parts.append(normalized)
+    return parts
+
+
+def _rotated_title_candidates(parts):
+    if len(parts) < 2:
+        return []
+    candidates = []
+    seen = set()
+    for index in range(1, len(parts)):
+        rotated = parts[index:] + parts[:index]
+        joined = "".join(rotated)
+        if len(joined) < 4 or joined in seen:
+            continue
+        seen.add(joined)
+        candidates.append((rotated, joined))
+    return candidates
+
+
+def _song_matches_rolling_title(normalized_song_title, rotated_parts):
+    if len(rotated_parts) < 2 or len(normalized_song_title) < 4:
+        return False
+
+    first = rotated_parts[0]
+    last = rotated_parts[-1]
+    if not normalized_song_title.startswith(first) or not normalized_song_title.endswith(last):
+        return False
+
+    cursor = 0
+    for part in rotated_parts:
+        position = normalized_song_title.find(part, cursor)
+        if position < 0:
+            return False
+        cursor = position + len(part)
+    return True
+
+
+def _title_edit_similarity(left, right):
+    if not left or not right:
+        return 0.0
+    return difflib.SequenceMatcher(None, left, right).ratio()
+
+
+def _edit_distance_at_most_one(left, right):
+    if abs(len(left) - len(right)) > 1:
+        return False
+    if left == right:
+        return True
+    if len(left) == len(right):
+        return sum(a != b for a, b in zip(left, right)) <= 1
+
+    shorter, longer = (left, right) if len(left) < len(right) else (right, left)
+    index_short = 0
+    skipped = 0
+    for character in longer:
+        if index_short < len(shorter) and shorter[index_short] == character:
+            index_short += 1
+            continue
+        skipped += 1
+        if skipped > 1:
+            return False
+    return True
+
+
+def _title_edge_trim_similarity(normalized_ocr, normalized_song_title):
+    """Score cases where OCR adds or drops a leading/trailing character."""
+    candidates = [normalized_ocr]
+    if len(normalized_ocr) >= 5:
+        candidates.extend([
+            normalized_ocr[1:],
+            normalized_ocr[:-1],
+        ])
+    if len(normalized_ocr) >= 6:
+        candidates.extend([
+            normalized_ocr[1:-1],
+            normalized_ocr[2:],
+            normalized_ocr[:-2],
+        ])
+    return max(
+        _title_edit_similarity(candidate, normalized_song_title)
+        for candidate in candidates
+        if candidate
+    )
+
+
+def _cyclic_title_similarity(normalized_ocr, normalized_song_title):
+    """Score scrolling-title crops such as tail+head without whitespace."""
+    if len(normalized_ocr) < 4 or len(normalized_song_title) < 4:
+        return 0.0
+
+    doubled_title = normalized_song_title + normalized_song_title
+    if normalized_ocr in doubled_title:
+        coverage = len(normalized_ocr) / max(1, len(normalized_song_title))
+        return min(0.97, 0.72 + coverage * 0.25)
+
+    best = 0.0
+    # Compare OCR against the visible prefix of every circular rotation. This
+    # catches one-character OCR noise inside a wrapped title crop.
+    for index in range(len(normalized_song_title)):
+        rotated = normalized_song_title[index:] + normalized_song_title[:index]
+        window = rotated[:len(normalized_ocr)]
+        if len(window) >= 4:
+            best = max(best, _title_edit_similarity(normalized_ocr, window))
+        if len(normalized_ocr) > len(rotated):
+            best = max(best, _title_edit_similarity(normalized_ocr, rotated))
+    return best
+
+
+def _dedupe_title_matches(ranked_matches, max_results):
+    seen = set()
+    matches = []
+    match_kinds = []
+    for rank in sorted(
+        ranked_matches,
+        key=lambda item: (
+            item[0],
+            item[1],
+            item[2],
+            str(item[-1]),
+            str(item[-2].get("id") or ""),
+            str(item[-2].get("type") or ""),
+        ),
+    ):
+        song = rank[-2]
+        match_kind = rank[-1]
+        song_key = song_identity_key(song)
+        if song_key in seen:
+            continue
+        seen.add(song_key)
+        matches.append(song)
+        match_kinds.append(match_kind)
+        if len(matches) >= max_results:
+            break
+    return matches, match_kinds
+
+
+def song_identity_key(song):
+    return (
+        str(song.get("id") or ""),
+        str(song.get("type") or ""),
+        normalize_text(str(song.get("title") or "")),
+    )
+
+
+def match_recognized_song_title(title, songs, max_results=12):
+    """Match noisy OCR text while preferring complete canonical song titles."""
+    normalized_exact_ocr = normalize_text(str(title or ""))
+    normalized_ocr = _normalize_title_for_ocr(title)
+    if not normalized_exact_ocr:
+        return [], "none"
+
+    exact_matches = [
+        song for song in songs
+        if normalize_text(str(song.get("title") or "")) == normalized_exact_ocr
+    ]
+    if exact_matches:
+        return exact_matches[:max_results], "exact"
+
+    if normalized_ocr != normalized_exact_ocr:
+        confusable_matches = [
+            song for song in songs
+            if _normalize_title_for_ocr(song.get("title")) == normalized_ocr
+        ]
+        if confusable_matches:
+            return confusable_matches[:max_results], "ocr_confusable"
+
+    rolling_candidates = _rotated_title_candidates(_rolling_title_parts(title))
+    if rolling_candidates:
+        for _, candidate in rolling_candidates:
+            rolling_exact_matches = [
+                song for song in songs
+                if _normalize_title_for_ocr(song.get("title")) == candidate
+            ]
+            if rolling_exact_matches:
+                return rolling_exact_matches[:max_results], "rolling_exact"
+
+        rolling_partial_matches = []
+        matched_song_ids = set()
+        for parts, candidate in rolling_candidates:
+            for song in songs:
+                normalized_song_title = _normalize_title_for_ocr(song.get("title"))
+                if _song_matches_rolling_title(normalized_song_title, parts):
+                    song_key = song.get("id") or normalized_song_title
+                    if song_key in matched_song_ids:
+                        continue
+                    matched_song_ids.add(song_key)
+                    rolling_partial_matches.append((len(candidate), song))
+        if rolling_partial_matches:
+            longest_length = max(length for length, _ in rolling_partial_matches)
+            longest_matches = [
+                song for length, song in rolling_partial_matches
+                if length == longest_length
+            ]
+            return longest_matches[:max_results], "rolling_partial"
+
+    def normalize_ocr_kana(value):
+        normalized = normalize_text(str(value or ""))
+        return "".join(
+            character
+            for character in unicodedata.normalize("NFD", normalized)
+            if character not in {"\u3099", "\u309a"}
+        )
+
+    # Japanese OCR often confuses voiced and semi-voiced kana, for example
+    # ぱ/ば. Ignore dakuten only when that produces one canonical song title.
+    normalized_kana_ocr = normalize_ocr_kana(title)
+    if len(normalized_kana_ocr) >= 4:
+        kana_matches = [
+            song for song in songs
+            if normalize_ocr_kana(song.get("title")) == normalized_kana_ocr
+        ]
+        canonical_titles = {
+            normalize_text(str(song.get("title") or ""))
+            for song in kana_matches
+        }
+        if kana_matches and len(canonical_titles) == 1:
+            return kana_matches[:max_results], "ocr_kana"
+
+    directional_matches = []
+    for song in songs:
+        normalized_song_title = _normalize_title_for_ocr(song.get("title"))
+        if len(normalized_song_title) < 2:
+            continue
+
+        score = None
+        match_kind = None
+        # OCR may read only the visible prefix of a scrolling long title:
+        # "AAABBBCCC" can appear as "CCC AAA" or be cut as "AAABBB".
+        if len(normalized_ocr) >= 3 and normalized_song_title.startswith(normalized_ocr):
+            score = len(normalized_ocr) / max(1, len(normalized_song_title))
+            match_kind = "prefix"
+        elif len(normalized_song_title) >= 3 and normalized_song_title in normalized_ocr:
+            score = len(normalized_song_title) / max(1, len(normalized_ocr))
+            match_kind = "embedded"
+        elif (
+            min(len(normalized_ocr), len(normalized_song_title)) >= 2
+            and _edit_distance_at_most_one(normalized_ocr, normalized_song_title)
+        ):
+            score = 0.93
+            match_kind = "edit_fuzzy"
+        elif len(normalized_ocr) >= 3:
+            similarity = difflib.SequenceMatcher(
+                None,
+                normalized_ocr,
+                normalized_song_title,
+            ).ratio()
+            threshold = 0.65 if len(normalized_ocr) <= 4 else 0.60
+            if similarity >= threshold:
+                score = similarity
+                match_kind = "fuzzy"
+
+        cyclic_score = _cyclic_title_similarity(normalized_ocr, normalized_song_title)
+        if cyclic_score >= 0.72 and cyclic_score > (score or 0):
+            score = cyclic_score
+            match_kind = "rolling_fuzzy"
+
+        trim_score = _title_edge_trim_similarity(normalized_ocr, normalized_song_title)
+        if trim_score >= 0.88 and trim_score > (score or 0):
+            score = trim_score
+            match_kind = "edge_fuzzy"
+
+        if score is not None:
+            directional_matches.append((
+                (
+                    0 if match_kind == "edge_fuzzy"
+                    else 1 if match_kind == "rolling_fuzzy"
+                    else 2 if match_kind == "edit_fuzzy"
+                    else 3 if match_kind == "prefix"
+                    else 4 if match_kind == "embedded"
+                    else 5
+                ),
+                -score,
+                -len(normalized_song_title),
+                song,
+                match_kind,
+            ))
+    if directional_matches:
+        matches, match_kinds = _dedupe_title_matches(directional_matches, max_results)
+        match_types = set(match_kinds)
+        if match_types == {"embedded"}:
+            longest_length = max(
+                len(normalize_text(str(song.get("title") or "")))
+                for song in matches
+            )
+            extra_length = len(normalized_ocr) - longest_length
+            match_type = "ocr_embedded" if extra_length <= 2 else "embedded"
+        elif "edge_fuzzy" in match_types:
+            match_type = "edge_fuzzy"
+        elif "rolling_fuzzy" in match_types:
+            match_type = "rolling_fuzzy"
+        elif "edit_fuzzy" in match_types:
+            match_type = "edit_fuzzy"
+        elif "prefix" in match_types:
+            match_type = "prefix"
+        else:
+            match_type = "fuzzy"
+        return matches, match_type
+
+    return (
+        find_matching_songs(title, songs, max_results=max_results, threshold=0.82),
+        "fuzzy",
+    )
