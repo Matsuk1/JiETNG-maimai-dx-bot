@@ -52,9 +52,10 @@ def clean_data(value):
     return value
 
 
-def render_case(kind, data, skin="default"):
+def render_case(kind, data, skin="default", background=False):
     """Use production generators in this isolated development process."""
     data = clean_data(copy.deepcopy(data))
+    sample_bg = {'files': ['kaf.jpg'], 'blur': 12, 'overlay': 60} if background else None
     with RENDER_LOCK, use_skin(skin), ExitStack() as stack:
         # Scope the offline fixture assets to one render, without changing production files.
         stack.enter_context(patch.object(html_cards, 'COVERS_DIR', str(ASSETS)))
@@ -66,7 +67,7 @@ def render_case(kind, data, skin="default"):
         elif kind == 'cover':
             image = records.generate_cover(cover_url=None, **{k:v for k,v in data['cover'].items() if k != 'cover_url'})
         elif kind in ('song', 'song_played'):
-            image = songs.song_info_generate(data['song'], played_data=data.get('records', []), ver=data.get('ver', 'jp'))
+            image = songs.song_info_generate(data['song'], played_data=data.get('records', []), ver=data.get('ver', 'jp'), bg_filter=sample_bg)
         elif kind == 'records':
             image = records.generate_records_picture(**dict(data, skin=skin))
             if image is None:
@@ -100,16 +101,18 @@ def render_case(kind, data, skin="default"):
         elif kind == 'version':
             image = songs.generate_version_list(data['songs'], data.get('version_info'), data.get('ver', 'jp'))
         elif kind == 'score':
-            image = records.generate_score_recognition_picture(data['result'], ver=data.get('ver', 'jp'))
+            image = records.generate_score_recognition_picture(data['result'], ver=data.get('ver', 'jp'), bg_filter=sample_bg)
         elif kind == 'composition':
             # Render a full-width row so the footer has its normal working width.
             card = records.create_thumbnail_in_line(data['record'])
             with card:
                 row = card.resize((1200, 450))
-            image = compose_generated_images([row], bg_filter=data.get('bg_filter'),
+            image = compose_generated_images([row], bg_filter=sample_bg if background else data.get('bg_filter'),
                                              timezone_offset=float(data.get('timezone_offset', 9)))
         else:
             raise ValueError('未知示例类型')
+        if background and kind not in ('song', 'song_played', 'score', 'composition'):
+            image = compose_generated_images([image], bg_filter=sample_bg)
         with image, BytesIO() as output:
             image.save(output, format='PNG')
             return output.getvalue(), image.size
@@ -172,7 +175,8 @@ def create_app():
             return jsonify(error='示例数据必须是 JSON 对象'), 400
         started = time.perf_counter()
         try:
-            png, size = render_case(kind, data, skin=request.args.get('skin', 'default'))
+            png, size = render_case(kind, data, skin=request.args.get('skin', 'default'),
+                                    background=request.args.get('background') == 'sample')
         except Exception as exc:
             app.logger.warning('Preview failed: %s: %s', type(exc).__name__, exc)
             return jsonify(error=f'{type(exc).__name__}: {exc}'), 422

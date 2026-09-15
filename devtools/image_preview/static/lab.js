@@ -63,7 +63,7 @@ async function renderLatest() {
   const ticket = serial, selected = kind;
   setStatus('正在渲染…', 'busy');
   try {
-    const response = await fetch(`/api/render/${selected}?skin=${encodeURIComponent($('skin').value)}`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
+    const response = await fetch(`/api/render/${selected}?skin=${encodeURIComponent($('skin').value)}&background=${$('image-background').value}`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
     if (!response.ok) { let result; try { result = await response.json(); } catch {} throw Error(result?.error || `渲染失败（HTTP ${response.status}）`); }
     const blob = await response.blob();
     if (ticket !== serial || selected !== kind) return;
@@ -104,6 +104,7 @@ function updateSkinSource() {
   $('source-path').textContent = supported && selected?.templates.includes(filename)
     ? `templates/images/skins/${selected.id}/${filename}` : item.template;
 }
+$('image-background').addEventListener('change', () => { serial++; schedule(true); });
 $('skin').addEventListener('change', () => {
   try { localStorage.setItem('jietng-image-lab:skin', $('skin').value); } catch {}
   updateSkinSource(); serial++; schedule(true);

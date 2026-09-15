@@ -50,7 +50,7 @@ python scripts/compare_image_migration.py artifacts/image-migration
 作用域退出（包括异常）会恢复原选择，截图队列只接收已展开的 HTML。
 
 皮肤目录为 `templates/images/skins/<id>/`，包含 `skin.json`（例如
-`{"label": "皮肤名称"}`）和要覆盖的同名图片模板。
+`{"label": "皮肤名称", "uses_background": true}`）和要覆盖的同名图片模板。
 未知皮肤或缺少的模板自动回退到原有模板。模板数据与成绩计算共用，
 默认模板继续放在 `templates/images/`。新皮肤使用自己的 CSS 类名前缀，
 避免影响组合图片中的其他组件。小卡片保持 300×150，横向卡片保持 600×225，
@@ -58,17 +58,28 @@ python scripts/compare_image_migration.py artifacts/image-migration
 
 调试台可切换皮肤并记住浏览器选择，递归监听皮肤模板修改。
 成绩列表、卡片、封面、单曲、资料、进度、版本、识别结果和合成页脚均已接入。
-后台图标和 404 占位图不参与皮肤切换。聊天命令及用户数据库的皮肤偏好尚未接入，
-业务生成器可以传入 `skin`；组合调用也可用 `with use_skin("ios-glass"):`。
+后台图标和 404 占位图不参与皮肤切换。用户在 settings 中选择皮肤，
+选择保存在现有用户 JSON 的 `image_skin` 字段，无需数据库表迁移。
+LINE 图片命令、好友/提及查询、识别结果与带用户的图片 API 会自动读取选择；
+提及他人时使用请求者的皮肤。没有用户身份的接口保持默认皮肤。
+业务生成器仍可传入 `skin`；组合调用也可用 `with use_skin("glass"):`。
 `document.html`（浏览器基础字体和画布）与 `stack.html`（图片堆叠）
 是共享结构，不另复制皮肤版本，堆叠中的图片会继承当前皮肤。
 
-内置 `ios-glass` 皮肤提供浅蓝紫渐变、半透明面板、高光边框，以及成绩列表、
+内置 `glass` 皮肤提供透出用户背景的半透明面板、高光边框，以及成绩列表、
 小卡片、横向卡片及其余图片场景的玻璃样式。难度用卡片及封面的彩色外框表示。示例：
 
 ```python
-generate_records_picture(up_songs, down_songs, title="B50", skin="ios-glass")
+generate_records_picture(up_songs, down_songs, title="B50", skin="glass")
 ```
 
-部署此皮肤时，一并上传 `modules/image_skins.py` 和
-`templates/images/skins/ios-glass/`（包含 `skin.json`）。
+`uses_background` 区分使用用户背景图和自带背景的皮肤。默认皮肤和 Glass
+设为 `true`，沿用用户背景开关、图片、模糊和遮罩。新皮肤若设为 `false`
+（或省略），合成时不加载用户背景图，settings 会停用背景区域并保留原设置。
+Glass 页面自身透明，背景只在最后合成时应用一次；关闭背景时使用默认底色。
+调试台的“应用示例背景图”可预览最终效果。
+
+部署需同步更新 `main.py`、`modules/user_image_skin.py`、`modules/image_skins.py`、
+`modules/image_manager.py`、`modules/api/image_api.py`、`templates/settings.html`、
+四种语言文件，以及整个 `templates/images/skins/glass/`。旧 `ios-glass/` 目录
+已更名，本次尚未部署，无需迁移旧用户选择。
