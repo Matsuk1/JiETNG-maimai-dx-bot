@@ -60,138 +60,35 @@ def song_info_generate(
     )
 
 def _render_basic_info_image(song_json, language="en"):
-    # 参数设定
-    canvas_width = 1000
-    canvas_height = 265
-    block_height = 260
-    margin = 30
-    text_gap = 35
+    from modules.html_renderer import image_uri, render_template
+    with generate_cover(song_json.get("cover_url"), song_json.get("type"),
+                        cover_name=song_json.get("cover_name")) as cover:
+        cover_src = image_uri(cover)
+    info = [(_song_text(key, language), song_json.get(key, default))
+            for key, default in (("artist", "UNKNOWN"), ("category", "UNKNOWN"),
+                                 ("bpm", "-"), ("version", "UNKNOWN"))]
+    return render_template("song.html", 1000, 265, mode="basic", cover=cover_src,
+                           title=song_json.get("title", "UNKNOWN"), info=info)
 
-    # 创建画布
-    img = Image.new("RGBA", (canvas_width, canvas_height), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    _draw_rounded_panel(img, (0, 0, canvas_width, block_height), radius=24, width=4)
-
-    cover_url = song_json.get("cover_url")
-    cover_name = song_json.get("cover_name")
-    song_type = song_json.get("type")
-    cover_img = generate_cover(cover_url, song_type, cover_name = cover_name)
-
-    # 封面图处理
-    cover_size = 200
-    large_cover = cover_img.resize((cover_size, cover_size), Image.Resampling.LANCZOS)
-    large_cover = round_corner(large_cover)
-    cover_x = margin
-    cover_y = margin
-    img.paste(large_cover, (cover_x, cover_y), large_cover)
-
-    # 文字区域
-    text_x = cover_x + cover_size + text_gap
-    text_y = cover_y - 10
-    title = song_json.get("title", "UNKNOWN")
-    artist = song_json.get("artist", "UNKNOWN")
-    category = song_json.get("category", "UNKNOWN")
-    bpm = song_json.get("bpm", "-")
-    version = song_json.get("version", "UNKNOWN")
-    max_info_width = canvas_width - text_x - margin
-    info_text = [
-        truncate_text(
-            draw,
-            f"{_song_text(label, language)}: {value}",
-            font_song_info,
-            max_info_width,
-        )
-        for label, value in (
-            ("artist", artist),
-            ("category", category),
-            ("bpm", bpm),
-            ("version", version),
-        )
-    ]
-
-    # 标题
-    title = truncate_text(draw, title, font_song_title, canvas_width - text_x - margin)
-    draw.text((text_x, text_y), title, font=font_song_title, fill=(0, 0, 0))
-    draw_aligned_colon_text(
-        draw,
-        lines=info_text,
-        top_left=(text_x, text_y + 60),
-        font=font_song_info,
-        spacing=8,
-        fill=(0, 0, 0)
-    )
-
-    return img
 
 def _generate_song_table_image(song_json, scale_width=1.5, scale_height=2.0, language="en"):
-    header_keys = (
-        "chart_type", "level", "designer", "total", "tap", "hold",
-        "slide", "touch", "break", "jp", "intl", "usa",
-    )
-    headers = [_song_text(f"headers.{key}", language) for key in header_keys]
+    from modules.html_renderer import render_template
+    header_keys = ("chart_type", "level", "designer", "total", "tap", "hold",
+                   "slide", "touch", "break", "jp", "intl", "usa")
+    widths = [int(w * scale_width) for w in (160, 90, 300, 90, 80, 80, 90, 90, 95, 70, 70, 70)]
+    rows = []
+    for sheet in song_json["sheets"]:
+        notes, regions = sheet.get("noteCounts", {}), sheet.get("regions", {})
+        values = [sheet["difficulty"].capitalize(), f"{sheet['internalLevelValue']:.1f}",
+                  sheet.get("noteDesigner") or "-"]
+        values += [notes.get(key) or "-" for key in ("total", "tap", "hold", "slide", "touch", "break")]
+        values += ["✓" if regions.get(key) else "✕" for key in ("jp", "intl", "usa")]
+        rows.append(("rgb" + str(_get_difficulty_color(sheet.get("difficulty", ""))), values))
+    # Fractional tracks include the border in the original total width.
+    return render_template("song.html", sum(widths), mode="table",
+                           columns=" ".join(f"{w}fr" for w in widths), row_height=int(48 * scale_height),
+                           headers=[_song_text(f"headers.{key}", language) for key in header_keys], rows=rows)
 
-    base_col_widths = [160, 90, 300, 90, 80, 80, 90, 90, 95, 70, 70, 70]
-    col_widths = [int(w * scale_width) for w in base_col_widths]
-    row_height = int(48 * scale_height)
-    col_offsets = [sum(col_widths[:i]) for i in range(len(col_widths))]
-
-    total_width = sum(col_widths)
-    row_gap = 10
-    radius = 16
-    border_width = 4
-    num_rows = len(song_json["sheets"]) + 1  # +1 for header
-    total_height = num_rows * row_height + (num_rows - 1) * row_gap
-
-    image = Image.new("RGBA", (total_width, total_height), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(image)
-
-    # 绘制表头（灰色边框圆角矩形，白色填充）
-    header_y = 0
-    draw.rounded_rectangle(
-        [0, header_y, total_width, header_y + row_height],
-        radius=radius, fill=(255, 255, 255), outline=(180, 180, 180), width=border_width
-    )
-    for i, header in enumerate(headers):
-        x = col_offsets[i]
-        w = draw.textlength(header, font=font_large)
-        draw.text((x + (col_widths[i] - w) // 2, header_y + row_height // 4), header, font=font_large, fill=(0, 0, 0))
-
-    # 绘制数据行（难度颜色边框圆角矩形，白色填充）
-    for row_idx, sheet in enumerate(song_json["sheets"]):
-        y = (row_idx + 1) * (row_height + row_gap)
-        difficulty = sheet.get("difficulty", "")
-        diff_color = _get_difficulty_color(difficulty)
-        notes = sheet.get("noteCounts", {})
-        regions = sheet.get("regions", {})
-
-        # 圆角矩形：白色填充 + 难度颜色边框
-        draw.rounded_rectangle(
-            [0, y, total_width, y + row_height],
-            radius=radius, fill=(255, 255, 255), outline=diff_color, width=border_width
-        )
-
-        data = [
-            sheet["difficulty"].capitalize(),
-            f"{sheet['internalLevelValue']:.1f}",
-            truncate_text(draw, sheet.get("noteDesigner", "-"), font_large, 400),
-            notes["total"] if notes["total"] else "-",
-            notes["tap"] if notes["tap"] else "-",
-            notes["hold"] if notes["hold"] else "-",
-            notes["slide"] if notes["slide"] else "-",
-            notes["touch"] if notes["touch"] else "-",
-            notes["break"] if notes["break"] else "-",
-            "✓" if regions.get("jp") else "✕",
-            "✓" if regions.get("intl") else "✕",
-            "✓" if regions.get("usa") else "✕"
-        ]
-
-        for col_idx, cell in enumerate(data):
-            x = col_offsets[col_idx]
-            text = str(cell)
-            w = draw.textlength(text, font=font_large)
-            draw.text((x + (col_widths[col_idx] - w) // 2, y + row_height // 4), text, font=font_large, fill=(0, 0, 0))
-
-    return image
 
 def _makeup_played_data(played_data, gap=10):
     rcd_imgs = [create_thumbnail_in_line(record) for record in played_data]
