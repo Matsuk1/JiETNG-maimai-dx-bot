@@ -149,9 +149,17 @@
       line-height: 24px;
     }
 
-    .glass-card-achievement {
+    .glass-card-achievement-row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
       margin-top: 3px;
-      font-size: 25px;
+    }
+
+    .glass-card-achievement {
+      min-width: 0;
+      white-space: nowrap;
+      font-size: 22px;
       letter-spacing: -.8px;
       line-height: 32px;
     }
@@ -189,9 +197,10 @@
     }
 
     .glass-card-rank {
-      width: 53px;
-      height: 25px;
-      margin-left: 2px;
+      width: 46px;
+      height: 21px;
+      margin-left: auto;
+      flex-shrink: 0;
       object-fit: contain;
     }
 
@@ -211,11 +220,10 @@
     }
 
     .glass-card-star {
-      position: absolute;
-      top: 67px;
-      left: 16px;
-      width: 64px;
-      height: 13px;
+      width: 74px;
+      height: 16px;
+      margin-left: 5px;
+      flex-shrink: 0;
       object-fit: contain;
     }
 
@@ -226,23 +234,25 @@
     </div>
     <div class="glass-card-info">
       <div class="glass-card-title ellipsis">{{ song.name }}</div>
-      <div class="glass-card-achievement">{{ song.score }}</div>
+      <div class="glass-card-achievement-row">
+        <div class="glass-card-achievement" data-fit="18">{{ song.score }}</div>
+        {% if icons.score_icon %}
+          <img class="glass-card-rank" src="{{ icons.score_icon }}">
+        {% endif %}
+      </div>
       <div class="glass-card-meta">
         <span class="ellipsis">{{ version }}</span>
         <span class="glass-card-dx">DX {{ song.dx_score }}</span>
       </div>
     </div>
-    {% if icons.dx_star %}
-      <img class="glass-card-star" src="{{ icons.dx_star }}">
-    {% endif %}
     <div class="glass-card-bottom">
       {% for key in ['combo_icon', 'sync_icon'] %}
         {% if icons[key] %}
           <img class="glass-card-status" src="{{ icons[key] }}">
         {% endif %}
       {% endfor %}
-      {% if icons.score_icon %}
-        <img class="glass-card-rank" src="{{ icons.score_icon }}">
+      {% if icons.dx_star %}
+        <img class="glass-card-star" src="{{ icons.dx_star }}">
       {% endif %}
       <span class="glass-card-rating"><span class="glass-card-level">{{ '%.1f'|format(song.internalLevelValue) }} →</span> {{ song.ra }}</span>
     </div>
