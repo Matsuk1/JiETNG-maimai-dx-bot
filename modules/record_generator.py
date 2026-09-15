@@ -1084,122 +1084,19 @@ def generate_level_rank_progress_image(
     else:
         title_text = f"{level_name} {_image_text('progress.level_list_suffix', language)}"
 
-    measure_draw = ImageDraw.Draw(Image.new("RGBA", (1, 1), (0, 0, 0, 0)))
-    title_font = _fit_font_to_width(measure_draw, title_text, img_width - margin * 4, 170, 92)
-    title_bbox = measure_draw.textbbox((0, 0), title_text, font=title_font, stroke_width=3)
-    title_height = title_bbox[3] - title_bbox[1]
-
-    title_y = margin + 5
-    card_y = title_y + title_height + 42
-    card_height = 170
-    card_gap_x = 26
-    content_gap = 54
-    top_area_height = card_y + card_height + content_gap
-
-    total_height = top_area_height + total_rows * row_height + margin
-
-    final_img = Image.new("RGBA", (img_width, total_height), (0, 0, 0, 0))
-
-    card_start_x = margin * 2
-    card_area_width = img_width - card_start_x * 2
-    card_width = (card_area_width - card_gap_x * 3) // 4
-    border_width = 14
-    card_radius = 22
-
-    card_data = [
-        (_image_text("progress.completed", language), stats["achieved"], (76, 175, 80)),
-        (_image_text("progress.incomplete", language), stats["unachieved"], (255, 152, 0)),
-        (_image_text("progress.unplayed", language), stats["unplayed"], (158, 158, 158)),
-        (_image_text("progress.total", language), stats["total"], (66, 133, 244)),
-    ]
-
-    final_img_rgba = final_img
-
-    for idx, (label, count, color) in enumerate(card_data):
-        card_x = card_start_x + idx * (card_width + card_gap_x)
-        current_y = card_y
-
-        card_layer = Image.new("RGBA", final_img_rgba.size, (0, 0, 0, 0))
-        card_draw = ImageDraw.Draw(card_layer)
-
-        shadow_offset = 3
-        card_draw.rounded_rectangle(
-            [card_x + shadow_offset, current_y + shadow_offset,
-             card_x + card_width + shadow_offset, current_y + card_height + shadow_offset],
-            radius=card_radius,
-            fill=(0, 0, 0, 30)
-        )
-
-        r, g, b = color
-        light_r = int(r + (255 - r) * 0.85)
-        light_g = int(g + (255 - g) * 0.85)
-        light_b = int(b + (255 - b) * 0.85)
-        bg_color = (light_r, light_g, light_b, 255)
-
-        card_draw.rounded_rectangle(
-            [card_x, current_y, card_x + card_width, current_y + card_height],
-            radius=card_radius,
-            fill=bg_color
-        )
-
-        card_draw.rounded_rectangle(
-            [card_x, current_y, card_x + border_width, current_y + card_height],
-            radius=card_radius,
-            fill=color + (255,)
-        )
-
-        final_img_rgba = Image.alpha_composite(final_img_rgba, card_layer)
-        card_draw = ImageDraw.Draw(final_img_rgba)
-
-        total = stats["total"]
-        if idx < len(card_data) - 1 and total > 0:
-            pct = count / total * 100
-            data_text = f"{count} ({pct:.1f}%)"
-        else:
-            data_text = str(count)
-
-        inner_x = card_x + border_width + 28
-        inner_w = card_width - border_width - 56
-        label_font = _fit_font_to_width(card_draw, label, inner_w, 54, 38)
-        data_font = _fit_font_to_width(card_draw, data_text, inner_w, 66, 42)
-
-        label_bbox = card_draw.textbbox((0, 0), label, font=label_font)
-        data_bbox = card_draw.textbbox((0, 0), data_text, font=data_font)
-        text_block_height = (label_bbox[3] - label_bbox[1]) + 8 + (data_bbox[3] - data_bbox[1])
-        text_y = current_y + (card_height - text_block_height) // 2
-
-        card_draw.text((inner_x, text_y - label_bbox[1]), label, fill=(72, 72, 72), font=label_font)
-        data_y = text_y + (label_bbox[3] - label_bbox[1]) + 8
-        card_draw.text((inner_x, data_y - data_bbox[1]), data_text, fill=(32, 32, 32), font=data_font)
-
-    final_img = final_img_rgba
-    draw = ImageDraw.Draw(final_img)
-
-    # 绘制居中标题
-    title_text_size = draw.textlength(title_text, font=title_font)
-    title_x = (img_width - title_text_size) / 2
-    draw.text((title_x, title_y - title_bbox[1]), title_text, fill=(255, 255, 255), font=title_font, stroke_width=3, stroke_fill=(50, 50, 50))
-
-    # 渲染主体图像内容
-    y_offset = top_area_height
-
-    for level_str, entries_list in rows:
-        _draw_level_label(draw, level_str, margin, y_offset, img_size, font_level_badge)
-
-        x_offset = level_width + margin
-
-        for i, entry in enumerate(entries_list):
-            if i > 0 and i % max_per_row == 0:
-                y_offset += row_height
-                x_offset = level_width + margin
-
-            cover_img = entry["img"]
-            if cover_img.mode == "RGBA":
-                final_img.paste(cover_img, (x_offset, y_offset), cover_img)
-            else:
-                final_img.paste(cover_img, (x_offset, y_offset))
-            x_offset += img_size + margin
-
-        y_offset += row_height
-
-    return final_img
+    from modules.html_renderer import image_uri, render_template
+    if max_per_row < 1:
+        raise ValueError("max_per_row must be positive")
+    cards = []
+    for key, count, color in (
+        ("completed", stats["achieved"], "#4caf50"),
+        ("incomplete", stats["unachieved"], "#ff9800"),
+        ("unplayed", stats["unplayed"], "#9e9e9e"),
+        ("total", stats["total"], "#4285f4"),
+    ):
+        value = f"{count} ({count / stats['total'] * 100:.1f}%)" if key != "total" and stats['total'] > 0 else str(count)
+        cards.append((_image_text(f"progress.{key}", language), value, color))
+    return render_template("progress.html", img_width, mode="progress", title=title_text,
+                           margin=margin, max_per_row=max_per_row, cards=cards,
+                           rows=[(label, [image_uri(entry['img']) for entry in entries])
+                                 for label, entries in rows])
