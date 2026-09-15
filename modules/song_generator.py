@@ -91,21 +91,11 @@ def _generate_song_table_image(song_json, scale_width=1.5, scale_height=2.0, lan
 
 
 def _makeup_played_data(played_data, gap=10):
-    rcd_imgs = [create_thumbnail_in_line(record) for record in played_data]
-    widths = [img.width for img in rcd_imgs]
-    heights = [img.height for img in rcd_imgs]
+    from modules.html_cards import thumbnail_html
+    from modules.html_renderer import render_template
+    return render_template("stack.html", 600, gap=gap,
+                           items=[thumbnail_html(record, inline=True) for record in played_data])
 
-    max_width = max(widths)
-    total_height = sum(heights) + gap * (len(rcd_imgs) - 1)
-
-    new_img = Image.new("RGBA", (max_width, total_height), color=(0, 0, 0, 0))
-
-    current_y = 0
-    for img in rcd_imgs:
-        new_img.paste(img, (0, current_y))
-        current_y += img.height + gap
-
-    return new_img
 
 def generate_version_list(songs_json, version_info=None, ver="jp"):
     img_width = 1820

@@ -1,0 +1,19 @@
+{% if inline %}
+<div style="width:600px;height:225px;border:7px solid {{ color }};background:white;position:relative;color:black">
+<div style="position:absolute;left:13px;top:-3px;font-size:60px">{{ song.score }}</div>
+<div style="position:absolute;left:18px;top:70px;font-size:29px">{{ song.dx_score }} → {{ '%.1f'|format(song.dx_percentage * 100) }}%</div>
+{% if 'last_play_time' in song and 'play_count' in song %}<div class="ellipsis" style="position:absolute;left:18px;right:10px;top:108px;font-size:29px">PC: {{ song.play_count }}　Recent: {{ song.last_play_time }}</div>{% endif %}
+{% for key,x,y,w,h in [('score_icon',373,13,203,90),('combo_icon',8,149,108,56),('sync_icon',108,149,108,56),('dx_star',220,163,164,33)] %}{% if icons[key] %}<img src="{{ icons[key] }}" style="position:absolute;left:{{ x }}px;top:{{ y }}px;width:{{ w }}px;height:{{ h }}px">{% endif %}{% endfor %}
+<div style="position:absolute;right:18px;top:158px;font-size:29px">{{ '%.1f'|format(song.internalLevelValue) }} → {{ song.ra }}</div></div>
+{% else %}
+<div style="width:300px;height:150px;background:{{ color }};color:{{ text_color }};position:relative;border-radius:10px;overflow:hidden">
+<div style="position:absolute;left:14px;top:13px;width:80px;height:80px;overflow:hidden;border-radius:8px"><div style="transform:scale(.533333);transform-origin:top left">{{ cover|safe }}</div></div>
+<div style="position:absolute;left:105px;right:15px;top:10px;font-size:19px">
+<div class="ellipsis" style="border-bottom:2px solid;padding-bottom:6px">{{ song.name }}</div>
+<div style="margin-top:3px">{{ song.score }}</div>
+<div style="display:flex;justify-content:space-between;font-size:14px;margin-top:5px;gap:4px"><span class="ellipsis">{{ version }}</span><span style="flex-shrink:0">{{ song.dx_score }}</span></div></div>
+<div style="position:absolute;left:0;right:0;bottom:0;height:45px;background:white;border:3px solid {{ color }};border-radius:0 0 10px 10px"></div>
+{% for key,x,y,w,h in [('score_icon',225,43,65,30),('combo_icon',7,103,40,45),('sync_icon',47,103,40,45),('dx_star',91,119,80,16)] %}{% if icons[key] %}<img src="{{ icons[key] }}" style="position:absolute;left:{{ x }}px;top:{{ y }}px;width:{{ w }}px;height:{{ h }}px">{% endif %}{% endfor %}
+<div style="position:absolute;right:12px;top:112px;color:black;font-size:19px">{{ '%.1f'|format(song.internalLevelValue) }} → {{ song.ra }}</div>
+</div>
+{% endif %}
