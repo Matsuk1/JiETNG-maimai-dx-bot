@@ -1,0 +1,93 @@
+<style>
+  .glass-cover {
+    position: relative;
+    width: 150px;
+    overflow: hidden;
+    border: 3px solid var(--difficulty);
+    border-radius: 18px;
+    background: linear-gradient(140deg, #e2f4ff, #eae2fa);
+    color: #263650;
+    box-shadow: inset 0 1px 2px white;
+  }
+
+  .glass-cover-art {
+    width: 144px;
+    height: 144px;
+    border-radius: 13px;
+  }
+
+  .glass-cover-type {
+    position: absolute;
+    top: 120px;
+    right: 3px;
+    width: 68px;
+    height: 20px;
+  }
+
+  .glass-cover-overlay {
+    position: absolute;
+    inset: 0 0 auto;
+    height: 144px;
+    border-radius: 13px;
+    background: #27354f88;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .glass-cover-status {
+    width: 75%;
+    height: auto;
+  }
+
+  .glass-cover-footer {
+    position: absolute;
+    inset: auto 0 0;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ffffffb3;
+    border-top: 1px solid white;
+    font-size: 18px;
+    padding: 0 4px;
+  }
+
+  .glass-cover-block {
+    flex: 1;
+    height: 13px;
+    margin: 0 2px;
+    border: 1px solid #ffffffcc;
+    border-radius: 6px;
+  }
+</style>
+<div class="glass-cover" style="
+  --difficulty: {{ color if difficulty else '#a7bad6' }};
+  height: {{ 180 if footer else 150 }}px;
+">
+  {% if cover %}
+    <img class="glass-cover-art" src="{{ cover }}">
+  {% endif %}
+  {% if type_src %}
+    <img class="glass-cover-type" src="{{ type_src }}">
+  {% endif %}
+  {% if status or (achieved and not footer) %}
+    <div class="glass-cover-overlay">
+      {% if status %}
+        <img class="glass-cover-status" src="{{ status }}">
+      {% endif %}
+    </div>
+  {% endif %}
+  {% if footer %}
+    <div class="glass-cover-footer">
+      {% if plate %}
+        {% for block in blocks %}
+          <span class="glass-cover-block" style="background: {{ block }};"></span>
+        {% endfor %}
+      {% else %}
+        {% if achieved %}<span>✓ </span>{% endif %}
+        <span class="ellipsis">{{ title }}</span>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
