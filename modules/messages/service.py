@@ -942,64 +942,59 @@ def generate_calc_result_flex(notes, scores, difficulty=None, level=None, user_i
 
 
 def generate_calc_carousel(calc_bubbles_data, user_id=None):
-    """
-    生成calc结果的carousel Flex Message
-
-    Args:
-        calc_bubbles_data: list of tuples (notes, scores, difficulty, level)
-
-    Returns:
-        FlexMessage: Carousel格式的calc结果
-    """
-    lang = get_user_language(user_id)
+    """Use a single card for one result, otherwise retain the supplied card order."""
     if len(calc_bubbles_data) == 1:
-        # 只有一个bubble，直接返回单个flex message
         notes, scores, difficulty, level = calc_bubbles_data[0]
         return generate_calc_result_flex(notes, scores, difficulty, level, user_id)
 
-    # 多个bubble，构建carousel
-    bubbles = []
-    for notes, scores, difficulty, level in calc_bubbles_data:
-        # 直接构建bubble字典，复制generate_calc_result_flex的逻辑
-        bubble = _build_calc_bubble(notes, scores, difficulty, level, lang)
-        bubbles.append(bubble)
-
-    carousel = {
-        "type": "carousel",
-        "contents": bubbles
-    }
+    lang = get_user_language(user_id)
+    bubbles = [
+        _build_calc_bubble(notes, scores, difficulty, level, lang)
+        for notes, scores, difficulty, level in calc_bubbles_data
+    ]
     return FlexMessage(
         alt_text=get_multilingual_text(_message_texts["calc_flex_text"]['alt_multi'], language=lang),
-        contents=FlexContainer.from_dict(carousel)
+        contents=FlexContainer.from_dict({"type": "carousel", "contents": bubbles}),
     )
 
 
 def _build_calc_bubble(notes, scores, difficulty=None, level=None, lang="ja"):
-    """
-    构建calc结果的bubble字典（内部辅助函数）
+    """Assemble note counts, judgement losses and tolerances in display order."""
+    title_text, header_color = _calc_header(difficulty, level, lang)
+    body_contents = []
+    if not difficulty:
+        body_contents.extend(_calc_note_rows(notes))
+        body_contents.append({"type": "separator", "margin": "md"})
+    body_contents.extend(_calc_score_rows(notes, scores))
+    body_contents.extend(_calc_tolerance_rows(scores, lang))
 
-    Args:
-        notes: dict with keys ['tap', 'hold', 'slide', 'touch', 'break']
-        scores: dict with score calculations
-        difficulty: 可选，难度名称
-        level: 可选，难度等级
+    # 构建bubble
+    bubble = {
+        "type": "bubble",
+        "size": "mega",
+        "header": standard_header_box(
+            title_text,
+            get_multilingual_text(_message_texts["calc_flex_text"]['subtitle'], language=lang),
+            accent=header_color,
+        ),
+        "body": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": body_contents,
+            "paddingAll": "16px"
+        }
+    }
 
-    Returns:
-        dict: bubble字典
-    """
+    return bubble
+
+
+def _calc_note_rows(notes):
     # Note类型和数量
     note_contents = []
-    note_labels = {
-        'tap': 'TAP',
-        'hold': 'HOLD',
-        'slide': 'SLIDE',
-        'touch': 'TOUCH',
-        'break': 'BREAK'
-    }
 
     for key in ['tap', 'hold', 'slide', 'touch', 'break']:
         # 跳过没有 touch 数据的情况
-        if key == 'touch' and (not notes.get(key) or notes.get(key) == 0):
+        if key == 'touch' and not notes.get(key):
             continue
 
         note_contents.append({
@@ -1008,7 +1003,7 @@ def _build_calc_bubble(notes, scores, difficulty=None, level=None, lang="ja"):
             "contents": [
                 {
                     "type": "text",
-                    "text": note_labels[key],
+                    "text": key.upper(),
                     "size": "sm",
                     "color": "#666666",
                     "flex": 0,
@@ -1025,12 +1020,10 @@ def _build_calc_bubble(notes, scores, difficulty=None, level=None, lang="ja"):
             "margin": "sm"
         })
 
-    # 分隔线
-    separator = {
-        "type": "separator",
-        "margin": "md"
-    }
+    return note_contents
 
+
+def _calc_score_rows(notes, scores):
     # 判定分数
     score_contents = []
     note_groups = [
@@ -1056,7 +1049,7 @@ def _build_calc_bubble(notes, scores, difficulty=None, level=None, lang="ja"):
     first_group = True
     for note_type, judgements in note_groups:
         # 跳过没有 touch 数据的情况
-        if note_type == 'touch' and (not notes.get('touch') or notes.get('touch') == 0):
+        if note_type == 'touch' and not notes.get('touch'):
             continue
 
         if not first_group:
@@ -1092,6 +1085,10 @@ def _build_calc_bubble(notes, scores, difficulty=None, level=None, lang="ja"):
                     "margin": "sm"
                 })
 
+    return score_contents
+
+
+def _calc_header(difficulty, level, lang):
     # 难度映射和颜色
     difficulty_map = {
         'basic': {'name': 'BASIC', 'color': '#34C759'},
@@ -1113,105 +1110,55 @@ def _build_calc_bubble(notes, scores, difficulty=None, level=None, lang="ja"):
         title_text = get_multilingual_text(_message_texts["calc_flex_text"]['title_distribution'], language=lang)
         header_color = "#007AFF"
 
-    # 计算 tap_great 容错数
-    tap_great_tolerance = []
-    if 'tap_great' in scores and scores['tap_great'] > 0:
-        # 从 101% 到 100.5000%
-        max_tap_great_to_half = int(0.5 / scores['tap_great'])
-        # 从 101% 到 100.0000%
-        max_tap_great_to_full = int(1.0 / scores['tap_great'])
+    return title_text, header_color
 
-        tap_great_tolerance.append({
-            "type": "separator",
-            "margin": "lg"
-        })
 
-        tap_great_tolerance.append({
+def _calc_tolerance_rows(scores, lang):
+    if not ("tap_great" in scores and scores["tap_great"] > 0):
+        return []
+    tap_great = scores["tap_great"]
+
+    rows = []
+    label = get_multilingual_text(_message_texts["calc_flex_text"]['max_tap_great'], language=lang)
+    for index, (achievement, allowed_loss) in enumerate((("100.5000%", 0.5), ("100.0000%", 1.0))):
+        row = {
             "type": "box",
-            "layout": "vertical",
+            "layout": "horizontal",
             "contents": [
                 {
-                    "type": "box",
-                    "layout": "horizontal",
-                    "contents": [
-                        {
-                            "type": "text",
-                            "text": "100.5000%",
-                            "size": "xs",
-                            "color": "#666666",
-                            "flex": 3,
-                            "weight": "bold"
-                        },
-                        {
-                            "type": "text",
-                            "text": get_multilingual_text(
-                                _message_texts["calc_flex_text"]['max_tap_great'],
-                                language=lang,
-                            ).format(count=max_tap_great_to_half),
-                            "size": "xs",
-                            "color": "#FF69B4",
-                            "align": "end",
-                            "flex": 4,
-                            "weight": "bold"
-                        }
-                    ]
+                    "type": "text",
+                    "text": achievement,
+                    "size": "xs",
+                    "color": "#666666",
+                    "flex": 3,
+                    "weight": "bold",
                 },
                 {
-                    "type": "box",
-                    "layout": "horizontal",
-                    "contents": [
-                        {
-                            "type": "text",
-                            "text": "100.0000%",
-                            "size": "xs",
-                            "color": "#666666",
-                            "flex": 3,
-                            "weight": "bold"
-                        },
-                        {
-                            "type": "text",
-                            "text": get_multilingual_text(
-                                _message_texts["calc_flex_text"]['max_tap_great'],
-                                language=lang,
-                            ).format(count=max_tap_great_to_full),
-                            "size": "xs",
-                            "color": "#FF69B4",
-                            "align": "end",
-                            "flex": 4,
-                            "weight": "bold"
-                        }
-                    ],
-                    "margin": "sm"
-                }
+                    "type": "text",
+                    "text": label.format(count=int(allowed_loss / tap_great)),
+                    "size": "xs",
+                    "color": "#FF69B4",
+                    "align": "end",
+                    "flex": 4,
+                    "weight": "bold",
+                },
             ],
+        }
+        if index:
+            row["margin"] = "sm"
+        rows.append(row)
+    return [
+        {"type": "separator", "margin": "lg"},
+        {
+            "type": "box",
+            "layout": "vertical",
+            "contents": rows,
             "backgroundColor": "#FFF5F0",
             "cornerRadius": "md",
             "paddingAll": "12px",
-            "margin": "md"
-        })
-
-    # 构建body内容
-    body_contents = score_contents if difficulty else (note_contents + [separator] + score_contents)
-    body_contents.extend(tap_great_tolerance)
-
-    # 构建bubble
-    bubble = {
-        "type": "bubble",
-        "size": "mega",
-        "header": standard_header_box(
-            title_text,
-            get_multilingual_text(_message_texts["calc_flex_text"]['subtitle'], language=lang),
-            accent=header_color,
-        ),
-        "body": {
-            "type": "box",
-            "layout": "vertical",
-            "contents": body_contents,
-            "paddingAll": "16px"
-        }
-    }
-
-    return bubble
+            "margin": "md",
+        },
+    ]
 
 
 def generate_search_results_flex(user_id, matching_songs, search_type='song', id_use=None):
