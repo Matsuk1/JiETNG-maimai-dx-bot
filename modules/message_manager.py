@@ -1259,6 +1259,37 @@ def _generate_score_recognition_single_flex(result, user_id=None):
             ],
         }
 
+    def loss_total_box(total_loss_text):
+        return {
+            "type": "box",
+            "layout": "horizontal",
+            "spacing": "sm",
+            "paddingAll": "6px",
+            "backgroundColor": "#FDEDEC",
+            "cornerRadius": "4px",
+            "contents": [
+                {
+                    "type": "text",
+                    "text": "TOTAL",
+                    "size": "xxs",
+                    "color": COLOR_TEXT_SECONDARY,
+                    "weight": "bold",
+                    "flex": 1,
+                    "wrap": False,
+                },
+                {
+                    "type": "text",
+                    "text": total_loss_text,
+                    "size": "sm",
+                    "color": "#C0392B",
+                    "weight": "bold",
+                    "align": "end",
+                    "flex": 1,
+                    "wrap": False,
+                },
+            ],
+        }
+
     def loss_detail_row(label, values, total_loss_text):
         return {
             "type": "box",
@@ -1287,35 +1318,7 @@ def _generate_score_recognition_single_flex(result, user_id=None):
                             "spacing": "sm",
                             "contents": values,
                         },
-                        {
-                            "type": "box",
-                            "layout": "horizontal",
-                            "spacing": "sm",
-                            "paddingAll": "6px",
-                            "backgroundColor": "#FDEDEC",
-                            "cornerRadius": "4px",
-                            "contents": [
-                                {
-                                    "type": "text",
-                                    "text": "TOTAL",
-                                    "size": "xxs",
-                                    "color": COLOR_TEXT_SECONDARY,
-                                    "weight": "bold",
-                                    "flex": 1,
-                                    "wrap": False,
-                                },
-                                {
-                                    "type": "text",
-                                    "text": total_loss_text,
-                                    "size": "sm",
-                                    "color": "#C0392B",
-                                    "weight": "bold",
-                                    "align": "end",
-                                    "flex": 1,
-                                    "wrap": False,
-                                },
-                            ],
-                        },
+                        loss_total_box(total_loss_text),
                     ],
                 },
             ],
@@ -1409,45 +1412,15 @@ def _generate_score_recognition_single_flex(result, user_id=None):
         def break_loss_label(key):
             return format_loss_percentage(break_loss_percentages.get(key), 1)
 
-        def break_detail_row(label, values):
-            return {
-                "type": "box",
-                "layout": "horizontal",
-                "spacing": "sm",
-                "contents": [
-                    {
-                        "type": "text",
-                        "text": label,
-                        "size": "xxs",
-                        "color": COLOR_TEXT_PRIMARY,
-                        "weight": "bold",
-                        "flex": 2,
-                        "gravity": "center",
-                        "wrap": False,
-                    },
-                    {
-                        "type": "box",
-                        "layout": "horizontal",
-                        "spacing": "sm",
-                        "flex": 5,
-                        "contents": values,
-                    },
-                ],
-            }
 
         def break_loss_value(key):
             value = break_loss_percentages.get(key)
             return float(value) if isinstance(value, (int, float)) else 0.0
 
-        break_total_loss = sum((
-            break_loss_value("perfect_high") * nonnegative_count(break_detail.get("perfect_high")),
-            break_loss_value("perfect_low") * nonnegative_count(break_detail.get("perfect_low")),
-            break_loss_value("great_high") * nonnegative_count(break_detail.get("great_high")),
-            break_loss_value("great_middle") * nonnegative_count(break_detail.get("great_middle")),
-            break_loss_value("great_low") * nonnegative_count(break_detail.get("great_low")),
-            break_loss_value("good") * nonnegative_count(break_detail.get("good")),
-            break_loss_value("miss") * nonnegative_count(break_detail.get("miss")),
-        ))
+        break_total_loss = sum(
+            break_loss_value(key) * nonnegative_count(break_detail.get(key))
+            for key in ("perfect_high", "perfect_low", "great_high", "great_middle", "great_low", "good", "miss")
+        )
 
         candidate_count = max(1, int(break_detail.get("candidate_count", 1) or 1))
         row_candidate_count = max(
@@ -1475,7 +1448,7 @@ def _generate_score_recognition_single_flex(result, user_id=None):
                 "backgroundColor": "#F8FAFC",
                 "cornerRadius": "6px",
                 "contents": [
-                    break_detail_row("CRITICAL", [
+                    detail_row("CRITICAL", [
                         detail_value_box(
                             break_loss_label("critical_perfect"),
                             break_detail.get("critical_perfect", 0),
@@ -1483,48 +1456,20 @@ def _generate_score_recognition_single_flex(result, user_id=None):
                             "#FFF0C7",
                         ),
                     ]),
-                    break_detail_row("PERFECT", [
+                    detail_row("PERFECT", [
                         detail_value_box(break_loss_label("perfect_high"), break_detail.get("perfect_high", 0), "#A96517", "#FFF3D9"),
                         detail_value_box(break_loss_label("perfect_low"), break_detail.get("perfect_low", 0), "#B97824", "#FFF8E8"),
                     ]),
-                    break_detail_row("GREAT", [
+                    detail_row("GREAT", [
                         detail_value_box(break_loss_label("great_high"), break_detail.get("great_high", 0), "#923468", "#FBE5F1"),
                         detail_value_box(break_loss_label("great_middle"), break_detail.get("great_middle", 0), "#A64D7D", "#F9EDF4"),
                         detail_value_box(break_loss_label("great_low"), break_detail.get("great_low", 0), "#B66A91", "#F8F2F6"),
                     ]),
-                    break_detail_row("OTHER", [
+                    detail_row("OTHER", [
                         detail_value_box(break_loss_label("good"), break_detail.get("good", 0), "#277047", "#E7F5ED"),
                         detail_value_box(break_loss_label("miss"), break_detail.get("miss", 0), "#555555", "#E9EDF2"),
                     ]),
-                    {
-                        "type": "box",
-                        "layout": "horizontal",
-                        "spacing": "sm",
-                        "paddingAll": "6px",
-                        "backgroundColor": "#FDEDEC",
-                        "cornerRadius": "4px",
-                        "contents": [
-                            {
-                                "type": "text",
-                                "text": "TOTAL",
-                                "size": "xxs",
-                                "color": COLOR_TEXT_SECONDARY,
-                                "weight": "bold",
-                                "flex": 1,
-                                "wrap": False,
-                            },
-                            {
-                                "type": "text",
-                                "text": format_loss_percentage(break_total_loss, 1),
-                                "size": "sm",
-                                "color": "#C0392B",
-                                "weight": "bold",
-                                "align": "end",
-                                "flex": 1,
-                                "wrap": False,
-                            },
-                        ],
-                    },
+                    loss_total_box(format_loss_percentage(break_total_loss, 1)),
                 ],
             },
             {
