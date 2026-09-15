@@ -1,0 +1,38 @@
+<div class="glass-progress">
+  {% include 'progress.html' %}
+</div>
+<style>
+  .glass-progress {
+    color: #293954;
+    background:
+      radial-gradient(ellipse at 5% 10%, #beeaf6, transparent 55%),
+      linear-gradient(140deg, #eaf3fc, #e0dbf4 65%, #e0f5ed);
+  }
+
+  .glass-progress .progress-heading,
+  .glass-progress .plate-title {
+    color: #293954;
+    -webkit-text-stroke: 0;
+    text-shadow: 0 2px 1px #ffffffb3;
+  }
+
+  .glass-progress .summary,
+  .glass-progress .plate-stat {
+    border: 3px solid var(--accent);
+    border-radius: 28px;
+    background: linear-gradient(140deg, #ffffffa6, #ffffff55);
+    box-shadow: inset 0 2px 2px white, 0 6px 16px #54699414;
+    backdrop-filter: blur(20px);
+  }
+
+  .glass-progress .summary-label {
+    color: #586987;
+  }
+
+  .glass-progress .level-label {
+    border: 2px solid #ffffffd9;
+    background: #ffffff99;
+    box-shadow: inset 0 2px 2px white;
+    color: #354b6c;
+  }
+</style>
