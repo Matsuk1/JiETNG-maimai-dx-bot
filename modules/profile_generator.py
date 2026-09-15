@@ -1,3 +1,4 @@
+from modules.image_skins import skinnable
 """Render profile nameplates using HTML while keeping the existing asset requests."""
 import logging
 from io import BytesIO
@@ -10,6 +11,7 @@ from modules.html_renderer import file_uri, image_uri, render_template
 logger = logging.getLogger(__name__)
 
 
+@skinnable
 def generate_profile_image(user_info, scale=1, rounded_icon=False):
     assets = {}
     for key in ('nameplate_url', 'icon_url', 'rating_block_url', 'class_rank_url', 'cource_rank_url', 'trophy_url'):

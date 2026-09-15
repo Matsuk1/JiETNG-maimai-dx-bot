@@ -6,7 +6,7 @@
       height: 225px;
       overflow: hidden;
       padding: 18px 22px;
-      border: 1px solid #ffffffeb;
+      border: 3px solid var(--difficulty);
       border-radius: 30px;
       color: #25334e;
       background:
@@ -76,7 +76,7 @@
       font-size: 25px;
     }
   </style>
-  <article class="glass-inline">
+  <article class="glass-inline" style="--difficulty: {{ color }};">
     <div class="glass-inline-achievement">{{ song.score }}</div>
     <div class="glass-inline-dx">DX {{ song.dx_score }} → {{ '%.1f'|format(song.dx_percentage * 100) }}%</div>
     {% if 'last_play_time' in song and 'play_count' in song %}
@@ -104,7 +104,7 @@
       width: 300px;
       height: 150px;
       overflow: hidden;
-      border: 1px solid #ffffffdc;
+      border: 2px solid var(--difficulty);
       border-radius: 23px;
       color: #25334e;
       background: linear-gradient(145deg, #ffffffba, #ffffff68);

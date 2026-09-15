@@ -1,3 +1,4 @@
+from modules.image_skins import skinnable
 import os
 import re
 
@@ -11,6 +12,7 @@ def _song_text(key, language):
     return select_text(language_catalog(f"images.song.{key}"), language=language)
 
 
+@skinnable
 def song_info_generate(
     song_json,
     played_data=(),
@@ -68,6 +70,7 @@ def _makeup_played_data(played_data, gap=10):
                            items=[thumbnail_html(record, inline=True) for record in played_data])
 
 
+@skinnable
 def generate_version_list(songs_json, version_info=None, ver="jp"):
     from modules.html_cards import cover_html
     from modules.html_renderer import file_uri, render_template

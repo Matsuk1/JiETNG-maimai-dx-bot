@@ -35,3 +35,34 @@ def resolve_template(name, skin='default'):
         if Path(name).name == name and (SKINS / skin / name).is_file():
             return f'skins/{skin}/{name}'
     return name
+
+
+# Template expansion happens on the caller thread before screenshot submission.
+# ContextVar keeps nested generators in one skin without cross-request leakage.
+from contextlib import contextmanager
+from contextvars import ContextVar
+from functools import wraps
+
+_current_skin = ContextVar('image_skin', default='default')
+
+
+def current_skin():
+    return _current_skin.get()
+
+
+@contextmanager
+def use_skin(skin=None):
+    token = _current_skin.set(current_skin() if skin is None else skin)
+    try:
+        yield
+    finally:
+        _current_skin.reset(token)
+
+
+def skinnable(function):
+    """Add an optional skin keyword to a composite image generator."""
+    @wraps(function)
+    def wrapped(*args, skin=None, **kwargs):
+        with use_skin(skin):
+            return function(*args, **kwargs)
+    return wrapped

@@ -99,7 +99,7 @@ function updateSkinSource() {
   if (!item) return;
   const selected = skins.find(skin => skin.id === $('skin').value);
   const filename = item.template.split('/').pop();
-  const supported = ['records', 'thumbnail', 'inline'].includes(kind);
+  const supported = true;
   $('skin').disabled = !supported;
   $('source-path').textContent = supported && selected?.templates.includes(filename)
     ? `templates/images/skins/${selected.id}/${filename}` : item.template;

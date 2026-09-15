@@ -1,3 +1,4 @@
+from modules.image_skins import skinnable
 import math
 import logging
 import os
@@ -33,13 +34,13 @@ def _get_difficulty_color(difficulty):
 _DIFF_KEYS = {"basic", "advanced", "expert", "master", "remaster", "utage"}
 
 
-def create_thumbnail_in_line(song, skin="default"):
+def create_thumbnail_in_line(song, skin=None):
     from modules.html_cards import thumbnail_html
     from modules.html_renderer import render_html
     return render_html(thumbnail_html(song, inline=True, skin=skin), 600, 225)
 
 
-def create_thumbnail(song, skin="default"):
+def create_thumbnail(song, skin=None):
     from modules.html_cards import thumbnail_html
     from modules.html_renderer import render_html
     return render_html(thumbnail_html(song, skin=skin), 300, 150)
@@ -239,6 +240,7 @@ def _score_break_rows_from_internal(judgement, break_detail):
     ]
 
 
+@skinnable
 def generate_score_recognition_picture(result, ver="jp", img_width=1100, timezone_offset=9, bg_filter=None):
     from modules.html_cards import cover_html, difficulty_color
     from modules.html_renderer import file_uri, render_template
@@ -301,7 +303,7 @@ def generate_score_recognition_picture(result, ver="jp", img_width=1100, timezon
     return compose_generated_images([card], timezone_offset=timezone_offset, bg_filter=bg_filter)
 
 
-def generate_records_picture(up_songs=None, down_songs=None, title="RECORD", ver="jp", details=None, skin="default"):
+def generate_records_picture(up_songs=None, down_songs=None, title="RECORD", ver="jp", details=None, skin=None):
     from modules.html_cards import difficulty_color, thumbnail_html
     from modules.html_renderer import file_uri, render_template
     up_songs, down_songs = up_songs or [], down_songs or []
@@ -326,6 +328,7 @@ def generate_records_picture(up_songs=None, down_songs=None, title="RECORD", ver
                            down=[thumbnail_html(song, skin=skin) for song in down_songs])
 
 
+@skinnable
 def generate_cover(cover_url, type, icon=None, icon_type=None, cover_name=None, complete_info=None, difficulty=None, achieved=None, song_title=None):
     from modules.html_cards import cover_html
     from modules.html_renderer import render_html
@@ -334,6 +337,7 @@ def generate_cover(cover_url, type, icon=None, icon_type=None, cover_name=None, 
     return render_html(body, 150, 180 if complete_info is not None or difficulty is not None else 150)
 
 
+@skinnable
 def generate_plate_image(target_data, title, img_width=1820, img_height=600,
                          max_per_row=10, margin=20, headers=None):
     from modules.html_cards import difficulty_color
@@ -371,6 +375,7 @@ def _progress_level_group_label(level):
     return str(level)
 
 
+@skinnable
 def generate_level_rank_progress_image(
     target_data,
     level_name,

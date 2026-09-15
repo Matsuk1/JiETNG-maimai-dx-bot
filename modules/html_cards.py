@@ -28,7 +28,7 @@ def icon_uri(value, directory, url):
 
 
 def cover_html(cover_url, type, icon=None, icon_type=None, cover_name=None,
-               complete_info=None, difficulty=None, achieved=None, song_title=None):
+               complete_info=None, difficulty=None, achieved=None, song_title=None, skin=None):
     path = Path(COVERS_DIR) / Path(cover_name).name if cover_name else None
     cover_src = file_uri(path) if path else ''
     if not cover_src:
@@ -44,7 +44,7 @@ def cover_html(cover_url, type, icon=None, icon_type=None, cover_name=None,
     status = icon_uri(icon, str(Path(ICON_BASE_DIR) / str(icon_type)),
                       f'https://maimaidx.jp/maimai-mobile/img/music_icon_{icon}.png') if icon and icon_type and icon != 'back' else ''
     footer = complete_info is not None or difficulty is not None
-    return template('cover.html', cover=cover_src, type_src=type_src, status=status,
+    return template('cover.html', skin=skin, cover=cover_src, type_src=type_src, status=status,
                     color=difficulty_color(difficulty), difficulty=difficulty,
                     achieved=achieved, footer=footer, plate=complete_info is not None,
                     blocks=[difficulty_color(d) if (complete_info or {}).get(d) else 'white'
@@ -52,7 +52,7 @@ def cover_html(cover_url, type, icon=None, icon_type=None, cover_name=None,
                     title=song_title or '', text_color='#72148d' if difficulty == 'remaster' else 'white')
 
 
-def thumbnail_html(song, inline=False, skin="default"):
+def thumbnail_html(song, inline=False, skin=None):
     icons = {}
     for key, directory, name in (
         ('score_icon', ICON_SCORE_DIR, lambda v: 'playlog/' + v.replace('p','plus')),
@@ -64,7 +64,7 @@ def thumbnail_html(song, inline=False, skin="default"):
     ):
         value = song.get(key)
         icons[key] = icon_uri(value, directory, f'https://maimaidx.jp/maimai-mobile/img/{name(str(value))}.png') if value else ''
-    cover = '' if inline else cover_html(song.get('cover_url'), song.get('type'), cover_name=song.get('cover_name'))
+    cover = '' if inline else cover_html(song.get('cover_url'), song.get('type'), cover_name=song.get('cover_name'), skin=skin)
     return template('thumbnail.html', skin=skin, song=song, inline=inline, icons=icons, cover=cover,
                     color=difficulty_color(song.get('difficulty')),
                     text_color='#72148d' if song.get('difficulty') == 'remaster' else 'white',

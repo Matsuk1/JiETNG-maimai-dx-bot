@@ -59,8 +59,9 @@ def _file_uri(path, modified):
     return f'data:{mime};base64,' + base64.b64encode(Path(path).read_bytes()).decode('ascii')
 
 
-def template(name, skin='default', **data):
-    from modules.image_skins import resolve_template
+def template(name, skin=None, **data):
+    from modules.image_skins import current_skin, resolve_template
+    skin = current_skin() if skin is None else skin
     return _ENV.get_template(resolve_template(name, skin)).render(**data)
 
 

@@ -1,3 +1,4 @@
+from modules.image_skins import skinnable
 import os
 import random
 import logging
@@ -16,6 +17,7 @@ def resize_by_width(img, target_width):
     return resized_img
 
 
+@skinnable
 def compose_images(images, timezone_offset=9, bg_filter=None):
     """Compose images, optional blurred background and footer with HTML/CSS.
 

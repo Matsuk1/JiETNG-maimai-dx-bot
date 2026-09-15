@@ -15,7 +15,7 @@ from flask import Flask, abort, jsonify, request, send_file
 from PIL import Image
 
 from modules import html_cards, image_cache, record_generator as records, song_generator as songs
-from modules.image_skins import available_skins
+from modules.image_skins import available_skins, use_skin
 from modules.html_renderer import file_uri, image_uri, render_template
 from modules.image_manager import compose_generated_images
 
@@ -55,7 +55,7 @@ def clean_data(value):
 def render_case(kind, data, skin="default"):
     """Use production generators in this isolated development process."""
     data = clean_data(copy.deepcopy(data))
-    with RENDER_LOCK, ExitStack() as stack:
+    with RENDER_LOCK, use_skin(skin), ExitStack() as stack:
         # Scope the offline fixture assets to one render, without changing production files.
         stack.enter_context(patch.object(html_cards, 'COVERS_DIR', str(ASSETS)))
         stack.enter_context(patch.object(image_cache, 'COVERS_DIR', str(ASSETS)))

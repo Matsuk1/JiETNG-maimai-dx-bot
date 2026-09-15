@@ -34,3 +34,27 @@ def test_glass_skin_overrides_and_default_fallback():
     assert '&lt;script&gt;' in html
     assert '<script>' not in html
     assert 'glass-records' in html
+
+
+def test_nested_skin_scope_is_isolated_and_restored_on_error():
+    from modules.image_skins import use_skin, current_skin, skinnable
+
+    @skinnable
+    def nested():
+        return current_skin()
+
+    def render(skin):
+        with use_skin(skin):
+            assert nested() == skin
+            assert nested(skin='default') == 'default'
+            assert current_skin() == skin
+            try:
+                with use_skin('temporary'):
+                    raise ValueError('render failure')
+            except ValueError:
+                pass
+            return current_skin()
+
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        assert list(pool.map(render, ['ios-glass', 'default'] * 8)) == ['ios-glass', 'default'] * 8
+    assert current_skin() == 'default'
