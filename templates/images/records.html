@@ -1,14 +1,193 @@
 <style>
-.records{padding:30px 20px 23px}.record-header{height:215px;display:flex;gap:30px;align-items:flex-start;padding:0 10px}
-.record-stats{padding:14px 20px;flex-shrink:0;font-size:28px}.record-stats dl{display:grid;grid-template-columns:max-content max-content;gap:4px 10px;margin:2px 0 0}.record-stats dd{margin:0}
-.rating-line{display:flex;align-items:center;gap:18px}.rating-block{position:relative;width:259px;height:51px}.rating-block img{width:100%;height:100%}.rating-digits{position:absolute;left:122.5px;top:0;bottom:0;display:flex;align-items:center;color:white;white-space:pre}.rating-digits span{width:20.125px;text-align:center}
-.record-title{font-size:170px;line-height:1.1;flex:1;text-align:right;white-space:nowrap;min-width:0}
-.record-details{display:grid;grid-template-rows:repeat(4,35px);grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:0 15px;padding:15px 20px;flex:1;min-width:0;font-size:28px}.diff-dot{display:inline-block;width:28px;height:28px;border-radius:3px;vertical-align:middle}
-.record-grid{display:grid;grid-template-columns:repeat(5,300px);gap:10px}.divider{height:40px;display:flex;align-items:center;justify-content:center;gap:30px}.divider::before,.divider::after{content:'';height:2px;width:355px;background:black}.divider span{width:6px;height:6px;border-radius:50%;background:black}
+  .records {
+    padding: 30px 20px 23px;
+  }
+
+  .record-header {
+    height: 215px;
+    display: flex;
+    gap: 30px;
+    align-items: flex-start;
+    padding: 0 10px;
+  }
+
+  /* Left summary card: rating badge, equation and averages. */
+  .record-stats {
+    padding: 14px 20px;
+    flex-shrink: 0;
+    font-size: 28px;
+  }
+
+  .record-stats dl {
+    display: grid;
+    grid-template-columns: max-content max-content;
+    gap: 4px 10px;
+    margin: 2px 0 0;
+  }
+
+  .record-stats dd {
+    margin: 0;
+  }
+
+  .rating-line {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+
+  /* Move the badge and digits together to align with the equation. */
+  .rating-block {
+    position: relative;
+    width: 259px;
+    height: 51px;
+    transform: translate(-3px, -3px);
+  }
+
+  .rating-block img {
+    width: 100%;
+    height: 100%;
+  }
+
+  .rating-digits {
+    position: absolute;
+    left: 122.5px;
+    transform: translateY(2px);
+    top: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    color: white;
+    white-space: pre;
+  }
+
+  .rating-digits span {
+    width: 20.125px;
+    text-align: center;
+  }
+
+  .record-title {
+    font-size: 170px;
+    line-height: 1.1;
+    flex: 1;
+    text-align: right;
+    white-space: nowrap;
+    min-width: 0;
+  }
+
+  /* Rotated heading beside the optional filter details. */
+  .record-detail-title {
+    font-size: 65px;
+    align-self: center;
+    max-width: 200px;
+    overflow: hidden;
+    transform: rotate(-45deg);
+  }
+
+  .record-details {
+    display: grid;
+    grid-template-rows: repeat(4,35px);
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0,1fr);
+    gap: 0 15px;
+    padding: 15px 20px;
+    flex: 1;
+    min-width: 0;
+    font-size: 28px;
+  }
+
+  .diff-dot {
+    display: inline-block;
+    width: 28px;
+    height: 28px;
+    border-radius: 3px;
+    vertical-align: middle;
+  }
+
+  /* Five cards per row; the separator divides old and new records. */
+  .record-grid {
+    display: grid;
+    grid-template-columns: repeat(5,300px);
+    gap: 10px;
+  }
+
+  .divider {
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 30px;
+  }
+
+  .divider::before,.divider::after {
+    content: '';
+    height: 2px;
+    width: 355px;
+    background: black;
+  }
+
+  .divider span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: black;
+  }
 </style>
-<section class="records"><header class="record-header"><div class="panel record-stats"><div class="rating-line"><div class="rating-block">{% if rating_src %}<img src="{{ rating_src }}">{% endif %}<div class="rating-digits">{% for digit in rating %}<span>{{ digit }}</span>{% endfor %}</div></div>{{ equation }}</div><dl>{% for label,value in stats %}<dt>{{ label }}:</dt><dd>{{ value }}</dd>{% endfor %}</dl></div>
-{% if details %}<div class="outlined" style="font-size:65px;align-self:center;max-width:200px;overflow:hidden;transform:rotate(-45deg)">{{ title }}</div><div class="panel record-details">{% for key,tokens in details %}<div class="ellipsis">{{ key }}: {% for text,color in tokens %}{% if color %}<span class="diff-dot" style="background:{{ color }}"></span>{% else %}{{ text }} {% endif %}{% endfor %}</div>{% endfor %}</div>
-{% else %}<div class="record-title outlined" data-fit="65">{{ title }}</div>{% endif %}</header>
-{% if up %}<div class="record-grid">{% for card in up %}{{ card|safe }}{% endfor %}</div>{% endif %}
-{% if up and down %}<div class="divider"><span></span></div>{% endif %}
-{% if down %}<div class="record-grid">{% for card in down %}{{ card|safe }}{% endfor %}</div>{% endif %}</section>
+<section class="records">
+  <header class="record-header">
+    <div class="panel record-stats">
+      <div class="rating-line">
+        <div class="rating-block">
+          {% if rating_src %}
+            <img src="{{ rating_src }}">
+          {% endif %}
+          <div class="rating-digits">{% for digit in rating %}<span>{{ digit }}</span>{% endfor %}</div>
+        </div>
+        {{ equation }}
+      </div>
+      <dl>
+        {% for label, value in stats %}
+          <dt>{{ label }}:</dt>
+          <dd>{{ value }}</dd>
+        {% endfor %}
+      </dl>
+    </div>
+    {% if details %}
+      <div class="outlined record-detail-title">{{ title }}</div>
+      <div class="panel record-details">
+        {% for key, tokens in details %}
+          <div class="ellipsis">
+            {{ key }}:
+            {% for text, color in tokens %}
+              {% if color %}
+                <span class="diff-dot" style="background: {{ color }};"></span>
+              {% else %}
+                {{ text }}
+              {% endif %}
+            {% endfor %}
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="record-title outlined" data-fit="65">{{ title }}</div>
+    {% endif %}
+  </header>
+  {% if up %}
+    <div class="record-grid">
+      {% for card in up %}
+        {{ card|safe }}
+      {% endfor %}
+    </div>
+  {% endif %}
+  {% if up and down %}
+    <div class="divider">
+      <span></span>
+    </div>
+  {% endif %}
+  {% if down %}
+    <div class="record-grid">
+      {% for card in down %}
+        {{ card|safe }}
+      {% endfor %}
+    </div>
+  {% endif %}
+</section>

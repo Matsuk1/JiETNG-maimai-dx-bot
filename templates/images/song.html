@@ -1,7 +1,91 @@
 {% if mode == 'basic' %}
-<style>.song{height:260px;border:4px solid #b4b4b4;border-radius:24px;background:white;padding:26px;display:flex;gap:35px}.song-cover{width:200px;height:200px;border-radius:20px}.song-info{flex:1;min-width:0}.song-title{font-size:34px;margin:-5px 0 22px}.song dl{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:6px 10px;font-size:24px;margin:0}.song dd{margin:0}</style>
-<section class="song"><img class="song-cover" src="{{ cover }}"><div class="song-info"><div class="song-title ellipsis">{{ title }}</div><dl>{% for label,value in info %}<dt>{{ label }}:</dt><dd class="ellipsis">{{ value }}</dd>{% endfor %}</dl></div></section>
+  <style>
+  .song {
+    height: 260px;
+    border: 4px solid #b4b4b4;
+    border-radius: 24px;
+    background: white;
+    padding: 26px;
+    display: flex;
+    gap: 35px;
+  }
+
+  .song-cover {
+    width: 200px;
+    height: 200px;
+    border-radius: 20px;
+  }
+
+  .song-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .song-title {
+    font-size: 34px;
+    margin: -5px 0 22px;
+  }
+
+  .song dl {
+    display: grid;
+    grid-template-columns: max-content minmax(0,1fr);
+    gap: 6px 10px;
+    font-size: 24px;
+    margin: 0;
+  }
+
+  .song dd {
+    margin: 0;
+  }
+</style>
+  <section class="song">
+    <img class="song-cover" src="{{ cover }}">
+    <div class="song-info">
+      <div class="song-title ellipsis">{{ title }}</div>
+      <dl>
+        {% for label, value in info %}
+          <dt>{{ label }}:</dt>
+          <dd class="ellipsis">{{ value }}</dd>
+        {% endfor %}
+      </dl>
+    </div>
+  </section>
 {% else %}
-<style>.song-table{display:flex;flex-direction:column;gap:10px}.song-row{display:grid;grid-template-columns:{{ columns }};height:{{ row_height }}px;align-items:center;background:white;border:4px solid var(--border);border-radius:16px}.song-cell{text-align:center;padding:0 8px;font-size:28px}</style>
-<div class="song-table"><div class="song-row" style="--border:#b4b4b4">{% for value in headers %}<div class="song-cell ellipsis">{{ value }}</div>{% endfor %}</div>{% for color,cells in rows %}<div class="song-row" style="--border:{{ color }}">{% for value in cells %}<div class="song-cell ellipsis">{{ value }}</div>{% endfor %}</div>{% endfor %}</div>
+  <style>
+  .song-table {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .song-row {
+    display: grid;
+    grid-template-columns: {{ columns }};
+    height: {{ row_height }}px;
+    align-items: center;
+    background: white;
+    border: 4px solid var(--border);
+    border-radius: 16px;
+  }
+
+  .song-cell {
+    text-align: center;
+    padding: 0 8px;
+    font-size: 28px;
+  }
+</style>
+  <div class="song-table">
+    <div class="song-row" style="--border: #b4b4b4;">
+      {% for value in headers %}
+        <div class="song-cell ellipsis">{{ value }}</div>
+      {% endfor %}
+    </div>
+    {% for color, cells in rows %}
+      <div class="song-row" style="--border: {{ color }};">
+        {% for value in cells %}
+          <div class="song-cell ellipsis">{{ value }}</div>
+        {% endfor %}
+      </div>
+    {% endfor %}
+  </div>
 {% endif %}
