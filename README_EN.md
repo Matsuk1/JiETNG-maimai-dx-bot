@@ -368,7 +368,6 @@ JiETNG/
 │   ├── maimai_manager.py      # Maimai API interface
 │   ├── memory_manager.py      # Memory management and cleanup
 │   ├── message_manager.py     # Multi-language message management
-│   ├── message_texts.py       # Multi-language message text definitions
 │   ├── notice_manager.py      # Announcement system
 │   ├── notification_manager.py # System notification management (Web Push)
 │   ├── perm_request_generator.py  # Permission request generator

@@ -23,85 +23,17 @@ from modules.score_recognition_presenter import (
     nonnegative_count,
     score_rank,
 )
-from modules.message_texts import (
-    access_error_text,
-    calc_button_text,
-    calc_flex_text,
-    cannot_do_for_others_text,
-    dxdata_current_stats_text,
-    dxdata_fetch_failed_text,
-    dxdata_first_update_text,
-    dxdata_initial_stats_sheets_text,
-    dxdata_initial_stats_songs_text,
-    dxdata_last_update_text,
-    dxdata_new_sheets_text,
-    dxdata_new_songs_text,
-    dxdata_no_new_sheets_text,
-    dxdata_no_new_songs_text,
-    dxdata_parse_failed_text,
-    dxdata_sheets_decreased_text,
-    dxdata_songs_decreased_text,
-    dxdata_update_success_text,
-    export_alt_text,
-    export_flex_button_text,
-    export_flex_copy_button_text,
-    export_flex_footnote_text,
-    export_flex_summary_text,
-    export_flex_title_text,
-    friend_error_text,
-    friend_list_alt_text,
-    friend_rcd_error_text,
-    group_welcome_msg_text,
-    info_error_text,
-    input_error_text,
-    level_not_supported_text,
-    level_record_not_found_text,
-    level_record_page_hint_text,
-    maintenance_error_text,
-    mention_error_text,
-    mention_not_allowed_text,
-    mention_no_matching_data_text,
-    mention_record_error_text,
-    nearby_stores_alt_text,
-    no_matching_data_text,
-    notice_header_text,
-    plate_error_text,
-    ranking_alt_text,
-    ranking_title_text,
-    rate_limit_msg_text,
-    rebind_button_text,
-    rebind_description_text,
-    rebind_msg_text,
-    rebind_title_alt_text,
-    record_error_text,
-    sega_bind_alt_text,
-    sega_bind_button_text,
-    sega_bind_description_text,
-    sega_bind_title_text,
-    segaid_error_text,
-    settings_button_text,
-    settings_description_text,
-    settings_title_alt_text,
-    song_error_text,
-    song_info_alt_text,
-    song_record_alt_text,
-    store_error_text,
-    system_error_text,
-    unbind_button_text,
-    unbind_description_text,
-    unbind_title_alt_text,
-    update_result_flex_text,
-    user_info_flex_text,
-    version_error_text,
-    view_info_button_text,
-    view_record_button_text,
-    welcome_msg_text,
-)
 from linebot.v3.messaging import (
     TextMessage,
     FlexMessage,
     FlexContainer,
 )
+
+_message_texts = localized_catalog("messages")
+
+welcome_msg_text = "『JiETNG・カヰテー』で有りんす。\nお願ひ申し候。"
+group_welcome_msg_text = "『JiETNG・カヰテー』で有りんす。\nお出迎え有りんす。"
+system_error_text = _message_texts["system_error_text"]
 
 def format_timezone_string(user_id):
     """
@@ -621,31 +553,31 @@ def generate_status_flex(title_text, body_text, user_id=None, alt_text=None, ton
 def generate_account_action_flex(action_type, url, user_id=None):
     configs = {
         "bind": {
-            "title": sega_bind_title_text,
-            "body": sega_bind_description_text,
-            "button": sega_bind_button_text,
-            "alt": sega_bind_alt_text,
+            "title": _message_texts["sega_bind_title_text"],
+            "body": _message_texts["sega_bind_description_text"],
+            "button": _message_texts["sega_bind_button_text"],
+            "alt": _message_texts["sega_bind_alt_text"],
             "accent": COLOR_BRAND,
         },
         "rebind": {
-            "title": rebind_title_alt_text,
-            "body": rebind_description_text,
-            "button": rebind_button_text,
-            "alt": rebind_title_alt_text,
+            "title": _message_texts["rebind_title_alt_text"],
+            "body": _message_texts["rebind_description_text"],
+            "button": _message_texts["rebind_button_text"],
+            "alt": _message_texts["rebind_title_alt_text"],
             "accent": "#8A63D2",
         },
         "unbind": {
-            "title": unbind_title_alt_text,
-            "body": unbind_description_text,
-            "button": unbind_button_text,
-            "alt": unbind_title_alt_text,
+            "title": _message_texts["unbind_title_alt_text"],
+            "body": _message_texts["unbind_description_text"],
+            "button": _message_texts["unbind_button_text"],
+            "alt": _message_texts["unbind_title_alt_text"],
             "accent": COLOR_DANGER,
         },
         "settings": {
-            "title": settings_title_alt_text,
-            "body": settings_description_text,
-            "button": settings_button_text,
-            "alt": settings_title_alt_text,
+            "title": _message_texts["settings_title_alt_text"],
+            "body": _message_texts["settings_description_text"],
+            "button": _message_texts["settings_button_text"],
+            "alt": _message_texts["settings_title_alt_text"],
             "accent": "#315B7D",
         },
     }
@@ -672,7 +604,7 @@ def generate_welcome_flex(user_id=None, bind_url=None, group=False):
     body = group_welcome_msg_text if group else welcome_msg_text
     actions = None
     if bind_url:
-        label = get_multilingual_text(sega_bind_button_text, user_id)
+        label = get_multilingual_text(_message_texts["sega_bind_button_text"], user_id)
         actions = [
             _flex_action_button(label, {"type": "uri", "label": label, "uri": bind_url}, color=COLOR_BRAND)
         ]
@@ -690,17 +622,17 @@ def generate_welcome_flex(user_id=None, bind_url=None, group=False):
 def generate_export_flex(user_id, meta):
     size_kb = max(1, round(meta["size"] / 1024))
     fmt_label = meta["fmt"].upper()
-    title = get_multilingual_text(export_flex_title_text, user_id)
-    body = get_multilingual_text(export_flex_summary_text, user_id).format(
+    title = get_multilingual_text(_message_texts["export_flex_title_text"], user_id)
+    body = get_multilingual_text(_message_texts["export_flex_summary_text"], user_id).format(
         best=meta["best_count"],
         recent=meta["recent_count"],
         fmt=fmt_label,
         size_kb=size_kb,
     )
-    foot = get_multilingual_text(export_flex_footnote_text, user_id).format(ttl=meta["ttl_minutes"])
-    btn = get_multilingual_text(export_flex_button_text, user_id)
-    copy_btn = get_multilingual_text(export_flex_copy_button_text, user_id)
-    alt = get_multilingual_text(export_alt_text, user_id)
+    foot = get_multilingual_text(_message_texts["export_flex_footnote_text"], user_id).format(ttl=meta["ttl_minutes"])
+    btn = get_multilingual_text(_message_texts["export_flex_button_text"], user_id)
+    copy_btn = get_multilingual_text(_message_texts["export_flex_copy_button_text"], user_id)
+    alt = get_multilingual_text(_message_texts["export_alt_text"], user_id)
     return _standard_action_bubble(
         title=title,
         subtitle=fmt_label,
@@ -1074,7 +1006,7 @@ def _update_status_label(func_name, lang):
     text_key = status_text_keys.get(func_name)
     if not text_key:
         return func_name
-    return get_multilingual_text(update_result_flex_text[text_key], language=lang)
+    return get_multilingual_text(_message_texts["update_result_flex_text"][text_key], language=lang)
 
 def _message_factory(message_text):
     def build_message(user_id=None):
@@ -1083,42 +1015,42 @@ def _message_factory(message_text):
     return build_message
 
 
-rebind_msg = _message_factory(rebind_msg_text)
-segaid_error = _message_factory(segaid_error_text)
-record_error = _message_factory(record_error_text)
-info_error = _message_factory(info_error_text)
-access_error = _message_factory(access_error_text)
+rebind_msg = _message_factory(_message_texts["rebind_msg_text"])
+segaid_error = _message_factory(_message_texts["segaid_error_text"])
+record_error = _message_factory(_message_texts["record_error_text"])
+info_error = _message_factory(_message_texts["info_error_text"])
+access_error = _message_factory(_message_texts["access_error_text"])
 system_error = _message_factory(system_error_text)
-input_error = _message_factory(input_error_text)
-song_error = _message_factory(song_error_text)
-level_not_supported = _message_factory(level_not_supported_text)
-plate_error = _message_factory(plate_error_text)
-version_error = _message_factory(version_error_text)
-store_error = _message_factory(store_error_text)
-rate_limit_msg = _message_factory(rate_limit_msg_text)
-maintenance_error = _message_factory(maintenance_error_text)
-friend_error = _message_factory(friend_error_text)
-friend_rcd_error = _message_factory(friend_rcd_error_text)
-mention_error = _message_factory(mention_error_text)
-mention_not_allowed = _message_factory(mention_not_allowed_text)
-mention_record_error = _message_factory(mention_record_error_text)
-cannot_do_for_others = _message_factory(cannot_do_for_others_text)
-no_matching_data = _message_factory(no_matching_data_text)
-mention_no_matching_data = _message_factory(mention_no_matching_data_text)
+input_error = _message_factory(_message_texts["input_error_text"])
+song_error = _message_factory(_message_texts["song_error_text"])
+level_not_supported = _message_factory(_message_texts["level_not_supported_text"])
+plate_error = _message_factory(_message_texts["plate_error_text"])
+version_error = _message_factory(_message_texts["version_error_text"])
+store_error = _message_factory(_message_texts["store_error_text"])
+rate_limit_msg = _message_factory(_message_texts["rate_limit_msg_text"])
+maintenance_error = _message_factory(_message_texts["maintenance_error_text"])
+friend_error = _message_factory(_message_texts["friend_error_text"])
+friend_rcd_error = _message_factory(_message_texts["friend_rcd_error_text"])
+mention_error = _message_factory(_message_texts["mention_error_text"])
+mention_not_allowed = _message_factory(_message_texts["mention_not_allowed_text"])
+mention_record_error = _message_factory(_message_texts["mention_record_error_text"])
+cannot_do_for_others = _message_factory(_message_texts["cannot_do_for_others_text"])
+no_matching_data = _message_factory(_message_texts["no_matching_data_text"])
+mention_no_matching_data = _message_factory(_message_texts["mention_no_matching_data_text"])
 
 def level_record_not_found(level, page, user_id=None):
     """生成指定等级记录未找到消息"""
-    text = get_multilingual_text(level_record_not_found_text, user_id).format(level=level, page=page)
+    text = get_multilingual_text(_message_texts["level_record_not_found_text"], user_id).format(level=level, page=page)
     return TextMessage(text=text)
 
 def level_record_page_hint(page, user_id=None):
     """生成等级记录页面提示消息"""
-    text = get_multilingual_text(level_record_page_hint_text, user_id).format(page=page)
+    text = get_multilingual_text(_message_texts["level_record_page_hint_text"], user_id).format(page=page)
     return TextMessage(text=text)
 
 def get_notice_header(user_id=None):
     """获取公告标题（多语言）"""
-    return get_multilingual_text(notice_header_text, user_id)
+    return get_multilingual_text(_message_texts["notice_header_text"], user_id)
 
 def generate_notice_flex(notice_json, user_id=None):
     """
@@ -1300,11 +1232,11 @@ def generate_notice_flex(notice_json, user_id=None):
 
 def get_friend_list_alt_text(user_id=None):
     """获取好友列表 alt_text（多语言）"""
-    return get_multilingual_text(friend_list_alt_text, user_id)
+    return get_multilingual_text(_message_texts["friend_list_alt_text"], user_id)
 
 def get_nearby_stores_alt_text(user_id=None):
     """获取附近机厅列表 alt_text（多语言）"""
-    return get_multilingual_text(nearby_stores_alt_text, user_id)
+    return get_multilingual_text(_message_texts["nearby_stores_alt_text"], user_id)
 
 
 def generate_song_info_flex(song_id, image_url, image_width, image_height, user_id=None, mode='info'):
@@ -1330,7 +1262,7 @@ def generate_song_info_flex(song_id, image_url, image_width, image_height, user_
     buttons = []
 
     if mode == 'info':
-        calc_label = get_multilingual_text(calc_button_text, user_id)
+        calc_label = get_multilingual_text(_message_texts["calc_button_text"], user_id)
         buttons.append(_pill_action_box(
             calc_label,
             {
@@ -1340,7 +1272,7 @@ def generate_song_info_flex(song_id, image_url, image_width, image_height, user_
             },
             bg_color=COLOR_BRAND,
         ))
-        record_label = get_multilingual_text(view_record_button_text, user_id)
+        record_label = get_multilingual_text(_message_texts["view_record_button_text"], user_id)
         buttons.append(_pill_action_box(
             record_label,
             {
@@ -1351,7 +1283,7 @@ def generate_song_info_flex(song_id, image_url, image_width, image_height, user_
             bg_color="#315B7D",
         ))
     else:
-        info_label = get_multilingual_text(view_info_button_text, user_id)
+        info_label = get_multilingual_text(_message_texts["view_info_button_text"], user_id)
         buttons.append(_pill_action_box(
             info_label,
             {
@@ -1362,7 +1294,7 @@ def generate_song_info_flex(song_id, image_url, image_width, image_height, user_
             bg_color="#315B7D",
         ))
 
-    alt_text = get_multilingual_text(song_info_alt_text, user_id) if mode == 'info' else get_multilingual_text(song_record_alt_text, user_id)
+    alt_text = get_multilingual_text(_message_texts["song_info_alt_text"], user_id) if mode == 'info' else get_multilingual_text(_message_texts["song_record_alt_text"], user_id)
 
     bubble = {
         "type": "bubble",
@@ -2170,15 +2102,15 @@ def build_dxdata_update_message(result, user_id=None):
         if 'message' in result:
             # 如果已经有消息，判断是什么类型的错误
             if 'データ取得失敗' in result['message'] or 'fetch' in result['message'].lower():
-                return get_multilingual_text(dxdata_fetch_failed_text, user_id)
+                return get_multilingual_text(_message_texts["dxdata_fetch_failed_text"], user_id)
             else:
-                return get_multilingual_text(dxdata_parse_failed_text, user_id)
-        return get_multilingual_text(dxdata_fetch_failed_text, user_id)
+                return get_multilingual_text(_message_texts["dxdata_parse_failed_text"], user_id)
+        return get_multilingual_text(_message_texts["dxdata_fetch_failed_text"], user_id)
 
     message_parts = []
 
     # 标题
-    message_parts.append(get_multilingual_text(dxdata_update_success_text, user_id))
+    message_parts.append(get_multilingual_text(_message_texts["dxdata_update_success_text"], user_id))
     message_parts.append('')
 
     if result.get('old_stats'):
@@ -2189,43 +2121,43 @@ def build_dxdata_update_message(result, user_id=None):
 
         # 新曲变化
         if songs_diff > 0:
-            message_parts.append(get_multilingual_text(dxdata_new_songs_text, user_id).format(count=songs_diff))
+            message_parts.append(get_multilingual_text(_message_texts["dxdata_new_songs_text"], user_id).format(count=songs_diff))
         elif songs_diff < 0:
-            message_parts.append(get_multilingual_text(dxdata_songs_decreased_text, user_id).format(count=songs_diff))
+            message_parts.append(get_multilingual_text(_message_texts["dxdata_songs_decreased_text"], user_id).format(count=songs_diff))
         else:
-            message_parts.append(get_multilingual_text(dxdata_no_new_songs_text, user_id))
+            message_parts.append(get_multilingual_text(_message_texts["dxdata_no_new_songs_text"], user_id))
 
         # 新谱面变化
         if sheets_diff > 0:
-            message_parts.append(get_multilingual_text(dxdata_new_sheets_text, user_id).format(count=sheets_diff))
+            message_parts.append(get_multilingual_text(_message_texts["dxdata_new_sheets_text"], user_id).format(count=sheets_diff))
         elif sheets_diff < 0:
-            message_parts.append(get_multilingual_text(dxdata_sheets_decreased_text, user_id).format(count=sheets_diff))
+            message_parts.append(get_multilingual_text(_message_texts["dxdata_sheets_decreased_text"], user_id).format(count=sheets_diff))
         else:
-            message_parts.append(get_multilingual_text(dxdata_no_new_sheets_text, user_id))
+            message_parts.append(get_multilingual_text(_message_texts["dxdata_no_new_sheets_text"], user_id))
 
         # 上次更新时间
         message_parts.append('')
-        message_parts.append(get_multilingual_text(dxdata_last_update_text, user_id).format(
+        message_parts.append(get_multilingual_text(_message_texts["dxdata_last_update_text"], user_id).format(
             timestamp=result['old_stats']['timestamp']
         ))
 
         # 当前统计
         new_stats = result['new_stats']
-        message_parts.append(get_multilingual_text(dxdata_current_stats_text, user_id).format(
+        message_parts.append(get_multilingual_text(_message_texts["dxdata_current_stats_text"], user_id).format(
             songs=new_stats['total_songs'],
             sheets=new_stats['total_sheets']
         ))
     else:
         # 首次更新
         new_stats = result['new_stats']
-        message_parts.append(get_multilingual_text(dxdata_initial_stats_songs_text, user_id).format(
+        message_parts.append(get_multilingual_text(_message_texts["dxdata_initial_stats_songs_text"], user_id).format(
             count=new_stats['total_songs']
         ))
-        message_parts.append(get_multilingual_text(dxdata_initial_stats_sheets_text, user_id).format(
+        message_parts.append(get_multilingual_text(_message_texts["dxdata_initial_stats_sheets_text"], user_id).format(
             count=new_stats['total_sheets']
         ))
         message_parts.append('')
-        message_parts.append(get_multilingual_text(dxdata_first_update_text, user_id))
+        message_parts.append(get_multilingual_text(_message_texts["dxdata_first_update_text"], user_id))
 
     return '\n'.join(message_parts)
 
@@ -2245,7 +2177,7 @@ def generate_user_info_flex(user_id):
         FlexMessage: 用户信息 Flex Message
     """
     lang = get_user_language(user_id)
-    texts = user_info_flex_text
+    texts = _message_texts["user_info_flex_text"]
     user_data = get_user(user_id)
 
     def _info_row(label, value, action=None, value_color=COLOR_TEXT_PRIMARY, sub_value=None):
@@ -2397,7 +2329,7 @@ def generate_update_result_flex(
         FlexMessage: 更新结果 Flex Message
     """
     lang = get_user_language(user_id)
-    texts = update_result_flex_text
+    texts = _message_texts["update_result_flex_text"]
 
     # 格式化耗时
     if elapsed_time < 60:
@@ -2604,7 +2536,7 @@ def generate_calc_result_flex(notes, scores, difficulty=None, level=None, user_i
     lang = get_user_language(user_id)
     bubble = _build_calc_bubble(notes, scores, difficulty, level, lang)
     return FlexMessage(
-        alt_text=get_multilingual_text(calc_flex_text['alt_single'], language=lang),
+        alt_text=get_multilingual_text(_message_texts["calc_flex_text"]['alt_single'], language=lang),
         contents=FlexContainer.from_dict(bubble)
     )
 
@@ -2637,7 +2569,7 @@ def generate_calc_carousel(calc_bubbles_data, user_id=None):
         "contents": bubbles
     }
     return FlexMessage(
-        alt_text=get_multilingual_text(calc_flex_text['alt_multi'], language=lang),
+        alt_text=get_multilingual_text(_message_texts["calc_flex_text"]['alt_multi'], language=lang),
         contents=FlexContainer.from_dict(carousel)
     )
 
@@ -2778,7 +2710,7 @@ def _build_calc_bubble(notes, scores, difficulty=None, level=None, lang="ja"):
             title_text += f" (Lv. {level:.1f})"
         header_color = diff_info['color']
     else:
-        title_text = get_multilingual_text(calc_flex_text['title_distribution'], language=lang)
+        title_text = get_multilingual_text(_message_texts["calc_flex_text"]['title_distribution'], language=lang)
         header_color = "#007AFF"
 
     # 计算 tap_great 容错数
@@ -2813,7 +2745,7 @@ def _build_calc_bubble(notes, scores, difficulty=None, level=None, lang="ja"):
                         {
                             "type": "text",
                             "text": get_multilingual_text(
-                                calc_flex_text['max_tap_great'],
+                                _message_texts["calc_flex_text"]['max_tap_great'],
                                 language=lang,
                             ).format(count=max_tap_great_to_half),
                             "size": "xs",
@@ -2839,7 +2771,7 @@ def _build_calc_bubble(notes, scores, difficulty=None, level=None, lang="ja"):
                         {
                             "type": "text",
                             "text": get_multilingual_text(
-                                calc_flex_text['max_tap_great'],
+                                _message_texts["calc_flex_text"]['max_tap_great'],
                                 language=lang,
                             ).format(count=max_tap_great_to_full),
                             "size": "xs",
@@ -2868,7 +2800,7 @@ def _build_calc_bubble(notes, scores, difficulty=None, level=None, lang="ja"):
         "size": "mega",
         "header": _standard_header_box(
             title_text,
-            get_multilingual_text(calc_flex_text['subtitle'], language=lang),
+            get_multilingual_text(_message_texts["calc_flex_text"]['subtitle'], language=lang),
             accent=header_color,
         ),
         "body": {
@@ -3013,7 +2945,7 @@ def generate_ranking_flex(user_id, top5, nearby_entries=None, ver="jp"):
     Returns:
         FlexMessage
     """
-    title_text = get_multilingual_text(ranking_title_text, user_id)
+    title_text = get_multilingual_text(_message_texts["ranking_title_text"], user_id)
     ver_label = "JP" if ver == "jp" else "INTL"
 
     header = _standard_header_box(title_text, ver_label)
@@ -3115,7 +3047,7 @@ def generate_ranking_flex(user_id, top5, nearby_entries=None, ver="jp"):
         "body": body
     }
 
-    alt_text = get_multilingual_text(ranking_alt_text, user_id)
+    alt_text = get_multilingual_text(_message_texts["ranking_alt_text"], user_id)
     return FlexMessage(alt_text=alt_text, contents=FlexContainer.from_dict(bubble))
 
 
