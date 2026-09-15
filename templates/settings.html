@@ -577,6 +577,23 @@
         </div>
       </div>
 
+      <div class="section-title" id="skin-section-title">画像のスキン</div>
+      <div class="list-panel" style="margin-bottom: 20px;">
+        <div class="list-item">
+          <label for="image_skin" id="label-image-skin">スキン</label>
+          <select id="image_skin" name="image_skin" onchange="updateSkinSettings()">
+            {% for supports_bg in [true, false] %}
+              <optgroup data-uses-background="{{ 'true' if supports_bg else 'false' }}" label="{{ '背景画像を使用' if supports_bg else '背景画像なし' }}">
+                {% for skin in image_skins if skin.uses_background == supports_bg %}
+                  <option value="{{ skin.id }}" data-uses-background="{{ 'true' if skin.uses_background else 'false' }}" {% if skin.id == image_skin %}selected{% endif %}>{{ skin.label }}</option>
+                {% endfor %}
+              </optgroup>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="list-item"><span class="list-item-meta" id="skin-background-note"></span></div>
+      </div>
+
       <div class="list-panel" style="margin-bottom: 20px;">
         <div class="list-item">
           <label for="bg_enabled_toggle" id="label-bg-enabled">背景画像を使用</label>
@@ -821,9 +838,27 @@
       updateSaveButtonVisibility();
     }
 
+    function updateSkinSettings() {
+      const selected = document.getElementById('image_skin').selectedOptions[0];
+      const supportsBackground = selected?.dataset.usesBackground === 'true';
+      const t = translationFor(translations, document.getElementById('language').value || defaultLanguage);
+      document.getElementById('skin-section-title').textContent = t.skinSection;
+      document.getElementById('label-image-skin').textContent = t.labelSkin;
+      document.querySelectorAll('#image_skin optgroup').forEach(group => {
+        group.label = group.dataset.usesBackground === 'true' ? t.skinUsesBackground : t.skinNoBackground;
+        group.hidden = !group.children.length;
+      });
+      document.getElementById('skin-background-note').textContent = supportsBackground ? t.skinBackgroundHint : t.skinNoBackgroundHint;
+      document.getElementById('bg_enabled_toggle').disabled = !supportsBackground;
+      const enabled = document.getElementById('bg_enabled_hidden').value === '1';
+      document.getElementById('bg-settings-area').style.display = supportsBackground && enabled ? '' : 'none';
+      updateBgPreview();
+      updateSaveButtonVisibility();
+    }
+
     function toggleBgEnabled(checked) {
       document.getElementById('bg_enabled_hidden').value = checked ? '1' : '0';
-      document.getElementById('bg-settings-area').style.display = checked ? '' : 'none';
+      updateSkinSettings();
       updateBgPreview();
       updateSaveButtonVisibility();
     }
@@ -848,6 +883,7 @@
       document.getElementById('language-platform-hint').textContent = t.languagePlatformHint;
       document.getElementById('label-timezone').textContent = t.labelTimezone;
       document.getElementById('label-bg-enabled').textContent = t.labelBgEnabled;
+      updateSkinSettings();
       document.getElementById('privacy-panel-title').textContent = t.privacyPanelTitle;
       document.getElementById('ranking-panel-title').textContent = t.rankingPanelTitle;
       document.getElementById('label-mention-score-query').textContent = t.labelMentionScoreQuery;

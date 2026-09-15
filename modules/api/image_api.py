@@ -11,6 +11,7 @@ from modules.api.api_auth import check_user_permission, require_dev_token
 from modules.commands.command_config import RANK_COMMANDS
 from modules.config_loader import TEMP_VERSION, read_dxdata
 from modules.event_tracker import track_event
+from modules.user_image_skin import user_image
 from modules.image_manager import compose_generated_images
 from modules.rate_limiter import check_rate_limit
 from modules.record_generator import (
@@ -110,6 +111,7 @@ def api_v2_song_info(song_id):
 
 @image_api.route("/api/v2/users/<user_id>/songs/<song_id>/image", methods=["GET"])
 @require_dev_token
+@user_image
 def api_v2_song_record(user_id, song_id):
     try:
         token_info = request.token_info
@@ -165,6 +167,7 @@ def api_v2_song_record(user_id, song_id):
 
 @image_api.route("/api/v2/users/<user_id>/image", methods=["GET"])
 @require_dev_token
+@user_image
 def api_v2_generate_record_image(user_id):
     try:
         token_info = request.token_info
@@ -244,6 +247,7 @@ def api_v2_generate_record_image(user_id):
 
 @image_api.route("/api/v2/users/<user_id>/plate", methods=["GET"])
 @require_dev_token
+@user_image
 def api_v2_generate_plate(user_id):
     try:
         token_info = request.token_info
@@ -379,6 +383,7 @@ def api_v2_generate_plate(user_id):
 
 @image_api.route("/api/v2/users/<user_id>/achievement", methods=["GET"])
 @require_dev_token
+@user_image
 def api_v2_generate_achievement(user_id):
     try:
         token_info = request.token_info

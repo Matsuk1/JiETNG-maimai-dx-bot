@@ -240,6 +240,8 @@ from modules.commands.command_parsers import (
     parse_plate_query,
 )
 from modules.dbpool_manager import close_pool
+from modules.image_skins import available_skins, normalize_skin
+from modules.user_image_skin import user_image, user_skin
 from modules.image_manager import (
     compose_generated_images,
 )
@@ -932,7 +934,10 @@ def website_settings():
             bg_overlay = 40
         bg_overlay = max(0, min(120, bg_overlay))
 
+        image_skin = normalize_skin(request.form.get("image_skin", user_data.get("image_skin", "default")))
+
         # 保存设置
+        edit_user_value(user_id, "image_skin", image_skin)
         edit_user_value(user_id, "language", user_language)
         edit_user_value(user_id, "timezone", timezone_int)
         edit_user_value(user_id, "bg_files", bg_files_list)
@@ -998,6 +1003,8 @@ def website_settings():
     return render_template(
         "settings.html",
         user_language=user_language,
+        image_skins=available_skins(),
+        image_skin=normalize_skin(user_data.get("image_skin", "default")),
         timezone=user_data.get('timezone', 9),
         bg_files=all_bg_files,
         user_bg_files=user_bg_files,
@@ -1182,6 +1189,7 @@ def _get_user_bg_filter(user_id):
     }
 
 
+@user_image
 def _compose_user_images(images, user_id):
     return compose_generated_images(
         images,
@@ -1879,6 +1887,7 @@ def get_rc(level: float, user_id=None):
 
     return generate_rc_flex(level, rc_data, user_id)
 
+@user_image
 async def random_song(user_id, key="", ver="jp"):
     songs, _ = read_dxdata(ver)
     valid_songs = []
@@ -1912,6 +1921,7 @@ async def random_song(user_id, key="", ver="jp"):
     original_url, preview_url = await upload_generated_image(song_img, user_id)
     return generate_song_info_flex(song_id, original_url, img_w, img_h, user_id, mode='info')
 
+@user_image
 async def search_song(user_id, acronym, ver="jp"):
     songs, _ = read_dxdata(ver)
 
@@ -1932,6 +1942,7 @@ async def search_song(user_id, acronym, ver="jp"):
     return await search_song_by_id(user_id, song_id, ver)
 
 
+@user_image
 async def search_song_by_id(user_id, song_id, ver="jp"):
     songs, _ = read_dxdata(ver)
 
@@ -2221,6 +2232,7 @@ def get_bot_status(user_id):
         user_id=user_id
     )
 
+@user_image
 async def get_song_record(user_id, id_use, acronym, ver="jp"):
     _id_use_data = get_user(id_use)
     if not _id_use_data:
@@ -2265,6 +2277,7 @@ async def get_song_record(user_id, id_use, acronym, ver="jp"):
     song_id = song.get('id')
     return await get_song_record_by_id(user_id, id_use, song_id, ver)
 
+@user_image
 async def get_song_record_by_id(user_id, id_use, song_id, ver="jp"):
     _id_use_data = get_user(id_use)
     if not _id_use_data:
@@ -2348,6 +2361,7 @@ async def get_song_record_by_id(user_id, id_use, song_id, ver="jp"):
     original_url, preview_url = await upload_generated_image(song_img, user_id)
     return generate_song_info_flex(song_id, original_url, img_w, img_h, user_id, mode='record')
 
+@user_image
 async def generate_plate_rcd(user_id, id_use, title, ver="jp", filter_mode=None):
     _id_use_data = get_user(id_use)
     if not _id_use_data:
@@ -2537,6 +2551,7 @@ async def generate_plate_rcd(user_id, id_use, title, ver="jp", filter_mode=None)
     return message
 
 
+@user_image
 async def generate_level_rank_progress(user_id, id_use, level, rank=None, ver="jp", filter_mode=None):
 
     _id_use_data = get_user(id_use)
@@ -2743,6 +2758,7 @@ async def generate_level_rank_progress(user_id, id_use, level, rank=None, ver="j
     return message
 
 
+@user_image
 def generate_profile(user_info, scale=1, user_id=None):
     from modules.profile_generator import generate_profile_image
     # icon_url 为默认值时，尝试使用 LINE 头像
@@ -3036,6 +3052,7 @@ def select_records(song_record, type="best50", command="", ver="jp"):
 
     return up_songs, down_songs, details
 
+@user_image
 async def generate_records(user_id, id_use, type="best50", command="", ver="jp"):
     _id_use_data = get_user(id_use)
     if not _id_use_data:
@@ -3081,6 +3098,7 @@ async def generate_records(user_id, id_use, type="best50", command="", ver="jp")
 
     return message
 
+@user_image
 async def generate_friend_record(user_id, friend_code, type="best50", cmd="", ver="jp"):
     _udata = get_user(user_id)
     if not _udata or 'sega_id' not in _udata or 'sega_pwd' not in _udata:
@@ -3145,6 +3163,7 @@ async def generate_friend_record(user_id, friend_code, type="best50", cmd="", ve
 
     return message
 
+@user_image
 async def generate_level_records(user_id, id_use, level, ver="jp", page=1):
     _id_use_data = get_user(id_use)
     if not _id_use_data:
@@ -3194,6 +3213,7 @@ async def generate_level_records(user_id, id_use, level, ver="jp", page=1):
     message = [m for m in message if m]
     return message
 
+@user_image
 async def generate_version_songs(user_id, version_title, ver="jp"):
     songs, versions = read_dxdata(ver)
 
@@ -3405,6 +3425,7 @@ def _handle_fix_record_command(event, command_text: str) -> bool:
         else:
             result_img = generate_score_recognition_picture(
                 result,
+                skin=user_skin(user_id),
                 ver=ver,
                 timezone_offset=get_user_timezone(user_id),
                 bg_filter=_get_user_bg_filter(user_id),
@@ -3487,6 +3508,7 @@ def _score_recognition_queue_task(event, command: str, quoted_message_id: str, f
                 for result_variant in result_variants:
                     result_img = generate_score_recognition_picture(
                         result_variant,
+                        skin=user_skin(user_id),
                         ver=ver,
                         timezone_offset=get_user_timezone(user_id),
                         bg_filter=_get_user_bg_filter(user_id),
