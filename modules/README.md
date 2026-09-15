@@ -18,17 +18,19 @@
 
 ## 成绩识别：`score_recognition/`
 
-- `recognizer.py`：识别入口、歌曲匹配、判定验证和 OCR 引擎生命周期。
+- `recognizer.py`：识别入口、判定验证和 OCR 引擎生命周期。
 - `presentation.py`：API 返回值和 Flex 展示数据转换；不加载配置或启动 OCR。
 - `results.py`：结果变体和图片错误类型；不依赖模型初始化。
 - `ocr.py`、`cropper.py`、`table_model.py`：OCR、图片裁切和表格模型。
 
 HTTP 路由仍在 `api/score_api.py`。通用评分规则和计算继续由 `score_rules.py`、`score_calculator.py` 负责。
 
+歌名搜索、OCR 错字与滚动标题匹配统一放在 `song_matcher.py`，识别入口直接调用，不保留转发包装。
+
 ## 其他目录
 
 - `api/`：HTTP 路由、认证及接口处理。
-- `commands/`：命令路由、参数解析和命令帮助。
+- `commands/`：命令路由、参数解析和命令帮助。帮助页面构建集中在 `command_help.py`；`fix-rcd` 与其他命令统一由 `command_parsers.py` 解析。
 - `monitoring/`：监控、文件访问与诊断工具。
 
 ## 更新与验证

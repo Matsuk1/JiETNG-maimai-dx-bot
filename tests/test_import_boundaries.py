@@ -9,6 +9,7 @@ import sys
 from modules.api.score_api import create_score_api
 from modules.api.admin_users import create_edit_user_handler
 from modules.user_db import update_user_fields
+from modules.commands.command_parsers import parse_fix_record_command
 from modules.score_recognition.results import expand_score_recognition_calc_variants
 assert 'modules.config_loader' not in sys.modules
 assert 'paddleocr' not in sys.modules

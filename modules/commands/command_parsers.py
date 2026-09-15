@@ -124,3 +124,37 @@ def parse_bpm_number(value: object) -> Optional[float]:
 
 def format_bpm_number(value: float) -> str:
     return str(int(value)) if float(value).is_integer() else f"{value:g}"
+
+
+def parse_fix_record_command(command_text):
+    lines = [line.strip() for line in str(command_text or "").splitlines() if line.strip()]
+    if not lines or lines[0].lower() == "fix-rcd-help":
+        return None
+    title_match = re.fullmatch(r"fix-rcd\s+(.+)", lines[0], re.IGNORECASE)
+    if not title_match:
+        return None
+    if len(lines) != 7:
+        raise ValueError("fix-rcd requires a title, achievement, and five judgement rows")
+
+    title = re.sub(r"\s+\[(?:DX|STD)\]\s*$", "", title_match.group(1), flags=re.IGNORECASE).strip()
+    if title in {'""', "''"}:
+        title = ""
+
+    achievement_match = re.fullmatch(r"(\d{1,3}(?:[.,]\d{1,4})?)%?", lines[1])
+    if not achievement_match:
+        raise ValueError("achievement must be a percentage between 0 and 101")
+    achievement = float(achievement_match.group(1).replace(",", "."))
+    if not 0 <= achievement <= 101:
+        raise ValueError("achievement must be a percentage between 0 and 101")
+
+    field_names = ("critical_perfect", "perfect", "great", "good", "miss")
+    judgement = {}
+    for row_name, line in zip(NOTE_NAMES, lines[2:]):
+        row_match = re.fullmatch(r"(\d{1,4})/(\d{1,4})/(\d{1,4})/(\d{1,4})/(\d{1,4})", line)
+        if not row_match:
+            raise ValueError("each judgement row must contain five slash-separated integers")
+        judgement[row_name] = {
+            field_name: int(value)
+            for field_name, value in zip(field_names, row_match.groups())
+        }
+    return title, achievement, judgement

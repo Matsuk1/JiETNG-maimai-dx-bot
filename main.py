@@ -229,6 +229,7 @@ from modules.commands.command_router import (
 )
 from modules.plugin_manager import dispatch_plugin_session, load_plugin_commands
 from modules.commands.command_parsers import (
+    parse_fix_record_command,
     format_bpm_number,
     parse_bpm_number,
     parse_bpm_query,
@@ -275,7 +276,6 @@ from modules.score_recognition.recognizer import (
     cleanup_score_recognizer_memory,
     expand_score_recognition_calc_variants,
     initialize_score_recognizer,
-    parse_fix_record_command,
     recognize_score_image_bytes,
     score_recognition_needs_manual_fix,
     validate_recognized_judgement,
