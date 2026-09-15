@@ -12,16 +12,16 @@ from modules.i18n import (
 from modules.user_db import get_user
 from modules.user_manager import get_user_timezone
 from modules.tip_ad_manager import get_random_tip, get_random_ad
-from modules.score_recognition_presenter import (
+from modules.score_recognition.presentation import (
     COMBO_ICON_FILES,
     JUDGEMENT_ROWS,
     build_fix_command,
     calc_status,
-    combo_status,
+    flex_combo_status as combo_status,
     difficulty_presentation,
     format_loss_percentage,
     nonnegative_count,
-    score_rank,
+    flex_score_rank as score_rank,
 )
 from linebot.v3.messaging import (
     TextMessage,

@@ -1,10 +1,20 @@
-"""Stable public response contract for score-result recognition."""
+"""API response contracts and Flex presentation of score-recognition results.
+
+Pure transformations: importing this module never starts OCR or loads configuration.
+"""
 from __future__ import annotations
 
 from typing import Any
 import math
-from modules.score_rules import (JUDGEMENT_ROWS, DIFFICULTY_LABELS, DIFFICULTY_STYLES, score_rank as _score_rank, combo_status as _combo_status)
-
+import re
+from modules.score_rules import (
+    JUDGEMENT_ROWS,
+    DIFFICULTY_LABELS,
+    DIFFICULTY_STYLES,
+    score_rank as _score_rank,
+    combo_status as _combo_status,
+    nonnegative_count,
+)
 
 
 JUDGEMENT_FIELDS = (
@@ -105,25 +115,12 @@ def _miss_corrections(value: Any) -> dict[str, dict[str, Any]]:
     }
 
 
-def _loss_count(value: Any) -> int:
-    try:
-        return max(0, int(value or 0))
-    except (TypeError, ValueError):
-        return 0
-
-
 def _loss_value(value: Any) -> float:
     return float(value) if isinstance(value, (int, float)) else 0.0
 
 
 def _format_loss(value: float) -> float:
     return round(float(value), 4)
-
-
-
-
-
-
 
 
 def _build_loss_detail(
@@ -141,7 +138,7 @@ def _build_loss_detail(
         cells = {}
         row_total = 0.0
         for field_name in NORMAL_LOSS_FIELDS:
-            count = _loss_count(row.get(field_name))
+            count = nonnegative_count(row.get(field_name))
             loss_per_note = _loss_value(loss_percentages.get(f"{row_name}_{field_name}"))
             loss = loss_per_note * count
             cells[field_name] = {
@@ -184,7 +181,7 @@ def _build_break_detail(value: Any) -> dict[str, Any]:
         }
         detail["loss_percentages"] = selected_loss_percentages
         total_loss = sum(
-            _loss_value(loss_percentages.get(key)) * _loss_count(detail.get(key))
+            _loss_value(loss_percentages.get(key)) * nonnegative_count(detail.get(key))
             for key in (
                 "perfect_high",
                 "perfect_low",
@@ -334,3 +331,98 @@ def build_score_recognition_response(result: Any) -> dict[str, Any]:
             ),
         },
     }
+
+
+COMBO_ICON_FILES = {
+    "fc": "fc.png",
+    "fcp": "fcplus.png",
+    "ap": "ap.png",
+    "app": "applus.png",
+    "dummy": "fc_dummy.png",
+}
+
+FLEX_DIFFICULTY_STYLES = {
+    key: {"bg": value["background"], "text": value["text"], "metric": value["metric"]}
+    for key, value in DIFFICULTY_STYLES.items()
+}
+DEFAULT_DIFFICULTY_STYLE = {"bg": "#315B7D", "text": "#FFFFFF", "metric": "#315B7D"}
+
+
+def flex_combo_status(judgement, achievement):
+    status = _combo_status(achievement, judgement)
+    if status is None:
+        return "dummy" if all(isinstance(judgement.get(row), dict) for row in JUDGEMENT_ROWS) else None
+    return status.replace("+", "p")
+
+
+def flex_score_rank(achievement):
+    rank = _score_rank(achievement)
+    return rank.replace("+", "p") if rank else None
+
+
+def difficulty_presentation(difficulty):
+    key = str(difficulty or "").lower()
+    return (
+        FLEX_DIFFICULTY_STYLES.get(key, DEFAULT_DIFFICULTY_STYLE),
+        DIFFICULTY_LABELS.get(key, str(difficulty or "").strip() or "-"),
+    )
+
+
+def format_loss_percentage(value, count=1):
+    if not isinstance(value, (int, float)):
+        return "-"
+    loss = float(value) * nonnegative_count(count)
+    return "0.0000%" if abs(loss) < 0.00005 else f"-{loss:.4f}%"
+
+
+def build_fix_command(judgement, song_title, achievement):
+    rows = []
+    for row_name in JUDGEMENT_ROWS:
+        row = judgement.get(row_name)
+        row = row if isinstance(row, dict) else {}
+        rows.append("/".join(
+            str(nonnegative_count(row.get(field)))
+            for field in ("critical_perfect", "perfect", "great", "good", "miss")
+        ))
+    title = re.sub(r"\s+", " ", song_title).strip() or '""'
+    achievement_text = f"{achievement:.4f}%" if isinstance(achievement, (int, float)) else "0.0000%"
+    return "\n".join((f"fix-rcd {title}", achievement_text, *rows))
+
+
+def calc_status(validation, uncertain_cells, translate):
+    calculation = validation.get("achievement_calc") or {}
+    corrections = validation.get("calc_corrections") or []
+    inferred = any(isinstance(item, dict) and item.get("inferred_row") for item in corrections)
+    consistent = calculation.get("consistent")
+    if consistent is None:
+        return None, inferred
+
+    if corrections:
+        labels = {"critical_perfect": "CP", "perfect": "PF", "great": "GR", "good": "GD"}
+        lines = []
+        for correction in corrections:
+            if correction.get("inferred_row"):
+                continue
+            row = str(correction.get("row") or "").upper()
+            field = labels.get(correction.get("field"), str(correction.get("field") or "").upper())
+            if correction.get("calc_completion"):
+                amount = correction.get("amount", correction.get("added", 0))
+                lines.append(f"{row} {field} {'+' if amount >= 0 else ''}{amount}")
+            else:
+                lines.append(
+                    f"{row} {field} {correction.get('ocr')}→{correction.get('validated')} / "
+                    f"MS {correction.get('miss_ocr')}→{correction.get('miss_validated')}"
+                )
+        text = translate("calc_inferred" if inferred else "calc_corrected")
+        if lines:
+            text += "\n" + "\n".join(lines)
+    elif consistent and uncertain_cells:
+        text = translate("calc_incomplete")
+    elif consistent:
+        text = translate("calc_validated")
+    else:
+        text = translate("calc_uncertain" if uncertain_cells else "calc_mismatch")
+        values = (calculation.get("minimum"), calculation.get("maximum"), calculation.get("observed"))
+        if all(isinstance(value, (int, float)) for value in values):
+            text += f"\nCalc {values[0]:.4f}%-{values[1]:.4f}% / OCR {values[2]:.4f}%"
+    return (text, consistent), inferred

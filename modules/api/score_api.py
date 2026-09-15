@@ -6,7 +6,7 @@ from flask import Blueprint, jsonify, request, send_file
 
 from dataclasses import dataclass
 from typing import Callable
-from modules.score_recognition_api import ScoreRecognitionResultError, build_score_recognition_response
+from modules.score_recognition.presentation import ScoreRecognitionResultError, build_score_recognition_response
 from modules.score_recognition.results import (
     InvalidScoreImageError, UnsupportedScoreImageError, expand_score_recognition_calc_variants,
 )
@@ -25,7 +25,7 @@ def _default_services():
     from modules.api.api_auth import require_dev_token
     from modules.task_runtime import check_rate_limit
     from modules.images.records import generate_score_recognition_picture
-    from modules.score_result_recognizer import recognize_score_image_bytes, validate_recognized_judgement
+    from modules.score_recognition.recognizer import recognize_score_image_bytes, validate_recognized_judgement
 
     return ScoreApiServices(require_dev_token, check_rate_limit, recognize_score_image_bytes,
                             validate_recognized_judgement, generate_score_recognition_picture)

@@ -34,7 +34,7 @@ from modules.song_matcher import find_matching_songs, normalize_text
 
 
 logger = logging.getLogger(__name__)
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 _ENGINE: Any | None = None
 _ENGINE_LOCK = threading.Lock()

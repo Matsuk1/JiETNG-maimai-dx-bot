@@ -1,6 +1,6 @@
 import unittest
 from modules.score_rules import score_rank, combo_status, JUDGEMENT_ROWS
-from modules.score_recognition_presenter import score_rank as flex_rank, combo_status as flex_combo
+from modules.score_recognition.presentation import flex_score_rank as flex_rank, flex_combo_status as flex_combo
 
 
 class ScoreRuleTests(unittest.TestCase):

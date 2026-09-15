@@ -9,7 +9,7 @@ import unittest
 from flask import Flask, request
 from PIL import Image
 
-from modules.score_recognition_api import (
+from modules.score_recognition.presentation import (
     ScoreRecognitionResultError,
     build_score_recognition_response,
 )

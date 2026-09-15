@@ -269,7 +269,7 @@ from modules.i18n import (
     normalize_language,
     select_text,
 )
-from modules.score_result_recognizer import (
+from modules.score_recognition.recognizer import (
     InvalidScoreImageError,
     build_score_crop_preview_image,
     cleanup_score_recognizer_memory,
