@@ -1,3 +1,33 @@
+{# Keep the score string intact; only split its visual presentation. #}
+{% macro achievement(score, star) %}
+  {% set parts = (score|string).split('.', 1) %}
+  <span class="glass-achievement-whole">{{ parts[0] }}</span><span class="glass-achievement-fraction">{{ '.' ~ parts[1] if parts|length > 1 else '' }}{% if star %}<img class="glass-achievement-star" src="{{ star }}">{% endif %}</span>
+{% endmacro %}
+<style>
+  .glass-achievement {
+    display: flex;
+    align-items: baseline;
+    white-space: nowrap;
+    line-height: 1;
+    letter-spacing: -1px;
+  }
+
+  .glass-achievement-fraction {
+    position: relative;
+    font-size: .5em;
+    line-height: 1;
+    letter-spacing: -.5px;
+  }
+
+  .glass-achievement-star {
+    position: absolute;
+    left: 0;
+    bottom: calc(100% + 2px);
+    width: 100%;
+    height: .65em;
+    object-fit: contain;
+  }
+</style>
 {% if inline %}
   <style>
     .glass-inline {
@@ -17,19 +47,18 @@
     }
 
     .glass-inline-achievement {
-      font-size: 55px;
-      line-height: 1.1;
-      letter-spacing: -2px;
+      font-size: 72px;
+      width: 370px;
     }
 
     .glass-inline-dx {
-      margin-top: 8px;
+      margin-top: 3px;
       font-size: 20px;
       color: #596e89;
     }
 
     .glass-inline-history {
-      margin-top: 5px;
+      margin-top: 1px;
       font-size: 18px;
       color: #596e89;
     }
@@ -61,12 +90,6 @@
       object-fit: contain;
     }
 
-    .glass-inline-star {
-      width: 96px;
-      height: 21px;
-      object-fit: contain;
-    }
-
     .glass-inline-rating {
       margin-left: auto;
       padding: 7px 14px;
@@ -77,7 +100,7 @@
     }
   </style>
   <article class="glass-inline" style="--difficulty: {{ color }};">
-    <div class="glass-inline-achievement">{{ song.score }}</div>
+    <div class="glass-achievement glass-inline-achievement">{{ achievement(song.score, icons.dx_star) }}</div>
     <div class="glass-inline-dx">DX {{ song.dx_score }} → {{ '%.1f'|format(song.dx_percentage * 100) }}%</div>
     {% if 'last_play_time' in song and 'play_count' in song %}
       <div class="glass-inline-history ellipsis">PC: {{ song.play_count }}　Recent: {{ song.last_play_time }}</div>
@@ -91,9 +114,6 @@
           <img class="glass-inline-status" src="{{ icons[key] }}">
         {% endif %}
       {% endfor %}
-      {% if icons.dx_star %}
-        <img class="glass-inline-star" src="{{ icons.dx_star }}">
-      {% endif %}
       <span class="glass-inline-rating">{{ '%.1f'|format(song.internalLevelValue) }} → {{ song.ra }}</span>
     </div>
   </article>
@@ -146,22 +166,12 @@
 
     .glass-card-title {
       font-size: 17px;
-      line-height: 24px;
-    }
-
-    .glass-card-achievement-row {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      margin-top: 3px;
+      line-height: 22px;
     }
 
     .glass-card-achievement {
-      min-width: 0;
-      white-space: nowrap;
-      font-size: 22px;
-      letter-spacing: -.8px;
-      line-height: 32px;
+      font-size: 44px;
+      height: 44px;
     }
 
     .glass-card-meta {
@@ -197,9 +207,9 @@
     }
 
     .glass-card-rank {
-      width: 46px;
-      height: 21px;
-      margin-left: auto;
+      width: 53px;
+      height: 25px;
+      margin-left: 3px;
       flex-shrink: 0;
       object-fit: contain;
     }
@@ -219,13 +229,6 @@
       font-size: 13px;
     }
 
-    .glass-card-star {
-      width: 74px;
-      height: 16px;
-      margin-left: 5px;
-      flex-shrink: 0;
-      object-fit: contain;
-    }
 
   </style>
   <article class="glass-card" style="--difficulty: {{ color }};">
@@ -234,12 +237,7 @@
     </div>
     <div class="glass-card-info">
       <div class="glass-card-title ellipsis">{{ song.name }}</div>
-      <div class="glass-card-achievement-row">
-        <div class="glass-card-achievement" data-fit="18">{{ song.score }}</div>
-        {% if icons.score_icon %}
-          <img class="glass-card-rank" src="{{ icons.score_icon }}">
-        {% endif %}
-      </div>
+      <div class="glass-achievement glass-card-achievement">{{ achievement(song.score, icons.dx_star) }}</div>
       <div class="glass-card-meta">
         <span class="ellipsis">{{ version }}</span>
         <span class="glass-card-dx">DX {{ song.dx_score }}</span>
@@ -251,8 +249,8 @@
           <img class="glass-card-status" src="{{ icons[key] }}">
         {% endif %}
       {% endfor %}
-      {% if icons.dx_star %}
-        <img class="glass-card-star" src="{{ icons.dx_star }}">
+      {% if icons.score_icon %}
+        <img class="glass-card-rank" src="{{ icons.score_icon }}">
       {% endif %}
       <span class="glass-card-rating"><span class="glass-card-level">{{ '%.1f'|format(song.internalLevelValue) }} →</span> {{ song.ra }}</span>
     </div>

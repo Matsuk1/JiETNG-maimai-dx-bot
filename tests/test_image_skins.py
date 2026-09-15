@@ -113,3 +113,38 @@ def test_glass_profile_preserves_original_geometry():
                 })'''))
         assert layouts[0] == layouts[1]
         browser.close()
+
+
+def test_glass_achievement_half_size_decimals_and_stars_above():
+    import os
+    import pytest
+    if os.getenv('JIETNG_RENDER_TESTS') != '1':
+        pytest.skip('requires installed Chromium')
+    from playwright.sync_api import sync_playwright
+    from modules.html_renderer import file_uri
+    asset = file_uri('assets/pics/logo.png')
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        page = browser.new_page()
+        for inline in [False, True]:
+            for score in ['101.0000%', '100.1234%', '99.9999%', '0.0000%']:
+                song = dict(name='Sample', score=score, dx_score='1234 / 1300',
+                            dx_percentage=.95, internalLevelValue=14.0, ra=302)
+                body = template('thumbnail.html', skin='glass', inline=inline, song=song,
+                                cover='', version='ORANGE+', color='#9f51dc',
+                                icons=dict(dx_star=asset, score_icon=asset, combo_icon=asset, sync_icon=asset))
+                page.set_content(template('document.html', body=body,
+                                          width=600 if inline else 300, height=225 if inline else 150,
+                                          font=file_uri('assets/fonts/line_seed_jietng.ttf')))
+                page.evaluate('document.fonts.ready')
+                sizes = page.locator('.glass-achievement').evaluate('''el => [
+                    parseFloat(getComputedStyle(el.querySelector('.glass-achievement-whole')).fontSize),
+                    parseFloat(getComputedStyle(el.querySelector('.glass-achievement-fraction')).fontSize)
+                ]''')
+                assert sizes[1] == sizes[0] / 2
+                star = page.locator('.glass-achievement-star').bounding_box()
+                fraction = page.locator('.glass-achievement-fraction').bounding_box()
+                area = page.locator('.glass-achievement').bounding_box()
+                assert star['y'] + star['height'] <= fraction['y']
+                assert fraction['x'] + fraction['width'] <= area['x'] + area['width']
+        browser.close()
