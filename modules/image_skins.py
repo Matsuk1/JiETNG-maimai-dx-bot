@@ -12,7 +12,7 @@ SKINS = TEMPLATES / 'skins'
 
 
 def available_skins():
-    skins = [dict(id='default', label='默认', templates=[])]
+    skins = [dict(id='default', label='Default', uses_background=True, templates=[])]
     for manifest in sorted(SKINS.glob('*/skin.json')):
         skin_id = manifest.parent.name
         if not re.fullmatch(r'[a-z0-9_-]+', skin_id) or skin_id == 'default':
@@ -25,6 +25,7 @@ def available_skins():
         except (OSError, ValueError, KeyError, TypeError):
             continue
         skins.append(dict(id=skin_id, label=label,
+                          uses_background=metadata.get('uses_background') is True,
                           templates=sorted(p.name for p in manifest.parent.glob('*.html'))))
     return skins
 
@@ -66,3 +67,12 @@ def skinnable(function):
         with use_skin(skin):
             return function(*args, **kwargs)
     return wrapped
+
+
+def skin_config(skin=None):
+    selected = current_skin() if skin is None else skin
+    return next((item for item in available_skins() if item['id'] == selected), available_skins()[0])
+
+
+def normalize_skin(skin):
+    return skin_config(skin)['id']

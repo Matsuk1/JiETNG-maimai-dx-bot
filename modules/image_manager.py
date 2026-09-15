@@ -1,4 +1,4 @@
-from modules.image_skins import skinnable
+from modules.image_skins import skinnable, skin_config
 import os
 import random
 import logging
@@ -42,6 +42,8 @@ def compose_images(images, timezone_offset=9, bg_filter=None):
         entries.append(dict(src=image_uri(image), x=40 + (inner_width-image.width)//2,
                             y=y, width=image.width, height=image.height))
         y += image.height + 5
+    if not skin_config()["uses_background"]:
+        bg_filter = None
     selected = bg_filter
     blur, overlay = 20, 40
     if isinstance(bg_filter, dict):

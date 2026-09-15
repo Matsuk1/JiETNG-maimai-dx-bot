@@ -27,9 +27,9 @@ def test_skin_selection_does_not_leak_between_callers():
 
 
 def test_glass_skin_overrides_and_default_fallback():
-    assert image_skins.resolve_template('records.html', 'ios-glass') == 'skins/ios-glass/records.html'
-    assert image_skins.resolve_template('document.html', 'ios-glass') == 'document.html'
-    html = template('records.html', skin='ios-glass', title='<script>unsafe</script>',
+    assert image_skins.resolve_template('records.html', 'glass') == 'skins/glass/records.html'
+    assert image_skins.resolve_template('document.html', 'glass') == 'document.html'
+    html = template('records.html', skin='glass', title='<script>unsafe</script>',
                     stats=[], rating='12345', equation='', details=[], up=['card'], down=[])
     assert '&lt;script&gt;' in html
     assert '<script>' not in html
@@ -56,7 +56,7 @@ def test_nested_skin_scope_is_isolated_and_restored_on_error():
             return current_skin()
 
     with ThreadPoolExecutor(max_workers=4) as pool:
-        assert list(pool.map(render, ['ios-glass', 'default'] * 8)) == ['ios-glass', 'default'] * 8
+        assert list(pool.map(render, ['glass', 'default'] * 8)) == ['glass', 'default'] * 8
     assert current_skin() == 'default'
 
 
@@ -68,10 +68,10 @@ def test_glass_cover_dimensions_inside_version_grid():
     from playwright.sync_api import sync_playwright
     from modules.html_renderer import file_uri
     asset = file_uri('assets/pics/logo.png')
-    cover = template('cover.html', skin='ios-glass', cover=asset, type_src=asset,
+    cover = template('cover.html', skin='glass', cover=asset, type_src=asset,
                      status='', difficulty='master', color='#9f51dc', footer=True,
                      title='Sample', achieved=False, plate=False)
-    page_html = template('progress.html', skin='ios-glass', mode='version', title='',
+    page_html = template('progress.html', skin='glass', mode='version', title='',
                          title_src='', plates=[], rows=[('14', [cover])], markup=True,
                          margin=20, max_per_row=10)
     with sync_playwright() as playwright:
@@ -99,7 +99,7 @@ def test_glass_profile_preserves_original_geometry():
         browser = playwright.chromium.launch()
         page = browser.new_page()
         layouts = []
-        for skin in ['default', 'ios-glass']:
+        for skin in ['default', 'glass']:
             body = template('profile.html', skin=skin, assets=assets, scale=1,
                             user=dict(name='Sample', trophy_content='Trophy'),
                             rating='15678', rounded_icon=False)
