@@ -1,0 +1,7 @@
+<div style="position:relative;width:1363px;height:218px;transform:scale({{ scale }});transform-origin:top left">
+{% for key,x,y,w,h in [('nameplate_url',0,0,1363,218),('icon_url',26,24,170,170),('rating_block_path',219,24,296,58),('rating_block_url',219,24,223,58)] %}{% if assets.get(key) %}<img src="{{ assets[key] }}" style="position:absolute;left:{{ x }}px;top:{{ y }}px;width:{{ w }}px;height:{{ h }}px;{% if key == 'icon_url' and rounded_icon %}border-radius:10px{% endif %}">{% endif %}{% endfor %}
+<div style="position:absolute;left:359px;top:28px;display:flex;font-size:32px;color:white;white-space:pre">{% for digit in rating %}<span style="width:23px;text-align:center">{{ digit }}</span>{% endfor %}</div>
+<div style="position:absolute;left:219px;top:89px;width:452px;height:56px;border:2px solid #b4b4b4;border-radius:10px;background:white;padding:3px 14px;font-size:32px"><div class="ellipsis" style="padding-right:110px">{{ user.name }}</div></div>
+{% for key,x,y,w,h in [('class_rank_url',530,6,148,85),('cource_rank_url',550,93,117,48),('trophy_url',219,158,452,36)] %}{% if assets.get(key) %}<img src="{{ assets[key] }}" style="position:absolute;left:{{ x }}px;top:{{ y }}px;width:{{ w }}px;height:{{ h }}px">{% endif %}{% endfor %}
+<div class="ellipsis" style="position:absolute;left:230px;top:157px;width:430px;text-align:center;font-size:22px;color:white;-webkit-text-stroke:2px black;paint-order:stroke fill">{{ user.trophy_content }}</div>
+</div>

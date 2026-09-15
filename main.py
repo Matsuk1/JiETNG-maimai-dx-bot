@@ -24,7 +24,7 @@ import base64 as b64mod
 from datetime import datetime
 from types import SimpleNamespace
 
-from PIL import Image, ImageDraw
+from PIL import Image
 from io import BytesIO
 
 from flask import (
@@ -242,10 +242,6 @@ from modules.commands.command_parsers import (
 from modules.dbpool_manager import close_pool
 from modules.image_manager import (
     compose_generated_images,
-    font_profile,
-    font_trophy,
-    round_corner,
-    truncate_text,
 )
 
 # System utilities
@@ -2763,56 +2759,7 @@ async def generate_level_rank_progress(user_id, id_use, level, rank=None, ver="j
 
 
 def generate_profile(user_info, scale=1, user_id=None):
-
-    img_width = 1363
-    img_height = 218
-    info_img = Image.new("RGBA", (img_width, img_height), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(info_img)
-
-    def paste_image(key, position, size, round=False, use_alpha=True):
-        nonlocal user_info
-        if key in user_info and user_info[key]:
-            try:
-                url = user_info[key]
-
-                # 默认不带 headers
-                headers = None
-
-                if url.startswith("https://maimaidx-eng.com"):
-                    headers = {
-                        "Referer": "https://lng-tgk-aime-gw.am-all.net/common_auth/login?site_id=maimaidxex&redirect_url=https://maimaidx-eng.com/maimai-mobile/&back_url=https://maimai.sega.com/",
-                        "User-Agent": (
-                            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                            "AppleWebKit/537.36 (KHTML, like Gecko) "
-                            "Chrome/127.0.0.0 Safari/537.36"
-                        ),
-                        "Host": "maimaidx-eng.com",
-                    }
-
-                with requests.get(url, headers=headers, verify=False, timeout=(5, 20)) as response:
-                    response.raise_for_status()
-                    with Image.open(BytesIO(response.content)) as source_img:
-                        img = source_img.copy()
-                if use_alpha and img.mode != "RGBA":
-                    img = img.convert("RGBA")
-                elif not use_alpha and img.mode != "RGB":
-                    img = img.convert("RGB")
-                img_resized = img.resize(size, Image.LANCZOS)
-                if round:
-                    img_resized = round_corner(img_resized, radius=10)
-                if use_alpha:
-                    info_img.paste(img_resized, position, img_resized)
-                else:
-                    info_img.paste(img_resized, position)
-                return True
-
-            except Exception as e:
-                logger.error(f"[Image] ✗ Failed to load image: url={user_info[key]}, error={e}")
-                return None
-        return None
-
-    paste_image("nameplate_url", (0, 0), (1363, 218), use_alpha=False)
-
+    from modules.profile_generator import generate_profile_image
     # icon_url 为默认值时，尝试使用 LINE 头像
     default_icon = [
         "https://maimaidx.jp/maimai-mobile/img/Icon/",
@@ -2821,60 +2768,19 @@ def generate_profile(user_info, scale=1, user_id=None):
         "https://maimaidx-eng.com/maimai-mobile/img/Icon/c22d52b387e3f829.png"
     ]
     icon_url = user_info.get("icon_url", "")
-    round = False
+    rounded_icon = False
     if icon_url in default_icon and user_id:
         try:
             with ApiClient(configuration) as api_client:
                 profile = MessagingApi(api_client).get_profile(user_id)
                 if profile.picture_url:
                     user_info = {**user_info, "icon_url": profile.picture_url}
-                    round = True
+                    rounded_icon = True
         except Exception as e:
             logger.error(f"[Image] ✗ Failed to load user profile image: {e}")
 
-    paste_image("icon_url", (26, 24), (170, 170), round)
+    return generate_profile_image(user_info, scale=scale, rounded_icon=rounded_icon)
 
-    # rating block: 优先使用本地图片，兼容旧版 URL
-    if "rating_block_path" in user_info and user_info["rating_block_path"]:
-        try:
-            with Image.open(user_info["rating_block_path"]) as _rb:
-                rb_img = _rb.convert("RGBA")
-            rb_img = rb_img.resize((296, 58), Image.LANCZOS)
-            info_img.paste(rb_img, (219, 24), rb_img)
-        except Exception as e:
-            logger.error(f"[Image] ✗ Failed to load rating block: {e}")
-    else:
-        paste_image("rating_block_url", (219, 24), (223, 58))
-
-    # 使用等宽方式绘制 rating 数字
-    rating_text = user_info['rating'].rjust(5)
-    char_width = 23  # 每个字符的固定宽度
-    start_x = 359
-    for i, char in enumerate(rating_text):
-        # 计算字符的实际宽度
-        char_bbox = draw.textbbox((0, 0), char, font=font_profile)
-        actual_char_width = char_bbox[2] - char_bbox[0]
-        # 在固定宽度区域内居中
-        offset = (char_width - actual_char_width) / 2
-        draw.text((start_x + i * char_width + offset, 28), char, fill=(255, 255, 255), font=font_profile)
-
-    # 绘制昵称
-    draw.rounded_rectangle([219, 89, 671, 145], radius=10, fill=(255, 255, 255), outline=(180, 180, 180), width=2)
-    draw.text((235, 94), user_info['name'], fill=(0, 0, 0), font=font_profile)
-
-    paste_image("class_rank_url", (530, 6), (148, 85))
-    paste_image("cource_rank_url", (550, 93), (117, 48))
-    paste_image("trophy_url", (219, 158), (452, 36))
-
-    trophy_content = truncate_text(draw, user_info['trophy_content'], font_trophy, 430)
-    bbox = draw.textbbox((0, 0), trophy_content, font=font_trophy)
-    text_width = bbox[2] - bbox[0]
-    rect_width = 452
-    center_x = 219 + (rect_width - text_width) // 2
-    draw.text((center_x, 157), trophy_content, fill=(255, 255, 255), font=font_trophy, stroke_width=2, stroke_fill=(0, 0, 0))
-
-    info_img = info_img.resize((int(img_width * scale), int(img_height * scale)), Image.Resampling.LANCZOS)
-    return info_img
 
 def _record_level_value(record):
     try:
