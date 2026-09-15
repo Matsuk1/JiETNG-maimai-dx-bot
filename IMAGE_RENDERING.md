@@ -39,28 +39,32 @@ python scripts/compare_image_migration.py artifacts/image-migration
 ## 实时调试页面
 
 运行 `.venv/bin/python -m devtools.image_preview.server`，打开 <http://127.0.0.1:5088>。
-提供 12 套固定 JSON 示例、快捷字段、自动渲染、模板保存监听、缩放与 PNG 下载。
+提供 14 套固定 JSON 示例、快捷字段、自动渲染、模板保存监听、缩放与 PNG 下载。
 具体说明见 [本地图片调试台](devtools/image_preview/README.md)。
 
 ## 成绩图皮肤
 
 `generate_records_picture(..., skin="default")`、`create_thumbnail(..., skin="default")`
 和 `create_thumbnail_in_line(..., skin="default")` 支持显式选择皮肤。
-选择参数逐层传递，不使用全局可变状态；旧调用无需修改。
+组合生成器通过请求隔离的 ContextVar 向嵌套模板传递皮肤；旧调用无需修改。
+作用域退出（包括异常）会恢复原选择，截图队列只接收已展开的 HTML。
 
 皮肤目录为 `templates/images/skins/<id>/`，包含 `skin.json`（例如
-`{"label": "皮肤名称"}`）和要覆盖的 `records.html` / `thumbnail.html`。
+`{"label": "皮肤名称"}`）和要覆盖的同名图片模板。
 未知皮肤或缺少的模板自动回退到原有模板。模板数据与成绩计算共用，
 默认模板继续放在 `templates/images/`。新皮肤使用自己的 CSS 类名前缀，
 避免影响组合图片中的其他组件。小卡片保持 300×150，横向卡片保持 600×225，
 成绩列表宽度保持 1580；列表高度由内容决定。
 
 调试台可切换皮肤并记住浏览器选择，递归监听皮肤模板修改。
-当前只接入成绩列表与成绩卡片；聊天命令及用户数据库的皮肤偏好尚未接入，
-业务调用可以直接传入 `skin`。
+成绩列表、卡片、封面、单曲、资料、进度、版本、识别结果、合成页脚、
+404 和后台图标均已接入。聊天命令及用户数据库的皮肤偏好尚未接入，
+业务生成器可以传入 `skin`；组合调用也可用 `with use_skin("ios-glass"):`。
+`document.html`（浏览器基础字体和画布）与 `stack.html`（图片堆叠）
+是共享结构，不另复制皮肤版本，堆叠中的图片会继承当前皮肤。
 
 内置 `ios-glass` 皮肤提供浅蓝紫渐变、半透明面板、高光边框，以及成绩列表、
-小卡片和横向卡片的玻璃样式。示例：
+小卡片、横向卡片及其余图片场景的玻璃样式。难度用卡片及封面的彩色外框表示。示例：
 
 ```python
 generate_records_picture(up_songs, down_songs, title="B50", skin="ios-glass")

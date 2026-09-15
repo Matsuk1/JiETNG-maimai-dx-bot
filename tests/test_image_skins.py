@@ -28,7 +28,7 @@ def test_skin_selection_does_not_leak_between_callers():
 
 def test_glass_skin_overrides_and_default_fallback():
     assert image_skins.resolve_template('records.html', 'ios-glass') == 'skins/ios-glass/records.html'
-    assert image_skins.resolve_template('profile.html', 'ios-glass') == 'profile.html'
+    assert image_skins.resolve_template('document.html', 'ios-glass') == 'document.html'
     html = template('records.html', skin='ios-glass', title='<script>unsafe</script>',
                     stats=[], rating='12345', equation='', details=[], up=['card'], down=[])
     assert '&lt;script&gt;' in html

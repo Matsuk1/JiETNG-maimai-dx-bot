@@ -6,7 +6,7 @@ from devtools.image_preview.server import create_app, CASES, FIXTURES, clean_dat
 def test_all_fixture_cases_load_without_database_or_network():
     client = create_app().test_client()
     cases = client.get('/api/examples').get_json()
-    assert len(cases) == 12
+    assert len(cases) == len(CASES)
     for case in cases:
         response = client.get('/api/examples/' + case['id'])
         assert response.status_code == 200

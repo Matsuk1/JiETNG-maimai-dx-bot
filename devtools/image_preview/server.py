@@ -36,6 +36,8 @@ CASES = {
     'plate': ('牌子进度', 'progress.html', '各难度统计与歌曲完成情况'),
     'version': ('版本歌曲列表', 'progress.html', '版本标志、牌子与等级分组'),
     'score': ('识别结果分析', 'score.html', '判定数量、DX 星级和扣分明细'),
+    '404': ('图片占位图', '404.html', '图片缺失时的提示'),
+    'admin_icon': ('后台图标', 'admin_icon.html', '后台 PWA 图标'),
     'composition': ('背景与页脚', 'composition.html', '模糊、遮罩、二维码和生成信息'),
 }
 
@@ -101,6 +103,9 @@ def render_case(kind, data, skin="default"):
             image = songs.generate_version_list(data['songs'], data.get('version_info'), data.get('ver', 'jp'))
         elif kind == 'score':
             image = records.generate_score_recognition_picture(data['result'], ver=data.get('ver', 'jp'))
+        elif kind in ('404', 'admin_icon'):
+            width, height = (600, 800) if kind == '404' else (512, 512)
+            image = render_template(kind + '.html', width, height, logo=file_uri('assets/pics/logo.png'))
         elif kind == 'composition':
             # Render a full-width row so the footer has its normal working width.
             card = records.create_thumbnail_in_line(data['record'])
