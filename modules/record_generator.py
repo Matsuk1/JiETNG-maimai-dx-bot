@@ -934,208 +934,29 @@ def generate_score_recognition_picture(
     )
 
 
-def generate_records_picture(
-    up_songs=None,
-    down_songs=None,
-    title="RECORD",
-    ver="jp",
-    details=None,
-):
-    up_songs = up_songs or []
-    down_songs = down_songs or []
-    details = details or {}
+def generate_records_picture(up_songs=None, down_songs=None, title="RECORD", ver="jp", details=None):
+    from modules.html_cards import difficulty_color, thumbnail_html
+    from modules.html_renderer import file_uri, render_template
+    up_songs, down_songs = up_songs or [], down_songs or []
+    records = up_songs + down_songs
+    if not records:
+        return None
     language = image_language(ver)
-    up_num = len(up_songs)
-    down_num = len(down_songs)
-    num = up_num + down_num
-
-    if not num:
-        return
-
-    up_ra = down_ra = 0
-    up_level = down_level = 0
-    up_score = down_score = 0
-
-    for rcd in up_songs:
-        up_ra += rcd['ra']
-        up_level += rcd['internalLevelValue']
-        up_score += float(rcd['score'][:-1])
-
-    for rcd in down_songs:
-        down_ra += rcd['ra']
-        down_level += rcd['internalLevelValue']
-        down_score += float(rcd['score'][:-1])
-
+    up_ra = sum(record['ra'] for record in up_songs)
+    down_ra = sum(record['ra'] for record in down_songs)
     all_ra = round(up_ra + down_ra, 2)
-    all_level = up_level + down_level
-    all_score = up_score + down_score
-
-    grid_size = (5, math.ceil(up_num / 5) + math.ceil(down_num / 5))
-    thumb_size = (300, 150)
-    side_width = 20
-    spacing = 10
-    header_height = 245
-
-    version_padding = 0 if not (up_songs and down_songs) else 40
-
-    img_width = grid_size[0] * (thumb_size[0] + spacing) - spacing + side_width * 2
-    img_height = header_height + grid_size[1] * (thumb_size[1] + spacing) + version_padding + 13
-    combined = Image.new("RGBA", (img_width, img_height), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(combined)
-
-    rating_equation = f"= {_format_rating_value(up_ra)} + {_format_rating_value(down_ra)}" if up_ra and down_ra else ""
-    rating_block_size = RECORD_RATING_BLOCK_SIZE
-
-    header_text = [
-        f"{_image_text('records.avg_level', language)}: {all_level / num:.2f}",
-        f"{_image_text('records.avg_achievement', language)}: {all_score / num:.4f}%",
-        f"{_image_text('records.avg_rating', language)}: {all_ra / num:.2f}",
+    stats = [
+        (_image_text('records.avg_level', language), f"{sum(r['internalLevelValue'] for r in records) / len(records):.2f}"),
+        (_image_text('records.avg_achievement', language), f"{sum(float(r['score'][:-1]) for r in records) / len(records):.4f}%"),
+        (_image_text('records.avg_rating', language), f"{all_ra / len(records):.2f}"),
     ]
-
-    # 绘制统计信息背景卡片（右侧）
-    card_padding = 20
-    card_y = side_width + 10
-
-    # 实际文本总宽度
-    max_text_width = _measure_aligned_colon_width(draw, header_text, font_large)
-    rating_line_width = rating_block_size[0]
-    if rating_equation:
-        rating_line_width += RATING_EQUATION_GAP + int(draw.textlength(rating_equation, font=font_large))
-    max_text_width = max(max_text_width, rating_line_width)
-
-    line_height = draw.textbbox((0, 0), "JiETNG", font=font_large)[3]
-    text_total_height = rating_block_size[1] + RATING_STATS_GAP + len(header_text) * (line_height + HEADER_STAT_SPACING)
-
-    # 根据实际文本宽度设置卡片宽度，卡片靠左
-    card_width = max_text_width + card_padding * 2
-    card_height = text_total_height + card_padding * 2 - 10
-    card_x = side_width + 10
-
-    # 绘制带圆角的半透明背景框
-    draw.rounded_rectangle(
-        [card_x, card_y, card_x + card_width, card_y + card_height],
-        radius=12,
-        fill=(255, 255, 255),
-        outline=(200, 210, 225),
-        width=2
-    )
-
-    content_x = card_x + card_padding
-    content_y = card_y + card_padding - 5
-    _draw_record_rating_block(combined, draw, all_ra, (content_x, content_y), rating_block_size, font=font_large)
-    if rating_equation:
-        equation_x = content_x + rating_block_size[0] + RATING_EQUATION_GAP
-        equation_y = content_y + (rating_block_size[1] - line_height) // 2 + RATING_EQUATION_Y_OFFSET
-        draw.text((equation_x, equation_y), rating_equation, fill=(40, 40, 40), font=font_large)
-
-    draw_aligned_colon_text(
-        draw,
-        lines=header_text,
-        top_left=(content_x, content_y + rating_block_size[1] + RATING_STATS_GAP),
-        font=font_large,
-        spacing=HEADER_STAT_SPACING,
-        fill=(40, 40, 40)
-    )
-
-    # 绘制标题/详情（右侧）
-    if not details:
-        title_y = card_y - 35
-        title_w = int(draw.textlength(title, font=font_record_title))
-        title_x = img_width - side_width - 10 - title_w
-        draw.text((title_x, title_y), title, fill=(255, 255, 255), font=font_record_title, stroke_width=3, stroke_fill=(50, 50, 50))
-    else:
-        # 将 title 渲染到临时 RGBA 图，逆时针旋转 45°，缩放至 card_height
-        tb = draw.textbbox((0, 0), title, font=font_record_detail_title)
-        tmp = Image.new("RGBA", (tb[2] + 4, tb[3] + 4), (0, 0, 0, 0))
-        ImageDraw.Draw(tmp).text((2, 2), title, fill=(255, 255, 255, 255), font=font_record_detail_title, stroke_width=2, stroke_fill=(50, 50, 50, 255))
-        tmp_rot = tmp.rotate(45, expand=True, resample=Image.Resampling.BICUBIC)
-        rot_h = card_height
-        rot_w = max(1, int(tmp_rot.width * rot_h / tmp_rot.height))
-        tmp_rot = tmp_rot.resize((rot_w, rot_h), Image.Resampling.LANCZOS)
-
-        title_paste_x = card_x + card_width + 15
-        combined.paste(tmp_rot, (title_paste_x, card_y), tmp_rot)
-        draw = ImageDraw.Draw(combined)
-
-        # 计算列数：每列最多 4 条，最多 2 列
-        details_items = list(details.items())
-        num_items = len(details_items)
-        items_per_col = 4
-        num_cols = min(2, math.ceil(num_items / items_per_col)) if num_items > 0 else 1
-
-        left_bound = title_paste_x + rot_w
-        right_bound = img_width
-        avail_w = max(1, right_bound - left_bound)
-        col_gap = 15
-        lh = draw.textbbox((0, 0), "A", font=font_large)[3] + 2
-
-        details_card_x = left_bound + card_padding
-        details_card_x2 = right_bound - 30
-        if num_cols == 1:
-            col_max_w = max(1, avail_w - card_padding * 2)
-        else:
-            col_max_w = max(1, (avail_w - card_padding * 2 - col_gap) // 2)
-
-        draw.rounded_rectangle(
-            [details_card_x, card_y, details_card_x2, card_y + card_height],
-            radius=12,
-            fill=(255, 255, 255),
-            outline=(200, 210, 225),
-            width=2
-        )
-
-        for col_num in range(num_cols):
-            col_x = details_card_x + card_padding + col_num * (col_max_w + col_gap)
-            col_y = card_y + card_padding - 5
-            for i in range(items_per_col):
-                idx = col_num * items_per_col + i
-                if idx >= num_items:
-                    break
-                key, value = details_items[idx]
-                _draw_detail_line(draw, col_x, col_y, key, str(value), font_large, col_max_w, lh)
-                col_y += lh
-
-    up_thumbnails = [create_thumbnail(song) for song in up_songs[:grid_size[0] * grid_size[1]]]
-    down_thumbnails = [create_thumbnail(song) for song in down_songs[:grid_size[0] * grid_size[1]]]
-    for i, thumb in enumerate(up_thumbnails):
-        x_offset = (i % grid_size[0]) * (thumb_size[0] + spacing) + side_width
-        y_offset = header_height + (i // grid_size[0]) * (thumb_size[1] + spacing)
-        combined.paste(thumb, (x_offset, y_offset), thumb)
-
-    # 计算up部分最后一行的底部位置
-    up_rows = math.ceil(up_num / grid_size[0])
-    total_up_y_offset = header_height + up_rows * (thumb_size[1] + spacing)
-
-    # 在上下部分中间绘制分隔线 (----·----) - 仅当同时有上下部分时显示
-    if up_songs and down_songs:
-        divider_y = total_up_y_offset + version_padding // 3 + 2
-        divider_color = (0, 0, 0)
-
-        # 计算中心点和线条长度
-        center_x = img_width // 2
-        line_half_length = (img_width - side_width * 2) // 2
-
-        # 绘制左侧横线
-        left_line_start = center_x - line_half_length // 2 - 40
-        left_line_end = center_x - 30
-        draw.line([(left_line_start, divider_y), (left_line_end, divider_y)], fill=divider_color, width=2)
-
-        # 绘制中心点
-        dot_radius = 3
-        draw.ellipse([center_x - dot_radius, divider_y - dot_radius,
-                     center_x + dot_radius, divider_y + dot_radius], fill=divider_color)
-
-        # 绘制右侧横线
-        right_line_start = center_x + 30
-        right_line_end = center_x + line_half_length // 2 + 40
-        draw.line([(right_line_start, divider_y), (right_line_end, divider_y)], fill=divider_color, width=2)
-
-    for i, thumb in enumerate(down_thumbnails):
-        x_offset = (i % grid_size[0]) * (thumb_size[0] + spacing) + side_width
-        y_offset = total_up_y_offset + version_padding + (i // grid_size[0]) * (thumb_size[1] + spacing)
-        combined.paste(thumb, (x_offset, y_offset), thumb)
-
-    return combined
+    detail_rows = [(key, [(token, difficulty_color(token.lower()) if token.lower() in _DIFF_KEYS else None)
+                          for token in str(value).split()]) for key, value in (details or {}).items()]
+    return render_template("records.html", 1580, title=title, stats=stats,
+                           rating=str(int(all_ra)).rjust(5), rating_src=file_uri(get_rating_image_path(int(all_ra))),
+                           equation=f"= {_format_rating_value(up_ra)} + {_format_rating_value(down_ra)}" if up_ra and down_ra else "",
+                           details=detail_rows, up=[thumbnail_html(song) for song in up_songs],
+                           down=[thumbnail_html(song) for song in down_songs])
 
 
 def generate_cover(cover_url, type, icon=None, icon_type=None, cover_name=None, complete_info=None, difficulty=None, achieved=None, song_title=None):
