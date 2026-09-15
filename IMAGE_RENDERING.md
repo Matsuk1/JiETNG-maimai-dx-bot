@@ -79,7 +79,7 @@ generate_records_picture(up_songs, down_songs, title="B50", skin="glass")
 Glass 页面自身透明，背景只在最后合成时应用一次；关闭背景时使用默认底色。
 调试台的“应用示例背景图”可预览最终效果。
 
-部署需同步更新 `main.py`、`modules/user_image_skin.py`、`modules/image_skins.py`、
+部署需同步更新 `main.py`、`modules/image_skins.py`、
 `modules/image_manager.py`、`modules/api/image_api.py`、`templates/settings.html`、
 四种语言文件，以及整个 `templates/images/skins/glass/`。旧 `ios-glass/` 目录
 已更名，本次尚未部署，无需迁移旧用户选择。

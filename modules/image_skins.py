@@ -3,6 +3,10 @@
 Skin IDs are local directory names, never paths supplied by callers. Missing
 skins or overrides fall back to the existing templates without changing data.
 """
+from contextlib import contextmanager
+from contextvars import ContextVar
+from functools import wraps
+from inspect import iscoroutinefunction, signature
 import json
 import re
 from pathlib import Path
@@ -40,10 +44,6 @@ def resolve_template(name, skin='default'):
 
 # Template expansion happens on the caller thread before screenshot submission.
 # ContextVar keeps nested generators in one skin without cross-request leakage.
-from contextlib import contextmanager
-from contextvars import ContextVar
-from functools import wraps
-
 _current_skin = ContextVar('image_skin', default='default')
 
 
@@ -76,3 +76,44 @@ def skin_config(skin=None):
 
 def normalize_skin(skin):
     return skin_config(skin)['id']
+
+
+_user_skin_active = ContextVar('user_image_skin_user_skin_active', default=False)
+
+
+def user_skin(user_id):
+    from modules.user_manager import get_user
+    return normalize_skin((get_user(user_id) or {}).get('image_skin', 'default')) if user_id else 'default'
+
+
+@contextmanager
+def user_image_context(user_id):
+    # Mention/friend images retain the requester's choice, not the target's.
+    if not user_id or _user_skin_active.get():
+        yield
+        return
+    token = _user_skin_active.set(True)
+    try:
+        with use_skin(user_skin(user_id)):
+            yield
+    finally:
+        _user_skin_active.reset(token)
+
+
+def user_image(function):
+    sig = signature(function)
+
+    def owner(args, kwargs):
+        return sig.bind_partial(*args, **kwargs).arguments.get('user_id')
+
+    if iscoroutinefunction(function):
+        @wraps(function)
+        async def wrapped(*args, **kwargs):
+            with user_image_context(owner(args, kwargs)):
+                return await function(*args, **kwargs)
+    else:
+        @wraps(function)
+        def wrapped(*args, **kwargs):
+            with user_image_context(owner(args, kwargs)):
+                return function(*args, **kwargs)
+    return wrapped

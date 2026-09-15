@@ -11,7 +11,7 @@ from modules.api.api_auth import check_user_permission, require_dev_token
 from modules.commands.command_config import RANK_COMMANDS
 from modules.config_loader import TEMP_VERSION, read_dxdata
 from modules.event_tracker import track_event
-from modules.user_image_skin import user_image
+from modules.image_skins import user_image
 from modules.image_manager import compose_generated_images
 from modules.rate_limiter import check_rate_limit
 from modules.record_generator import (

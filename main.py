@@ -241,8 +241,7 @@ from modules.commands.command_parsers import (
 )
 from modules.dbpool_manager import close_pool
 from modules.image_button_once import PREFIX as IMAGE_BUTTON_PREFIX, consume_image_button
-from modules.image_skins import available_skins, normalize_skin
-from modules.user_image_skin import user_image, user_skin
+from modules.image_skins import available_skins, normalize_skin, user_image, user_skin
 from modules.image_manager import (
     compose_generated_images,
 )

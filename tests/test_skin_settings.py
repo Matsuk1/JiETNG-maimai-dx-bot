@@ -11,7 +11,7 @@ from PIL import Image
 from modules.image_skins import available_skins, current_skin, normalize_skin
 from modules.i18n import normalize_language, DEFAULT_WEB_LANGUAGE
 from modules.web_i18n import register_web_i18n
-from modules.user_image_skin import user_image
+from modules.image_skins import user_image
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -71,7 +71,7 @@ def test_async_request_skin_and_nested_target_are_isolated():
     async def run():
         return await asyncio.gather(operation('sender'),operation('other'))
 
-    with patch('modules.user_image_skin.user_skin',side_effect=lambda uid:'glass' if uid=='sender' else 'default'):
+    with patch('modules.image_skins.user_skin',side_effect=lambda uid:'glass' if uid=='sender' else 'default'):
         assert asyncio.run(run())==[('glass',)*3,('default',)*3]
     assert current_skin()=='default'
 
