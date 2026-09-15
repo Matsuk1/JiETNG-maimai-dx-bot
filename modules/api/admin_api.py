@@ -100,7 +100,7 @@ from modules.user_manager import (
     nickname_cache_lock,
     record_notice_vote,
 )
-from modules.web_i18n import localized_payload
+from modules.i18n import localized_payload
 
 
 logger = logging.getLogger(__name__)

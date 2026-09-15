@@ -218,7 +218,7 @@ from modules.api.api_auth import (
     maimai_session_cors as _maimai_session_cors,
 )
 from modules.logging_config import configure_logging
-from modules.web_i18n import (
+from modules.i18n import (
     error_page as _error_page,
     register_web_i18n,
 )

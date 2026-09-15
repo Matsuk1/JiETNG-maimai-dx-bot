@@ -10,7 +10,7 @@ from PIL import Image
 
 from modules.image_skins import available_skins, current_skin, normalize_skin
 from modules.i18n import normalize_language, DEFAULT_WEB_LANGUAGE
-from modules.web_i18n import register_web_i18n
+from modules.i18n import register_web_i18n
 from modules.image_skins import user_image
 
 ROOT = Path(__file__).resolve().parents[1]
