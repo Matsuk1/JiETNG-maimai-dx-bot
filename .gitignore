@@ -86,3 +86,6 @@ data/exports/
 
 # 成绩图裁切原型调试产物
 data/score_cropper_debug/
+
+# Local image migration comparisons
+artifacts/image-migration/

@@ -167,6 +167,7 @@ cd JiETNG
 
 ```bash
 pip install -r requirements.txt
+python -m playwright install chromium
 ```
 
 #### 3. 配置数据库
@@ -269,6 +270,7 @@ RUN apt-get update && apt-get install -y \
 # 安装 Python 依赖
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+RUN python -m playwright install --with-deps chromium
 
 # 复制项目文件
 COPY . .
@@ -767,3 +769,5 @@ journalctl -u jietng -f
 由 [Matsuk1](https://github.com/Matsuk1) 制作
 
 </div>
+
+图片生成与部署说明：[HTML/CSS 图片渲染](IMAGE_RENDERING.md)。
