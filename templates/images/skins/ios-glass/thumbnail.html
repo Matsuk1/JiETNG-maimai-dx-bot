@@ -126,13 +126,14 @@
       top: 12px;
       width: 73px;
       height: 73px;
+      border: 3px solid var(--difficulty);
       border-radius: 15px;
       overflow: hidden;
       box-shadow: 0 4px 10px #28345c20;
     }
 
     .glass-card-cover-content {
-      transform: scale(.486667);
+      transform: scale(.446667);
       transform-origin: top left;
     }
 
@@ -211,28 +212,18 @@
 
     .glass-card-star {
       position: absolute;
-      top: 70px;
+      top: 67px;
       left: 16px;
       width: 64px;
       height: 13px;
       object-fit: contain;
     }
 
-    .glass-card-difficulty {
-      position: absolute;
-      left: 13px;
-      top: 90px;
-      width: 71px;
-      height: 3px;
-      border-radius: 2px;
-      background: var(--difficulty);
-    }
   </style>
   <article class="glass-card" style="--difficulty: {{ color }};">
     <div class="glass-card-cover">
       <div class="glass-card-cover-content">{{ cover|safe }}</div>
     </div>
-    <div class="glass-card-difficulty"></div>
     <div class="glass-card-info">
       <div class="glass-card-title ellipsis">{{ song.name }}</div>
       <div class="glass-card-achievement">{{ song.score }}</div>
