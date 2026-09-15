@@ -1,8 +1,8 @@
 """Reusable card markup. Asset fetching stays in the existing image cache."""
 from pathlib import Path
-from modules.html_renderer import image_uri, template
+from modules.html_renderer import file_uri, image_uri, template
 from modules import image_cache
-from modules.config_loader import (ICON_TYPE_DIR, ICON_BASE_DIR, ICON_SCORE_DIR,
+from modules.config_loader import (COVERS_DIR, ICON_TYPE_DIR, ICON_BASE_DIR, ICON_SCORE_DIR,
     ICON_COMBO_DIR, ICON_SYNC_DIR, ICON_COMBO_RCD_DIR, ICON_SYNC_RCD_DIR, ICON_DX_STAR_DIR)
 
 
@@ -14,7 +14,11 @@ def difficulty_color(difficulty):
 def icon_uri(value, directory, url):
     if not value:
         return ''
-    image = image_cache.download_and_cache_icon(url, str(Path(directory) / f'{value}.png'))
+    path = Path(directory) / f'{value}.png'
+    cached = file_uri(path)
+    if cached:
+        return cached
+    image = image_cache.download_and_cache_icon(url, str(path))
     if image is None:
         return ''
     try:
@@ -25,12 +29,15 @@ def icon_uri(value, directory, url):
 
 def cover_html(cover_url, type, icon=None, icon_type=None, cover_name=None,
                complete_info=None, difficulty=None, achieved=None, song_title=None):
-    cover = image_cache.get_cover_image(cover_url, cover_name)
-    try:
-        cover_src = image_uri(cover) if cover is not None else ''
-    finally:
-        if cover is not None:
-            cover.close()
+    path = Path(COVERS_DIR) / Path(cover_name).name if cover_name else None
+    cover_src = file_uri(path) if path else ''
+    if not cover_src:
+        cover = image_cache.get_cover_image(cover_url, cover_name)
+        try:
+            cover_src = image_uri(cover) if cover is not None else ''
+        finally:
+            if cover is not None:
+                cover.close()
     type_src = icon_uri(type, ICON_TYPE_DIR,
                         'https://maimaidx.jp/maimai-mobile/img/music_standard.png' if type == 'std'
                         else 'https://maimaidx.jp/maimai-mobile/img/music_dx.png')

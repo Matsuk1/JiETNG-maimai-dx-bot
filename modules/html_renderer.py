@@ -5,6 +5,8 @@ No application data is interpreted as HTML; Jinja templates autoescape by defaul
 """
 import atexit
 import base64
+import os
+import logging
 from concurrent.futures import Future
 from queue import Queue
 from functools import lru_cache
@@ -47,6 +49,13 @@ def file_uri(path):
 def _file_uri(path, modified):
     import mimetypes
     mime = mimetypes.guess_type(path)[0] or 'application/octet-stream'
+    if mime.startswith('image/'):
+        try:
+            with Image.open(path) as asset:
+                asset.verify()
+        except (OSError, ValueError):
+            logging.getLogger(__name__).warning('Invalid optional image asset: %s', path)
+            return ''
     return f'data:{mime};base64,' + base64.b64encode(Path(path).read_bytes()).decode('ascii')
 
 
@@ -162,3 +171,17 @@ def shutdown_renderer():
 
 
 atexit.register(shutdown_renderer)
+
+
+def _after_fork():
+    # A prefork server must never reuse its parent's thread or Playwright pipes.
+    global _queue, _worker_thread, _worker_lock, _slots, _playwright, _browser, _page
+    _queue = Queue()
+    _worker_thread = None
+    _worker_lock = threading.Lock()
+    _slots = threading.BoundedSemaphore(8)
+    _playwright = _browser = _page = None
+
+
+if hasattr(os, 'register_at_fork'):
+    os.register_at_fork(after_in_child=_after_fork)

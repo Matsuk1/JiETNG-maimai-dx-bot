@@ -23,6 +23,17 @@ class HtmlRendererTests(unittest.TestCase):
         with render_html('<div>OK</div>', 100) as im:
             self.assertGreater(im.height, 0)
 
+    def test_profile_rating_baseline_matches_pillow(self):
+        from modules.html_renderer import render_template, ROOT
+        from PIL import ImageFont
+        font = ImageFont.truetype(str(ROOT / 'assets/fonts/line_seed_jietng.ttf'), 32)
+        expected_top = 28 + font.getbbox('15678')[1]
+        with render_template('profile.html', 1363, 218, assets={}, scale=1,
+                             user=dict(name='', trophy_content=''), rating='15678', rounded_icon=False) as im:
+            with im.crop((359, 0, 474, 82)) as digits:
+                actual_top = digits.getchannel('A').getbbox()[1]
+        self.assertLessEqual(abs(actual_top - expected_top), 1)
+
 
 class TemplateTests(unittest.TestCase):
     def test_song_data_is_escaped(self):
