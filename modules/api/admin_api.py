@@ -1346,7 +1346,7 @@ def admin_create_backup():
         with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
             config_data = json.load(f)
 
-        success, message, backup_path = create_backup(
+        success, message, _ = create_backup(
             users_data=load_all_users(),
             config_data=config_data,
             db_config=db_config,

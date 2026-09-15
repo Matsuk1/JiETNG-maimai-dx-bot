@@ -220,7 +220,6 @@ def write_record(
     *,
     cursor: Any = None,
 ) -> None:
-    table = "recent_records" if recent else "best_records"
     if cursor is not None:
         _write_record(cursor, user_id, record_json, recent)
         return

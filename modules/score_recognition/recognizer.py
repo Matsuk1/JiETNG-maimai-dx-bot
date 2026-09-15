@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import math
 import logging
-import re
 import gc
 import os
 import threading
@@ -18,7 +17,7 @@ from pathlib import Path
 from typing import Any
 
 from PIL import Image, ImageDraw
-from modules.score_recognition.results import (expand_score_recognition_calc_variants, InvalidScoreImageError, UnsupportedScoreImageError)
+from modules.score_recognition.results import (InvalidScoreImageError, UnsupportedScoreImageError)
 from PIL import UnidentifiedImageError
 
 from modules.config_loader import read_dxdata

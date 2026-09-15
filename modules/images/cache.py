@@ -112,20 +112,6 @@ def download_and_cache_icon(url, save_path):
         return None
 
 
-def paste_icon_optimized(image, song_data, key, size, position, save_dir, url_func):
-    value = song_data.get(key)
-    if not value:
-        return
-
-    try:
-        path = os.path.join(save_dir, f"{value}.png")
-        icon = download_and_cache_icon(url_func(value), path)
-        if icon:
-            icon = icon.resize(size, Image.Resampling.LANCZOS)
-            image.alpha_composite(icon, position)
-    except (OSError, ValueError) as exc:
-        logger.error("[ImageCache] Failed to paste icon: key=%s, error=%s", key, exc)
-
 
 def get_cover_image(cover_url, cover_name=None):
     path = None

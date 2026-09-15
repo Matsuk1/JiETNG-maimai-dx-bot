@@ -455,7 +455,6 @@ def _cropper_pose_table(image: Image.Image) -> tuple[Box | None, Image.Image | N
 
 
 
-
 def detect_sub_judgement_table_with_cropper_model(
     image: Image.Image,
 ) -> tuple[Box | None, Box | None, str, Image.Image | None]:
@@ -637,15 +636,6 @@ def is_complete_sub_judgement_table(table: Box | None) -> bool:
     # sub-monitor crops are visibly flatter even after perspective correction.
     return table.height / table.width >= 0.25
 
-
-def refine_sub_screen(sub_screen: Box, sub_judgement_table: Box | None) -> Box:
-    if sub_judgement_table is None:
-        return sub_screen
-    bottom = min(
-        sub_screen.bottom,
-        sub_judgement_table.bottom + max(1, int(sub_screen.height * 0.010)),
-    )
-    return Box(sub_screen.left, sub_screen.top, sub_screen.right, bottom)
 
 
 def main_content_box(screen: Box) -> Box:

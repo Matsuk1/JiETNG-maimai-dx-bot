@@ -270,11 +270,11 @@ from modules.i18n import (
     normalize_language,
     select_text,
 )
+from modules.score_recognition.results import expand_score_recognition_calc_variants
 from modules.score_recognition.recognizer import (
     InvalidScoreImageError,
     build_score_crop_preview_image,
     cleanup_score_recognizer_memory,
-    expand_score_recognition_calc_variants,
     initialize_score_recognizer,
     recognize_score_image_bytes,
     score_recognition_needs_manual_fix,
@@ -1911,7 +1911,7 @@ async def random_song(user_id, key="", ver="jp"):
         bg_filter=_get_user_bg_filter(user_id),
     )
     img_w, img_h = song_img.size
-    original_url, preview_url = await upload_generated_image(song_img, user_id)
+    original_url, _ = await upload_generated_image(song_img, user_id)
     return generate_song_info_flex(song_id, original_url, img_w, img_h, user_id, mode='info')
 
 @user_image
@@ -1957,7 +1957,7 @@ async def search_song_by_id(user_id, song_id, ver="jp"):
         bg_filter=_get_user_bg_filter(user_id),
     )
     img_w, img_h = song_img.size
-    original_url, preview_url = await upload_generated_image(song_img, user_id)
+    original_url, _ = await upload_generated_image(song_img, user_id)
     return generate_song_info_flex(song_id, original_url, img_w, img_h, user_id, mode='info')
 
 def get_ranking(user_id, id_use, ver=None):
@@ -2351,7 +2351,7 @@ async def get_song_record_by_id(user_id, id_use, song_id, ver="jp"):
         bg_filter=_get_user_bg_filter(user_id),
     )
     img_w, img_h = song_img.size
-    original_url, preview_url = await upload_generated_image(song_img, user_id)
+    original_url, _ = await upload_generated_image(song_img, user_id)
     return generate_song_info_flex(song_id, original_url, img_w, img_h, user_id, mode='record')
 
 @user_image

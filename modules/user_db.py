@@ -243,15 +243,3 @@ def get_all_user_ids() -> list[str]:
     except Exception:
         logger.exception("[UserDB] Failed to get user IDs")
         return []
-
-
-def get_user_count() -> int:
-    """Return the number of stored users."""
-    try:
-        with database_cursor() as (_, cursor):
-            cursor.execute("SELECT COUNT(*) FROM users")
-            row = cursor.fetchone()
-            return int(row[0]) if row else 0
-    except Exception:
-        logger.exception("[UserDB] Failed to count users")
-        return 0
