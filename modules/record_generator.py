@@ -4,100 +4,19 @@ import os
 import re
 from modules.score_rules import DIFFICULTY_LABELS, JUDGEMENT_ROWS, score_rank as canonical_rank, combo_status as canonical_combo
 
-from PIL import Image, ImageDraw, ImageFont
-
-from modules.config_loader import (
-    FONT_FILE,
-    PLATES_DIR,
-    ICON_TYPE_DIR,
-    ICON_SCORE_DIR,
-    ICON_DX_STAR_DIR,
-    ICON_COMBO_DIR,
-    ICON_SYNC_DIR,
-    ICON_COMBO_RCD_DIR,
-    ICON_SYNC_RCD_DIR,
-    ICON_BASE_DIR
-)
-from modules.image_cache import download_and_cache_icon, get_cover_image, paste_icon_optimized
-from modules.image_manager import (
-    compose_generated_images,
-    draw_aligned_colon_text,
-    font_large,
-    font_level_badge,
-    font_record_detail_title,
-    font_record_info,
-    font_record_name,
-    font_record_title,
-    font_small,
-    font_stadium,
-    round_corner,
-    truncate_text,
-)
+from modules.config_loader import PLATES_DIR, ICON_TYPE_DIR, ICON_SCORE_DIR, ICON_COMBO_RCD_DIR, ICON_DX_STAR_DIR
+from modules.image_manager import compose_generated_images
 from modules.i18n import image_language, language_catalog, select_text
 from modules.maimai_manager import get_rating_image_path
 from modules.record_manager import get_single_ra
 
 logger = logging.getLogger(__name__)
 
-RECORD_RATING_BLOCK_SIZE = (259, 51)
-
-
 def _image_text(path, language):
     return select_text(language_catalog(f"images.{path}"), language=language)
-RATING_SOURCE_WIDTH = 296
-RATING_DIGIT_WIDTH = 23
-RATING_DIGIT_START_X = 140
-RATING_DIGIT_Y_OFFSET = 1
-RATING_EQUATION_GAP = 18
-RATING_EQUATION_Y_OFFSET = -5
-RATING_STATS_GAP = 2
-HEADER_STAT_SPACING = 4
-
-
 def _format_rating_value(value):
     return str(int(value)) if float(value).is_integer() else str(value)
 
-
-def _split_colon_lines(lines):
-    left_texts = []
-    right_texts = []
-    for line in lines:
-        if ":" in line:
-            left, right = line.split(":", 1)
-            left_texts.append(left + ":")
-            right_texts.append(right.strip())
-        else:
-            left_texts.append(line)
-            right_texts.append("")
-    return left_texts, right_texts
-
-
-def _measure_aligned_colon_width(draw, lines, font):
-    left_texts, right_texts = _split_colon_lines(lines)
-    left_width = max(draw.textbbox((0, 0), text, font=font)[2] for text in left_texts) + 10
-    right_width = max(draw.textbbox((0, 0), text, font=font)[2] for text in right_texts) if right_texts else 0
-    return left_width + right_width
-
-
-def _draw_record_rating_block(base_img, draw, rating, position, size=RECORD_RATING_BLOCK_SIZE, font=font_large):
-    rating_int = int(float(rating))
-    rating_text = str(rating_int).rjust(5)
-    x, y = position
-    scale_x = size[0] / RATING_SOURCE_WIDTH
-
-    with Image.open(get_rating_image_path(rating_int)) as rb:
-        rb_img = rb.convert("RGBA").resize(size, Image.LANCZOS)
-    base_img.paste(rb_img, position, rb_img)
-
-    char_width = RATING_DIGIT_WIDTH * scale_x
-    start_x = x + RATING_DIGIT_START_X * scale_x
-    for i, char in enumerate(rating_text):
-        char_bbox = draw.textbbox((0, 0), char, font=font)
-        digit_width = char_bbox[2] - char_bbox[0]
-        offset = (char_width - digit_width) / 2
-        text_height = char_bbox[3] - char_bbox[1]
-        centered_y = y + (size[1] - text_height) / 2 - char_bbox[1] + RATING_DIGIT_Y_OFFSET
-        draw.text((start_x + i * char_width + offset, centered_y), char, fill=(255, 255, 255), font=font)
 
 def _get_difficulty_color(difficulty):
     colors = {
@@ -112,72 +31,6 @@ def _get_difficulty_color(difficulty):
 
 
 _DIFF_KEYS = {"basic", "advanced", "expert", "master", "remaster", "utage"}
-
-
-def _draw_detail_line(draw, x, y, key, value, font, max_w, lh):
-    """绘制一行 detail，value 中的难度词替换为彩色圆角矩形小方块。"""
-    tokens = value.split()
-    has_diff = any(t.lower() in _DIFF_KEYS for t in tokens)
-
-    if not has_diff:
-        line = truncate_text(draw, f"{key}:  {value}", font, max_w)
-        draw.text((x, y), line, fill=(40, 40, 40), font=font)
-        return
-
-    prefix = f"{key}:  "
-    prefix_w = int(draw.textlength(prefix, font=font))
-    if prefix_w >= max_w:
-        return
-    draw.text((x, y), prefix, fill=(40, 40, 40), font=font)
-
-    cur_x = x + prefix_w
-    pill_h = lh - 2
-
-    sq = pill_h
-    for token in tokens:
-        diff_key = token.lower()
-        if diff_key in _DIFF_KEYS:
-            if cur_x + sq > x + max_w:
-                break
-            color = _get_difficulty_color(diff_key)
-            draw.rounded_rectangle(
-                (cur_x, y + 1, cur_x + sq, y + 1 + sq),
-                radius=3, fill=color
-            )
-            cur_x += sq + 4
-        else:
-            token_w = int(draw.textlength(token + " ", font=font))
-            if cur_x + token_w > x + max_w:
-                break
-            draw.text((cur_x, y), token, fill=(80, 80, 80), font=font)
-            cur_x += token_w
-
-
-def _draw_level_label(draw, text, x, row_top, content_h, font,
-                      diameter=92, dx=-10, dy=0,
-                      border_color=(150, 150, 150, 255), border_width=4):
-    """绘制固定大小的等级圆形标签。"""
-    label_text = str(text)
-    max_text_width = diameter - border_width * 2 - 8
-    label_font = font
-    if draw.textlength(label_text, font=label_font) > max_text_width:
-        label_font = _fit_font_to_width(draw, label_text, max_text_width, 40, 28)
-
-    left = x + dx
-    top = row_top + (content_h - diameter) // 2 + dy
-    draw.ellipse(
-        (left, top, left + diameter, top + diameter),
-        fill=(255, 255, 255, 255),
-        outline=border_color,
-        width=border_width,
-    )
-
-    bbox = draw.textbbox((0, 0), label_text, font=label_font)
-    text_w = bbox[2] - bbox[0]
-    text_h = bbox[3] - bbox[1]
-    tx = left + (diameter - text_w) / 2 - bbox[0]
-    ty = top + (diameter - text_h) / 2 - bbox[1]
-    draw.text((tx, ty), label_text, fill="black", font=label_font)
 
 
 def create_thumbnail_in_line(song):
@@ -309,72 +162,6 @@ def _dx_progress_color(percentage):
     return color_stops[-1][1]
 
 
-def _paste_dx_progress_gradient(img, box, current_x, start_percentage):
-    x1, y1, x2, y2 = (int(round(value)) for value in box)
-    track_w = max(1, x2 - x1)
-    track_h = max(1, y2 - y1)
-    fill_w = min(track_w, max(0, int(round(current_x - x1))))
-    if fill_w <= 0:
-        return
-
-    axis_span = max(0.0001, 100.0 - start_percentage)
-    gradient = Image.new("RGBA", (fill_w, track_h), (0, 0, 0, 0))
-    gradient_draw = ImageDraw.Draw(gradient)
-    for offset in range(fill_w):
-        percentage = start_percentage + offset / max(1, track_w - 1) * axis_span
-        gradient_draw.line(
-            (offset, 0, offset, track_h),
-            fill=(*_dx_progress_color(percentage), 255),
-        )
-
-    mask = Image.new("L", (fill_w, track_h), 0)
-    mask_draw = ImageDraw.Draw(mask)
-    mask_draw.rounded_rectangle(
-        (0, 0, fill_w, track_h),
-        radius=track_h // 2,
-        fill=255,
-    )
-    gradient.putalpha(mask)
-    img.alpha_composite(gradient, (x1, y1))
-
-
-def _draw_score_card(draw, box, radius=18, fill=(248, 250, 252), outline=None, width=1):
-    draw.rounded_rectangle(box, radius=radius, fill=fill, outline=outline, width=width)
-
-
-def _paste_local_icon(img, directory, name, size, position):
-    if not name:
-        return False
-    path = os.path.join(directory, f"{name}.png")
-    if not os.path.exists(path):
-        return False
-    try:
-        with Image.open(path) as icon:
-            icon_img = icon.convert("RGBA").resize(size, Image.Resampling.LANCZOS)
-        img.alpha_composite(icon_img, position)
-        return True
-    except Exception as e:
-        logger.error(f"[RecordGenerator] ✗ Failed to paste local icon: path={path}, error={e}")
-        return False
-
-
-def _paste_dx_star_status(img, star, size, position, achieved):
-    path = os.path.join(ICON_DX_STAR_DIR, f"{star}.png")
-    if not os.path.exists(path):
-        return False
-    try:
-        with Image.open(path) as icon:
-            icon_img = icon.convert("RGBA").resize(size, Image.Resampling.LANCZOS)
-        if not achieved:
-            alpha = icon_img.getchannel("A").point(lambda value: value * 72 // 255)
-            icon_img.putalpha(alpha)
-        img.alpha_composite(icon_img, position)
-        return True
-    except Exception as e:
-        logger.error(f"[RecordGenerator] ✗ Failed to paste DX star icon: path={path}, error={e}")
-        return False
-
-
 def _format_score_loss(value):
     try:
         value = float(value)
@@ -390,11 +177,6 @@ def _has_score_loss(value):
         return abs(float(value)) >= 0.000005
     except (TypeError, ValueError):
         return False
-
-
-def _draw_score_section_title(draw, x, y, title, accent, font):
-    draw.rounded_rectangle((x, y + 5, x + 10, y + 42), radius=5, fill=accent)
-    draw.text((x + 20, y), title, font=font, fill=(20, 24, 32))
 
 
 def _score_loss_rows_from_internal(judgement, loss_percentages):
@@ -457,481 +239,66 @@ def _score_break_rows_from_internal(judgement, break_detail):
     ]
 
 
-def generate_score_recognition_picture(
-    result,
-    ver="jp",
-    img_width=1100,
-    timezone_offset=9,
-    bg_filter=None,
-):
-    """
-    Generate a static score-recognition result image using the same data hierarchy
-    as the OCR FlexMsg.
-    """
+def generate_score_recognition_picture(result, ver="jp", img_width=1100, timezone_offset=9, bg_filter=None):
+    from modules.html_cards import cover_html, difficulty_color
+    from modules.html_renderer import file_uri, render_template
     payload = _score_recognition_payload(result)
-    difficulty = str(payload.get("difficulty") or "").lower()
-    diff_color = _get_difficulty_color(difficulty)
-    metric_color = (114, 20, 141) if difficulty == "remaster" else diff_color
-    header_text_color = (114, 20, 141) if difficulty == "remaster" else (255, 255, 255)
-
     language = image_language(ver)
-    texts = {
-        key: _image_text(f"score.{key}", language)
-        for key in ("subtitle", "judgement", "loss", "break", "empty")
-    }
-
-    font_header = ImageFont.truetype(FONT_FILE, 48)
-    font_subtitle = ImageFont.truetype(FONT_FILE, 26)
-    font_label = ImageFont.truetype(FONT_FILE, 24)
-    font_value = ImageFont.truetype(FONT_FILE, 42)
-    font_table = ImageFont.truetype(FONT_FILE, 26)
-    font_table_bold = ImageFont.truetype(FONT_FILE, 28)
-    font_small_detail = ImageFont.truetype(FONT_FILE, 22)
-    font_section = ImageFont.truetype(FONT_FILE, 34)
-    font_progress = ImageFont.truetype(FONT_FILE, 20)
-
-    margin = 42
-    content_w = img_width - margin * 2
-    draw_probe = ImageDraw.Draw(Image.new("RGBA", (1, 1), (0, 0, 0, 0)))
-    display_title = payload.get("title") or "-"
-    header_cover_size = 112
-    header_cover_gap = 26
-    has_header_cover = bool(payload.get("cover_url") or payload.get("cover_name"))
-    title_max_w = content_w - 96
-    if has_header_cover:
-        title_max_w -= header_cover_size + header_cover_gap
-    else:
-        title_max_w -= 96
-    title_text = truncate_text(draw_probe, display_title, font_header, max(240, title_max_w))
-    subtitle = f"{texts['subtitle']}  {payload.get('difficulty_label') or '-'}"
-
-    judgement = payload.get("judgement") or {}
-    row_order = (("tap", "TAP"), ("hold", "HOLD"), ("slide", "SLIDE"), ("touch", "TOUCH"), ("break", "BREAK"))
-    visible_rows = [(key, label, judgement.get(key)) for key, label in row_order if isinstance(judgement.get(key), dict)]
-    dx_progress = _score_dx_progress(judgement)
-
-    loss_rows = _score_loss_rows_from_internal(judgement, payload.get("loss_percentages") or {})
-    break_detail = payload.get("break_detail") or {}
-    break_rows = _score_break_rows_from_internal(judgement, break_detail)
-    total_loss = sum(
-        float(total)
-        for _, _, total in loss_rows
-        if isinstance(total, (int, float))
-    )
-
-    header_h = 150
-    metric_h = 100
-    progress_h = 170 if dx_progress else 0
-    progress_gap = 28 if dx_progress else 0
-    table_h = 64 + max(1, len(visible_rows)) * 58
-    loss_h = 0
-    if loss_rows:
-        loss_h = 98 + len(loss_rows) * 148
-        if _has_score_loss(total_loss):
-            loss_h += 74
-    break_h = 0
-    if break_rows:
-        break_h = 98 + len(break_rows) * 148
-        break_total = break_detail.get("total_loss")
-        if _has_score_loss(break_total) or break_total is None:
-            break_h += 74
-    img_height = (
-        margin + 24 + header_h + 28 + metric_h + 30
-        + progress_h + progress_gap + 58 + table_h
-        + loss_h + break_h + margin + 80
-    )
-
-    img = Image.new("RGBA", (img_width, img_height), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-
-    y = margin + 24
-    _draw_score_card(draw, (margin + 22, y, img_width - margin - 22, y + header_h), radius=18, fill=diff_color)
-    draw.text((margin + 48, y + 20), title_text, font=font_header, fill=header_text_color)
-    draw.text((margin + 50, y + 90), subtitle, font=font_subtitle, fill=header_text_color)
-    chart_type = str(payload.get("type") or "").lower()
-    cover_x = img_width - margin - 48 - header_cover_size
-    cover_y = y + (header_h - header_cover_size) // 2
-    if has_header_cover:
-        try:
-            cover_img = generate_cover(
-                payload.get("cover_url"),
-                chart_type,
-                cover_name=payload.get("cover_name"),
-            ).resize((header_cover_size, header_cover_size), Image.Resampling.LANCZOS)
-            cover_img = round_corner(cover_img.convert("RGBA"), radius=12)
-            img.alpha_composite(cover_img, (cover_x, cover_y))
-        except Exception as e:
-            logger.error(f"[RecordGenerator] ✗ Failed to draw score recognition cover: error={e}")
-            has_header_cover = False
-    if not has_header_cover and chart_type in ("dx", "std", "utage"):
-        type_icon_size = (78, 22) if chart_type != "utage" else (76, 30)
-        _paste_local_icon(
-            img,
-            ICON_TYPE_DIR,
-            chart_type,
-            type_icon_size,
-            (img_width - margin - 48 - type_icon_size[0], y + 99),
-        )
-    y += header_h + 28
-
-    gap = 16
-    metric_total_w = content_w - 44
-    unit = (metric_total_w - gap * 2) / 8
-    metric_boxes = [
-        ("achievement", margin + 22, y, margin + 22 + unit * 2.7, y + metric_h),
-        ("status", margin + 22 + unit * 2.7 + gap, y, margin + 22 + unit * 5.4 + gap, y + metric_h),
-        ("constant", margin + 22 + unit * 5.4 + gap * 2, y, margin + 22 + unit * 8.0 + gap * 2, y + metric_h),
-    ]
-    for _, x1, y1, x2, y2 in metric_boxes:
-        _draw_score_card(draw, (x1, y1, x2, y2), radius=14, fill=(248, 250, 252))
-
-    achievement = payload.get("achievement")
+    texts = {key: _image_text(f"score.{key}", language)
+             for key in ("subtitle", "judgement", "loss", "break", "empty", "common_total", "break_total")}
+    judgement = payload['judgement']
+    fields = ('critical_perfect', 'perfect', 'great', 'good', 'miss')
+    rows = [(key.upper(), [judgement[key].get(field, 0) for field in fields])
+            for key in ('tap', 'hold', 'slide', 'touch', 'break') if isinstance(judgement.get(key), dict)]
+    achievement = payload['achievement']
     achievement_text = f"{achievement:.4f}%" if isinstance(achievement, (int, float)) else "-"
-    draw.text((metric_boxes[0][1] + 34, y + 18), achievement_text, font=font_value, fill=(184, 110, 25))
-
-    rank_icon = payload.get("rank_icon")
-    combo_icon = payload.get("combo_icon")
-    icon_items = []
-    status_icon_h = 58
-    rank_icon_size = (130, status_icon_h)
-    combo_icon_size = (112, status_icon_h)
-    if rank_icon:
-        icon_items.append(("rank_icon", rank_icon, rank_icon_size, "rank"))
-    combo_file = {
-        "fc": "fc",
-        "fcplus": "fcp",
-        "ap": "ap",
-        "applus": "app",
-        "dummy": "back",
-    }.get(str(combo_icon or ""))
-    if combo_file:
-        icon_items.append(("combo_icon", combo_file, combo_icon_size, "combo"))
-
-    status_x1, status_y1, status_x2, _ = metric_boxes[1][1:]
-    icon_gap = 16
-    total_icon_w = sum(item[2][0] for item in icon_items) + icon_gap * max(0, len(icon_items) - 1)
-    icon_x = int(status_x1 + max(18, (status_x2 - status_x1 - total_icon_w) / 2))
-    icon_y = status_y1 + 22
-    if rank_icon:
-        rank_file = {
-            "sssplus": "sssp",
-            "ssplus": "ssp",
-            "splus": "sp",
-        }.get(rank_icon, rank_icon)
-        _paste_local_icon(
-            img,
-            ICON_SCORE_DIR,
-            rank_file,
-            size=rank_icon_size,
-            position=(icon_x, icon_y),
-        )
-        icon_x += rank_icon_size[0] + icon_gap
-    if combo_file:
-        _paste_local_icon(
-            img,
-            ICON_COMBO_RCD_DIR,
-            combo_file,
-            size=combo_icon_size,
-            position=(icon_x, icon_y),
-        )
-
-    constant = payload.get("internal_level")
-    combo_icon_name = str(combo_icon or "")
-    if isinstance(constant, (int, float)):
-        rcd_rating = get_single_ra(constant, achievement, "ap" in combo_icon_name)
-        constant_text = f"{constant:.1f} → {rcd_rating}"
-    else:
-        constant_text = "-"
-    draw.text((metric_boxes[2][1] + 28, y + 18), constant_text, font=font_value, fill=metric_color)
-    y += metric_h + 30
-
-    if dx_progress:
-        progress_x = margin + 22
-        progress_w = content_w - 44
-        _draw_score_card(
-            draw,
-            (progress_x, y, progress_x + progress_w, y + progress_h),
-            radius=14,
-            fill=(248, 250, 252),
-        )
-        draw.text(
-            (progress_x + 24, y + 36),
-            "DX SCORE",
-            font=font_table_bold,
-            fill=(20, 24, 32),
-            anchor="lm",
-        )
-        percentage_tenths = dx_progress["score"] * 1000 // dx_progress["maximum"]
-        progress_value = (
-            f"{dx_progress['score']} / {dx_progress['maximum']}"
-            f"  {percentage_tenths // 10}.{percentage_tenths % 10}%"
-        )
-        draw.text(
-            (progress_x + progress_w - 24, y + 36),
-            progress_value,
-            font=font_table_bold,
-            fill=(184, 110, 25),
-            anchor="rm",
-        )
-
-        track_x1 = progress_x + 30
-        track_x2 = progress_x + progress_w - 30
-        track_y1 = y + 96
-        track_y2 = track_y1 + 18
-        start_percentage = dx_progress["start_percentage"]
-        axis_span = max(0.0001, 100.0 - start_percentage)
-
-        def progress_position(percentage):
-            bounded = min(100.0, max(start_percentage, percentage))
-            return track_x1 + (bounded - start_percentage) / axis_span * (track_x2 - track_x1)
-
-        _draw_score_card(
-            draw,
-            (track_x1, track_y1, track_x2, track_y2),
-            radius=9,
-            fill=(226, 230, 236),
-        )
-        current_x = progress_position(dx_progress["percentage"])
-        _paste_dx_progress_gradient(
-            img,
-            (track_x1, track_y1, track_x2, track_y2),
-            current_x,
-            start_percentage,
-        )
-
-        for star, threshold in DX_STAR_THRESHOLDS:
-            marker_x = progress_position(threshold)
-            achieved = dx_progress["star"] >= star
-            marker_color = DX_STAR_COLORS[star] if achieved else (160, 165, 174)
-            draw.line((marker_x, track_y1 - 7, marker_x, track_y2 + 7), fill=marker_color, width=3)
-            _paste_dx_star_status(
-                img,
-                star,
-                size=(84, 16),
-                position=(int(marker_x - 42), y + 70),
-                achieved=achieved,
-            )
-            draw.text(
-                (marker_x, y + 136),
-                f"{threshold:.0f}%",
-                font=font_progress,
-                fill=marker_color,
-                anchor="mm",
-            )
-
-        draw.ellipse(
-            (current_x - 7, track_y1 + 2, current_x + 7, track_y2 - 2),
-            fill=(255, 255, 255),
-            outline=_dx_progress_color(dx_progress["percentage"]),
-            width=3,
-        )
-        draw.text(
-            (track_x1, y + 136),
-            f"{start_percentage:.1f}%",
-            font=font_progress,
-            fill=(105, 110, 120),
-            anchor="lm",
-        )
-        draw.text(
-            (track_x2, y + 136),
-            "100%",
-            font=font_progress,
-            fill=(105, 110, 120),
-            anchor="rm",
-        )
-        y += progress_h + progress_gap
-
-    _draw_score_section_title(draw, margin + 22, y, texts["judgement"], (38, 125, 139), font_section)
-    y += 58
-    table_x = margin + 22
-    table_w = content_w - 44
-    row_h = 58
-    col_flex = [2, 1, 1, 1, 1, 1]
-    flex_total = sum(col_flex)
-    col_w = [table_w * flex / flex_total for flex in col_flex]
-    headers = ("TYPE", "CP", "PF", "GR", "GD", "MS")
-    header_colors = [(90, 96, 106), (184, 110, 25), (184, 110, 25), (163, 59, 117), (47, 125, 81), (85, 85, 85)]
-    column_fills = [
-        None,
-        (255, 246, 220),
-        (255, 246, 220),
-        (251, 229, 241),
-        (231, 245, 237),
-        (233, 237, 242),
-    ]
-    zero_count_fill = (145, 150, 160)
-
-    def count_text_fill(value, default_fill=(20, 24, 32)):
-        try:
-            return zero_count_fill if int(value) == 0 else default_fill
-        except (TypeError, ValueError):
-            return default_fill
-
-    table_top = y
-    table_bottom = y + row_h * (1 + max(1, len(visible_rows)))
-    _draw_score_card(draw, (table_x, table_top, table_x + table_w, table_bottom), radius=14, fill=(255, 255, 255))
-    _draw_score_card(draw, (table_x, y, table_x + table_w, y + row_h), radius=12, fill=(238, 241, 245))
-    draw.rectangle((table_x, y + row_h // 2, table_x + table_w, y + row_h), fill=(238, 241, 245))
-    cx = table_x
-    for i, text in enumerate(headers):
-        align_x = cx + 22 if i == 0 else cx + col_w[i] / 2
-        anchor = "lm" if i == 0 else "mm"
-        draw.text((align_x, y + row_h / 2), text, font=font_table_bold, fill=header_colors[i], anchor=anchor)
-        cx += col_w[i]
-    y += row_h
-
-    if visible_rows:
-        last_index = len(visible_rows) - 1
-        for index, (_, label, row) in enumerate(visible_rows):
-            fill = (248, 250, 252) if index % 2 == 0 else (255, 255, 255)
-            if index == last_index:
-                _draw_score_card(draw, (table_x, y, table_x + table_w, y + row_h), radius=12, fill=fill)
-                draw.rectangle((table_x, y, table_x + table_w, y + row_h // 2), fill=fill)
-            else:
-                draw.rectangle((table_x, y, table_x + table_w, y + row_h), fill=fill)
-            values = [
-                label,
-                row.get("critical_perfect", 0),
-                row.get("perfect", 0),
-                row.get("great", 0),
-                row.get("good", 0),
-                row.get("miss", 0),
-            ]
-            cx = table_x
-            for i, value in enumerate(values):
-                if i > 0 and column_fills[i]:
-                    inset = 4
-                    draw.rounded_rectangle(
-                        (
-                            cx + inset,
-                            y + 7,
-                            cx + col_w[i] - inset,
-                            y + row_h - 7,
-                        ),
-                        radius=8,
-                        fill=column_fills[i],
-                    )
-                align_x = cx + 22 if i == 0 else cx + col_w[i] / 2
-                anchor = "lm" if i == 0 else "mm"
-                fill_color = (20, 24, 32) if i == 0 else count_text_fill(value)
-                draw.text((align_x, y + row_h / 2), str(value), font=font_table_bold if i == 0 else font_table, fill=fill_color, anchor=anchor)
-                cx += col_w[i]
-            y += row_h
-    else:
-        _draw_score_card(draw, (table_x, y, table_x + table_w, y + row_h), radius=10, fill=(248, 250, 252))
-        draw.rectangle((table_x, y, table_x + table_w, y + row_h // 2), fill=(248, 250, 252))
-        draw.text((table_x + 24, y + row_h / 2), texts["empty"], font=font_label, fill=(120, 126, 138), anchor="lm")
-        y += row_h
-
-    def draw_loss_panel(section_title, accent, rows):
-        nonlocal y
-        detail_x = table_x + 180
-        detail_right = table_x + table_w
-        y += 36
-        _draw_score_section_title(draw, margin + 22, y, section_title, accent, font_section)
-        y += 62
-        for row_label, cells, total in rows:
-            _draw_score_card(draw, (table_x, y, table_x + table_w, y + 82), radius=12, fill=(248, 250, 252))
-            draw.text((table_x + 24, y + 41), row_label, font=font_table_bold, fill=(20, 24, 32), anchor="lm")
-            cell_x = detail_x
-            cell_w = (detail_right - detail_x) / max(1, len(cells))
-            color_map = {
-                "GREAT": ((146, 52, 104), (251, 229, 241)),
-                "GOOD": ((39, 112, 71), (231, 245, 237)),
-                "MISS": ((85, 85, 85), (233, 237, 242)),
-            }
-            for label, count, loss in cells:
-                if row_label == "GREAT":
-                    fg, bg = (146, 52, 104), (251, 229, 241)
-                else:
-                    fg, bg = color_map.get(label, ((154, 91, 18), (255, 240, 199)))
-                cell_right = min(cell_x + cell_w - 8, detail_right - 8)
-                _draw_score_card(draw, (cell_x, y + 10, cell_right, y + 72), radius=10, fill=bg)
-                loss_fill = (192, 57, 43) if count and _has_score_loss(loss) else (105, 110, 120)
-                draw.text(((cell_x + cell_right) / 2, y + 27), _format_score_loss(loss), font=font_small_detail, fill=loss_fill, anchor="mm")
-                draw.text(((cell_x + cell_right) / 2, y + 54), str(count), font=font_table_bold, fill=count_text_fill(count, fg), anchor="mm")
-                cell_x += cell_w
-            y += 90
-            if _has_score_loss(total):
-                _draw_score_card(draw, (detail_x, y, detail_right, y + 46), radius=10, fill=(253, 237, 236))
-                draw.text((detail_x + 16, y + 8), "TOTAL", font=font_small_detail, fill=(105, 110, 120))
-                draw.text((detail_right - 24, y + 23), _format_score_loss(total), font=font_table_bold, fill=(192, 57, 43), anchor="rm")
-                y += 58
-
-    def draw_summary_total_bar(label, total, accent):
-        nonlocal y
-        if not _has_score_loss(total):
-            return
-        bar_h = 62
-        fill = (
-            max(0, accent[0] - 18),
-            max(0, accent[1] - 18),
-            max(0, accent[2] - 18),
-        )
-        _draw_score_card(draw, (table_x, y + 4, table_x + table_w, y + bar_h), radius=14, fill=fill)
-        draw.text(
-            (table_x + 24, y + bar_h / 2 + 2),
-            label,
-            font=font_small_detail,
-            fill=(255, 255, 255),
-            anchor="lm",
-        )
-        draw.text(
-            (table_x + table_w - 24, y + bar_h / 2 + 2),
-            _format_score_loss(float(total or 0)),
-            font=font_table_bold,
-            fill=(255, 246, 220),
-            anchor="rm",
-        )
-        y += bar_h + 12
-
-    if loss_rows:
-        loss_accent = (192, 57, 43)
-        draw_loss_panel(texts["loss"], loss_accent, loss_rows)
-        draw_summary_total_bar(_image_text("score.common_total", language), total_loss, loss_accent)
-
-    if break_rows:
-        def break_row_total(cells):
-            return sum(
-                max(0, int(count or 0)) * (
-                    float(loss) if isinstance(loss, (int, float)) else 0.0
-                )
-                for _, count, loss in cells
-            )
-
-        break_rows = [
-            (label, cells, break_row_total(cells))
-            for label, cells in break_rows
-        ]
-        total_break_loss = break_detail.get("total_loss")
-        if not isinstance(total_break_loss, (int, float)):
-            total_break_loss = sum(
-                max(0, int(count or 0)) * (
-                    float(loss) if isinstance(loss, (int, float)) else 0.0
-                )
-                for _, cells, _ in break_rows
-                for _, count, loss in cells
-            )
-        break_accent = (184, 110, 25)
-        draw_loss_panel(texts["break"], break_accent, break_rows)
-        draw_summary_total_bar(_image_text("score.break_total", language), total_break_loss, break_accent)
-
-    final_h = min(img_height, y + margin + 8)
-    cropped = img.crop((0, 0, img_width, final_h))
-    card_img = Image.new("RGBA", (img_width, final_h), (0, 0, 0, 0))
-    card_draw = ImageDraw.Draw(card_img)
-    _draw_score_card(
-        card_draw,
-        (margin // 2, margin // 2, img_width - margin // 2, final_h - margin // 2),
-        radius=28,
-        fill=(255, 255, 255, 245),
-    )
-    card_img.alpha_composite(cropped, (0, 0))
-    return compose_generated_images(
-        [card_img],
-        timezone_offset=timezone_offset,
-        bg_filter=bg_filter,
-    )
+    constant = payload['internal_level']
+    constant_text = f"{constant:.1f} → {get_single_ra(constant, achievement, 'ap' in str(payload['combo_icon'] or ''))}" if isinstance(constant, (int, float)) else "-"
+    rank = {'sssplus':'sssp', 'ssplus':'ssp', 'splus':'sp'}.get(payload['rank_icon'], payload['rank_icon'])
+    combo = {'fc':'fc', 'fcplus':'fcp', 'ap':'ap', 'applus':'app', 'dummy':'back'}.get(payload['combo_icon'])
+    icons = [(file_uri(os.path.join(directory, f"{name}.png")), width)
+             for directory, name, width in ((ICON_SCORE_DIR, rank, 130), (ICON_COMBO_RCD_DIR, combo, 112)) if name]
+    progress = _score_dx_progress(judgement)
+    if progress:
+        start = progress['start_percentage']
+        span = max(.0001, 100 - start)
+        progress['fill'] = min(100, max(0, (progress['percentage'] - start) / span * 100))
+        tenths = progress['score'] * 1000 // progress['maximum']
+        progress['display'] = f"{progress['score']} / {progress['maximum']}  {tenths // 10}.{tenths % 10}%"
+        progress['markers'] = [dict(star=star, threshold=int(threshold), position=(threshold - start) / span * 100,
+                                    achieved=progress['star'] >= star,
+                                    icon=file_uri(os.path.join(ICON_DX_STAR_DIR, f"{star}.png")))
+                               for star, threshold in DX_STAR_THRESHOLDS]
+        progress['gradient'] = ','.join(f"rgb{_dx_progress_color(pct)} {(pct-start)/span*100:.4f}%"
+                                         for pct in [start] + [pct for _,pct in DX_STAR_THRESHOLDS if pct > start] + [100])
+    loss_rows = _score_loss_rows_from_internal(judgement, payload['loss_percentages'])
+    break_rows = _score_break_rows_from_internal(judgement, payload['break_detail'])
+    break_rows = [(label, cells, sum(max(0,int(count or 0)) * (loss if isinstance(loss,(int,float)) else 0)
+                                   for _,count,loss in cells)) for label,cells in break_rows]
+    total_break = payload['break_detail'].get('total_loss')
+    if not isinstance(total_break, (int,float)):
+        total_break = sum(total for _,_,total in break_rows)
+    panels = []
+    for title, accent, panel_rows, total_label, total in (
+        (texts['loss'], '#c0392b', loss_rows, texts['common_total'], sum(total for _,_,total in loss_rows)),
+        (texts['break'], '#b86e19', break_rows, texts['break_total'], total_break),
+    ):
+        if panel_rows:
+            panels.append(dict(title=title, accent=accent, rows=[dict(label=label,
+                cells=[dict(label=kind,count=count,loss=_format_score_loss(loss),
+                            nonzero=bool(count) and _has_score_loss(loss),
+                            tone='great' if label=='GREAT' else kind.lower()) for kind,count,loss in cells],
+                total=_format_score_loss(subtotal) if _has_score_loss(subtotal) else None)
+                for label,cells,subtotal in panel_rows], total_label=total_label,
+                total=_format_score_loss(total) if _has_score_loss(total) else None))
+    cover = cover_html(payload['cover_url'], payload['type'], cover_name=payload['cover_name']) if payload['cover_url'] or payload['cover_name'] else ''
+    card = render_template('score.html', img_width, payload=payload, texts=texts, rows=rows,
+                           color=difficulty_color(payload['difficulty']),
+                           header_color='#72148d' if payload['difficulty']=='remaster' else 'white',
+                           cover=cover, type_src=file_uri(os.path.join(ICON_TYPE_DIR, f"{payload['type']}.png")),
+                           achievement=achievement_text, constant=constant_text, icons=icons,
+                           progress=progress, panels=panels)
+    return compose_generated_images([card], timezone_offset=timezone_offset, bg_filter=bg_filter)
 
 
 def generate_records_picture(up_songs=None, down_songs=None, title="RECORD", ver="jp", details=None):
@@ -1002,14 +369,6 @@ def _progress_level_group_label(level):
     if match and int(match.group(1)) < 10:
         return "10-"
     return str(level)
-
-
-def _fit_font_to_width(draw, text, max_width, start_size, min_size):
-    for size in range(start_size, min_size - 1, -4):
-        font = ImageFont.truetype(FONT_FILE, size)
-        if draw.textlength(text, font=font) <= max_width:
-            return font
-    return ImageFont.truetype(FONT_FILE, min_size)
 
 
 def generate_level_rank_progress_image(
