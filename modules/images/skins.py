@@ -11,7 +11,7 @@ import json
 import re
 from pathlib import Path
 
-TEMPLATES = Path(__file__).resolve().parents[1] / 'templates' / 'images'
+TEMPLATES = Path(__file__).resolve().parents[2] / 'templates' / 'images'
 SKINS = TEMPLATES / 'skins'
 
 

@@ -8,10 +8,10 @@ import os
 from flask import Flask, request, render_template
 from PIL import Image
 
-from modules.image_skins import available_skins, current_skin, normalize_skin
+from modules.images.skins import available_skins, current_skin, normalize_skin
 from modules.i18n import normalize_language, DEFAULT_WEB_LANGUAGE
 from modules.i18n import register_web_i18n
-from modules.image_skins import user_image
+from modules.images.skins import user_image
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -71,17 +71,17 @@ def test_async_request_skin_and_nested_target_are_isolated():
     async def run():
         return await asyncio.gather(operation('sender'),operation('other'))
 
-    with patch('modules.image_skins.user_skin',side_effect=lambda uid:'glass' if uid=='sender' else 'default'):
+    with patch('modules.images.skins.user_skin',side_effect=lambda uid:'glass' if uid=='sender' else 'default'):
         assert asyncio.run(run())==[('glass',)*3,('default',)*3]
     assert current_skin()=='default'
 
 
 def test_background_disabled_skin_does_not_read_background_files():
-    from modules.image_manager import compose_images
+    from modules.images.composition import compose_images
     with Image.new('RGBA',(20,20),'red') as source:
-        with patch('modules.image_manager.skin_config',return_value={'uses_background':False}), \
-             patch('modules.image_manager.os.listdir') as scan, \
-             patch('modules.html_renderer.render_template',return_value=Image.new('RGBA',(100,200))) as render:
+        with patch('modules.images.composition.skin_config',return_value={'uses_background':False}), \
+             patch('modules.images.composition.os.listdir') as scan, \
+             patch('modules.images.renderer.render_template',return_value=Image.new('RGBA',(100,200))) as render:
             with compose_images([source],bg_filter={'files':['sample.png'],'blur':12}):
                 pass
             scan.assert_not_called()

@@ -375,9 +375,7 @@ JiETNG/
 │   ├── devtoken_manager.py    # 開発者トークン管理
 │   ├── dxdata_manager.py      # 楽曲データ管理
 │   ├── event_tracker.py       # ビジネスイベント追跡と指標集計
-│   ├── image_cache.py         # 画像キャッシュ
-│   ├── image_manager.py       # 画像処理
-│   ├── image_uploader.py      # 画像アップロード（Imgur/Cloudflare R2）
+│   ├── images/                # 画像レンダリング・スキン・キャッシュ・アップロード
 │   ├── json_encrypt.py        # 暗号化ツール
 │   ├── line_messenger.py      # LINE メッセージ送信
 │   ├── maimai_manager.py      # Maimai API インターフェース
@@ -387,10 +385,8 @@ JiETNG/
 │   ├── notification_manager.py # システム通知管理（Web Push）
 │   ├── perm_request_generator.py  # 権限リクエスト生成器
 │   ├── perm_request_handler.py    # 権限リクエストハンドラー
-│   ├── record_generator.py    # スコアチャート生成
 │   ├── record_manager.py      # データベース操作
 │   ├── score_recognition/     # スコア OCR ランタイムパイプラインとモデル
-│   ├── song_generator.py      # 楽曲チャート生成
 │   ├── song_matcher.py        # 楽曲検索（あいまい一致対応）
 │   ├── storelist_generator.py # 設置店舗リスト生成（Flex Message）
 │   ├── system_checker.py      # システム自己診断

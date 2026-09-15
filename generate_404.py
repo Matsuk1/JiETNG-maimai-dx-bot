@@ -1,5 +1,5 @@
 """Generate the missing-image placeholder through HTML/CSS and Playwright."""
-from modules.html_renderer import file_uri, render_template
+from modules.images.renderer import file_uri, render_template
 
 OUTPUT = './assets/pics/404.png'
 

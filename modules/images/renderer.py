@@ -17,7 +17,7 @@ import threading
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from PIL import Image
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 _ENV = Environment(loader=FileSystemLoader(ROOT / 'templates' / 'images'),
                    autoescape=select_autoescape(['html']), trim_blocks=True, lstrip_blocks=True)
 _queue = Queue()
@@ -60,7 +60,7 @@ def _file_uri(path, modified):
 
 
 def template(name, skin=None, **data):
-    from modules.image_skins import current_skin, resolve_template
+    from modules.images.skins import current_skin, resolve_template
     skin = current_skin() if skin is None else skin
     return _ENV.get_template(resolve_template(name, skin)).render(**data)
 

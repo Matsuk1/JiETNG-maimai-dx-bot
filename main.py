@@ -66,11 +66,11 @@ from linebot.v3.webhooks import (
 )
 
 # Song and record generators
-from modules.song_generator import (
+from modules.images.songs import (
     generate_version_list,
     song_info_generate,
 )
-from modules.record_generator import (
+from modules.images.records import (
     generate_cover,
     generate_level_rank_progress_image,
     generate_plate_image,
@@ -202,7 +202,7 @@ from modules.message_manager import (
 )
 
 # Image processing
-from modules.image_uploader import upload_generated_image, _start_periodic_cleanup, _encode_jpeg
+from modules.images.upload import upload_generated_image, _start_periodic_cleanup, _encode_jpeg
 from modules.export_manager import (
     export_records,
     shutdown_periodic_cleanup as shutdown_export_cleanup,
@@ -240,8 +240,8 @@ from modules.commands.command_parsers import (
 )
 from modules.dbpool_manager import close_pool
 from modules.image_button_once import PREFIX as IMAGE_BUTTON_PREFIX, consume_image_button
-from modules.image_skins import available_skins, normalize_skin, user_image, user_skin
-from modules.image_manager import (
+from modules.images.skins import available_skins, normalize_skin, user_image, user_skin
+from modules.images.composition import (
     compose_generated_images,
 )
 
@@ -549,7 +549,7 @@ def linebot_reply():
 @app.route("/static/admin-icon.png")
 def admin_pwa_icon():
     """Serve the cached HTML-rendered PWA icon."""
-    from modules.image_manager import admin_icon_png
+    from modules.images.composition import admin_icon_png
     return send_file(BytesIO(admin_icon_png(LOGO_FILE)), mimetype='image/png')
 
 
@@ -2753,7 +2753,7 @@ async def generate_level_rank_progress(user_id, id_use, level, rank=None, ver="j
 
 @user_image
 def generate_profile(user_info, scale=1, user_id=None):
-    from modules.image_manager import generate_profile_image
+    from modules.images.composition import generate_profile_image
     # icon_url 为默认值时，尝试使用 LINE 头像
     default_icon = [
         "https://maimaidx.jp/maimai-mobile/img/Icon/",

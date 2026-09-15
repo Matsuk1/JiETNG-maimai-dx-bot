@@ -407,9 +407,7 @@ JiETNG/
 │   ├── devtoken_manager.py    # 开发者 Token 管理
 │   ├── dxdata_manager.py      # 歌曲数据管理
 │   ├── event_tracker.py       # 业务事件追踪与指标聚合
-│   ├── image_cache.py         # 图像缓存
-│   ├── image_manager.py       # 图像处理
-│   ├── image_uploader.py      # 图床上传（Imgur/Cloudflare R2）
+│   ├── images/                # 图片渲染、皮肤、缓存与上传
 │   ├── json_encrypt.py        # 加密工具
 │   ├── line_messenger.py      # LINE 消息发送
 │   ├── maimai_manager.py      # Maimai API 接口
@@ -419,10 +417,8 @@ JiETNG/
 │   ├── notification_manager.py # 系统通知管理（Web Push）
 │   ├── perm_request_generator.py  # 权限请求生成器
 │   ├── perm_request_handler.py    # 权限请求处理器
-│   ├── record_generator.py    # 成绩图生成
 │   ├── record_manager.py      # 数据库操作
 │   ├── score_recognition/     # 成绩图 OCR 运行时管线与模型
-│   ├── song_generator.py      # 歌曲图生成
 │   ├── song_matcher.py        # 歌曲搜索（支持模糊匹配）
 │   ├── storelist_generator.py # 机厅列表生成（Flex Message）
 │   ├── system_checker.py      # 系统自检

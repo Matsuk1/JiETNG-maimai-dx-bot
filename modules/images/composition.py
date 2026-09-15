@@ -11,7 +11,7 @@ import requests
 from PIL import Image
 
 from modules.config_loader import LOGO_FILE, QR_CODE_FILE, BG_DIR
-from modules.image_skins import skinnable, skin_config
+from modules.images.skins import skinnable, skin_config
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ def compose_images(images, timezone_offset=9, bg_filter=None):
     Input images remain caller-owned. None selects white; [] selects a random
     built-in background; a list or configuration dict selects allowed files.
     """
-    from modules.html_renderer import file_uri, image_uri, render_template
+    from modules.images.renderer import file_uri, image_uri, render_template
     images = list(images)
     if not images:
         raise ValueError("图片列表不能为空")
@@ -107,7 +107,7 @@ def compose_generated_images(images, **options):
 
 @skinnable
 def generate_profile_image(user_info, scale=1, rounded_icon=False):
-    from modules.html_renderer import file_uri, image_uri, render_template
+    from modules.images.renderer import file_uri, image_uri, render_template
 
     assets = {}
     for key in ('nameplate_url', 'icon_url', 'rating_block_url', 'class_rank_url', 'cource_rank_url', 'trophy_url'):
@@ -146,7 +146,7 @@ def admin_icon_png(logo_path):
 
 @lru_cache(maxsize=1)
 def _admin_icon_png(logo_path, modified):
-    from modules.html_renderer import file_uri, render_template
+    from modules.images.renderer import file_uri, render_template
     with render_template('admin_icon.html', 512, 512, logo=file_uri(logo_path)) as image:
         with BytesIO() as output, image.convert('RGB') as rgb:
             rgb.save(output, format='PNG')

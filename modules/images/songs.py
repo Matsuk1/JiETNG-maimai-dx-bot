@@ -1,11 +1,11 @@
-from modules.image_skins import skinnable
+from modules.images.skins import skinnable
 import os
 import re
 
-from modules.image_manager import compose_generated_images, resize_by_width
+from modules.images.composition import compose_generated_images, resize_by_width
 from modules.config_loader import PLATES_DIR, VERSIONS_DIR
 from modules.i18n import image_language, language_catalog, select_text
-from modules.record_generator import _get_difficulty_color, generate_cover
+from modules.images.records import _get_difficulty_color, generate_cover
 
 
 def _song_text(key, language):
@@ -33,7 +33,7 @@ def song_info_generate(
     )
 
 def _render_basic_info_image(song_json, language="en"):
-    from modules.html_renderer import image_uri, render_template
+    from modules.images.renderer import image_uri, render_template
     with generate_cover(song_json.get("cover_url"), song_json.get("type"),
                         cover_name=song_json.get("cover_name")) as cover:
         cover_src = image_uri(cover)
@@ -45,7 +45,7 @@ def _render_basic_info_image(song_json, language="en"):
 
 
 def _generate_song_table_image(song_json, scale_width=1.5, scale_height=2.0, language="en"):
-    from modules.html_renderer import render_template
+    from modules.images.renderer import render_template
     header_keys = ("chart_type", "level", "designer", "total", "tap", "hold",
                    "slide", "touch", "break", "jp", "intl", "usa")
     widths = [int(w * scale_width) for w in (160, 90, 300, 90, 80, 80, 90, 90, 95, 70, 70, 70)]
@@ -64,17 +64,17 @@ def _generate_song_table_image(song_json, scale_width=1.5, scale_height=2.0, lan
 
 
 def _makeup_played_data(played_data, gap=10):
-    from modules.html_cards import thumbnail_html
-    from modules.html_renderer import render_template
+    from modules.images.records import thumbnail_html
+    from modules.images.renderer import render_template
     return render_template("stack.html", 600, gap=gap,
                            items=[thumbnail_html(record, inline=True) for record in played_data])
 
 
 @skinnable
 def generate_version_list(songs_json, version_info=None, ver="jp"):
-    from modules.html_cards import cover_html
-    from modules.html_renderer import file_uri, render_template
-    from modules.record_generator import _level_group_sort_key
+    from modules.images.records import cover_html
+    from modules.images.renderer import file_uri, render_template
+    from modules.images.records import _level_group_sort_key
     entries = []
     for song in songs_json:
         master = next((sheet for sheet in song.get("sheets", []) if sheet.get("difficulty") == "master"), None)

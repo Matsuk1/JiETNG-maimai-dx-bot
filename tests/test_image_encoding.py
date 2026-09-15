@@ -1,6 +1,6 @@
 from io import BytesIO
 from PIL import Image, JpegImagePlugin
-from modules.image_uploader import _encode_jpeg
+from modules.images.upload import _encode_jpeg
 
 
 def test_jpeg_preserves_color_resolution_size_and_source():

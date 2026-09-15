@@ -3,7 +3,7 @@ import os
 import unittest
 from concurrent.futures import ThreadPoolExecutor
 
-from modules.html_renderer import render_html, template
+from modules.images.renderer import render_html, template
 
 
 @unittest.skipUnless(os.getenv('JIETNG_RENDER_TESTS') == '1', 'requires installed Chromium')
@@ -24,7 +24,7 @@ class HtmlRendererTests(unittest.TestCase):
             self.assertGreater(im.height, 0)
 
     def test_profile_rating_baseline_matches_pillow(self):
-        from modules.html_renderer import render_template, ROOT
+        from modules.images.renderer import render_template, ROOT
         from PIL import ImageFont
         font = ImageFont.truetype(str(ROOT / 'assets/fonts/line_seed_jietng.ttf'), 32)
         expected_top = 28 + font.getbbox('15678')[1]

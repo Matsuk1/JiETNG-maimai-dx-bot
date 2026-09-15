@@ -1,8 +1,8 @@
 from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import patch
 
-from modules import image_skins
-from modules.html_renderer import template
+from modules.images import skins as image_skins
+from modules.images.renderer import template
 
 
 def test_registered_overrides_fallback_and_path_safety(tmp_path):
@@ -37,7 +37,7 @@ def test_glass_skin_overrides_and_default_fallback():
 
 
 def test_nested_skin_scope_is_isolated_and_restored_on_error():
-    from modules.image_skins import use_skin, current_skin, skinnable
+    from modules.images.skins import use_skin, current_skin, skinnable
 
     @skinnable
     def nested():
@@ -66,7 +66,7 @@ def test_glass_cover_dimensions_inside_version_grid():
     if os.getenv('JIETNG_RENDER_TESTS') != '1':
         pytest.skip('requires installed Chromium')
     from playwright.sync_api import sync_playwright
-    from modules.html_renderer import file_uri
+    from modules.images.renderer import file_uri
     asset = file_uri('assets/pics/logo.png')
     cover = template('cover.html', skin='glass', cover=asset, type_src=asset,
                      status='', difficulty='master', color='#9f51dc', footer=True,
@@ -91,7 +91,7 @@ def test_glass_profile_preserves_original_geometry():
     if os.getenv('JIETNG_RENDER_TESTS') != '1':
         pytest.skip('requires installed Chromium')
     from playwright.sync_api import sync_playwright
-    from modules.html_renderer import file_uri
+    from modules.images.renderer import file_uri
     asset = file_uri('assets/pics/logo.png')
     assets = {key: asset for key in ['nameplate_url', 'icon_url', 'rating_block_path',
                                     'class_rank_url', 'cource_rank_url', 'trophy_url']}

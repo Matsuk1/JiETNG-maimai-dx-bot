@@ -6,7 +6,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from PIL import Image
-from modules.html_renderer import file_uri, render_html
+from modules.images.renderer import file_uri, render_html
 
 LABELS = {
     'song':'单曲信息', 'song_played':'单曲成绩', 'records':'成绩列表',

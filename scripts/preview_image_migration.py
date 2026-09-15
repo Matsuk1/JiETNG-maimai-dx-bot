@@ -18,23 +18,50 @@ parser.add_argument('--ref', help='Local Git revision for the before images')
 args = parser.parse_args()
 OUT = args.output
 OUT.mkdir(parents=True, exist_ok=True)
+# Old revisions used flat module paths. Keep their aliases local to this
+# comparison process; production imports always use modules.images.
+import importlib
+from modules import images
+from modules.images import records as r, songs as s, composition as m
+
 revision = None
 if args.ref:
     revision = subprocess.check_output(['git', 'rev-parse', '--verify', args.ref + '^{commit}'], text=True).strip()
     import modules
+    aliases = {
+        'html_renderer': 'renderer', 'image_skins': 'skins',
+        'image_cache': 'cache', 'image_manager': 'composition',
+        'record_generator': 'records', 'song_generator': 'songs',
+        'html_cards': 'records', 'image_uploader': 'upload',
+    }
+    for old, new in aliases.items():
+        module = importlib.import_module('modules.images.' + new)
+        sys.modules['modules.' + old] = module
+        setattr(modules, old, module)
     archived_files = set(subprocess.check_output(
         ['git', 'ls-tree', '-r', '--name-only', revision, 'modules'], text=True).splitlines())
     for name in ('user_image_skin', 'profile_generator', 'static_image_generator',
-                 'image_manager', 'record_generator', 'song_generator'):
-        if f'modules/{name}.py' not in archived_files:
+                 'html_cards', 'image_manager', 'record_generator', 'song_generator'):
+        old_path = f'modules/{name}.py'
+        new_name = aliases.get(name)
+        new_path = f'modules/images/{new_name}.py' if new_name else ''
+        path = old_path if old_path in archived_files else new_path
+        if path not in archived_files or (name == 'html_cards' and path == new_path):
             continue
-        source = subprocess.check_output(['git', 'show', f'{revision}:modules/{name}.py'], text=True)
-        module = types.ModuleType('modules.' + name)
-        module.__file__ = str(Path('modules') / (name + '.py'))
-        sys.modules[module.__name__] = module
-        setattr(modules, name, module)
+        source = subprocess.check_output(['git', 'show', f'{revision}:{path}'], text=True)
+        module_name = 'modules.' + name if path == old_path else 'modules.images.' + new_name
+        module = types.ModuleType(module_name)
+        module.__file__ = str(Path(path))
+        sys.modules[module_name] = module
+        parent = modules if path == old_path else images
+        setattr(parent, name if path == old_path else new_name, module)
         exec(compile(source, module.__file__, 'exec'), module.__dict__)
-from modules import record_generator as r, song_generator as s, image_manager as m
+        if name == 'image_manager':
+            m = module
+        elif name == 'record_generator':
+            r = module
+        elif name == 'song_generator':
+            s = module
 from modules.config_loader import read_dxdata
 cover_path = next(iter(sorted(Path('assets/covers').glob('*.png'))), Path('assets/pics/404.png'))
 cover = Image.open(cover_path).convert('RGBA')
@@ -54,7 +81,7 @@ def cached(url, path):
         with Image.open(path) as im: return im.convert('RGBA')
     return None
 
-with patch('modules.image_cache.download_and_cache_icon', side_effect=cached), patch.object(r,'download_and_cache_icon',side_effect=cached,create=True):
+with patch('modules.images.cache.download_and_cache_icon', side_effect=cached), patch.object(r,'download_and_cache_icon',side_effect=cached,create=True):
     save('song', s.song_info_generate(songs[0]))
     save('song_played', s.song_info_generate(songs[0], records[:3]))
     save('records', r.generate_records_picture(records[:10], records[10:15], title='B50'))
@@ -120,6 +147,6 @@ if revision:
     with Image.open(ns['admin_pwa_icon']()) as im:
         save('admin_icon', im.copy())
 else:
-    from modules.image_manager import admin_icon_png
+    from modules.images.composition import admin_icon_png
     with Image.open(BytesIO(admin_icon_png('assets/pics/logo.png'))) as im:
         save('admin_icon', im.copy())

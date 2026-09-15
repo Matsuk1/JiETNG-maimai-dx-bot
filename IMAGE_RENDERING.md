@@ -16,9 +16,9 @@ python -m playwright install --with-deps chromium
 
 ## 实现
 
-- `modules/html_renderer.py`：每进程一个专用工作线程，最多接纳 8 个渲染任务；复用 Chromium 页面与字体；进程退出关闭浏览器，fork 后重新初始化。模板转义外部文本，素材嵌入 data URI，截图页不访问网络。
-- `modules/html_cards.py`：复用封面和成绩卡片 HTML；成绩列表、版本列表与单曲成绩整页渲染。素材下载继续使用现有缓存。外部传入的进度封面仍保持 Pillow 图片接口。
-- `modules/image_manager.py`：集中提供资料卡、缓存图标、公共背景、模糊、拼接与页脚。保持原素材下载逻辑，LINE 头像选择仍在 `main.py`。`compose_images` 不关闭输入；`compose_generated_images` 在成功或失败后释放输入。
+- `modules/images/renderer.py`：每进程一个专用工作线程，最多接纳 8 个渲染任务；复用 Chromium 页面与字体；进程退出关闭浏览器，fork 后重新初始化。模板转义外部文本，素材嵌入 data URI，截图页不访问网络。
+- `modules/images/records.py`：复用封面和成绩卡片 HTML；成绩列表、版本列表与单曲成绩整页渲染。素材下载继续使用现有缓存。外部传入的进度封面仍保持 Pillow 图片接口。
+- `modules/images/composition.py`：集中提供资料卡、缓存图标、公共背景、模糊、拼接与页脚。保持原素材下载逻辑，LINE 头像选择仍在 `main.py`。`compose_images` 不关闭输入；`compose_generated_images` 在成功或失败后释放输入。
 
 返回值仍为 Pillow 图像，上传、编码、压缩和 OCR 裁切/增强接口保持兼容。OCR 调试图和菜单点击区域诊断工具继续使用图像处理代码。
 
@@ -78,8 +78,8 @@ generate_records_picture(up_songs, down_songs, title="B50", skin="glass")
 Glass 页面自身透明，背景只在最后合成时应用一次；关闭背景时使用默认底色。
 调试台的“应用示例背景图”可预览最终效果。
 
-部署需同步更新 `main.py`、`modules/image_skins.py`、
-`modules/image_manager.py`、`modules/api/image_api.py`、`templates/settings.html`、
+部署需同步更新 `main.py`、`modules/images/skins.py`、
+`modules/images/composition.py`、`modules/api/image_api.py`、`templates/settings.html`、
 四种语言文件，以及整个 `templates/images/skins/glass/`。旧 `ios-glass/` 目录
 已更名，本次尚未部署，无需迁移旧用户选择。
 

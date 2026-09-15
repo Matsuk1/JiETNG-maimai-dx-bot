@@ -11,17 +11,17 @@ from modules.api.api_auth import check_user_permission, require_dev_token
 from modules.commands.command_config import RANK_COMMANDS
 from modules.config_loader import TEMP_VERSION, read_dxdata
 from modules.event_tracker import track_event
-from modules.image_skins import user_image
-from modules.image_manager import compose_generated_images
+from modules.images.skins import user_image
+from modules.images.composition import compose_generated_images
 from modules.task_runtime import check_rate_limit
-from modules.record_generator import (
+from modules.images.records import (
     generate_cover,
     generate_level_rank_progress_image,
     generate_plate_image,
     generate_records_picture,
 )
 from modules.record_manager import read_record
-from modules.song_generator import song_info_generate
+from modules.images.songs import song_info_generate
 from modules.song_matcher import normalize_text
 from modules.user_manager import get_user_timezone
 

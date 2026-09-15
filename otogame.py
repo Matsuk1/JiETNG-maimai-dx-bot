@@ -9,8 +9,8 @@ from playwright.sync_api import sync_playwright
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from modules.record_manager import get_detailed_info
-from modules.record_generator import generate_records_picture
-from modules.image_manager import compose_images
+from modules.images.records import generate_records_picture
+from modules.images.composition import compose_images
 from modules.maimai_manager import get_rating_image_path
 from modules.config_loader import DOMAIN
 

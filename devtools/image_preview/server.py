@@ -14,10 +14,13 @@ from urllib.parse import urlsplit
 from flask import Flask, abort, jsonify, request, send_file
 from PIL import Image
 
-from modules import html_cards, image_cache, record_generator as records, song_generator as songs
-from modules.image_skins import available_skins, use_skin
-from modules.html_renderer import file_uri, image_uri, render_template
-from modules.image_manager import compose_generated_images
+from modules.images import records as html_cards
+from modules.images import cache as image_cache
+from modules.images import records as records
+from modules.images import songs as songs
+from modules.images.skins import available_skins, use_skin
+from modules.images.renderer import file_uri, image_uri, render_template
+from modules.images.composition import compose_generated_images
 
 ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
