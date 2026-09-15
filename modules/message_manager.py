@@ -2087,79 +2087,41 @@ def _generate_score_recognition_single_flex(result, user_id=None):
 
 
 def build_dxdata_update_message(result, user_id=None):
-    """
-    构建 Dxdata 更新消息（多语言）
+    """Build the localized update summary for initial and subsequent imports."""
+    def text(key, **values):
+        translated = get_multilingual_text(_message_texts[f"dxdata_{key}_text"], user_id)
+        return translated.format(**values) if values else translated
 
-    Args:
-        result: update_dxdata_with_comparison 返回的结果字典
-        user_id: 用户ID（用于确定语言）
+    if not result.get("success"):
+        message = result.get("message")
+        fetch_failed = "message" not in result or "データ取得失敗" in message or "fetch" in message.lower()
+        return text("fetch_failed" if fetch_failed else "parse_failed")
 
-    Returns:
-        str: 多语言更新消息
-    """
-    if not result.get('success'):
-        # 更新失败
-        if 'message' in result:
-            # 如果已经有消息，判断是什么类型的错误
-            if 'データ取得失敗' in result['message'] or 'fetch' in result['message'].lower():
-                return get_multilingual_text(_message_texts["dxdata_fetch_failed_text"], user_id)
+    parts = [text("update_success"), ""]
+    stats = result["new_stats"]
+    old_stats = result.get("old_stats")
+    if old_stats:
+        diff = result.get("diff", {})
+        for kind in ("songs", "sheets"):
+            count = diff.get(f"{kind}_added", 0)
+            if count == 0:
+                parts.append(text(f"no_new_{kind}"))
             else:
-                return get_multilingual_text(_message_texts["dxdata_parse_failed_text"], user_id)
-        return get_multilingual_text(_message_texts["dxdata_fetch_failed_text"], user_id)
-
-    message_parts = []
-
-    # 标题
-    message_parts.append(get_multilingual_text(_message_texts["dxdata_update_success_text"], user_id))
-    message_parts.append('')
-
-    if result.get('old_stats'):
-        # 有历史数据，显示对比
-        diff = result.get('diff', {})
-        songs_diff = diff.get('songs_added', 0)
-        sheets_diff = diff.get('sheets_added', 0)
-
-        # 新曲变化
-        if songs_diff > 0:
-            message_parts.append(get_multilingual_text(_message_texts["dxdata_new_songs_text"], user_id).format(count=songs_diff))
-        elif songs_diff < 0:
-            message_parts.append(get_multilingual_text(_message_texts["dxdata_songs_decreased_text"], user_id).format(count=songs_diff))
-        else:
-            message_parts.append(get_multilingual_text(_message_texts["dxdata_no_new_songs_text"], user_id))
-
-        # 新谱面变化
-        if sheets_diff > 0:
-            message_parts.append(get_multilingual_text(_message_texts["dxdata_new_sheets_text"], user_id).format(count=sheets_diff))
-        elif sheets_diff < 0:
-            message_parts.append(get_multilingual_text(_message_texts["dxdata_sheets_decreased_text"], user_id).format(count=sheets_diff))
-        else:
-            message_parts.append(get_multilingual_text(_message_texts["dxdata_no_new_sheets_text"], user_id))
-
-        # 上次更新时间
-        message_parts.append('')
-        message_parts.append(get_multilingual_text(_message_texts["dxdata_last_update_text"], user_id).format(
-            timestamp=result['old_stats']['timestamp']
-        ))
-
-        # 当前统计
-        new_stats = result['new_stats']
-        message_parts.append(get_multilingual_text(_message_texts["dxdata_current_stats_text"], user_id).format(
-            songs=new_stats['total_songs'],
-            sheets=new_stats['total_sheets']
-        ))
+                key = f"new_{kind}" if count > 0 else f"{kind}_decreased"
+                parts.append(text(key, count=count))
+        parts.extend([
+            "",
+            text("last_update", timestamp=old_stats["timestamp"]),
+            text("current_stats", songs=stats["total_songs"], sheets=stats["total_sheets"]),
+        ])
     else:
-        # 首次更新
-        new_stats = result['new_stats']
-        message_parts.append(get_multilingual_text(_message_texts["dxdata_initial_stats_songs_text"], user_id).format(
-            count=new_stats['total_songs']
-        ))
-        message_parts.append(get_multilingual_text(_message_texts["dxdata_initial_stats_sheets_text"], user_id).format(
-            count=new_stats['total_sheets']
-        ))
-        message_parts.append('')
-        message_parts.append(get_multilingual_text(_message_texts["dxdata_first_update_text"], user_id))
-
-    return '\n'.join(message_parts)
+        parts.extend([
+            text("initial_stats_songs", count=stats["total_songs"]),
+            text("initial_stats_sheets", count=stats["total_sheets"]),
+            "",
+            text("first_update"),
+        ])
+    return "\n".join(parts)
 
 # ============================================================
 # 用户信息 Flex Message / User Info Flex Message
