@@ -8,6 +8,7 @@ import threading
 import time
 from copy import deepcopy
 from dataclasses import dataclass
+from functools import wraps
 from datetime import datetime
 from io import BytesIO
 from types import SimpleNamespace
@@ -179,6 +180,16 @@ def check_admin_auth():
         request.remote_addr in {"127.0.0.1", "::1"}
         and verify_service_bridge_token(request.headers.get("X-JiETNG-Monitor-Token", ""))
     )
+
+
+def require_admin(view):
+    """Apply the shared admin check before running a protected endpoint."""
+    @wraps(view)
+    def authenticated_view(*args, **kwargs):
+        if not check_admin_auth():
+            return jsonify({'error': 'Unauthorized'}), 401
+        return view(*args, **kwargs)
+    return authenticated_view
 
 
 def _json_body():
@@ -388,9 +399,8 @@ def admin_panel():
 
 
 @admin_api.route("/admin/api/overview", methods=["GET"])
+@require_admin
 def admin_api_overview():
-    if not check_admin_auth():
-        return jsonify({"error": "Unauthorized"}), 401
     force_refresh = bool(request.args.get("refresh"))
     return jsonify({"success": True, "stats": _services.overview(force_refresh=force_refresh)})
 
@@ -404,9 +414,8 @@ def admin_logout():
     return redirect("/admin/panel")
 
 @admin_api.route("/admin/api/hourly", methods=["GET"])
+@require_admin
 def admin_api_hourly():
-    if not check_admin_auth():
-        return jsonify({"error": "Unauthorized"}), 401
     date_str = request.args.get("date", "")
     if not re.match(r"^\d{4}-\d{2}-\d{2}$", date_str):
         return jsonify({"error": "Invalid date format, use YYYY-MM-DD"}), 400
@@ -414,9 +423,8 @@ def admin_api_hourly():
 
 
 @admin_api.route("/admin/api/tasks", methods=["GET"])
+@require_admin
 def admin_api_tasks():
-    if not check_admin_auth():
-        return jsonify({"error": "Unauthorized"}), 401
     with _services.task_tracking_lock:
         tracking = deepcopy(_services.task_tracking)
     return jsonify({
@@ -428,9 +436,8 @@ def admin_api_tasks():
 
 
 @admin_api.route("/admin/api/users", methods=["GET"])
+@require_admin
 def admin_api_users():
-    if not check_admin_auth():
-        return jsonify({"error": "Unauthorized"}), 401
 
     try:
         limit = max(1, min(100, int(request.args.get("limit", 50))))
@@ -464,9 +471,8 @@ def admin_api_users():
 
 
 @admin_api.route("/admin/trigger_update", methods=["POST"])
+@require_admin
 def admin_trigger_update():
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
 
     data = _json_body()
     user_id = data.get('user_id')
@@ -509,9 +515,8 @@ def admin_trigger_update():
         }), 500
 
 @admin_api.route("/admin/get_logs", methods=["GET"])
+@require_admin
 def admin_get_logs():
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
 
     try:
         with open(LOG_FILE, 'r', encoding='utf-8') as f:
@@ -522,9 +527,8 @@ def admin_get_logs():
 
 
 @admin_api.route("/admin/api/ai-monitor/query", methods=["POST"])
+@require_admin
 def admin_ai_monitor_query():
-    if not check_admin_auth():
-        return jsonify({"error": "Unauthorized"}), 401
 
     if request.content_length and request.content_length > 16 * 1024 * 1024:
         return jsonify({"success": False, "message": "Request is too large"}), 413
@@ -593,9 +597,8 @@ def admin_ai_monitor_query():
 
 
 @admin_api.route("/admin/api/ai-monitor/query/<job_id>", methods=["GET", "DELETE"])
+@require_admin
 def admin_ai_monitor_result(job_id: str):
-    if not check_admin_auth():
-        return jsonify({"error": "Unauthorized"}), 401
     with _ai_monitor_jobs_lock:
         _cleanup_ai_monitor_jobs(time.monotonic())
         job = _ai_monitor_jobs.get(job_id)
@@ -657,9 +660,8 @@ def admin_ai_monitor_result(job_id: str):
 
 
 @admin_api.route("/admin/api/ai-monitor/session", methods=["DELETE"])
+@require_admin
 def admin_ai_monitor_reset_session():
-    if not check_admin_auth():
-        return jsonify({"error": "Unauthorized"}), 401
     conversation_id = request.args.get("conversation_id", "")
     session_id = _ai_monitor_session(conversation_id)
     if session_id is None:
@@ -674,9 +676,8 @@ def admin_ai_monitor_reset_session():
 
 
 @admin_api.route("/admin/api/ai-monitor/image", methods=["GET"])
+@require_admin
 def admin_ai_monitor_image():
-    if not check_admin_auth():
-        return jsonify({"error": "Unauthorized"}), 401
     token = request.args.get("token", "")
     if token:
         generated = get_generated_image(token)
@@ -689,9 +690,8 @@ def admin_ai_monitor_image():
     return send_file(path, conditional=True, max_age=3600)
 
 @admin_api.route("/admin/get_notices", methods=["GET"])
+@require_admin
 def admin_get_notices():
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
 
     try:
         notices = get_all_notices(include_drafts=True)
@@ -701,9 +701,8 @@ def admin_get_notices():
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @admin_api.route("/admin/create_notice", methods=["POST"])
+@require_admin
 def admin_create_notice():
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
 
     data = _json_body()
 
@@ -746,9 +745,8 @@ def admin_create_notice():
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @admin_api.route("/admin/update_notice", methods=["POST"])
+@require_admin
 def admin_update_notice():
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
 
     data = _json_body()
     notice_id = data.get('notice_id')
@@ -823,9 +821,8 @@ def admin_update_notice():
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @admin_api.route("/admin/delete_notice", methods=["POST"])
+@require_admin
 def admin_delete_notice():
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
 
     data = _json_body()
     notice_id = data.get('notice_id')
@@ -848,9 +845,8 @@ def admin_delete_notice():
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @admin_api.route("/admin/publish_notice", methods=["POST"])
+@require_admin
 def admin_publish_notice():
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
 
     data = _json_body()
     notice_id = data.get('notice_id')
@@ -873,9 +869,8 @@ def admin_publish_notice():
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @admin_api.route("/admin/get_notice_stats", methods=["GET"])
+@require_admin
 def admin_get_notice_stats():
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
 
     notice_id = request.args.get('notice_id')
 
@@ -934,9 +929,8 @@ def notice_vote():
 # ==================== Tip/Ad 管理 API ====================
 
 @admin_api.route("/admin/tip_ads", methods=["GET"])
+@require_admin
 def admin_get_tip_ads():
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
 
     try:
         tip_ads = get_all_tip_ads()
@@ -946,9 +940,8 @@ def admin_get_tip_ads():
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @admin_api.route("/admin/tip_ads/<tip_ad_id>", methods=["GET"])
+@require_admin
 def admin_get_tip_ad(tip_ad_id):
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
 
     try:
         tip_ad = get_tip_ad_by_id(tip_ad_id)
@@ -958,9 +951,8 @@ def admin_get_tip_ad(tip_ad_id):
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @admin_api.route("/admin/tip_ads", methods=["POST"])
+@require_admin
 def admin_create_tip_ads():
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
 
     data = _json_body()
     tip_type = data.get('type')
@@ -992,9 +984,8 @@ def admin_create_tip_ads():
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @admin_api.route("/admin/tip_ads/<tip_ad_id>", methods=["PUT"])
+@require_admin
 def admin_put_tip_ads(tip_ad_id):
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
 
     data = _json_body()
 
@@ -1058,9 +1049,8 @@ def admin_put_tip_ads(tip_ad_id):
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @admin_api.route("/admin/tip_ads/<tip_ad_id>", methods=["DELETE"])
+@require_admin
 def admin_delete_tip_ads(tip_ad_id):
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
 
     if not tip_ad_id:
         return jsonify({'success': False, 'message': 'Missing id'}), 400
@@ -1079,9 +1069,8 @@ def admin_delete_tip_ads(tip_ad_id):
 # ==================== 背景图管理 API ====================
 
 @admin_api.route("/admin/backgrounds", methods=["GET", "POST"])
+@require_admin
 def admin_backgrounds():
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
 
     if request.method == "GET":
         try:
@@ -1161,9 +1150,8 @@ def admin_backgrounds():
 
 
 @admin_api.route("/admin/backgrounds/<filename>", methods=["DELETE"])
+@require_admin
 def admin_delete_background(filename):
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
 
     safe_name = os.path.basename(filename)
     filepath = os.path.join(BG_DIR, safe_name)
@@ -1198,9 +1186,8 @@ admin_edit_user = create_edit_user_handler(
 admin_api.add_url_rule("/admin/edit_user", view_func=admin_edit_user, methods=["POST"])
 
 @admin_api.route("/admin/delete_user", methods=["POST"])
+@require_admin
 def admin_delete_user():
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
 
     data = _json_body()
     user_id = data.get('user_id')
@@ -1236,9 +1223,8 @@ def admin_delete_user():
         }), 500
 
 @admin_api.route("/admin/clear_cache", methods=["POST"])
+@require_admin
 def admin_clear_cache():
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
 
     try:
         with nickname_cache_lock:
@@ -1260,9 +1246,8 @@ def admin_clear_cache():
         }), 500
 
 @admin_api.route("/admin/get_user_data", methods=["POST"])
+@require_admin
 def admin_get_user_data():
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
 
     data = _json_body()
     user_id = data.get('user_id')
@@ -1300,9 +1285,8 @@ def admin_get_user_data():
         }), 500
 
 @admin_api.route("/admin/load_nicknames", methods=["POST"])
+@require_admin
 def admin_load_nicknames():
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
 
     try:
         data = _json_body()
@@ -1331,9 +1315,8 @@ def admin_load_nicknames():
         }), 500
 
 @admin_api.route("/admin/backups", methods=["POST"])
+@require_admin
 def admin_create_backup():
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
 
     try:
         db_config = {
@@ -1360,9 +1343,8 @@ def admin_create_backup():
 
 
 @admin_api.route("/admin/get_backups", methods=["GET"])
+@require_admin
 def admin_get_backups():
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
 
     try:
         backup_files = []
@@ -1397,9 +1379,8 @@ def admin_get_backups():
         }), 500
 
 @admin_api.route("/admin/download_backup", methods=["GET"])
+@require_admin
 def admin_download_backup():
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
 
     filename = None
     try:
@@ -1445,9 +1426,8 @@ def admin_download_backup():
         }), 500
 
 @admin_api.route("/admin/delete_backup", methods=["POST"])
+@require_admin
 def admin_delete_backup():
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
 
     try:
         data = _json_body()
@@ -1495,9 +1475,8 @@ def admin_delete_backup():
         }), 500
 
 @admin_api.route("/admin/dxdata_status", methods=["GET"])
+@require_admin
 def admin_dxdata_status():
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
 
     try:
         songs, versions = read_dxdata()
@@ -1546,9 +1525,8 @@ def admin_dxdata_status():
         }), 500
 
 @admin_api.route("/admin/update_dxdata", methods=["POST"])
+@require_admin
 def admin_update_dxdata():
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
 
     try:
         result = update_dxdata_with_comparison(DXDATA_URL, DXDATA_FILE)
@@ -1566,34 +1544,30 @@ def admin_update_dxdata():
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @admin_api.route("/admin/notifications", methods=["GET"])
+@require_admin
 def admin_get_notifications():
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
 
     return jsonify(get_notifications())
 
 
 @admin_api.route("/admin/notifications", methods=["DELETE"])
+@require_admin
 def admin_clear_notifications():
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
 
     clear_notifications()
     return jsonify({'success': True})
 
 
 @admin_api.route("/admin/vapid-public-key", methods=["GET"])
+@require_admin
 def admin_vapid_public_key():
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
 
     return VAPID_PUBLIC_KEY, 200, {'Content-Type': 'text/plain'}
 
 
 @admin_api.route("/admin/push-subscription", methods=["POST"])
+@require_admin
 def admin_add_push_subscription():
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
 
     sub = _json_body()
     if not sub or not sub.get('endpoint'):
@@ -1604,9 +1578,8 @@ def admin_add_push_subscription():
 
 
 @admin_api.route("/admin/push-subscription", methods=["DELETE"])
+@require_admin
 def admin_remove_push_subscription():
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
 
     data = _json_body()
     endpoint = data.get('endpoint') if data else None
@@ -1620,9 +1593,8 @@ def admin_remove_push_subscription():
 # ==================== Admin DevToken Management ====================
 
 @admin_api.route("/admin/devtokens", methods=["GET"])
+@require_admin
 def admin_list_devtokens():
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
 
     try:
         tokens = list_dev_tokens()
@@ -1636,9 +1608,8 @@ def admin_list_devtokens():
 
 
 @admin_api.route("/admin/devtokens", methods=["POST"])
+@require_admin
 def admin_create_devtoken():
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
 
     data = _json_body()
     note = data.get('note', '').strip() if data else ''
@@ -1656,9 +1627,8 @@ def admin_create_devtoken():
 
 
 @admin_api.route("/admin/devtokens/<token_id>", methods=["PATCH"])
+@require_admin
 def admin_update_devtoken(token_id):
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
 
     data = _json_body()
     if data and data.get('revoked'):
@@ -1670,9 +1640,8 @@ def admin_update_devtoken(token_id):
 
 
 @admin_api.route("/admin/devtokens/<token_id>", methods=["DELETE"])
+@require_admin
 def admin_delete_devtoken(token_id):
-    if not check_admin_auth():
-        return jsonify({'error': 'Unauthorized'}), 401
 
     tokens = load_dev_tokens()
     if token_id not in tokens:
