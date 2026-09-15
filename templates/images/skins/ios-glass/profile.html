@@ -1,154 +1,30 @@
+{# Share the original coordinates, assets, text baselines and scaling. #}
+<div class="glass-profile">
+  {% include 'profile.html' %}
+</div>
 <style>
   .glass-profile {
-    position: relative;
-    width: 1363px;
-    height: 218px;
-    overflow: hidden;
-    border: 2px solid #ffffffdd;
-    border-radius: 32px;
-    transform-origin: top left;
-    background: linear-gradient(125deg, #ccebf8, #e5ddf5 70%, #e2f5ee);
-    color: #273954;
+    --profile-name-border: #ffffffd9;
+    --profile-name-background: linear-gradient(135deg, #ffffffb8, #edf4ff70);
+    --profile-name-blur: blur(12px);
+    --profile-name-shadow: inset 0 1px 2px white, 0 3px 8px #3149661a;
   }
 
-  .glass-profile-nameplate {
+  .glass-profile .profile-card {
+    background: linear-gradient(125deg, #d4edfa, #e7def5);
+  }
+
+  .glass-profile .profile-asset-nameplate_url {
+    opacity: .88;
+  }
+
+  .glass-profile .profile-card::after {
+    content: '';
     position: absolute;
     inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    opacity: .26;
-  }
-
-  .glass-profile-avatar {
-    position: absolute;
-    left: 22px;
-    top: 22px;
-    width: 170px;
-    height: 170px;
-    border: 3px solid #ffffffe6;
-    border-radius: 27px;
-    object-fit: cover;
-    box-shadow: 0 6px 16px #43557526;
-  }
-
-  .glass-profile-info {
-    position: absolute;
-    left: 214px;
-    top: 22px;
-    width: 665px;
-    height: 170px;
-    padding: 14px 20px;
-    border: 1px solid #ffffffcc;
-    border-radius: 25px;
-    background: #ffffff88;
-    backdrop-filter: blur(18px);
-    box-shadow: inset 0 1px 1px white;
-  }
-
-  .glass-profile-name {
-    font-size: 36px;
-    line-height: 48px;
-  }
-
-  .glass-profile-ranks {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    height: 48px;
-  }
-
-  .glass-profile-class {
-    width: 84px;
-    height: 48px;
-    object-fit: contain;
-  }
-
-  .glass-profile-course {
-    width: 105px;
-    height: 43px;
-    object-fit: contain;
-  }
-
-  .glass-profile-trophy {
-    position: relative;
-    width: 452px;
-    height: 36px;
-    margin-top: 4px;
+    pointer-events: none;
+    border: 2px solid #ffffffb3;
     border-radius: 12px;
-    overflow: hidden;
-    background: #7287a5;
-  }
-
-  .glass-profile-trophy img {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-  }
-
-  .glass-profile-trophy-text {
-    position: relative;
-    padding: 0 10px;
-    text-align: center;
-    color: white;
-    font-size: 22px;
-    line-height: 36px;
-    -webkit-text-stroke: 3px #273954;
-    paint-order: stroke fill;
-  }
-
-  .glass-profile-rating {
-    position: absolute;
-    top: 22px;
-    right: 22px;
-    width: 438px;
-    height: 170px;
-    padding: 16px 24px;
-    border: 1px solid #ffffffdd;
-    border-radius: 27px;
-    background: #ffffff99;
-    backdrop-filter: blur(18px);
-    text-align: right;
-    box-shadow: inset 0 2px 2px white;
-  }
-
-  .glass-profile-rating-label {
-    font-size: 20px;
-    letter-spacing: 3px;
-    color: #5a6e89;
-  }
-
-  .glass-profile-rating-value {
-    font-size: 76px;
-    line-height: 1.2;
+    box-shadow: inset 0 2px 2px #ffffff99;
   }
 </style>
-<section class="glass-profile" style="transform: scale({{ scale }});">
-  {% if assets.get('nameplate_url') %}
-    <img class="glass-profile-nameplate" src="{{ assets.nameplate_url }}">
-  {% endif %}
-  {% if assets.get('icon_url') %}
-    <img class="glass-profile-avatar" src="{{ assets.icon_url }}">
-  {% endif %}
-  <div class="glass-profile-info">
-    <div class="glass-profile-name ellipsis">{{ user.name }}</div>
-    <div class="glass-profile-ranks">
-      {% if assets.get('class_rank_url') %}
-        <img class="glass-profile-class" src="{{ assets.class_rank_url }}">
-      {% endif %}
-      {% if assets.get('cource_rank_url') %}
-        <img class="glass-profile-course" src="{{ assets.cource_rank_url }}">
-      {% endif %}
-    </div>
-    <div class="glass-profile-trophy">
-      {% if assets.get('trophy_url') %}
-        <img src="{{ assets.trophy_url }}">
-      {% endif %}
-      <div class="glass-profile-trophy-text ellipsis">{{ user.trophy_content }}</div>
-    </div>
-  </div>
-  <div class="glass-profile-rating">
-    <div class="glass-profile-rating-label">DX RATING</div>
-    <div class="glass-profile-rating-value">{{ rating|trim }}</div>
-  </div>
-</section>

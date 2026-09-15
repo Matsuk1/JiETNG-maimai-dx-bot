@@ -1,4 +1,4 @@
-<div style="
+<div class="profile-card" style="
   position: relative;
   width: 1363px;
   height: 218px;
@@ -7,7 +7,7 @@
 ">
   {% for key, x, y, w, h in [('nameplate_url',0,0,1363,218),('icon_url',26,24,170,170),('rating_block_path',219,24,296,58),('rating_block_url',219,24,223,58)] %}
     {% if assets.get(key) %}
-      <img src="{{ assets[key] }}" style="
+      <img class="profile-asset-{{ key }}" src="{{ assets[key] }}" style="
         position: absolute;
         left: {{ x }}px;
         top: {{ y }}px;
@@ -36,9 +36,11 @@
     top: 89px;
     width: 452px;
     height: 56px;
-    border: 2px solid #b4b4b4;
+    border: 2px solid var(--profile-name-border, #b4b4b4);
     border-radius: 10px;
-    background: white;
+    background: var(--profile-name-background, white);
+    backdrop-filter: var(--profile-name-blur, none);
+    box-shadow: var(--profile-name-shadow, none);
     padding: 3px 14px;
     font-size: 32px;
     line-height: 52px;
@@ -49,7 +51,7 @@
   </div>
   {% for key, x, y, w, h in [('class_rank_url',530,6,148,85),('cource_rank_url',550,93,117,48),('trophy_url',219,158,452,36)] %}
     {% if assets.get(key) %}
-      <img src="{{ assets[key] }}" style="
+      <img class="profile-asset-{{ key }}" src="{{ assets[key] }}" style="
         position: absolute;
         left: {{ x }}px;
         top: {{ y }}px;
