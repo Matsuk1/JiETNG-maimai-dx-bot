@@ -33,16 +33,16 @@ def _get_difficulty_color(difficulty):
 _DIFF_KEYS = {"basic", "advanced", "expert", "master", "remaster", "utage"}
 
 
-def create_thumbnail_in_line(song):
+def create_thumbnail_in_line(song, skin="default"):
     from modules.html_cards import thumbnail_html
     from modules.html_renderer import render_html
-    return render_html(thumbnail_html(song, inline=True), 600, 225)
+    return render_html(thumbnail_html(song, inline=True, skin=skin), 600, 225)
 
 
-def create_thumbnail(song):
+def create_thumbnail(song, skin="default"):
     from modules.html_cards import thumbnail_html
     from modules.html_renderer import render_html
-    return render_html(thumbnail_html(song), 300, 150)
+    return render_html(thumbnail_html(song, skin=skin), 300, 150)
 
 
 def _score_rank_name(achievement):
@@ -301,7 +301,7 @@ def generate_score_recognition_picture(result, ver="jp", img_width=1100, timezon
     return compose_generated_images([card], timezone_offset=timezone_offset, bg_filter=bg_filter)
 
 
-def generate_records_picture(up_songs=None, down_songs=None, title="RECORD", ver="jp", details=None):
+def generate_records_picture(up_songs=None, down_songs=None, title="RECORD", ver="jp", details=None, skin="default"):
     from modules.html_cards import difficulty_color, thumbnail_html
     from modules.html_renderer import file_uri, render_template
     up_songs, down_songs = up_songs or [], down_songs or []
@@ -319,11 +319,11 @@ def generate_records_picture(up_songs=None, down_songs=None, title="RECORD", ver
     ]
     detail_rows = [(key, [(token, difficulty_color(token.lower()) if token.lower() in _DIFF_KEYS else None)
                           for token in str(value).split()]) for key, value in (details or {}).items()]
-    return render_template("records.html", 1580, title=title, stats=stats,
+    return render_template("records.html", 1580, skin=skin, title=title, stats=stats,
                            rating=str(int(all_ra)).rjust(5), rating_src=file_uri(get_rating_image_path(int(all_ra))),
                            equation=f"= {_format_rating_value(up_ra)} + {_format_rating_value(down_ra)}" if up_ra and down_ra else "",
-                           details=detail_rows, up=[thumbnail_html(song) for song in up_songs],
-                           down=[thumbnail_html(song) for song in down_songs])
+                           details=detail_rows, up=[thumbnail_html(song, skin=skin) for song in up_songs],
+                           down=[thumbnail_html(song, skin=skin) for song in down_songs])
 
 
 def generate_cover(cover_url, type, icon=None, icon_type=None, cover_name=None, complete_info=None, difficulty=None, achieved=None, song_title=None):

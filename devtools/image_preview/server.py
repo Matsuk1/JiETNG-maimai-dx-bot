@@ -15,6 +15,7 @@ from flask import Flask, abort, jsonify, request, send_file
 from PIL import Image
 
 from modules import html_cards, image_cache, record_generator as records, song_generator as songs
+from modules.image_skins import available_skins
 from modules.html_renderer import file_uri, image_uri, render_template
 from modules.image_manager import compose_generated_images
 
@@ -51,7 +52,7 @@ def clean_data(value):
     return value
 
 
-def render_case(kind, data):
+def render_case(kind, data, skin="default"):
     """Use production generators in this isolated development process."""
     data = clean_data(copy.deepcopy(data))
     with RENDER_LOCK, ExitStack() as stack:
@@ -61,13 +62,13 @@ def render_case(kind, data):
         stack.enter_context(patch.object(image_cache, '_download_rgba', return_value=(None, None)))
         if kind in ('thumbnail', 'inline'):
             fn = records.create_thumbnail if kind == 'thumbnail' else records.create_thumbnail_in_line
-            image = fn(data['record'])
+            image = fn(data['record'], skin=skin)
         elif kind == 'cover':
             image = records.generate_cover(cover_url=None, **{k:v for k,v in data['cover'].items() if k != 'cover_url'})
         elif kind in ('song', 'song_played'):
             image = songs.song_info_generate(data['song'], played_data=data.get('records', []), ver=data.get('ver', 'jp'))
         elif kind == 'records':
-            image = records.generate_records_picture(**data)
+            image = records.generate_records_picture(**dict(data, skin=skin))
             if image is None:
                 raise ValueError('成绩列表为空，请至少提供一条成绩')
         elif kind == 'profile':
@@ -115,7 +116,7 @@ def render_case(kind, data):
 
 
 def revision():
-    paths = list((ROOT/'templates/images').glob('*.html')) + list(FIXTURES.rglob('*'))
+    paths = list((ROOT/'templates/images').rglob('*')) + list(FIXTURES.rglob('*'))
     stamps = [(str(p.relative_to(ROOT)), p.stat().st_mtime_ns, p.stat().st_size)
               for p in sorted(paths) if p.is_file()]
     return hashlib.sha256(json.dumps(stamps).encode()).hexdigest()[:16]
@@ -143,6 +144,10 @@ def create_app():
     def index():
         return send_file(HERE/'static/index.html')
 
+    @app.get('/api/skins')
+    def skins():
+        return jsonify(available_skins())
+
     @app.get('/api/examples')
     def examples():
         return jsonify([dict(id=key, label=value[0], template='templates/images/'+value[1],
@@ -167,7 +172,7 @@ def create_app():
             return jsonify(error='示例数据必须是 JSON 对象'), 400
         started = time.perf_counter()
         try:
-            png, size = render_case(kind, data)
+            png, size = render_case(kind, data, skin=request.args.get('skin', 'default'))
         except Exception as exc:
             app.logger.warning('Preview failed: %s: %s', type(exc).__name__, exc)
             return jsonify(error=f'{type(exc).__name__}: {exc}'), 422

@@ -52,7 +52,7 @@ def cover_html(cover_url, type, icon=None, icon_type=None, cover_name=None,
                     title=song_title or '', text_color='#72148d' if difficulty == 'remaster' else 'white')
 
 
-def thumbnail_html(song, inline=False):
+def thumbnail_html(song, inline=False, skin="default"):
     icons = {}
     for key, directory, name in (
         ('score_icon', ICON_SCORE_DIR, lambda v: 'playlog/' + v.replace('p','plus')),
@@ -65,7 +65,7 @@ def thumbnail_html(song, inline=False):
         value = song.get(key)
         icons[key] = icon_uri(value, directory, f'https://maimaidx.jp/maimai-mobile/img/{name(str(value))}.png') if value else ''
     cover = '' if inline else cover_html(song.get('cover_url'), song.get('type'), cover_name=song.get('cover_name'))
-    return template('thumbnail.html', song=song, inline=inline, icons=icons, cover=cover,
+    return template('thumbnail.html', skin=skin, song=song, inline=inline, icons=icons, cover=cover,
                     color=difficulty_color(song.get('difficulty')),
                     text_color='#72148d' if song.get('difficulty') == 'remaster' else 'white',
                     version=str(song.get('version','')).replace(' PLUS','+').replace('でらっくす','DX'))

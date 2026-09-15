@@ -1,6 +1,6 @@
 'use strict';
 const $ = id => document.getElementById(id);
-let cases = [], kind = '', defaults = '', imageURL = '', naturalWidth = 0;
+let skins = [], cases = [], kind = '', defaults = '', imageURL = '', naturalWidth = 0;
 let timer, serial = 0, pending = false, rendering = false, revision = '';
 const storageKey = id => `jietng-image-lab:${id}`;
 const readDraft = id => { try { return localStorage.getItem(storageKey(id)); } catch { return null; } };
@@ -63,7 +63,7 @@ async function renderLatest() {
   const ticket = serial, selected = kind;
   setStatus('正在渲染…', 'busy');
   try {
-    const response = await fetch(`/api/render/${selected}`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
+    const response = await fetch(`/api/render/${selected}?skin=${encodeURIComponent($('skin').value)}`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
     if (!response.ok) { let result; try { result = await response.json(); } catch {} throw Error(result?.error || `渲染失败（HTTP ${response.status}）`); }
     const blob = await response.blob();
     if (ticket !== serial || selected !== kind) return;
@@ -84,7 +84,7 @@ async function selectCase(id) {
   try { localStorage.setItem('jietng-image-lab:selected', id); } catch {}
   for (const button of $('examples').children) { button.classList.toggle('active', button.dataset.id === id); button.setAttribute('aria-current', button.dataset.id === id ? 'true' : 'false'); }
   const item = cases.find(item => item.id === id);
-  $('case-title').textContent = item.label; $('case-description').textContent = item.description; $('source-path').textContent = item.template;
+  $('case-title').textContent = item.label; $('case-description').textContent = item.description; updateSkinSource();
   setStatus('读取示例…');
   try {
     const response = await fetch(`/api/examples/${id}`); if (!response.ok) throw Error('读取示例失败');
@@ -94,6 +94,20 @@ async function selectCase(id) {
     dirtyState(); schedule(true);
   } catch (error) { showError(error.message); setStatus('载入失败', 'bad'); }
 }
+function updateSkinSource() {
+  const item = cases.find(item => item.id === kind);
+  if (!item) return;
+  const selected = skins.find(skin => skin.id === $('skin').value);
+  const filename = item.template.split('/').pop();
+  const supported = ['records', 'thumbnail', 'inline'].includes(kind);
+  $('skin').disabled = !supported;
+  $('source-path').textContent = supported && selected?.templates.includes(filename)
+    ? `templates/images/skins/${selected.id}/${filename}` : item.template;
+}
+$('skin').addEventListener('change', () => {
+  try { localStorage.setItem('jietng-image-lab:skin', $('skin').value); } catch {}
+  updateSkinSource(); serial++; schedule(true);
+});
 $('editor').addEventListener('input', () => changed());
 $('refresh').addEventListener('click', () => { serial++; schedule(true); });
 $('auto').addEventListener('change', () => { if ($('auto').checked) schedule(true); else { clearTimeout(timer); pending = false; } });
@@ -101,7 +115,7 @@ $('format').addEventListener('click', () => { try { $('editor').value = JSON.str
 $('reset').addEventListener('click', () => { $('editor').value = defaults; changed(); schedule(true); });
 $('zoom').addEventListener('change', zoom);
 $('backdrop').addEventListener('change', () => { $('viewport').className = `viewport ${$('backdrop').value}`; });
-$('download').addEventListener('click', () => { if (imageURL) download(imageURL, `${kind}.png`); });
+$('download').addEventListener('click', () => { if (imageURL) download(imageURL, `${kind}-${$('skin').value}.png`); });
 $('export').addEventListener('click', () => { try { const url = URL.createObjectURL(new Blob([JSON.stringify(parseData(),null,2)],{type:'application/json'})); download(url,`${kind}.json`); setTimeout(() => URL.revokeObjectURL(url),1000); } catch (error) { showError(error.message); } });
 document.addEventListener('keydown', event => { if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') { event.preventDefault(); serial++; schedule(true); } });
 new ResizeObserver(zoom).observe($('viewport'));
@@ -124,6 +138,15 @@ async function watch() {
 (async () => {
   try {
     const response = await fetch('/api/examples'); if (!response.ok) throw Error('无法连接本地调试服务'); cases = await response.json();
+    skins = await (await fetch('/api/skins')).json();
+    $('skin').replaceChildren(...skins.map(skin => {
+      const option = document.createElement('option');
+      option.value = skin.id; option.textContent = skin.label; return option;
+    }));
+    try {
+      const saved = localStorage.getItem('jietng-image-lab:skin');
+      if (skins.some(skin => skin.id === saved)) $('skin').value = saved;
+    } catch {}
     $('case-count').textContent = cases.length;
     cases.forEach((item,index) => { const button = document.createElement('button'); button.className = 'case-button'; button.dataset.id = item.id;
       const number = document.createElement('span'); number.textContent = String(index+1).padStart(2,'0');

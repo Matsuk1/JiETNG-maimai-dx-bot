@@ -59,8 +59,9 @@ def _file_uri(path, modified):
     return f'data:{mime};base64,' + base64.b64encode(Path(path).read_bytes()).decode('ascii')
 
 
-def template(name, **data):
-    return _ENV.get_template(name).render(**data)
+def template(name, skin='default', **data):
+    from modules.image_skins import resolve_template
+    return _ENV.get_template(resolve_template(name, skin)).render(**data)
 
 
 def _close_browser():
