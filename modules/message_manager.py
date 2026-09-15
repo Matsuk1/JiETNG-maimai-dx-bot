@@ -1,4 +1,5 @@
 from urllib.parse import quote
+from modules.image_button_once import image_button_data
 from modules.config_loader import SUPPORT_PAGE, LINE_ACCOUNT_ID
 from modules.i18n import (
     format_catalog,
@@ -1335,7 +1336,7 @@ def generate_song_info_flex(song_id, image_url, image_width, image_height, user_
             {
                 "type": "postback",
                 "label": calc_label,
-                "data": f"calc-song {song_id}"
+                "data": image_button_data(f"calc-song {song_id}")
             },
             bg_color=COLOR_BRAND,
         ))
@@ -1345,7 +1346,7 @@ def generate_song_info_flex(song_id, image_url, image_width, image_height, user_
             {
                 "type": "postback",
                 "label": record_label,
-                "data": f"search-record {song_id}"
+                "data": image_button_data(f"search-record {song_id}")
             },
             bg_color="#315B7D",
         ))
@@ -1356,7 +1357,7 @@ def generate_song_info_flex(song_id, image_url, image_width, image_height, user_
             {
                 "type": "postback",
                 "label": info_label,
-                "data": f"search-song {song_id}"
+                "data": image_button_data(f"search-song {song_id}")
             },
             bg_color="#315B7D",
         ))
@@ -2897,7 +2898,7 @@ def generate_search_results_flex(user_id, matching_songs, search_type='song', id
     language = get_user_language(user_id)
 
     id_use_text = ""
-    if id_use:
+    if id_use and search_type == 'record':
         id_use_text = f"&id_use={id_use}"
 
     config = {
@@ -2965,7 +2966,7 @@ def generate_search_results_flex(user_id, matching_songs, search_type='song', id
                     {
                         "type": "postback",
                         "label": "→",
-                        "data": f"{config['command']} {song_id}{id_use_text}"
+                        "data": image_button_data(f"{config['command']} {song_id}{id_use_text}")
                     }
                 )
             ]
@@ -3230,7 +3231,7 @@ def generate_song_list_flex(user_id, title, matching_songs, page, command_prefix
                     {
                         "type": "postback",
                         "label": "→",
-                        "data": f"search-song {song_id}"
+                        "data": image_button_data(f"search-song {song_id}")
                     }
                 )
             ]

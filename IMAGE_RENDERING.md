@@ -83,3 +83,14 @@ Glass 页面自身透明，背景只在最后合成时应用一次；关闭背�
 `modules/image_manager.py`、`modules/api/image_api.py`、`templates/settings.html`、
 四种语言文件，以及整个 `templates/images/skins/glass/`。旧 `ios-glass/` 目录
 已更名，本次尚未部署，无需迁移旧用户选择。
+
+## 单次使用的歌曲按钮
+
+新发送卡片的 Info、Record、Note 按钮带有独立签名标识。服务器在查询、
+计算和加载动画之前原子性领取标识，重复点击会被忽略；新卡片独立计数。
+首次点击自动创建 MySQL `image_button_uses` 表，主键用于跨进程并发去重，
+使用状态在服务重启后保留。数据库领取失败时不执行操作。
+签名使用现有持久化 session key，因此部署时继续保留该密钥。
+旧消息没有唯一标识，保持原有行为；只有更新后发送的卡片可按按钮去重。
+部署需更新 `main.py`、`modules/message_manager.py` 并新增
+`modules/image_button_once.py`。

@@ -240,6 +240,7 @@ from modules.commands.command_parsers import (
     parse_plate_query,
 )
 from modules.dbpool_manager import close_pool
+from modules.image_button_once import PREFIX as IMAGE_BUTTON_PREFIX, consume_image_button
 from modules.image_skins import available_skins, normalize_skin
 from modules.user_image_skin import user_image, user_skin
 from modules.image_manager import (
@@ -3840,6 +3841,10 @@ def handle_postback_command(event, text):
     user_id = event.source.user_id
     source_type = getattr(event.source, 'type', 'user')
     cleaned = re.sub(r"\s+", " ", text.strip())
+    if cleaned.startswith(IMAGE_BUTTON_PREFIX):
+        cleaned = consume_image_button(cleaned)
+        if cleaned is None:
+            return True
 
     help_match = re.fullmatch(r"help\s+([A-Za-z0-9_]+)", cleaned, re.IGNORECASE)
     if help_match:
