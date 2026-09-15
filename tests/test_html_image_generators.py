@@ -57,3 +57,31 @@ class ImageDataTests(unittest.TestCase):
         panels = render.call_args.kwargs['panels']
         self.assertEqual(panels[0]['total'], '-0.04000%')
         self.assertEqual(panels[1]['total'], '-0.00600%')
+
+    def test_invalid_columns_rejected_before_grouping(self):
+        for columns in (0, -1):
+            with self.subTest(columns=columns), self.assertRaisesRegex(ValueError, 'max_per_row'):
+                records.generate_level_rank_progress_image(
+                    [{}], '14', 'SSS', {}, max_per_row=columns)
+
+    def test_low_levels_grouped_by_constant_without_mutating_input(self):
+        data = [dict(img='a', level='9', internal_level=9.1, achieved=True, achievement_rate=100),
+                dict(img='b', level='9+', internal_level=9.8, achieved=False, achievement_rate=99),
+                dict(img='c', level='10', internal_level=10.0, achieved=True, achievement_rate=100),
+                dict(img='d', level='9+', internal_level=9.8, achieved=True, achievement_rate=98)]
+        with patch('modules.images.renderer.image_uri', side_effect=lambda image: image), \
+             patch('modules.images.renderer.render_template') as render:
+            records.generate_level_rank_progress_image(
+                data, 'ALL', '', dict(achieved=3, unachieved=1, unplayed=0, total=4), group_by='level')
+        self.assertEqual(render.call_args.kwargs['rows'], [('10', ['c']), ('10-', ['d', 'b', 'a'])])
+        self.assertEqual([entry['img'] for entry in data], ['a', 'b', 'c', 'd'])
+
+    def test_version_rows_sorted_by_level_constant_and_title(self):
+        from modules.images import songs
+        source = [dict(title=title, sheets=[dict(difficulty='master', level=level, internalLevelValue=constant)])
+                  for title, level, constant in [('Z', '13', 13.1), ('A', '13', 13.1), ('B', '14+', 14.7)]]
+        source.append(dict(title='No master', sheets=[]))
+        with patch('modules.images.records.cover_html', side_effect=lambda *args, **kw: kw['song_title']), \
+             patch('modules.images.renderer.render_template') as render:
+            songs.generate_version_list(source)
+        self.assertEqual(render.call_args.kwargs['rows'], [('14+', ['B']), ('13', ['A', 'Z'])])

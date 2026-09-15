@@ -5,7 +5,7 @@ import re
 from modules.images.composition import compose_generated_images, resize_by_width
 from modules.config_loader import PLATES_DIR, VERSIONS_DIR
 from modules.i18n import image_language, language_catalog, select_text
-from modules.images.records import _get_difficulty_color, generate_cover
+from modules.images.records import difficulty_color, generate_cover
 
 
 def _song_text(key, language):
@@ -56,7 +56,7 @@ def _generate_song_table_image(song_json, scale_width=1.5, scale_height=2.0, lan
                   sheet.get("noteDesigner") or "-"]
         values += [notes.get(key) or "-" for key in ("total", "tap", "hold", "slide", "touch", "break")]
         values += ["✓" if regions.get(key) else "✕" for key in ("jp", "intl", "usa")]
-        rows.append(("rgb" + str(_get_difficulty_color(sheet.get("difficulty", ""))), values))
+        rows.append((difficulty_color(sheet.get("difficulty", "")), values))
     # Fractional tracks include the border in the original total width.
     return render_template("song.html", sum(widths), mode="table",
                            columns=" ".join(f"{w}fr" for w in widths), row_height=int(48 * scale_height),
@@ -75,15 +75,15 @@ def generate_version_list(songs_json, version_info=None, ver="jp"):
     from modules.images.records import cover_html
     from modules.images.renderer import file_uri, render_template
     from modules.images.records import _level_group_sort_key
-    entries = []
+    groups = {}
     for song in songs_json:
         master = next((sheet for sheet in song.get("sheets", []) if sheet.get("difficulty") == "master"), None)
         if master:
-            entries.append((master, song))
+            groups.setdefault(master.get("level", "-"), []).append((master, song))
     rows = []
-    levels = sorted({master.get("level", "-") for master, _ in entries}, key=_level_group_sort_key, reverse=True)
+    levels = sorted(groups, key=_level_group_sort_key, reverse=True)
     for level in levels:
-        selected = sorted(((master, song) for master, song in entries if master.get("level", "-") == level),
+        selected = sorted(groups[level],
                           key=lambda pair: (-float(pair[0].get("internalLevelValue") or 0), str(pair[1].get("title", ""))))
         rows.append((level, [cover_html(song.get("cover_url"), song.get("type"),
                                        cover_name=song.get("cover_name"), difficulty="master",

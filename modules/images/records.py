@@ -1,11 +1,10 @@
 """Record, cover, progress and score image rendering."""
 from modules.images.skins import skinnable
-import math
 from pathlib import Path
 import logging
 import os
 import re
-from modules.score_rules import DIFFICULTY_LABELS, JUDGEMENT_ROWS, score_rank as canonical_rank, combo_status as canonical_combo
+from modules.score_rules import DIFFICULTY_STYLES, DIFFICULTY_LABELS, JUDGEMENT_ROWS, score_rank as canonical_rank, combo_status as canonical_combo
 
 from modules.config_loader import (PLATES_DIR, COVERS_DIR, ICON_TYPE_DIR, ICON_BASE_DIR, ICON_SCORE_DIR,
     ICON_COMBO_DIR, ICON_SYNC_DIR, ICON_COMBO_RCD_DIR, ICON_SYNC_RCD_DIR, ICON_DX_STAR_DIR)
@@ -21,21 +20,6 @@ def _image_text(path, language):
     return select_text(language_catalog(f"images.{path}"), language=language)
 def _format_rating_value(value):
     return str(int(value)) if float(value).is_integer() else str(value)
-
-
-def _get_difficulty_color(difficulty):
-    colors = {
-        "basic": (117, 181, 32),     # 绿色
-        "advanced": (239, 165, 8),   # 黄色
-        "expert": (204, 77, 89),     # 红色
-        "master": (159, 81, 220),    # 紫色
-        "remaster": (233, 212, 243), # 白色
-        "utage": (245, 46, 221)      # 粉色
-    }
-    return colors.get(difficulty.lower(), (200, 200, 200))
-
-
-_DIFF_KEYS = {"basic", "advanced", "expert", "master", "remaster", "utage"}
 
 
 def create_thumbnail_in_line(song, skin=None):
@@ -319,7 +303,7 @@ def generate_records_picture(up_songs=None, down_songs=None, title="RECORD", ver
         (_image_text('records.avg_achievement', language), f"{sum(float(r['score'][:-1]) for r in records) / len(records):.4f}%"),
         (_image_text('records.avg_rating', language), f"{all_ra / len(records):.2f}"),
     ]
-    detail_rows = [(key, [(token, difficulty_color(token.lower()) if token.lower() in _DIFF_KEYS else None)
+    detail_rows = [(key, [(token, difficulty_color(token.lower()) if token.lower() in DIFFICULTY_STYLES else None)
                           for token in str(value).split()]) for key, value in (details or {}).items()]
     return render_template("records.html", 1580, skin=skin, title=title, stats=stats,
                            rating=str(int(all_ra)).rjust(5), rating_src=file_uri(get_rating_image_path(int(all_ra))),
@@ -402,42 +386,25 @@ def generate_level_rank_progress_image(
         ver: 服务器版本，决定图片使用日文或英文
     """
     language = image_language(ver)
-    level_width = 100
-    img_size = 150
-    footer_height = 30  # 与 generate_cover 中的 footer_height 一致
-    row_height = img_size + footer_height + margin
+    if max_per_row < 1:
+        raise ValueError("max_per_row must be positive")
 
-    # 等级模式按定数分组；分类模式按谱面等级分组。
+    # Group once instead of scanning every entry again for every level.
+    groups = {}
+    for entry in target_data:
+        key = (_progress_level_group_label(entry.get("level", ""))
+               if group_by == "level" else entry["internal_level"])
+        groups.setdefault(key, []).append(entry)
+    group_values = sorted(groups, key=_level_group_sort_key, reverse=True) if group_by == "level" else sorted(groups, reverse=True)
     rows = []
-    total_rows = 0
-
-    if group_by == "level":
-        group_values = sorted(
-            {_progress_level_group_label(entry.get("level", "")) for entry in target_data},
-            key=_level_group_sort_key,
-            reverse=True,
-        )
-    else:
-        group_values = sorted(set(entry["internal_level"] for entry in target_data), reverse=True)
-
     for group_value in group_values:
-        level_str = str(group_value) if group_by == "level" else f"{group_value:.1f}"
-        if group_by == "level":
-            row_entries = [
-                entry for entry in target_data
-                if _progress_level_group_label(entry.get("level", "")) == group_value
-            ]
-        else:
-            row_entries = [entry for entry in target_data if entry.get(group_by) == group_value]
-
+        row_entries = groups[group_value]
         if group_by == "level" and group_value == "10-":
             row_entries.sort(key=lambda x: (-x.get("internal_level", 0.0), not x["achieved"], -x.get("achievement_rate", 0.0)))
         else:
             row_entries.sort(key=lambda x: (not x["achieved"], -x.get("achievement_rate", 0.0)))
-
-        if row_entries:
-            rows.append((level_str, row_entries))
-            total_rows += math.ceil(len(row_entries) / max_per_row)
+        label = str(group_value) if group_by == "level" else f"{group_value:.1f}"
+        rows.append((label, row_entries))
 
     # 顶部布局：标题单独居中一行，统计卡片下一行横向铺满。
     if rank_name:
@@ -447,8 +414,6 @@ def generate_level_rank_progress_image(
         title_text = f"{level_name} {_image_text('progress.level_list_suffix', language)}"
 
     from modules.images.renderer import image_uri, render_template
-    if max_per_row < 1:
-        raise ValueError("max_per_row must be positive")
     cards = []
     for key, count, color in (
         ("completed", stats["achieved"], "#4caf50"),
@@ -465,8 +430,8 @@ def generate_level_rank_progress_image(
 
 
 def difficulty_color(difficulty):
-    return {'basic':'#75b520','advanced':'#efa508','expert':'#cc4d59',
-            'master':'#9f51dc','remaster':'#e9d4f3','utage':'#f52edd'}.get(str(difficulty).lower(), '#c8c8c8')
+    style = DIFFICULTY_STYLES.get(str(difficulty).lower())
+    return style["background"].lower() if style else "#c8c8c8"
 
 
 def icon_uri(value, directory, url):
