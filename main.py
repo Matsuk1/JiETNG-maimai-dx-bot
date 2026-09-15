@@ -547,24 +547,9 @@ def linebot_reply():
 
 @app.route("/static/admin-icon.png")
 def admin_pwa_icon():
-    """动态生成带背景和留白的 PWA 图标"""
-    size = 512
-    padding = int(size * 0.18)  # 18% 留白
-    logo_size = size - padding * 2
-
-    bg_color = (22, 33, 62, 255)  # 深蓝背景，与 admin panel 风格一致
-
-    canvas = Image.new('RGBA', (size, size), bg_color)
-
-    with Image.open(LOGO_FILE) as logo:
-        logo = logo.convert('RGBA')
-        logo = logo.resize((logo_size, logo_size), Image.LANCZOS)
-        canvas.paste(logo, (padding, padding), logo)
-
-    buf = BytesIO()
-    canvas.convert('RGB').save(buf, 'PNG')
-    buf.seek(0)
-    return send_file(buf, mimetype='image/png')
+    """Serve the cached HTML-rendered PWA icon."""
+    from modules.static_image_generator import admin_icon_png
+    return send_file(BytesIO(admin_icon_png(LOGO_FILE)), mimetype='image/png')
 
 
 @app.route("/sw.js")
