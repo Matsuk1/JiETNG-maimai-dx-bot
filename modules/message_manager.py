@@ -314,7 +314,7 @@ def _metric_grid(cards):
     return rows
 
 
-def _flex_action_button(label, action, style="primary", color=COLOR_BRAND):
+def _flex_action_button(action, style="primary", color=COLOR_BRAND):
     button = {
         "type": "button",
         "height": "sm",
@@ -484,7 +484,7 @@ def generate_account_action_flex(action_type, url, user_id=None):
         body_text=body,
         alt_text=alt,
         actions=[
-            _flex_action_button(button, {"type": "uri", "label": button, "uri": url}, color=config["accent"])
+            _flex_action_button({"type": "uri", "label": button, "uri": url}, color=config["accent"])
         ],
         accent=config["accent"],
         user_id=user_id,
@@ -498,7 +498,7 @@ def generate_welcome_flex(user_id=None, bind_url=None, group=False):
     if bind_url:
         label = get_multilingual_text(_message_texts["sega_bind_button_text"], user_id)
         actions = [
-            _flex_action_button(label, {"type": "uri", "label": label, "uri": bind_url}, color=COLOR_BRAND)
+            _flex_action_button({"type": "uri", "label": label, "uri": bind_url}, color=COLOR_BRAND)
         ]
     return _standard_action_bubble(
         title=title,
@@ -532,9 +532,8 @@ def generate_export_flex(user_id, meta):
         note_text=foot,
         alt_text=alt,
         actions=[
-            _flex_action_button(btn, {"type": "uri", "label": btn, "uri": f"{meta['url']}?openExternalBrowser=1"}),
+            _flex_action_button({"type": "uri", "label": btn, "uri": f"{meta['url']}?openExternalBrowser=1"}),
             _flex_action_button(
-                copy_btn,
                 {"type": "clipboard", "label": copy_btn, "clipboardText": meta["url"]},
                 style="secondary",
             ),
@@ -1775,8 +1774,6 @@ def generate_user_info_flex(user_id):
 
 def generate_update_result_flex(
     user_id,
-    username,
-    rating,
     update_time,
     elapsed_time,
     func_status,
@@ -1787,8 +1784,6 @@ def generate_update_result_flex(
 
     Args:
         user_id: 用户ID
-        username: 用户名
-        rating: Rating 值
         update_time: 更新时间
         elapsed_time: 耗时（秒）
         func_status: 各功能状态字典

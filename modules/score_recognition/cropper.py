@@ -331,10 +331,6 @@ def _warp_quad(
     return Image.fromarray(cv2.cvtColor(warped, cv2.COLOR_BGR2RGB))
 
 
-def _warp_judgement_table_quad(image: Image.Image, points: np.ndarray) -> Image.Image | None:
-    return _warp_quad(image, points)
-
-
 def _main_screen_pose_image(image: Image.Image) -> tuple[Box | None, Image.Image | None]:
     model = _load_main_screen_model()
     if model is None:
@@ -437,7 +433,7 @@ def _cropper_pose_table(image: Image.Image) -> tuple[Box | None, Image.Image | N
         if center_y_ratio > 0.42 or aspect < 1.45:
             continue
 
-        warped = _warp_judgement_table_quad(image, points)
+        warped = _warp_quad(image, points)
         if warped is None:
             continue
 

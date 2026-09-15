@@ -94,8 +94,6 @@ def compose_generated_images(images, **options):
     """Compose owned source images and release them when composition finishes."""
     images = list(images)
     try:
-        options.pop("outer_margin", None)
-        options.pop("image_y_offset", None)
         return compose_images(images, **options)
     finally:
         closed = set()

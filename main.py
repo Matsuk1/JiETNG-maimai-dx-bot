@@ -1801,16 +1801,12 @@ async def maimai_update(user_id, ver="jp"):
 
     if result.get("func_status", {}).get("Best Records"):
         b50_message = await generate_records(user_id, user_id, ver=ver)
-        if isinstance(b50_message, ImageMessage):
-            extra_messages.append(b50_message)
-        elif b50_message is not None:
+        if b50_message is not None:
             extra_messages.append(b50_message)
 
     messages = [
         generate_update_result_flex(
             user_id=user_id,
-            username=result.get("username", "N/A"),
-            rating=result.get("rating", "N/A"),
             update_time=result.get("last_update") or datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             elapsed_time=result.get("elapsed_time", 0),
             func_status=result.get("func_status", {}),
@@ -3235,10 +3231,9 @@ async def generate_version_songs(user_id, version_title, ver="jp"):
             [version_list_img],
             timezone_offset=get_user_timezone(user_id),
             bg_filter=_get_user_bg_filter(user_id),
-            outer_margin=0,
-            image_y_offset=0,
         )
     finally:
+        # Also release the image if resolving user options fails before composition.
         version_list_img.close()
 
     original_url, preview_url = await upload_generated_image(img, user_id)

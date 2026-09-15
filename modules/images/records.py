@@ -321,7 +321,7 @@ def generate_cover(cover_url, type, icon=None, icon_type=None, cover_name=None, 
 
 
 @skinnable
-def generate_plate_image(target_data, title, img_width=1820, img_height=600,
+def generate_plate_image(target_data, title, img_width=1820,
                          max_per_row=10, margin=20, headers=None):
     from modules.images.renderer import image_uri, file_uri, render_template
     if max_per_row < 1:
