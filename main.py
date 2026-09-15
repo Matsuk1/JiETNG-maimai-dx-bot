@@ -3866,6 +3866,8 @@ def handle_postback_command(event, text):
 
     search_match = re.fullmatch(r"search-song\s+(\S{6})", cleaned, re.IGNORECASE)
     if search_match:
+        if source_type == "user":
+            show_loading(user_id)
         ver = get_user_field(user_id, 'version') or "jp"
         reply_msg = asyncio.run(search_song_by_id(user_id, search_match.group(1), ver))
         smart_reply(user_id, event.reply_token, reply_msg, configuration,
@@ -3882,6 +3884,8 @@ def handle_postback_command(event, text):
 
     record_match = re.fullmatch(r"search-record\s+(\S{6})(?:&id_use=(\S+))?", cleaned, re.IGNORECASE)
     if record_match:
+        if source_type == "user":
+            show_loading(user_id)
         ver = get_user_field(user_id, 'version') or "jp"
         id_use = record_match.group(2) or user_id
         reply_msg = asyncio.run(get_song_record_by_id(user_id, id_use, record_match.group(1), ver))
