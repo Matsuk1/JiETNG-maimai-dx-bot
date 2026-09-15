@@ -24,6 +24,7 @@ _worker_lock = threading.Lock()
 _slots = threading.BoundedSemaphore(8)
 _playwright = None
 _browser = None
+_page = None
 
 
 def image_uri(image):
@@ -54,33 +55,41 @@ def template(name, **data):
 
 
 def _close_browser():
-    global _browser, _playwright
+    global _browser, _playwright, _page
     try:
         if _browser is not None:
             _browser.close()
     finally:
         _browser = None
+        _page = None
         if _playwright is not None:
             _playwright.stop()
             _playwright = None
 
 
 def _screenshot(body, width, height):
-    global _playwright, _browser
+    global _playwright, _browser, _page
     from playwright.sync_api import sync_playwright
     if _browser is None or not _browser.is_connected():
         _close_browser()
         _playwright = sync_playwright().start()
         _browser = _playwright.chromium.launch(headless=True)
-    context = _browser.new_context(viewport={'width': width, 'height': height or 800},
-                                   device_scale_factor=1, reduced_motion='reduce')
+    if _page is None or _page.is_closed():
+        _page = _browser.new_page(viewport={'width': width, 'height': height or 800},
+                                 device_scale_factor=1, reduced_motion='reduce')
+        _page.route('**/*', lambda route: route.abort())
+        _page.set_default_timeout(30000)
+        _page.set_content(template('document.html', body='', width=width, height=height,
+                                   font=file_uri('assets/fonts/line_seed_jietng.ttf')))
     try:
-        context.route('**/*', lambda route: route.abort())
-        page = context.new_page()
-        page.set_default_timeout(30000)
-        page.set_content(template('document.html', body=body, width=width, height=height,
-                                  font=file_uri('assets/fonts/line_seed_jietng.ttf')))
-        page.evaluate('''async () => {
+        _page.set_viewport_size({'width': width, 'height': min(height or 800, 2000)})
+        _page.evaluate("""({body,width,height}) => {
+            const root = document.getElementById('image-root');
+            root.style.width = width + 'px';
+            root.style.height = height ? height + 'px' : 'auto';
+            root.innerHTML = body;
+        }""", dict(body=body, width=width, height=height))
+        _page.evaluate("""async () => {
             await document.fonts.ready;
             await Promise.all([...document.images].map(img => img.decode()));
             for (const el of document.querySelectorAll('[data-fit]')) {
@@ -90,11 +99,16 @@ def _screenshot(body, width, height):
                     el.style.fontSize = `${--size}px`;
                 }
             }
-        }''')
-        return page.locator('#image-root').screenshot(type='png', omit_background=True,
-                                                     animations='disabled')
+        }""")
+        return _page.locator('#image-root').screenshot(type='png', omit_background=True,
+                                                      animations='disabled')
+    except Exception:
+        _page.close()
+        _page = None
+        raise
     finally:
-        context.close()
+        if _page is not None and not _page.is_closed():
+            _page.evaluate("document.getElementById('image-root').replaceChildren()")
 
 
 def render_html(body, width, height=None):
