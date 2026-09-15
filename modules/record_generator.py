@@ -967,171 +967,25 @@ def generate_cover(cover_url, type, icon=None, icon_type=None, cover_name=None, 
     return render_html(body, 150, 180 if complete_info is not None or difficulty is not None else 150)
 
 
-def generate_plate_image(
-    target_data,
-    title,
-    img_width=1820,
-    img_height=600,
-    max_per_row=10,
-    margin=20,
-    headers=None,
-):
-    headers = headers or {}
-    level_width = 100
-    img_size = 150
-    footer_height = 30  # 与 generate_cover 中的 footer_height 一致
-    row_height = img_size + footer_height + margin
-
+def generate_plate_image(target_data, title, img_width=1820, img_height=600,
+                         max_per_row=10, margin=20, headers=None):
+    from modules.html_cards import difficulty_color
+    from modules.html_renderer import image_uri, file_uri, render_template
+    if max_per_row < 1:
+        raise ValueError("max_per_row must be positive")
     rows = []
-    rows_num = 0
-    level_list = ["15", "14+", "14", "13+", "13", "12+", "12", "11+", "11", "10+", "10"]
-    for level in level_list:
-        level_entries = [entry for entry in target_data if entry["level"] == level]
-        # 按达成状态和达成率排序：已达成在前，未达成的按达成率从大到小
-        level_entries.sort(key=lambda x: (not x.get("achieved", False), -x.get("achievement_rate", 0.0)))
-        row_imgs = [entry["img"] for entry in level_entries]
-        rows_num += math.ceil(len(row_imgs) / max_per_row)
-        if row_imgs:
-            rows.append((level, row_imgs))
-
-    total_height = rows_num * row_height + margin + 170 + 40
-
-    final_img = Image.new("RGBA", (img_width, total_height), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(final_img)
-
-    # 绘制左侧信息栏：卡片式容器（2列布局）
-    card_start_x = margin - 20
-    card_y = margin + 15
-    card_width = 325
-    card_height = 65
-    card_gap_x = 15  # 横向间距
-    card_gap_y = 12  # 纵向间距
-    border_width = 8
-
-    final_img = final_img.convert("RGBA")
-
-    for idx, (key, value) in enumerate(headers.items()):
-        # 计算卡片位置
-        row = idx % 2
-        col = idx // 2
-        card_x = card_start_x + col * (card_width + card_gap_x)
-        current_y = card_y + row * (card_height + card_gap_y)
-
-        # 获取难度对应的颜色
-        difficulty_color = _get_difficulty_color(key)
-
-        # 创建卡片层用于阴影和圆角
-        card_layer = Image.new("RGBA", final_img.size, (0, 0, 0, 0))
-        card_draw = ImageDraw.Draw(card_layer)
-
-        # 绘制阴影效果
-        shadow_offset = 3
-        card_draw.rounded_rectangle(
-            [card_x + shadow_offset, current_y + shadow_offset,
-             card_x + card_width + shadow_offset, current_y + card_height + shadow_offset],
-            radius=12,
-            fill=(0, 0, 0, 30)
-        )
-
-        # 绘制卡片主体背景
-        r, g, b = difficulty_color[:3]
-        light_r = int(r + (255 - r) * 0.85)
-        light_g = int(g + (255 - g) * 0.85)
-        light_b = int(b + (255 - b) * 0.85)
-        bg_color = (light_r, light_g, light_b, 255)
-
-        card_draw.rounded_rectangle(
-            [card_x, current_y, card_x + card_width, current_y + card_height],
-            radius=12,
-            fill=bg_color
-        )
-
-        # 绘制左侧彩色边框
-        card_draw.rounded_rectangle(
-            [card_x, current_y, card_x + border_width, current_y + card_height],
-            radius=12,
-            fill=difficulty_color + (255,) if len(difficulty_color) == 3 else difficulty_color
-        )
-
-        # 将卡片层合成到图像上
-        final_img = Image.alpha_composite(final_img, card_layer)
-        draw = ImageDraw.Draw(final_img)
-
-        # 绘制难度名称
-        text_x = card_x + border_width + 15
-        text_y = current_y + (card_height - 30) // 2 - 5
-        difficulty_text = f"{key.upper()}"
-        draw.text((text_x, text_y), difficulty_text, fill=(60, 60, 60), font=font_large)
-
-        # 判断是否全部完成
-        is_completed = value['clear'] == value['all'] and value['all'] > 0
-
-        # 绘制数据
-        if is_completed:
-            data_text = "✓"
-        else:
-            data_text = f"{value['clear']} / {value['all']}"
-
-        data_text_width = draw.textlength(data_text, font=font_large)
-        data_x = card_x + card_width - data_text_width - 15
-        draw.text((data_x, text_y), data_text, fill=(40, 40, 40), font=font_large)
-
-    draw = ImageDraw.Draw(final_img)
-
-    # 添加右侧标题（称号图片）
-    try:
-        plate_path = os.path.join(PLATES_DIR, f"{title}.webp")
-        if os.path.exists(plate_path):
-            with Image.open(plate_path) as _plate:
-                plate_img = _plate.convert("RGBA")
-
-            target_height = 160
-            aspect_ratio = plate_img.width / plate_img.height
-            target_width = int(target_height * aspect_ratio)
-            plate_img = plate_img.resize((target_width, target_height), Image.Resampling.LANCZOS)
-
-            # 位置：右上角，横向中轴线不变
-            plate_x = img_width - margin - target_width + 20
-            original_center_y = margin + 90
-            plate_y = original_center_y - target_height // 2
-
-            # 贴上称号图片（支持透明）
-            final_img.paste(plate_img, (plate_x, plate_y), plate_img)
-        else:
-            # 如果图片不存在，回退到文字显示
-            title_text_size = draw.textlength(title, font=font_record_title)
-            title_x = img_width - margin - title_text_size - 30
-            title_y = margin - 25
-            draw.text((title_x, title_y), title, fill=(255, 255, 255), font=font_record_title, stroke_width=3, stroke_fill=(50, 50, 50))
-            logger.debug(f"[RecordGenerator] Plate image not found, using text: plate={title}")
-    except Exception as e:
-        # 出错时回退到文字显示
-        title_text_size = draw.textlength(title, font=font_record_title)
-        title_x = img_width - margin - title_text_size - 30
-        title_y = margin - 25
-        draw.text((title_x, title_y), title, fill=(255, 255, 255), font=font_record_title, stroke_width=3, stroke_fill=(50, 50, 50))
-        logger.error(f"[RecordGenerator] ✗ Failed to load plate image: plate={title}, error={e}")
-
-    # 渲染主体图像内容
-    y_offset = margin + 30 + 180
-    for level, img_list in rows:
-        _draw_level_label(draw, level, margin, y_offset, img_size, font_level_badge)
-
-        x_offset = level_width + margin
-        for i, img in enumerate(img_list):
-            if i > 0 and i % max_per_row == 0:
-                y_offset += row_height
-                x_offset = level_width + margin
-
-            if img.mode == "RGBA":
-                final_img.paste(img, (x_offset, y_offset), img)
-            else:
-                final_img.paste(img, (x_offset, y_offset))
-            x_offset += img_size + margin
-
-        y_offset += row_height
-
-    return final_img
+    for level in ("15", "14+", "14", "13+", "13", "12+", "12", "11+", "11", "10+", "10"):
+        entries = sorted((entry for entry in target_data if entry['level'] == level),
+                         key=lambda x: (not x.get('achieved', False), -x.get('achievement_rate', 0.0)))
+        if entries:
+            rows.append((level, [image_uri(entry['img']) for entry in entries]))
+    cards = [(key.upper(), "✓" if value['clear'] == value['all'] and value['all'] > 0
+              else f"{value['clear']} / {value['all']}", difficulty_color(key))
+             for key, value in (headers or {}).items()]
+    return render_template("progress.html", img_width, mode="plate", margin=margin,
+                           max_per_row=max_per_row, title=title,
+                           title_src=file_uri(os.path.join(PLATES_DIR, f"{title}.webp")),
+                           cards=cards, rows=rows)
 
 
 def _level_group_sort_key(level):
