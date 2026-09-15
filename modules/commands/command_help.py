@@ -2,14 +2,17 @@
 
 import re
 
-from modules.i18n import localized_catalog, language_catalog
-from modules.message_manager import (
-    _help_body_row,
-    _help_filter_row,
-    _help_flex_text,
-    _help_ui,
-    _standard_help_bubble,
-    get_multilingual_text,
+from modules.i18n import (
+    localized_catalog,
+    language_catalog,
+    select_text as get_multilingual_text,
+)
+from modules.messages.layout import (
+    body_row,
+    help_filter_row,
+    flex_text,
+    help_ui,
+    standard_help_bubble,
 )
 
 COMMAND_HELP = localized_catalog("command_help")
@@ -146,8 +149,8 @@ def _help_mode_card(title, body, accent):
         "borderWidth": "1px",
         "borderColor": "#E6E8EC",
         "contents": [
-            _help_flex_text(title, size="xs", color=accent, weight="bold"),
-            _help_flex_text(body, size="xxs", color="#555555"),
+            flex_text(title, size="xs", color=accent, weight="bold"),
+            flex_text(body, size="xxs", color="#555555"),
         ],
     }
 
@@ -172,7 +175,7 @@ def _help_postback_button(label, data, color="#315B7D", display_text=None):
         "paddingEnd": "12px",
         "action": action,
         "contents": [
-            _help_flex_text(label, size="xxs", color="#FFFFFF", weight="bold", align="center", wrap=False),
+            flex_text(label, size="xxs", color="#FFFFFF", weight="bold", align="center", wrap=False),
         ],
     }
 
@@ -196,9 +199,9 @@ def _help_directory_card(title, desc, commands, action_data, accent):
                 "contents": [
                     node
                     for node in (
-                        _help_flex_text(title, size="xs", color=accent, weight="bold"),
-                        _help_flex_text(desc, size="xxs", color="#555555"),
-                        _help_flex_text(commands, size="xxs", color="#6B7280") if commands else None,
+                        flex_text(title, size="xs", color=accent, weight="bold"),
+                        flex_text(desc, size="xxs", color="#555555"),
+                        flex_text(commands, size="xxs", color="#6B7280") if commands else None,
                     )
                     if node is not None
                 ],
@@ -224,8 +227,8 @@ def _help_note_row(label, desc):
         "cornerRadius": "8px",
         "backgroundColor": "#F8FAFC",
         "contents": [
-            _help_flex_text(label, size="xs", color="#315B7D", weight="bold"),
-            _help_flex_text(desc, size="xxs", color="#555555"),
+            flex_text(label, size="xs", color="#315B7D", weight="bold"),
+            flex_text(desc, size="xxs", color="#555555"),
         ],
     }
 
@@ -272,7 +275,7 @@ def _partition_help_detail_lines(text, note_labels):
 def _help_detail_rows(text, fallback_label, none_text):
     lines = _split_help_lines(text)
     if not lines:
-        return [_help_filter_row(fallback_label, none_text)] if fallback_label else [_help_body_row(none_text)]
+        return [help_filter_row(fallback_label, none_text)] if fallback_label else [body_row(none_text)]
 
     rows = []
     for line in lines:
@@ -283,7 +286,7 @@ def _help_detail_rows(text, fallback_label, none_text):
             if head.strip() and tail.strip():
                 label = head.strip()
                 desc = tail.strip()
-        rows.append(_help_filter_row(label, desc) if label else _help_body_row(desc))
+        rows.append(help_filter_row(label, desc) if label else body_row(desc))
     return rows
 
 
@@ -291,28 +294,28 @@ def generate_standard_help_flex(help_data, user_id=None):
     fields = get_multilingual_text(help_data, user_id) if isinstance(help_data, dict) else help_data
     if not isinstance(fields, dict):
         fields = _parse_plain_help(fields)
-    command = fields.get("command") or fields.get("命令") or _help_ui("help_title", user_id)
+    command = fields.get("command") or fields.get("命令") or help_ui("help_title", user_id)
     purpose = fields.get("purpose") or fields.get("说明")
     params = fields.get("params") or fields.get("参数")
     examples = fields.get("examples") or fields.get("示例")
     notes = fields.get("notes") or fields.get("注意")
     params, param_note_lines = _partition_help_detail_lines(params, HELP_NOTE_DETAIL_LABELS)
     note_lines = [*_split_help_lines(notes), *param_note_lines]
-    none_text = _help_ui("none", user_id)
+    none_text = help_ui("none", user_id)
     sections = [
-        (_help_ui("function", user_id), [
-            _help_body_row(purpose or _help_ui("default_purpose", user_id))
+        (help_ui("function", user_id), [
+            body_row(purpose or help_ui("default_purpose", user_id))
         ]),
-        (_help_ui("params", user_id), _help_detail_rows(params, _help_ui("params", user_id), none_text)),
-        (_help_ui("examples", user_id), _help_detail_rows(examples, None, none_text)),
+        (help_ui("params", user_id), _help_detail_rows(params, help_ui("params", user_id), none_text)),
+        (help_ui("examples", user_id), _help_detail_rows(examples, None, none_text)),
     ]
     if note_lines:
-        sections.append((_help_ui("notes", user_id), _help_detail_rows(note_lines, None, none_text)))
-    return _standard_help_bubble(
+        sections.append((help_ui("notes", user_id), _help_detail_rows(note_lines, None, none_text)))
+    return standard_help_bubble(
         title="\n".join(part.strip() for part in str(command or "").split("/") if part.strip()),
-        subtitle=_help_ui("help_title", user_id),
+        subtitle=help_ui("help_title", user_id),
         sections=sections,
-        alt_text=f"{command} {_help_ui('help_title', user_id)}",
+        alt_text=f"{command} {help_ui('help_title', user_id)}",
         user_id=user_id,
     )
 
@@ -337,21 +340,21 @@ def generate_b_records_help_flex(user_id=None):
         ("-times / -tm", _help_i18n(user_id, 'display_multiplier_capped_at_2_5'), "-times 2"),
     ]
     sections = [
-        (_help_ui("usage", user_id), [
-            _help_filter_row(_help_ui("command", user_id), "b50 / b40 / b35 / b15 / ab50 / ap50 / fdx50 / r50 / idlb50 / s50"),
+        (help_ui("usage", user_id), [
+            help_filter_row(help_ui("command", user_id), "b50 / b40 / b35 / b15 / ab50 / ap50 / fdx50 / r50 / idlb50 / s50"),
         ]),
-        (_help_ui("function", user_id), [
-            _help_body_row(_help_i18n(user_id, 'generate_best_all_best_special_score_images_with_optional_filter')),
+        (help_ui("function", user_id), [
+            body_row(_help_i18n(user_id, 'generate_best_all_best_special_score_images_with_optional_filter')),
         ]),
-        (_help_ui("modes", user_id), [
+        (help_ui("modes", user_id), [
             _help_mode_card(title, body, color)
             for title, body, color in modes
         ]),
-        (_help_ui("params", user_id), [
-            _help_filter_row(label, desc, example)
+        (help_ui("params", user_id), [
+            help_filter_row(label, desc, example)
             for label, desc, example in filters
         ]),
-        (_help_ui("examples", user_id), [
+        (help_ui("examples", user_id), [
             {
                 "type": "box",
                 "layout": "vertical",
@@ -360,22 +363,22 @@ def generate_b_records_help_flex(user_id=None):
                 "cornerRadius": "8px",
                 "backgroundColor": "#F7F8FA",
                 "contents": [
-                    _help_flex_text("b50 -lv 14 14.9 -diff mas rem -scr 100.5", size="xxs", color="#111111"),
-                    _help_flex_text("ab50 -ver buddies -type dx", size="xxs", color="#111111"),
-                    _help_flex_text("r50 -page 2", size="xxs", color="#111111"),
+                    flex_text("b50 -lv 14 14.9 -diff mas rem -scr 100.5", size="xxs", color="#111111"),
+                    flex_text("ab50 -ver buddies -type dx", size="xxs", color="#111111"),
+                    flex_text("r50 -page 2", size="xxs", color="#111111"),
                 ],
             },
         ]),
-        (_help_ui("notes", user_id), [
+        (help_ui("notes", user_id), [
             _help_note_row(_help_i18n(user_id, 'data_required'), _help_i18n(user_id, 'requires_a_linked_account_with_maimai_update_completed_or_data_i')),
             _help_note_row(_help_i18n(user_id, 'querying_others'), _help_i18n(user_id, 'line_mentions_can_query_registered_users_self_only_commands_do_n')),
         ]),
     ]
-    return _standard_help_bubble(
-        title=_help_ui("b_title", user_id),
-        subtitle=_help_ui("b_subtitle", user_id),
+    return standard_help_bubble(
+        title=help_ui("b_title", user_id),
+        subtitle=help_ui("b_subtitle", user_id),
         sections=sections,
-        alt_text=f"{_help_ui('b_title', user_id)} {_help_ui('help_title', user_id)}",
+        alt_text=f"{help_ui('b_title', user_id)} {help_ui('help_title', user_id)}",
         user_id=user_id,
     )
 
@@ -507,7 +510,7 @@ def _help_command_summary(help_key, category, user_id):
 
 def generate_help_index_flex(user_id=None):
     sections = [
-        (_help_ui("categories", user_id), [
+        (help_ui("categories", user_id), [
             _help_directory_card(
                 _help_category_title(category, user_id),
                 _help_category_desc(category, user_id),
@@ -517,16 +520,16 @@ def generate_help_index_flex(user_id=None):
             )
             for category in HELP_DIRECTORY_CATEGORIES
         ]),
-        (_help_ui("detail_hint", user_id), [
-            _help_filter_row(_help_i18n(user_id, 'single_command'), _help_i18n(user_id, 'send_b50_help_artist_help_bpm_help_and_similar_forms_for_full_us')),
-            _help_filter_row(_help_i18n(user_id, 'missing_arguments'), _help_i18n(user_id, 'commands_that_need_arguments_also_show_help_when_sent_without_ar')),
+        (help_ui("detail_hint", user_id), [
+            help_filter_row(_help_i18n(user_id, 'single_command'), _help_i18n(user_id, 'send_b50_help_artist_help_bpm_help_and_similar_forms_for_full_us')),
+            help_filter_row(_help_i18n(user_id, 'missing_arguments'), _help_i18n(user_id, 'commands_that_need_arguments_also_show_help_when_sent_without_ar')),
         ]),
     ]
-    return _standard_help_bubble(
-        title=_help_ui("catalog_title", user_id),
-        subtitle=_help_ui("catalog_subtitle", user_id),
+    return standard_help_bubble(
+        title=help_ui("catalog_title", user_id),
+        subtitle=help_ui("catalog_subtitle", user_id),
         sections=sections,
-        alt_text=f"{_help_ui('catalog_title', user_id)}",
+        alt_text=f"{help_ui('catalog_title', user_id)}",
         user_id=user_id,
     )
 
@@ -547,15 +550,15 @@ def generate_help_category_flex(category_key, user_id=None):
         for label, help_key in category["items"]
     ]
     sections = [
-        (_help_ui("function", user_id), [
-            _help_body_row(_help_category_desc(category, user_id)),
+        (help_ui("function", user_id), [
+            body_row(_help_category_desc(category, user_id)),
         ]),
-        (_help_ui("command", user_id), rows),
+        (help_ui("command", user_id), rows),
     ]
-    return _standard_help_bubble(
+    return standard_help_bubble(
         title=_help_category_title(category, user_id),
-        subtitle=_help_ui("catalog_title", user_id),
+        subtitle=help_ui("catalog_title", user_id),
         sections=sections,
-        alt_text=f"{_help_category_title(category, user_id)} {_help_ui('catalog_title', user_id)}",
+        alt_text=f"{_help_category_title(category, user_id)} {help_ui('catalog_title', user_id)}",
         user_id=user_id,
     )

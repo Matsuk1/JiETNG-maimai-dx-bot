@@ -412,7 +412,7 @@ JiETNG/
 │   ├── line_messenger.py      # LINE 消息发送
 │   ├── maimai_manager.py      # Maimai API 接口
 │   ├── memory_manager.py      # 内存管理和清理
-│   ├── message_manager.py     # 多语言消息管理
+│   ├── messages/              # 多语言消息管理
 │   ├── notice_manager.py      # 公告系统
 │   ├── notification_manager.py # 系统通知管理（Web Push）
 │   ├── perm_request_generator.py  # 权限请求生成器

@@ -51,7 +51,7 @@ from modules.devtoken_manager import (
 )
 from modules.dxdata_manager import update_dxdata_with_comparison
 from modules.event_tracker import get_hourly_stats
-from modules.message_manager import build_dxdata_update_message
+from modules.messages.service import build_dxdata_update_message
 from modules.monitoring.codex_agent import (
     CodexMonitorBusy,
     CodexMonitorCancelled,

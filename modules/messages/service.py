@@ -1,7 +1,30 @@
-from urllib.parse import quote
-from modules.image_button_once import image_button_data
-from modules.config_loader import SUPPORT_PAGE, LINE_ACCOUNT_ID
+"""Account, service, search and social LINE messages."""
+from modules.messages.layout import (
+    COLOR_AD_BG,
+    COLOR_BRAND,
+    COLOR_DANGER,
+    COLOR_SUCCESS,
+    COLOR_TEXT_MUTED,
+    COLOR_TEXT_PRIMARY,
+    COLOR_TIP,
+    COLOR_TIP_BG,
+    COLOR_WARNING,
+    flex_action_button,
+    help_filter_row,
+    flex_text,
+    pill,
+    section_title,
+    metric_card,
+    metric_grid,
+    pill_action_box,
+    round_icon_action,
+    song_type_icon,
+    standard_action_bubble,
+    standard_header_box,
+    standard_help_bubble,
+)
 from modules.i18n import (
+    select_text as get_multilingual_text,
     format_catalog,
     get_user_language,
     language_catalog,
@@ -9,20 +32,12 @@ from modules.i18n import (
     localized_catalog,
     select_text,
 )
+from urllib.parse import quote
+from modules.image_button_once import image_button_data
+from modules.config_loader import LINE_ACCOUNT_ID
 from modules.user_db import get_user
 from modules.user_manager import get_user_timezone
 from modules.tip_ad_manager import get_random_tip, get_random_ad
-from modules.score_recognition.presentation import (
-    COMBO_ICON_FILES,
-    JUDGEMENT_ROWS,
-    build_fix_command,
-    calc_status,
-    flex_combo_status as combo_status,
-    difficulty_presentation,
-    format_loss_percentage,
-    nonnegative_count,
-    flex_score_rank as score_rank,
-)
 from linebot.v3.messaging import (
     TextMessage,
     FlexMessage,
@@ -49,379 +64,6 @@ def format_timezone_string(user_id):
     tz_sign = '+' if tz_offset >= 0 else ''
     return f"(UTC{tz_sign}{tz_offset})"
 
-get_multilingual_text = select_text
-
-COLOR_TEXT_PRIMARY = "#111111"
-COLOR_TEXT_SECONDARY = "#666666"
-COLOR_TEXT_MUTED = "#999999"
-COLOR_TEXT_INVERSE = "#FFFFFF"
-COLOR_SUCCESS = "#17B169"
-COLOR_DANGER = "#FF3B30"
-COLOR_WARNING = "#FF9500"
-COLOR_BRAND = "#FF6B35"
-COLOR_TIP = "#5856D6"
-COLOR_TIP_BG = "#F0EFFF"
-COLOR_AD_BG = "#FFF4E6"
-
-HELP_UI_TEXT = localized_catalog("message_manager.help_ui")
-
-
-def _help_ui(key, user_id=None):
-    return get_multilingual_text(HELP_UI_TEXT[key], user_id)
-
-
-def _help_flex_text(text, size="sm", color="#222222", weight=None, wrap=True, margin=None, align=None):
-    node = {
-        "type": "text",
-        "text": text,
-        "size": size,
-        "color": color,
-        "wrap": wrap,
-    }
-    if weight:
-        node["weight"] = weight
-    if margin:
-        node["margin"] = margin
-    if align:
-        node["align"] = align
-    return node
-
-
-def _help_pill(text, color="#315B7D", bg_color="#EAF4FF"):
-    return {
-        "type": "box",
-        "layout": "vertical",
-        "backgroundColor": bg_color,
-        "cornerRadius": "12px",
-        "paddingTop": "3px",
-        "paddingBottom": "3px",
-        "paddingStart": "8px",
-        "paddingEnd": "8px",
-        "contents": [
-            _help_flex_text(text, size="xxs", color=color, weight="bold", align="center", wrap=False)
-        ],
-    }
-
-
-def _help_section_title(title, accent="#FF7A45"):
-    return {
-        "type": "box",
-        "layout": "horizontal",
-        "spacing": "sm",
-        "alignItems": "center",
-        "margin": "lg",
-        "contents": [
-            {
-                "type": "box",
-                "layout": "vertical",
-                "width": "4px",
-                "height": "18px",
-                "cornerRadius": "2px",
-                "backgroundColor": accent,
-                "contents": [{"type": "filler"}],
-            },
-            _help_flex_text(title, size="sm", color="#111111", weight="bold"),
-        ],
-    }
-
-
-def _help_filter_row(label, desc, example=None):
-    contents = [
-        {
-            "type": "box",
-            "layout": "horizontal",
-            "contents": [
-                _help_pill(label, color="#C93D47", bg_color="#FFF0F1"),
-            ],
-        },
-        _help_flex_text(desc, size="xxs", color="#555555", margin="xs"),
-    ]
-    if example:
-        contents.append({
-            "type": "box",
-            "layout": "vertical",
-            "margin": "xs",
-            "paddingAll": "7px",
-            "cornerRadius": "6px",
-            "backgroundColor": "#F7F8FA",
-            "contents": [
-                _help_flex_text(example, size="xxs", color="#222222"),
-            ],
-        })
-    return {
-        "type": "box",
-        "layout": "vertical",
-        "paddingBottom": "8px",
-        "contents": contents,
-    }
-
-
-def _help_body_row(desc):
-    return {
-        "type": "box",
-        "layout": "vertical",
-        "spacing": "xs",
-        "paddingAll": "9px",
-        "cornerRadius": "8px",
-        "backgroundColor": "#F8FAFC",
-        "contents": [
-            _help_flex_text(desc, size="xxs", color="#555555"),
-        ],
-    }
-
-
-def _help_docs_footer(user_id=None):
-    label = _help_ui("docs_button", user_id)
-    support_page_uri = f"{SUPPORT_PAGE}{'&' if '?' in SUPPORT_PAGE else '?'}openExternalBrowser=1"
-    return {
-        "type": "box",
-        "layout": "vertical",
-        "spacing": "sm",
-        "paddingAll": "12px",
-        "contents": [
-            {
-                "type": "box",
-                "layout": "vertical",
-                "height": "38px",
-                "cornerRadius": "19px",
-                "backgroundColor": "#FF7A45",
-                "justifyContent": "center",
-                "alignItems": "center",
-                "paddingStart": "16px",
-                "paddingEnd": "16px",
-                "action": {
-                    "type": "uri",
-                    "label": label,
-                    "uri": support_page_uri,
-                },
-                "contents": [
-                    _help_flex_text(label, size="sm", color="#FFFFFF", weight="bold", align="center", wrap=False),
-                ],
-            }
-        ],
-    }
-
-
-def _standard_help_bubble(title, subtitle, sections, alt_text, user_id=None, docs_button=True):
-    body_contents = [
-        _standard_header_box(title, subtitle),
-    ]
-    for title, rows in sections:
-        body_contents.append(_help_section_title(title))
-        body_contents.append({
-            "type": "box",
-            "layout": "vertical",
-            "spacing": "sm",
-            "contents": rows,
-        })
-    bubble = {
-        "type": "bubble",
-        "size": "giga",
-        "body": {
-            "type": "box",
-            "layout": "vertical",
-            "spacing": "md",
-            "paddingAll": "16px",
-            "contents": body_contents,
-        },
-    }
-    if docs_button:
-        bubble["footer"] = _help_docs_footer(user_id)
-    return FlexMessage(
-        alt_text=alt_text,
-        contents=FlexContainer.from_dict(bubble),
-    )
-
-
-def _standard_header_box(title, subtitle=None, accent="#111827", title_color="#FFFFFF"):
-    contents = [
-        _help_flex_text(title, size="lg", color=title_color, weight="bold"),
-    ]
-    if subtitle:
-        contents.append(_help_flex_text(subtitle, size="xs", color="#D1D5DB", margin="xs"))
-    return {
-        "type": "box",
-        "layout": "vertical",
-        "spacing": "xs",
-        "paddingAll": "14px",
-        "cornerRadius": "8px",
-        "backgroundColor": accent,
-        "contents": contents,
-    }
-
-
-def _song_type_icon(chart_type, width="42px", height="12px", margin=None):
-    normalized = str(chart_type or "").lower()
-    if normalized == "std":
-        url = "https://maimaidx.jp/maimai-mobile/img/music_standard.png"
-    elif normalized == "dx":
-        url = "https://maimaidx.jp/maimai-mobile/img/music_dx.png"
-    elif normalized == "utage":
-        url = "https://maimaidx.jp/maimai-mobile/img/diff_utage.png"
-    else:
-        return None
-    icon = {
-        "type": "box",
-        "layout": "vertical",
-        "width": width,
-        "height": height,
-        "flex": 0,
-        "justifyContent": "center",
-        "alignItems": "center",
-        "contents": [{
-            "type": "image",
-            "url": url,
-            "size": "full",
-            "aspectMode": "fit",
-            "aspectRatio": "113:32",
-        }],
-    }
-    if margin:
-        icon["margin"] = margin
-    return icon
-
-
-def _metric_card(label, value, value_color=COLOR_TEXT_PRIMARY, bg_color="#F8FAFC", flex=None):
-    card = {
-        "type": "box",
-        "layout": "vertical",
-        "spacing": "xs",
-        "paddingAll": "11px",
-        "cornerRadius": "8px",
-        "backgroundColor": bg_color,
-        "contents": [
-            _help_flex_text(label, size="xxs", color=COLOR_TEXT_MUTED),
-            _help_flex_text(str(value), size="sm", color=value_color, weight="bold"),
-        ],
-    }
-    if flex is not None:
-        card["flex"] = flex
-    return card
-
-
-def _metric_grid(cards):
-    rows = []
-    for i in range(0, len(cards), 2):
-        row_cards = cards[i:i + 2]
-        if len(row_cards) == 1:
-            row_cards.append({"type": "filler"})
-        rows.append({
-            "type": "box",
-            "layout": "horizontal",
-            "spacing": "sm",
-            "contents": row_cards,
-        })
-    return rows
-
-
-def _flex_action_button(action, style="primary", color=COLOR_BRAND):
-    button = {
-        "type": "button",
-        "height": "sm",
-        "style": style,
-        "action": action,
-    }
-    if style == "primary":
-        button["color"] = color
-    return button
-
-
-def _pill_action_box(label, action, bg_color="#315B7D", text_color=COLOR_TEXT_INVERSE,
-                     flex=1, margin=None):
-    box = {
-        "type": "box",
-        "layout": "vertical",
-        "flex": flex,
-        "cornerRadius": "999px",
-        "backgroundColor": bg_color,
-        "paddingAll": "0px",
-        "justifyContent": "center",
-        "alignItems": "center",
-        "contents": [
-            {
-                "type": "button",
-                "style": "link",
-                "height": "sm",
-                "color": text_color,
-                "action": {
-                    **action,
-                    "label": label,
-                },
-            }
-        ],
-    }
-    if margin:
-        box["margin"] = margin
-    return box
-
-
-def _round_icon_action(label, action, bg_color="#315B7D", text_color=COLOR_TEXT_INVERSE):
-    return {
-        "type": "box",
-        "layout": "vertical",
-        "flex": 0,
-        "width": "34px",
-        "height": "34px",
-        "cornerRadius": "17px",
-        "backgroundColor": bg_color,
-        "justifyContent": "center",
-        "alignItems": "center",
-        "action": {
-            **action,
-            "label": label,
-        },
-        "contents": [
-            _help_flex_text(label, size="md", color=text_color, weight="bold", align="center", wrap=False),
-        ],
-    }
-
-
-def _standard_action_bubble(title, subtitle, body_text, alt_text, actions=None, note_text=None,
-                            accent=COLOR_BRAND, user_id=None):
-    sections = [
-        (_help_ui("function", user_id), [
-            _help_body_row(body_text)
-        ])
-    ]
-    if note_text:
-        sections.append((_help_ui("notes", user_id), [
-            _help_body_row(note_text)
-        ]))
-
-    body_contents = [
-        _standard_header_box(title, subtitle),
-    ]
-    for section_title, rows in sections:
-        body_contents.append(_help_section_title(section_title, accent=accent))
-        body_contents.append({
-            "type": "box",
-            "layout": "vertical",
-            "spacing": "sm",
-            "contents": rows,
-        })
-
-    bubble = {
-        "type": "bubble",
-        "size": "mega",
-        "body": {
-            "type": "box",
-            "layout": "vertical",
-            "spacing": "md",
-            "paddingAll": "16px",
-            "contents": body_contents,
-        },
-    }
-    if actions:
-        bubble["footer"] = {
-            "type": "box",
-            "layout": "vertical",
-            "spacing": "sm",
-            "paddingAll": "12px",
-            "contents": actions,
-        }
-    return FlexMessage(alt_text=alt_text, contents=FlexContainer.from_dict(bubble))
-
-
 def generate_status_flex(title_text, body_text, user_id=None, alt_text=None, tone="info"):
     accent_by_tone = {
         "info": "#315B7D",
@@ -432,7 +74,7 @@ def generate_status_flex(title_text, body_text, user_id=None, alt_text=None, ton
     title = get_multilingual_text(title_text, user_id)
     body = get_multilingual_text(body_text, user_id)
     alt = get_multilingual_text(alt_text, user_id) if alt_text is not None else title
-    return _standard_action_bubble(
+    return standard_action_bubble(
         title=title,
         subtitle="JiETNG",
         body_text=body,
@@ -478,13 +120,13 @@ def generate_account_action_flex(action_type, url, user_id=None):
     body = get_multilingual_text(config["body"], user_id)
     button = get_multilingual_text(config["button"], user_id)
     alt = get_multilingual_text(config["alt"], user_id)
-    return _standard_action_bubble(
+    return standard_action_bubble(
         title=title,
         subtitle="JiETNG",
         body_text=body,
         alt_text=alt,
         actions=[
-            _flex_action_button({"type": "uri", "label": button, "uri": url}, color=config["accent"])
+            flex_action_button({"type": "uri", "label": button, "uri": url}, color=config["accent"])
         ],
         accent=config["accent"],
         user_id=user_id,
@@ -498,9 +140,9 @@ def generate_welcome_flex(user_id=None, bind_url=None, group=False):
     if bind_url:
         label = get_multilingual_text(_message_texts["sega_bind_button_text"], user_id)
         actions = [
-            _flex_action_button({"type": "uri", "label": label, "uri": bind_url}, color=COLOR_BRAND)
+            flex_action_button({"type": "uri", "label": label, "uri": bind_url}, color=COLOR_BRAND)
         ]
-    return _standard_action_bubble(
+    return standard_action_bubble(
         title=title,
         subtitle="Maimai DX LINE Bot",
         body_text=body,
@@ -525,15 +167,15 @@ def generate_export_flex(user_id, meta):
     btn = get_multilingual_text(_message_texts["export_flex_button_text"], user_id)
     copy_btn = get_multilingual_text(_message_texts["export_flex_copy_button_text"], user_id)
     alt = get_multilingual_text(_message_texts["export_alt_text"], user_id)
-    return _standard_action_bubble(
+    return standard_action_bubble(
         title=title,
         subtitle=fmt_label,
         body_text=body,
         note_text=foot,
         alt_text=alt,
         actions=[
-            _flex_action_button({"type": "uri", "label": btn, "uri": f"{meta['url']}?openExternalBrowser=1"}),
-            _flex_action_button(
+            flex_action_button({"type": "uri", "label": btn, "uri": f"{meta['url']}?openExternalBrowser=1"}),
+            flex_action_button(
                 {"type": "clipboard", "label": copy_btn, "clipboardText": meta["url"]},
                 style="secondary",
             ),
@@ -708,7 +350,7 @@ def generate_notice_flex(notice_json, user_id=None):
     bubble = {
         "type": "bubble",
         "size": "mega",
-        "header": _standard_header_box(title, "JiETNG"),
+        "header": standard_header_box(title, "JiETNG"),
         "body": {
             "type": "box",
             "layout": "vertical",
@@ -824,7 +466,7 @@ def generate_song_info_flex(song_id, image_url, image_width, image_height, user_
 
     if mode == 'info':
         calc_label = get_multilingual_text(_message_texts["calc_button_text"], user_id)
-        buttons.append(_pill_action_box(
+        buttons.append(pill_action_box(
             calc_label,
             {
                 "type": "postback",
@@ -834,7 +476,7 @@ def generate_song_info_flex(song_id, image_url, image_width, image_height, user_
             bg_color=COLOR_BRAND,
         ))
         record_label = get_multilingual_text(_message_texts["view_record_button_text"], user_id)
-        buttons.append(_pill_action_box(
+        buttons.append(pill_action_box(
             record_label,
             {
                 "type": "postback",
@@ -845,7 +487,7 @@ def generate_song_info_flex(song_id, image_url, image_width, image_height, user_
         ))
     else:
         info_label = get_multilingual_text(_message_texts["view_info_button_text"], user_id)
-        buttons.append(_pill_action_box(
+        buttons.append(pill_action_box(
             info_label,
             {
                 "type": "postback",
@@ -883,712 +525,6 @@ def generate_song_info_flex(song_id, image_url, image_width, image_height, user_
     return FlexMessage(
         alt_text=alt_text,
         contents=FlexContainer.from_dict(bubble)
-    )
-
-
-def generate_score_recognition_flex(results, user_id=None):
-    variants = list(results) if isinstance(results, (list, tuple)) else [results]
-    if len(variants) <= 1:
-        return _generate_score_recognition_single_flex(variants[0], user_id)
-
-    bubbles = []
-    alt_titles = []
-    for variant in variants:
-        message = _generate_score_recognition_single_flex(variant, user_id)
-        bubbles.append(message.contents.to_dict())
-        variant_validation = variant.get("validation") or {}
-        title = variant_validation.get("title") or (variant.get("parsed") or {}).get("title")
-        index = variant_validation.get("calc_completion_candidate_index")
-        count = variant_validation.get("calc_completion_candidate_count")
-        if index and count:
-            alt_titles.append(f"{title or '-'} #{index}/{count}")
-        else:
-            alt_titles.append(str(title or "-"))
-
-    return FlexMessage(
-        alt_text=" / ".join(alt_titles[:3]),
-        contents=FlexContainer.from_dict({
-            "type": "carousel",
-            "contents": bubbles,
-        }),
-    )
-
-
-def _generate_score_recognition_single_flex(result, user_id=None):
-    """Generate the judgement details shown after score-image recognition."""
-    lang = get_user_language(user_id)
-    texts = localized_catalog("message_manager.score_recognition")
-
-    def tr(key):
-        return select_text(texts[key], language=lang)
-
-    def table_cell(text, flex=1, color=COLOR_TEXT_PRIMARY, weight=None, align="center"):
-        node = {
-            "type": "text",
-            "text": str(text),
-            "size": "xxs",
-            "color": color,
-            "align": align,
-            "flex": flex,
-            "wrap": False,
-        }
-        if weight:
-            node["weight"] = weight
-        return node
-
-    def zero_count_color(value, default_color=COLOR_TEXT_PRIMARY):
-        try:
-            return COLOR_TEXT_MUTED if int(value) == 0 else default_color
-        except (TypeError, ValueError):
-            return default_color
-
-    parsed = result.get("parsed") or {}
-    validation = result.get("validation") or {}
-    judgement = parsed.get("sub_judgement") or {}
-    canonical_title = parsed.get("title")
-    if canonical_title is None:
-        canonical_title = validation.get("title")
-    if (
-        validation.get("song_id")
-        and not str(canonical_title or "").strip()
-    ):
-        song_title = '""'
-    else:
-        song_title = str(canonical_title or "-")
-    achievement = parsed.get("achievement")
-    achievement_text = f"{achievement:.4f}%" if isinstance(achievement, (int, float)) else "-"
-
-    combo_icon = combo_status(judgement, achievement)
-    score_rank_name = score_rank(achievement)
-
-    def playlog_icon_box(url, width, height, aspect_ratio, margin=None):
-        icon_box = {
-            "type": "box",
-            "layout": "vertical",
-            "width": width,
-            "height": height,
-            "flex": 0,
-            "justifyContent": "center",
-            "alignItems": "center",
-            "gravity": "center",
-            "contents": [{
-                "type": "image",
-                "url": url,
-                "size": "full",
-                "aspectMode": "fit",
-                "aspectRatio": aspect_ratio,
-            }],
-        }
-        if margin:
-            icon_box["margin"] = margin
-        return icon_box
-
-    def playlog_inline_icon_box(url, width, height, aspect_ratio, margin=None):
-        icon_box = {
-            "type": "box",
-            "layout": "vertical",
-            "height": "32px",
-            "flex": 0,
-            "justifyContent": "flex-end",
-            "alignItems": "center",
-            "contents": [
-                playlog_icon_box(url, width, height, aspect_ratio),
-            ],
-        }
-        if margin:
-            icon_box["margin"] = margin
-        return icon_box
-
-    def achievement_metric_card():
-        value_contents = [
-            {
-                "type": "box",
-                "layout": "vertical",
-                "spacing": "xs",
-                "flex": 1,
-                "contents": [
-                    _help_flex_text(tr("status"), size="xxs", color=COLOR_TEXT_MUTED),
-                    _help_flex_text(achievement_text, size="sm", color="#B86E19", weight="bold"),
-                ],
-            }
-        ]
-        if score_rank_name:
-            rank_file = f"{score_rank_name.replace('p', 'plus')}.png"
-            value_contents.append(playlog_inline_icon_box(
-                f"https://maimaidx.jp/maimai-mobile/img/playlog/{rank_file}",
-                "58px",
-                "28px",
-                "203:90",
-            ))
-        if combo_icon:
-            value_contents.append(playlog_inline_icon_box(
-                (
-                    "https://maimaidx.jp/maimai-mobile/img/playlog/"
-                    f"{COMBO_ICON_FILES[combo_icon]}"
-                ),
-                "59px",
-                "28px",
-                "64:28",
-                margin="md",
-            ))
-        return {
-            "type": "box",
-            "layout": "horizontal",
-            "spacing": "sm",
-            "alignItems": "center",
-            "paddingAll": "11px",
-            "cornerRadius": "8px",
-            "backgroundColor": "#F8FAFC",
-            "flex": 4,
-            "contents": value_contents,
-        }
-
-    difficulty = validation.get("difficulty")
-    internal_level = validation.get("internal_level")
-    chart_type = validation.get("type")
-    chart_type_label = {
-        "dx": "DX",
-        "std": "STD",
-        "utage": "UTAGE",
-    }.get(str(chart_type or "").lower())
-    display_title = (
-        f"{song_title} [{chart_type_label}]"
-        if chart_type_label else song_title
-    )
-    if isinstance(internal_level, (int, float)):
-        internal_level_label = f"{internal_level:.1f}"
-    else:
-        internal_level_label = str(internal_level or "")
-    constant_text = internal_level_label or "-"
-    difficulty_style, difficulty_label = difficulty_presentation(difficulty)
-    type_icon = _song_type_icon(chart_type, width="50px", height="14px")
-    subtitle_contents = [
-        {
-            "type": "text",
-            "text": tr("title"),
-            "size": "xs",
-            "color": difficulty_style["text"],
-            "weight": "bold",
-            "wrap": False,
-            "align": "start",
-            "flex": 1,
-        },
-        {
-            "type": "text",
-            "text": difficulty_label,
-            "size": "xs",
-            "color": difficulty_style["text"],
-            "weight": "bold",
-            "wrap": False,
-            "align": "center",
-            "flex": 1,
-        },
-        {
-            "type": "box",
-            "layout": "horizontal",
-            "justifyContent": "flex-end",
-            "alignItems": "center",
-            "flex": 1,
-            "contents": [type_icon] if type_icon else [],
-        },
-    ]
-    score_header = {
-        "type": "box",
-        "layout": "vertical",
-        "spacing": "xs",
-        "paddingAll": "14px",
-        "cornerRadius": "8px",
-        "backgroundColor": difficulty_style["bg"],
-        "contents": [
-            {
-                "type": "text",
-                "text": song_title,
-                "size": "lg",
-                "color": difficulty_style["text"],
-                "weight": "bold",
-                "wrap": True,
-            },
-            {
-                "type": "box",
-                "layout": "horizontal",
-                "spacing": "sm",
-                "alignItems": "center",
-                "margin": "xs",
-                "contents": subtitle_contents,
-            },
-        ],
-    }
-    uncertain_cells = validation.get("uncertain_cells") or []
-    uncertain_keys = {
-        (item.get("row"), item.get("field"))
-        for item in uncertain_cells
-        if isinstance(item, dict)
-    }
-    uncertain_miss_rows = {
-        item.get("row")
-        for item in uncertain_cells
-        if isinstance(item, dict)
-    }
-    missing_rows = {
-        item.get("row")
-        for item in uncertain_cells
-        if isinstance(item, dict) and item.get("row_missing")
-    }
-
-    def judgement_cell(row_name, field_name, value, weight=None):
-        uncertain = (
-            (row_name, field_name) in uncertain_keys
-            or (field_name == "miss" and row_name in uncertain_miss_rows)
-            or row_name in missing_rows
-        )
-        return table_cell(
-            f"{value}?" if uncertain else value,
-            color="#C0392B" if uncertain else zero_count_color(value),
-            weight="bold" if uncertain else weight,
-        )
-
-    table_rows = [{
-        "type": "box",
-        "layout": "horizontal",
-        "spacing": "xs",
-        "paddingAll": "8px",
-        "backgroundColor": "#EEF1F5",
-        "cornerRadius": "6px",
-        "contents": [
-            table_cell("TYPE", flex=2, color=COLOR_TEXT_SECONDARY, weight="bold", align="start"),
-            table_cell("CP", color="#B86E19", weight="bold"),
-            table_cell("PF", color="#B86E19", weight="bold"),
-            table_cell("GR", color="#A33B75", weight="bold"),
-            table_cell("GD", color="#2F7D51", weight="bold"),
-            table_cell("MS", color="#555555", weight="bold"),
-        ],
-    }]
-
-    for index, (key, label) in enumerate((
-        ("tap", "TAP"),
-        ("hold", "HOLD"),
-        ("slide", "SLIDE"),
-        ("touch", "TOUCH"),
-        ("break", "BREAK"),
-    )):
-        row = judgement.get(key)
-        row_missing = not isinstance(row, dict)
-        if row_missing and key not in missing_rows:
-            continue
-        if row_missing:
-            row = {}
-
-        def row_value(field_name):
-            return "-" if row_missing else row.get(field_name, 0)
-
-        table_rows.append({
-            "type": "box",
-            "layout": "horizontal",
-            "spacing": "xs",
-            "paddingAll": "8px",
-            "backgroundColor": "#F8FAFC" if index % 2 == 0 else "#FFFFFF",
-            "contents": [
-                table_cell(label, flex=2, weight="bold", align="start"),
-                judgement_cell(key, "critical_perfect", row_value("critical_perfect")),
-                judgement_cell(key, "perfect", row_value("perfect")),
-                judgement_cell(key, "great", row_value("great")),
-                judgement_cell(key, "good", row_value("good")),
-                judgement_cell(key, "miss", row_value("miss")),
-            ],
-        })
-
-    if len(table_rows) > 1:
-        table_rows[-1]["cornerRadius"] = "6px"
-
-    loss_percentages = validation.get("loss_percentages") or {}
-
-    def detail_value_box(label, value, text_color, background_color):
-        return {
-            "type": "box",
-            "layout": "vertical",
-            "spacing": "xs",
-            "paddingAll": "6px",
-            "backgroundColor": background_color,
-            "cornerRadius": "4px",
-            "flex": 1,
-            "contents": [
-                {
-                    "type": "text",
-                    "text": str(label),
-                    "size": "xxs",
-                    "color": COLOR_TEXT_SECONDARY,
-                    "align": "center",
-                    "wrap": False,
-                },
-                {
-                    "type": "text",
-                    "text": str(value),
-                    "size": "sm",
-                    "color": zero_count_color(value, text_color),
-                    "weight": "bold",
-                    "align": "center",
-                    "wrap": False,
-                },
-            ],
-        }
-
-    def detail_row(label, values, values_flex=5):
-        return {
-            "type": "box",
-            "layout": "horizontal",
-            "spacing": "sm",
-            "contents": [
-                {
-                    "type": "text",
-                    "text": label,
-                    "size": "xxs",
-                    "color": COLOR_TEXT_PRIMARY,
-                    "weight": "bold",
-                    "flex": 2,
-                    "gravity": "center",
-                    "wrap": False,
-                },
-                {
-                    "type": "box",
-                    "layout": "horizontal",
-                    "spacing": "sm",
-                    "flex": values_flex,
-                    "contents": values,
-                },
-            ],
-        }
-
-    def loss_total_box(total_loss_text):
-        return {
-            "type": "box",
-            "layout": "horizontal",
-            "spacing": "sm",
-            "paddingAll": "6px",
-            "backgroundColor": "#FDEDEC",
-            "cornerRadius": "4px",
-            "contents": [
-                {
-                    "type": "text",
-                    "text": "TOTAL",
-                    "size": "xxs",
-                    "color": COLOR_TEXT_SECONDARY,
-                    "weight": "bold",
-                    "flex": 1,
-                    "wrap": False,
-                },
-                {
-                    "type": "text",
-                    "text": total_loss_text,
-                    "size": "sm",
-                    "color": "#C0392B",
-                    "weight": "bold",
-                    "align": "end",
-                    "flex": 1,
-                    "wrap": False,
-                },
-            ],
-        }
-
-    def loss_detail_row(label, values, total_loss_text):
-        return {
-            "type": "box",
-            "layout": "horizontal",
-            "spacing": "sm",
-            "contents": [
-                {
-                    "type": "text",
-                    "text": label,
-                    "size": "xxs",
-                    "color": COLOR_TEXT_PRIMARY,
-                    "weight": "bold",
-                    "flex": 2,
-                    "gravity": "center",
-                    "wrap": False,
-                },
-                {
-                    "type": "box",
-                    "layout": "vertical",
-                    "spacing": "xs",
-                    "flex": 6,
-                    "contents": [
-                        {
-                            "type": "box",
-                            "layout": "horizontal",
-                            "spacing": "sm",
-                            "contents": values,
-                        },
-                        loss_total_box(total_loss_text),
-                    ],
-                },
-            ],
-        }
-
-    loss_rows = []
-    for key, label in (("tap", "TAP"), ("hold", "HOLD"), ("slide", "SLIDE"), ("touch", "TOUCH")):
-        row = judgement.get(key)
-        if not isinstance(row, dict):
-            continue
-        counts = {
-            "great": nonnegative_count(row.get("great", 0)),
-            "good": nonnegative_count(row.get("good", 0)),
-            "miss": nonnegative_count(row.get("miss", 0)),
-        }
-        total_loss = sum(
-            float(loss_percentages.get(f"{key}_{field}", 0) or 0) * count
-            for field, count in counts.items()
-        )
-        if total_loss <= 0:
-            continue
-        loss_rows.append(loss_detail_row(label, [
-            detail_value_box(
-                format_loss_percentage(loss_percentages.get(f"{key}_great"), 1),
-                counts["great"],
-                "#923468",
-                "#FBE5F1",
-            ),
-            detail_value_box(
-                format_loss_percentage(loss_percentages.get(f"{key}_good"), 1),
-                counts["good"],
-                "#277047",
-                "#E7F5ED",
-            ),
-            detail_value_box(
-                format_loss_percentage(loss_percentages.get(f"{key}_miss"), 1),
-                counts["miss"],
-                "#555555",
-                "#E9EDF2",
-            ),
-        ], format_loss_percentage(total_loss, 1)))
-
-    body_contents = [
-        score_header,
-        {
-            "type": "box",
-            "layout": "horizontal",
-            "spacing": "sm",
-            "contents": [
-                achievement_metric_card(),
-                _metric_card(
-                    tr("constant"),
-                    constant_text,
-                    value_color=difficulty_style["metric"],
-                    flex=1,
-                ),
-            ],
-        },
-        _help_section_title(tr("breakdown"), accent="#267D8B"),
-    ]
-    if len(table_rows) > 1:
-        body_contents.append({
-            "type": "box",
-            "layout": "vertical",
-            "spacing": "none",
-            "cornerRadius": "8px",
-            "backgroundColor": "#FFFFFF",
-            "contents": table_rows,
-        })
-    else:
-        body_contents.append(_help_body_row(tr("empty")))
-
-    if loss_rows:
-        body_contents.extend([
-            _help_section_title(tr("loss_detail"), accent="#C0392B"),
-            {
-                "type": "box",
-                "layout": "vertical",
-                "spacing": "sm",
-                "paddingAll": "8px",
-                "backgroundColor": "#F8FAFC",
-                "cornerRadius": "6px",
-                "contents": loss_rows,
-            },
-        ])
-
-    break_detail = validation.get("break_detail") or {}
-    if break_detail:
-        break_loss_percentages = break_detail.get("loss_percentages") or {}
-
-        def break_loss_label(key):
-            return format_loss_percentage(break_loss_percentages.get(key), 1)
-
-
-        def break_loss_value(key):
-            value = break_loss_percentages.get(key)
-            return float(value) if isinstance(value, (int, float)) else 0.0
-
-        break_total_loss = sum(
-            break_loss_value(key) * nonnegative_count(break_detail.get(key))
-            for key in ("perfect_high", "perfect_low", "great_high", "great_middle", "great_low", "good", "miss")
-        )
-
-        candidate_count = max(1, int(break_detail.get("candidate_count", 1) or 1))
-        row_candidate_count = max(
-            0,
-            int(break_detail.get("row_candidate_count", 0) or 0),
-        )
-        if row_candidate_count > 1:
-            source_text = tr("break_row_source_multiple").format(
-                count=row_candidate_count,
-            )
-        elif candidate_count == 1:
-            source_text = tr("break_detail_source_single")
-        else:
-            source_text = tr("break_detail_source_multiple").format(
-                count=candidate_count,
-            )
-
-        body_contents.extend([
-            _help_section_title(tr("break_detail"), accent="#B86E19"),
-            {
-                "type": "box",
-                "layout": "vertical",
-                "spacing": "sm",
-                "paddingAll": "8px",
-                "backgroundColor": "#F8FAFC",
-                "cornerRadius": "6px",
-                "contents": [
-                    detail_row("CRITICAL", [
-                        detail_value_box(
-                            break_loss_label("critical_perfect"),
-                            break_detail.get("critical_perfect", 0),
-                            "#9A5B12",
-                            "#FFF0C7",
-                        ),
-                    ]),
-                    detail_row("PERFECT", [
-                        detail_value_box(break_loss_label("perfect_high"), break_detail.get("perfect_high", 0), "#A96517", "#FFF3D9"),
-                        detail_value_box(break_loss_label("perfect_low"), break_detail.get("perfect_low", 0), "#B97824", "#FFF8E8"),
-                    ]),
-                    detail_row("GREAT", [
-                        detail_value_box(break_loss_label("great_high"), break_detail.get("great_high", 0), "#923468", "#FBE5F1"),
-                        detail_value_box(break_loss_label("great_middle"), break_detail.get("great_middle", 0), "#A64D7D", "#F9EDF4"),
-                        detail_value_box(break_loss_label("great_low"), break_detail.get("great_low", 0), "#B66A91", "#F8F2F6"),
-                    ]),
-                    detail_row("OTHER", [
-                        detail_value_box(break_loss_label("good"), break_detail.get("good", 0), "#277047", "#E7F5ED"),
-                        detail_value_box(break_loss_label("miss"), break_detail.get("miss", 0), "#555555", "#E9EDF2"),
-                    ]),
-                    loss_total_box(format_loss_percentage(break_total_loss, 1)),
-                ],
-            },
-            {
-                "type": "text",
-                "text": source_text,
-                "size": "xxs",
-                "color": COLOR_TEXT_MUTED,
-                "wrap": True,
-                "align": "start",
-            },
-        ])
-
-    if validation.get("miss_corrections"):
-        body_contents.append({
-            "type": "text",
-            "text": tr("validated"),
-            "size": "xxs",
-            "color": COLOR_TEXT_MUTED,
-            "wrap": True,
-            "align": "end",
-        })
-
-    manual_fix_command = None
-    compact_fix_command = None
-    achievement_calc = validation.get("achievement_calc") or {}
-    calc_result, break_row_inferred = calc_status(validation, uncertain_cells, tr)
-    if calc_result:
-        calc_text, calc_consistent = calc_result
-        body_contents.append({
-            "type": "text",
-            "text": calc_text,
-            "size": "xxs",
-            "color": COLOR_TEXT_MUTED if calc_consistent else "#C0392B",
-            "wrap": True,
-            "align": "end",
-        })
-
-    fully_validated = (
-        bool(validation.get("song_id"))
-        and achievement_calc.get("consistent") is True
-        and achievement_calc.get("complete") is True
-        and not uncertain_cells
-    )
-    has_judgement_data = any(
-        isinstance(judgement.get(row_name), dict)
-        for row_name in JUDGEMENT_ROWS
-    )
-    fix_command = (
-        build_fix_command(judgement, song_title, achievement)
-        if has_judgement_data else None
-    )
-    if break_row_inferred and fully_validated:
-        compact_fix_command = fix_command
-    elif not fully_validated and has_judgement_data:
-        manual_fix_command = fix_command
-        body_contents.extend([
-            _help_section_title(tr("manual_fix"), accent="#315B7D"),
-            {
-                "type": "text",
-                "text": tr("manual_fix_hint"),
-                "size": "xxs",
-                "color": COLOR_TEXT_MUTED,
-                "wrap": True,
-            },
-            {
-                "type": "box",
-                "layout": "vertical",
-                "paddingAll": "10px",
-                "backgroundColor": "#F8FAFC",
-                "cornerRadius": "6px",
-                "contents": [{
-                    "type": "text",
-                    "text": manual_fix_command,
-                    "size": "xxs",
-                    "color": COLOR_TEXT_PRIMARY,
-                    "wrap": True,
-                }],
-            },
-        ])
-
-    bubble = {
-        "type": "bubble",
-        "size": "giga",
-        "body": {
-            "type": "box",
-            "layout": "vertical",
-            "spacing": "md",
-            "paddingAll": "16px",
-            "contents": body_contents,
-        },
-    }
-    footer_fix_command = manual_fix_command or compact_fix_command or fix_command
-    if footer_fix_command:
-        fix_label = tr("compact_fix") if compact_fix_command and not manual_fix_command else tr("copy_fix")
-        fix_pill = _help_pill(
-            fix_label,
-            color="#B66A00",
-            bg_color="#FFF4E6",
-        )
-        fix_pill["action"] = {
-            "type": "clipboard",
-            "label": "fix-rcd",
-            "clipboardText": footer_fix_command,
-        }
-        bubble["footer"] = {
-            "type": "box",
-            "layout": "horizontal",
-            "paddingTop": "2px",
-            "paddingBottom": "10px",
-            "paddingStart": "16px",
-            "paddingEnd": "16px",
-            "contents": [
-                {"type": "filler"},
-                fix_pill,
-                {"type": "filler"},
-            ],
-        }
-    return FlexMessage(
-        alt_text=f"{tr('title')}: {display_title}",
-        contents=FlexContainer.from_dict(bubble),
     )
 
 
@@ -1650,11 +586,11 @@ def generate_user_info_flex(user_id):
 
     def _info_row(label, value, action=None, value_color=COLOR_TEXT_PRIMARY, sub_value=None):
         value_contents = [
-            _help_flex_text(label, size="xxs", color=COLOR_TEXT_MUTED),
-            _help_flex_text(str(value), size="sm", color=value_color, weight="bold"),
+            flex_text(label, size="xxs", color=COLOR_TEXT_MUTED),
+            flex_text(str(value), size="sm", color=value_color, weight="bold"),
         ]
         if sub_value:
-            value_contents.append(_help_flex_text(str(sub_value), size="xxs", color=COLOR_TEXT_MUTED, margin="xs"))
+            value_contents.append(flex_text(str(sub_value), size="xxs", color=COLOR_TEXT_MUTED, margin="xs"))
         value_block = {
             "type": "box",
             "layout": "vertical",
@@ -1663,7 +599,7 @@ def generate_user_info_flex(user_id):
         }
         contents = [value_block]
         if action:
-            copy_pill = _help_pill(
+            copy_pill = pill(
                 action.get("label", ""),
                 color="#B66A00",
                 bg_color="#FFF4E6",
@@ -1759,7 +695,7 @@ def generate_user_info_flex(user_id):
             settings_rows,
         ))
 
-    return _standard_help_bubble(
+    return standard_help_bubble(
         title=get_multilingual_text(texts['title'], language=lang),
         subtitle="JiETNG",
         sections=sections,
@@ -1811,7 +747,7 @@ def generate_update_result_flex(
     tz_str = format_timezone_string(user_id)
     accent = COLOR_SUCCESS if success else COLOR_DANGER
     body_contents = [
-        _standard_header_box(
+        standard_header_box(
             get_multilingual_text(texts['title_success'] if success else texts['title_error'], language=lang),
             "JiETNG",
             accent=accent,
@@ -1820,12 +756,12 @@ def generate_update_result_flex(
             "type": "box",
             "layout": "vertical",
             "spacing": "sm",
-            "contents": _metric_grid([
-                _metric_card(
+            "contents": metric_grid([
+                metric_card(
                     f"{get_multilingual_text(texts['update_time_label'], language=lang)} {tz_str}",
                     update_time,
                 ),
-                _metric_card(
+                metric_card(
                     get_multilingual_text(texts['elapsed_time_label'], language=lang),
                     elapsed_str,
                     value_color=accent,
@@ -1838,8 +774,8 @@ def generate_update_result_flex(
         for func_name, _status in failed_statuses.items():
             status_text = get_multilingual_text(texts['failed'], language=lang)
             func_label = _update_status_label(func_name, lang)
-            failed_rows.append(_help_filter_row(func_label, status_text))
-        body_contents.append(_help_section_title(get_multilingual_text(texts['status_label'], language=lang), accent=COLOR_DANGER))
+            failed_rows.append(help_filter_row(func_label, status_text))
+        body_contents.append(section_title(get_multilingual_text(texts['status_label'], language=lang), accent=COLOR_DANGER))
         body_contents.append({
             "type": "box",
             "layout": "vertical",
@@ -2262,7 +1198,7 @@ def _build_calc_bubble(notes, scores, difficulty=None, level=None, lang="ja"):
     bubble = {
         "type": "bubble",
         "size": "mega",
-        "header": _standard_header_box(
+        "header": standard_header_box(
             title_text,
             get_multilingual_text(_message_texts["calc_flex_text"]['subtitle'], language=lang),
             accent=header_color,
@@ -2312,7 +1248,7 @@ def generate_search_results_flex(user_id, matching_songs, search_type='song', id
         song_title = song.get('title', 'Unknown')
         song_type = song.get('type', '')
         artist = song.get('artist') or '-'
-        type_icon = _song_type_icon(song_type, width="42px", height="12px")
+        type_icon = song_type_icon(song_type, width="42px", height="12px")
         title_contents = [
             {
                 "type": "text",
@@ -2357,7 +1293,7 @@ def generate_search_results_flex(user_id, matching_songs, search_type='song', id
                         },
                     ]
                 },
-                _round_icon_action(
+                round_icon_action(
                     "→",
                     {
                         "type": "postback",
@@ -2374,7 +1310,7 @@ def generate_search_results_flex(user_id, matching_songs, search_type='song', id
 
     title_text = select_text(config['title'], language=language, default_language='ja')
 
-    header_box = _standard_header_box(title_text, "JiETNG")
+    header_box = standard_header_box(title_text, "JiETNG")
 
     bubble = {
         "type": "bubble",
@@ -2412,7 +1348,7 @@ def generate_ranking_flex(user_id, top5, nearby_entries=None, ver="jp"):
     title_text = get_multilingual_text(_message_texts["ranking_title_text"], user_id)
     ver_label = "JP" if ver == "jp" else "INTL"
 
-    header = _standard_header_box(title_text, ver_label)
+    header = standard_header_box(title_text, ver_label)
 
     body_contents = [
         {"type": "separator", "color": "#000000"}
@@ -2558,7 +1494,7 @@ def generate_song_list_flex(user_id, title, matching_songs, page, command_prefix
     for idx, song in enumerate(page_songs):
         song_id = song.get('id', '')
         song_title = song.get('title', 'Unknown')
-        type_icon = _song_type_icon(song.get('type', ''), width="42px", height="12px")
+        type_icon = song_type_icon(song.get('type', ''), width="42px", height="12px")
 
         # 副信息
         if matched_sheets_map and song_id in matched_sheets_map:
@@ -2622,7 +1558,7 @@ def generate_song_list_flex(user_id, title, matching_songs, page, command_prefix
                     "flex": 3,
                     "contents": left_contents
                 },
-                _round_icon_action(
+                round_icon_action(
                     "→",
                     {
                         "type": "postback",
@@ -2640,7 +1576,7 @@ def generate_song_list_flex(user_id, title, matching_songs, page, command_prefix
     # 翻页按钮
     if has_next:
         next_page = page + 1
-        song_rows.append(_pill_action_box(
+        song_rows.append(pill_action_box(
             f"Next Page ({next_page}/{total_pages})",
             {
                 "type": "postback",
@@ -2655,7 +1591,7 @@ def generate_song_list_flex(user_id, title, matching_songs, page, command_prefix
     # 跳转按钮（多页时显示）
     if total_pages > 1:
         jump_text = f"{command_prefix} {query} "
-        song_rows.append(_pill_action_box(
+        song_rows.append(pill_action_box(
             f"Go to ... (1~{total_pages})",
             {
                 "type": "uri",
@@ -2667,7 +1603,7 @@ def generate_song_list_flex(user_id, title, matching_songs, page, command_prefix
             margin="sm",
         ))
 
-    header_box = _standard_header_box(title, f"Page {page}/{total_pages} · {total} songs")
+    header_box = standard_header_box(title, f"Page {page}/{total_pages} · {total} songs")
 
     bubble = {
         "type": "bubble",
@@ -2750,7 +1686,7 @@ def generate_friend_buttons(user_id, alt_text, friend_list, group_size):
                         ]
                     },
                     # 右侧：按钮（只显示符号）
-                    _round_icon_action(
+                    round_icon_action(
                         "→",
                         {
                             "type": "uri",
@@ -2775,7 +1711,7 @@ def generate_friend_buttons(user_id, alt_text, friend_list, group_size):
         bubble = {
             "type": "bubble",
             "size": "mega",
-            "header": _standard_header_box(
+            "header": standard_header_box(
                 alt_text,
                 f"Page {page_num}/{total_pages} · {len(group)} friends",
             ),
@@ -2891,7 +1827,7 @@ def generate_rc_flex(level: float, rc_data: list, user_id=None):
     bubble = {
         "type": "bubble",
         "size": "mega",
-        "header": _standard_header_box(title_text, "Rating Constant", accent="#AF52DE"),
+        "header": standard_header_box(title_text, "Rating Constant", accent="#AF52DE"),
         "body": {
             "type": "box",
             "layout": "vertical",
@@ -2934,7 +1870,7 @@ def generate_bot_status_flex(uptime_str, image_queue_size, web_queue_size,
     queue_busy = (image_queue_size + web_queue_size) > 0
     queue_color = COLOR_WARNING if queue_busy else COLOR_SUCCESS
     body_contents = [
-        _standard_header_box(
+        standard_header_box(
             select_text(texts['title'], language=lang),
             "JiETNG",
             accent="#111827",
@@ -2943,11 +1879,11 @@ def generate_bot_status_flex(uptime_str, image_queue_size, web_queue_size,
             "type": "box",
             "layout": "vertical",
             "spacing": "sm",
-            "contents": _metric_grid([
-                _metric_card(select_text(texts['uptime'], language=lang), uptime_str),
-                _metric_card(select_text(texts['queue'], language=lang), queue_text, value_color=queue_color),
-                _metric_card(select_text(texts['tasks_today'], language=lang), str(tasks_today), value_color="#8A63D2"),
-                _metric_card(select_text(texts['songs'], language=lang), songs_text),
+            "contents": metric_grid([
+                metric_card(select_text(texts['uptime'], language=lang), uptime_str),
+                metric_card(select_text(texts['queue'], language=lang), queue_text, value_color=queue_color),
+                metric_card(select_text(texts['tasks_today'], language=lang), str(tasks_today), value_color="#8A63D2"),
+                metric_card(select_text(texts['songs'], language=lang), songs_text),
             ]),
         },
     ]

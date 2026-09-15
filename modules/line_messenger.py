@@ -24,7 +24,7 @@ from modules.user_manager import (
 from modules.notice_manager import get_latest_published_notice
 from modules.perm_request_handler import get_pending_perm_requests
 from modules.perm_request_generator import generate_perm_request_message
-from modules.message_manager import generate_notice_flex
+from modules.messages.service import generate_notice_flex
 
 logger = logging.getLogger(__name__)
 

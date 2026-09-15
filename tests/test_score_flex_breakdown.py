@@ -1,4 +1,4 @@
-from modules.message_manager import generate_score_recognition_flex
+from modules.messages.scores import generate_score_recognition_flex
 from modules.score_rules import JUDGEMENT_ROWS
 
 

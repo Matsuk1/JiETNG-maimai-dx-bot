@@ -380,7 +380,7 @@ JiETNG/
 │   ├── line_messenger.py      # LINE メッセージ送信
 │   ├── maimai_manager.py      # Maimai API インターフェース
 │   ├── memory_manager.py      # メモリ管理とクリーンアップ
-│   ├── message_manager.py     # 多言語メッセージ管理
+│   ├── messages/              # 多言語メッセージ管理
 │   ├── notice_manager.py      # お知らせシステム
 │   ├── notification_manager.py # システム通知管理（Web Push）
 │   ├── perm_request_generator.py  # 権限リクエスト生成器

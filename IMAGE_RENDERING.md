@@ -91,5 +91,5 @@ Glass 页面自身透明，背景只在最后合成时应用一次；关闭背�
 使用状态在服务重启后保留。数据库领取失败时不执行操作。
 签名使用现有持久化 session key，因此部署时继续保留该密钥。
 旧消息没有唯一标识，保持原有行为；只有更新后发送的卡片可按按钮去重。
-部署需更新 `main.py`、`modules/message_manager.py` 并新增
+部署需更新 `main.py`、`modules/messages/service.py` 并新增
 `modules/image_button_once.py`。

@@ -153,7 +153,7 @@ from modules.config_loader import (
     read_dxdata,
 )
 
-from modules.message_manager import (
+from modules.messages.service import (
     access_error,
     cannot_do_for_others,
     friend_error,
@@ -166,7 +166,6 @@ from modules.message_manager import (
     generate_friend_buttons,
     generate_ranking_flex,
     generate_rc_flex,
-    generate_score_recognition_flex,
     generate_search_results_flex,
     generate_song_info_flex,
     generate_song_list_flex,
@@ -175,9 +174,7 @@ from modules.message_manager import (
     generate_user_info_flex,
     generate_welcome_flex,
     get_friend_list_alt_text,
-    get_multilingual_text,
     get_nearby_stores_alt_text,
-    get_user_language,
     info_error,
     input_error,
     level_not_supported,
@@ -200,6 +197,19 @@ from modules.message_manager import (
     system_error_text,
     version_error,
 )
+from modules.messages.scores import generate_score_recognition_flex
+from modules.i18n import (
+    select_text as get_multilingual_text,
+    get_user_language,
+    error_page as _error_page,
+    register_web_i18n,
+    DEFAULT_LANGUAGE,
+    DEFAULT_WEB_LANGUAGE,
+    format_catalog,
+    language_catalog,
+    normalize_language,
+    select_text,
+)
 
 # Image processing
 from modules.images.upload import upload_generated_image, _start_periodic_cleanup, _encode_jpeg
@@ -214,14 +224,8 @@ from modules.import_token_manager import (
     list_import_tokens,
     revoke_import_token,
 )
-from modules.api.api_auth import (
-    maimai_session_cors as _maimai_session_cors,
-)
+from modules.api.api_auth import maimai_session_cors as _maimai_session_cors
 from modules.logging_config import configure_logging
-from modules.i18n import (
-    error_page as _error_page,
-    register_web_i18n,
-)
 from modules.commands.command_router import (
     Exact, Prefix, Regex, FirstWord,
     Command, CommandContext,
@@ -242,9 +246,7 @@ from modules.commands.command_parsers import (
 from modules.dbpool_manager import close_pool
 from modules.image_button_once import PREFIX as IMAGE_BUTTON_PREFIX, consume_image_button
 from modules.images.skins import available_skins, normalize_skin, user_image, user_skin
-from modules.images.composition import (
-    compose_generated_images,
-)
+from modules.images.composition import compose_generated_images
 
 # System utilities
 from modules.system_checker import run_system_check, clean_unbound_users
@@ -262,14 +264,6 @@ from modules.rich_menu_manager import (
 )
 from modules.song_matcher import find_matching_songs, normalize_text
 from modules.memory_manager import memory_manager, cleanup_user_caches
-from modules.i18n import (
-    DEFAULT_LANGUAGE,
-    DEFAULT_WEB_LANGUAGE,
-    format_catalog,
-    language_catalog,
-    normalize_language,
-    select_text,
-)
 from modules.score_recognition.results import expand_score_recognition_calc_variants
 from modules.score_recognition.recognizer import (
     InvalidScoreImageError,
