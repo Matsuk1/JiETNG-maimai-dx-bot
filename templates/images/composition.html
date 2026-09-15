@@ -1,0 +1,7 @@
+<div style="position:absolute;inset:0;background:white;overflow:hidden">
+{% if background %}<img src="{{ background }}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:blur({{ blur }}px);transform:scale(1.04)"><div style="position:absolute;inset:0;background:rgba(255,255,255,{{ overlay }})"></div>{% endif %}
+</div>
+{% for entry in entries %}<img src="{{ entry.src }}" style="position:absolute;left:{{ entry.x }}px;top:{{ entry.y }}px;width:{{ entry.width }}px;height:{{ entry.height }}px">{% endfor %}
+<div style="position:absolute;left:{{ left }}px;top:{{ text_y }}px;width:{{ text_width }}px;font-size:{{ font_size }}px;line-height:{{ line_spacing }}px;color:black;-webkit-text-stroke:2px white;paint-order:stroke fill">{% for text in texts %}<div class="ellipsis" data-fit="12">{{ text }}</div>{% endfor %}</div>
+{% if qr %}<img src="{{ qr }}" style="position:absolute;left:{{ qr_x }}px;top:{{ logo_y }}px;width:{{ logo_size }}px;height:{{ logo_size }}px;border-radius:10px">{% endif %}
+{% if logo %}<img src="{{ logo }}" style="position:absolute;left:{{ logo_x }}px;top:{{ logo_y }}px;width:{{ logo_size }}px;height:{{ logo_size }}px">{% endif %}
