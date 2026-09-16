@@ -1094,10 +1094,14 @@ def recognize_score_with_codex(image_bytes: bytes) -> dict[str, Any] | None:
     with Image.open(BytesIO(image_bytes)) as image:
         suffix = {"JPEG": ".jpg", "PNG": ".png", "WEBP": ".webp"}.get(image.format, ".png")
     session_id = "score-ocr-" + secrets.token_hex(16)
+    started = time.monotonic()
+    logger.info("[Recognize] Codex image fallback started: model=%s effort=low", AI_OCR_MODEL)
     try:
         answer = _ocr_server.ask(session_id, prompt, {}, [], [(suffix, image_bytes)])
         return json.loads(answer["text"])
     finally:
+        logger.info("[Recognize] Codex image fallback finished: model=%s elapsed=%.3fs",
+                    AI_OCR_MODEL, time.monotonic() - started)
         _ocr_server.release(session_id)
 
 

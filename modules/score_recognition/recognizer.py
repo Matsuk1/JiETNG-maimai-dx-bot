@@ -1662,8 +1662,10 @@ def validate_recognized_judgement(
         title, achievement = parsed.get("title"), parsed.get("achievement")
         judgement = parsed.get("sub_judgement")
         if not isinstance(title, str) or len(title) > 500:
+            logger.warning("[Recognize] Codex fallback rejected: invalid title")
             return result
         if type(achievement) not in (int, float) or not 0 <= achievement <= 101:
+            logger.warning("[Recognize] Codex fallback rejected: invalid achievement=%r", achievement)
             return result
         if not isinstance(judgement, dict):
             return result
@@ -1671,9 +1673,11 @@ def validate_recognized_judgement(
         for name in JUDGEMENT_ROW_NAMES:
             row = judgement.get(name)
             if not isinstance(row, dict):
+                logger.warning("[Recognize] Codex fallback rejected: missing row=%s", name)
                 return result
             if any(type(row.get(field)) is not int or not 0 <= row[field] <= 100000
                    for field in ALL_JUDGEMENT_VALUE_NAMES):
+                logger.warning("[Recognize] Codex fallback rejected: invalid cells row=%s values=%s", name, row)
                 return result
             clean_rows[name] = {field: row[field] for field in ALL_JUDGEMENT_VALUE_NAMES}
         candidate = _validate_recognized_judgement(
@@ -1684,7 +1688,20 @@ def validate_recognized_judgement(
         if _score_is_validated(candidate):
             logger.info("[Recognize] Codex fallback passed chart and achievement validation")
             return candidate
-        logger.info("[Recognize] Codex fallback did not pass validation; retaining OCR result")
+        checked = candidate.get("validation") or {}
+        calc = checked.get("achievement_calc") or {}
+        reason = (
+            "chart_not_matched" if not checked.get("song_id") else
+            "achievement_mismatch" if calc.get("consistent") is not True else
+            "incomplete_judgement" if calc.get("complete") is not True else
+            "uncertain_cells"
+        )
+        logger.warning(
+            "[Recognize] Codex fallback rejected: reason=%s title=%r achievement=%s "
+            "ver=%s song_id=%s difficulty=%s calc=%s unmatched=%s uncertain=%s rows=%s",
+            reason, title, achievement, ver, checked.get("song_id"), checked.get("difficulty"),
+            calc, checked.get("unmatched_notes"), checked.get("uncertain_cells"), clean_rows,
+        )
     except Exception as exc:
         # Optional vision must never prevent delivery of the original correction UI.
         logger.warning("[Recognize] Codex fallback unavailable: %s", type(exc).__name__)

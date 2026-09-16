@@ -130,3 +130,19 @@ def test_ocr_model_is_independent_from_monitor(ocr_only, expected):
     with patch.object(codex_agent, '_codex_path', return_value='codex'):
         command = server._command()
     assert ('model_reasoning_effort="low"' in command) is ocr_only
+
+
+@pytest.mark.parametrize('title,achievement,reason', [
+    ('Test', 90, 'achievement_mismatch'),
+    ('No corresponding song', 101, 'chart_not_matched'),
+])
+def test_rejected_vision_logs_its_own_values_and_failure_reason(caplog, title, achievement, reason):
+    song, parsed = sample()
+    parsed.update(title=title, achievement=achievement)
+    original = {'parsed': {'title': 'Original OCR title'}}
+    with patch.object(recognizer, 'read_dxdata', return_value=([song], None)), patch.object(
+        codex_agent, 'recognize_score_with_codex', return_value=parsed):
+        assert recognizer.validate_recognized_judgement(original, image_bytes=b'image') is original
+    assert f'reason={reason}' in caplog.text
+    assert repr(title) in caplog.text
+    assert 'rows=' in caplog.text
