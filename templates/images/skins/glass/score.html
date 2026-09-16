@@ -63,8 +63,47 @@
   .ocr-dx-value { font-size: 28px; margin: 8px 0; }
   .ocr-dx-value small { font-size: 17px; color: #78849a; }
   .ocr-percentage { font-size: 18px; color: #536684; }
-  .ocr-meter { height: 5px; background: #7888a226; border-radius: 4px; margin: 14px 0 20px; overflow: hidden; }
-  .ocr-meter > div { height: 100%; background: #768db9; }
+  .ocr-meter {
+    position: relative;
+    height: 16px;
+    margin: 20px 0 8px;
+    border-radius: 8px;
+    background: #65779526;
+    box-shadow: inset 0 1px 3px #43547518;
+  }
+
+  .ocr-meter-fill {
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #8ba1d0, #597dbd);
+  }
+
+  .ocr-meter-tick {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    border-left: 2px solid #ffffffa6;
+  }
+
+  .ocr-meter-position {
+    position: absolute;
+    top: 50%;
+    width: 20px;
+    height: 20px;
+    transform: translate(-50%, -50%);
+    border: 3px solid white;
+    border-radius: 50%;
+    background: #486daa;
+    box-shadow: 0 1px 5px #354d7950;
+  }
+
+  .ocr-meter-bounds {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    color: #78849a;
+    font-size: 11px;
+  }
   .ocr-star {
     display: flex;
     align-items: center;
@@ -145,7 +184,17 @@
           {% if progress %}
             <div class="ocr-dx-value">{{ progress.score }} <small>/ {{ progress.maximum }}</small></div>
             <div class="ocr-percentage">{{ '%.2f'|format(progress.percentage) }}%</div>
-            <div class="ocr-meter"><div style="width: {{ progress.percentage }}%;"></div></div>
+            <div class="ocr-meter">
+              <div class="ocr-meter-fill" style="width: {{ progress.fill }}%;"></div>
+              {% for marker in progress.markers %}
+                <span class="ocr-meter-tick" style="left: {{ marker.position }}%;"></span>
+              {% endfor %}
+              <span class="ocr-meter-position" style="left: {{ progress.fill }}%;"></span>
+            </div>
+            <div class="ocr-meter-bounds">
+              <span>{{ '%.1f'|format(progress.start_percentage) }}%</span>
+              <span>100%</span>
+            </div>
             {% for marker in progress.markers %}
               <div class="ocr-star {{ 'reached' if marker.achieved else '' }}">
                 {% if marker.icon %}<img src="{{ marker.icon }}">{% endif %}
