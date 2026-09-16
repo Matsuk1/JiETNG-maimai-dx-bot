@@ -18,9 +18,9 @@ def _mobile_base(version):
     return f"https://{host}/maimai-mobile"
 
 
-def _create_session(cookies=None, limit=10):
+def _create_session(cookies=None, limit=10, *, timeout=None):
     connector = aiohttp.TCPConnector(ssl=False, limit=limit, ttl_dns_cache=300)
-    return aiohttp.ClientSession(cookies=cookies, connector=connector)
+    return aiohttp.ClientSession(cookies=cookies, connector=connector, timeout=timeout)
 
 
 # Rating → 本地图片映射
@@ -149,7 +149,7 @@ async def _jp_login_session(headers):
     last_status = None
     last_page = "unknown"
     for attempt in range(3):
-        async with _create_session() as session:
+        async with _create_session(timeout=aiohttp.ClientTimeout(total=15, connect=5)) as session:
             token = None
             try:
                 async with session.get(
@@ -1057,7 +1057,9 @@ async def get_friend_info(cookies: dict, friend_id: str, ver="jp"):
         dict: 好友信息
     """
     base = _mobile_base(ver)
-    async with _create_session(cookies) as session:
+    async with _create_session(
+        cookies, timeout=aiohttp.ClientTimeout(total=15, connect=5),
+    ) as session:
         # 并发请求所有页面
         url = f"{base}/friend/search/searchUser/?friendCode={friend_id}"
         dom = await fetch_dom(session, url, ver)
@@ -1145,7 +1147,9 @@ async def get_friend_records(cookies: dict, friend_id: str, ver="jp"):
     base = _mobile_base(ver)
     difficulty = ['basic', 'advanced', 'expert', 'master', 'remaster']
 
-    async with _create_session(cookies) as session:
+    async with _create_session(
+        cookies, timeout=aiohttp.ClientTimeout(total=15, connect=5),
+    ) as session:
         # 并发请求所有难度
         tasks = []
         for diff in range(5):
@@ -1153,6 +1157,12 @@ async def get_friend_records(cookies: dict, friend_id: str, ver="jp"):
             tasks.append(fetch_dom(session, url, ver))
 
         doms = await asyncio.gather(*tasks)
+
+        # A failed difficulty must not silently produce an incomplete best list.
+        if any(isinstance(dom, str) and dom == "MAINTENANCE" for dom in doms):
+            return "MAINTENANCE"
+        if any(dom is None for dom in doms):
+            return None
 
         # 解析成绩
         friend_records = []

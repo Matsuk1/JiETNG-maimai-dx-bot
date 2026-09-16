@@ -59,7 +59,9 @@ class Session:
 def install_sessions(monkeypatch, responses):
     sessions = []
 
-    def create():
+    def create(*args, **kwargs):
+        assert kwargs["timeout"].total == 15
+        assert kwargs["timeout"].connect == 5
         assert all(session.closed for session in sessions)
         session = Session(responses[len(sessions)])
         sessions.append(session)
@@ -117,3 +119,30 @@ def test_cancelled_token_fetch_closes_session_without_retry(monkeypatch):
     with pytest.raises(asyncio.CancelledError):
         asyncio.run(maimai.login_to_maimai('test-id', 'test-password'))
     assert len(sessions) == 1 and sessions[0].closed
+
+
+@pytest.mark.parametrize('ver', ['jp', 'intl'])
+@pytest.mark.parametrize('failed_page', [None, 'MAINTENANCE'])
+def test_friend_records_reject_partial_results(monkeypatch, ver, failed_page):
+    sessions = install_sessions(monkeypatch, [Response()])
+    page = maimai.etree.HTML('<html></html>')
+    fetch = AsyncMock(side_effect=[page, page, failed_page, page, page])
+    monkeypatch.setattr(maimai, 'fetch_dom', fetch)
+    result = asyncio.run(maimai.get_friend_records({}, 'test-friend', ver))
+    assert result == failed_page
+    assert fetch.await_count == 5
+    assert sessions[0].closed
+
+
+def test_friend_info_request_timeout_closes_session(monkeypatch):
+    sessions = install_sessions(monkeypatch, [Response()])
+    monkeypatch.setattr(Session, 'get', lambda *args, **kwargs: Response(error=TimeoutError()))
+    assert asyncio.run(maimai.get_friend_info({}, 'test-friend')) == {}
+    assert sessions[0].closed
+
+
+def test_friend_records_request_timeouts_do_not_return_empty_success(monkeypatch):
+    sessions = install_sessions(monkeypatch, [Response()])
+    monkeypatch.setattr(Session, 'get', lambda *args, **kwargs: Response(error=TimeoutError()))
+    assert asyncio.run(maimai.get_friend_records({}, 'test-friend')) is None
+    assert sessions[0].closed

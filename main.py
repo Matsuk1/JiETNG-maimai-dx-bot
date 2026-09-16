@@ -3117,7 +3117,7 @@ async def generate_friend_record(user_id, friend_code, type="best50", cmd="", ve
     if friend_records == "MAINTENANCE":
         return maintenance_error(user_id)
 
-    if not friend_records:
+    if not friend_info or not friend_records:
         return friend_rcd_error(user_id)
 
     recent_type = (type == "best40")
