@@ -1308,7 +1308,14 @@ def _evaluate_judgement_alignment(
                     and row_offset == 0
                     and column_offset == 0
                     and row_name == "break"
-                    and len(aligned) >= 5
+                    and all(
+                        int(note_counts.get(name, 0) or 0) == 0
+                        or (
+                            name in aligned
+                            and sum(aligned[name].values()) == int(note_counts[name])
+                        )
+                        for name in row_names if name != "break"
+                    )
                 ):
                     ignored_impossible_rows.append(row_name)
                     del aligned[row_name]

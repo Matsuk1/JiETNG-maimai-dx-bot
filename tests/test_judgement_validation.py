@@ -60,3 +60,37 @@ def test_empty_judgement_does_not_load_song_database():
     with patch.object(recognizer, 'read_dxdata') as read:
         assert recognizer.validate_recognized_judgement(result) is result
     read.assert_not_called()
+
+
+def white_snow_result():
+    fields = ('critical_perfect', 'perfect', 'great', 'good', 'miss')
+    values = dict(tap=[304, 213, 15, 0, 0], hold=[35, 20, 0, 0, 0],
+                  slide=[114, 0, 0, 0, 0], touch=[0, 0, 0, 0, 0],
+                  **{'break': [149, 4, 0, 0, 0]})
+    return {'parsed': {'title': '白ゆき', 'achievement': 100.6651,
+                       'sub_judgement': {key: dict(zip(fields, counts)) for key, counts in values.items()}}}
+
+
+@pytest.mark.parametrize('touch', [None, 0])
+def test_std_zero_touch_does_not_block_overfull_break_recovery(touch):
+    song = dict(id='white-snow', title='白ゆき', type='std', sheets=[dict(
+        difficulty='master', noteCounts=dict(tap=532, hold=55, slide=114, touch=touch, **{'break': 18}))])
+    result = white_snow_result()
+    with patch.object(recognizer, 'read_dxdata', return_value=([song], None)):
+        output = recognizer.validate_recognized_judgement(result)
+    assert output['parsed']['sub_judgement']['break'] == dict(
+        critical_perfect=14, perfect=4, great=0, good=0, miss=0)
+    validation = output['validation']
+    assert validation['difficulty'] == 'master'
+    assert validation['achievement_calc']['consistent'] is True
+    assert validation['achievement_calc']['complete'] is True
+    assert validation['calc_corrections'][0]['inferred_row'] is True
+
+
+@pytest.mark.parametrize('preserve,touch', [(True, None), (False, 10)])
+def test_break_recovery_respects_manual_input_and_missing_required_touch(preserve, touch):
+    song = dict(id='white-snow', title='白ゆき', type='std', sheets=[dict(
+        difficulty='master', noteCounts=dict(tap=532, hold=55, slide=114, touch=touch, **{'break': 18}))])
+    with patch.object(recognizer, 'read_dxdata', return_value=([song], None)):
+        output = recognizer.validate_recognized_judgement(white_snow_result(), preserve_input=preserve)
+    assert not any(item.get('inferred_row') for item in output.get('validation', {}).get('calc_corrections', []))
