@@ -146,3 +146,30 @@ def test_rejected_vision_logs_its_own_values_and_failure_reason(caplog, title, a
     assert f'reason={reason}' in caplog.text
     assert repr(title) in caplog.text
     assert 'rows=' in caplog.text
+
+
+def test_main_screen_totals_reject_skipped_or_shifted_rows(caplog):
+    song, parsed = sample()
+    parsed['judgement_totals'] = {'critical_perfect': 999}
+    original = {'parsed': {}}
+    with patch.object(codex_agent, 'recognize_score_with_codex', return_value=parsed):
+        assert recognizer.validate_recognized_judgement(original, image_bytes=b'image') is original
+    assert 'column_total_mismatch' in caplog.text
+
+
+def test_vision_receives_original_and_detector_independent_details(tmp_path):
+    from io import BytesIO
+    from PIL import Image
+    (tmp_path / 'auth.json').write_text('{}')
+    raw = image_bytes()
+    with patch.dict('os.environ', CODEX_HOME=str(tmp_path)), patch.object(
+        codex_agent, 'AI_MONITOR_ENABLED', True), patch.object(
+        codex_agent, '_codex_path', return_value='codex'), patch.object(
+        codex_agent._ocr_server, 'ask', return_value={'text': '{}'}) as ask, patch.object(
+        codex_agent._ocr_server, 'release'):
+        codex_agent.recognize_score_with_codex(raw)
+    inputs = ask.call_args.args[4]
+    assert len(inputs) == 3 and inputs[0][1] == raw
+    for (_, content), size in zip(inputs[1:], [(32, 16), (32, 24)]):
+        with Image.open(BytesIO(content)) as crop:
+            assert crop.size == size

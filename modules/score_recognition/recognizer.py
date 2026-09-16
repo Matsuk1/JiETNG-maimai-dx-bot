@@ -1680,6 +1680,20 @@ def validate_recognized_judgement(
                 logger.warning("[Recognize] Codex fallback rejected: invalid cells row=%s values=%s", name, row)
                 return result
             clean_rows[name] = {field: row[field] for field in ALL_JUDGEMENT_VALUE_NAMES}
+        totals = parsed.get("judgement_totals")
+        if isinstance(totals, dict):
+            for field in ALL_JUDGEMENT_VALUE_NAMES:
+                expected = totals.get(field)
+                if expected is None:
+                    continue
+                observed = sum(row[field] for row in clean_rows.values())
+                if type(expected) is not int or expected != observed:
+                    logger.warning(
+                        "[Recognize] Codex fallback rejected: column_total_mismatch "
+                        "field=%s table=%s main_screen=%r title=%r",
+                        field, observed, expected, title,
+                    )
+                    return result
         candidate = _validate_recognized_judgement(
             {"source": "codex", "parsed": {"title": title, "achievement": achievement,
                                             "sub_judgement": clean_rows}},

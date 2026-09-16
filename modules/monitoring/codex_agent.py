@@ -1083,21 +1083,39 @@ def recognize_score_with_codex(image_bytes: bytes) -> dict[str, Any] | None:
         return None
     _codex_path()
     prompt = (
-        "Transcribe the song title, current ACHIEVEMENT (not MY BEST), and the "
-        "five judgement rows from this maimai result photo. Return ONLY JSON with "
-        "keys title (string), achievement (number percent, e.g. 100.6651), "
-        "sub_judgement (object with tap, hold, slide, touch, break). "
-        "Each row has critical_perfect, perfect, great, good, miss integer counts. "
-        "Use null for unreadable fields, never turn unreadable/missing rows into zero. "
-        "Read the upper judgement table carefully; ignore cabinet reflections and grid lines."
+        "These images show ONE maimai result: original photo, upper-half detail, "
+        "and lower-screen detail. They are overlapping views, not separate scores. "
+        "The cabinet may be tilted: follow the table's rotated row labels and grid. "
+        "Read the song title from the narrow title strip immediately below MASTER/EXPERT "
+        "on the circular screen. CLEAR!, FAILED, NEW RECORD, track number and player "
+        "name are NOT song titles. Preserve Japanese text exactly; do not translate it. "
+        "Read current ACHIEVEMENT, not MY BEST. Read all FIVE upper-table rows by their "
+        "labels: TAP, HOLD, SLIDE, TOUCH, BREAK. A SLIDE count of 1 is still a row: "
+        "never skip short/small rows or shift later rows upward. "
+        "Columns are CRITICAL PERFECT, PERFECT, GREAT, GOOD, MISS. "
+        "Cross-check each column sum against the aggregate judgement counts near the "
+        "bottom-right of the circular screen when readable. Reinspect mismatches; "
+        "never change a number just to force totals to match. "
+        "Return ONLY JSON with title (string), achievement (number percent), "
+        "sub_judgement (object with tap, hold, slide, touch, break), and "
+        "judgement_totals (object with the five aggregate column counts, or null "
+        "if not visible). Each row has critical_perfect, perfect, great, good, miss "
+        "integer counts. Use null for unreadable values or rows; never invent zeros."
     )
     with Image.open(BytesIO(image_bytes)) as image:
         suffix = {"JPEG": ".jpg", "PNG": ".png", "WEBP": ".webp"}.get(image.format, ".png")
+        image_inputs = [(suffix, image_bytes)]
+        width, height = image.size
+        # Detector-independent detail views still work when four-corner detection fails.
+        for top, bottom in ((0, (height + 1) // 2), (height // 4, height)):
+            with image.crop((0, top, width, bottom)) as crop, BytesIO() as output:
+                crop.save(output, format="PNG")
+                image_inputs.append((".png", output.getvalue()))
     session_id = "score-ocr-" + secrets.token_hex(16)
     started = time.monotonic()
     logger.info("[Recognize] Codex image fallback started: model=%s effort=low", AI_OCR_MODEL)
     try:
-        answer = _ocr_server.ask(session_id, prompt, {}, [], [(suffix, image_bytes)])
+        answer = _ocr_server.ask(session_id, prompt, {}, [], image_inputs)
         return json.loads(answer["text"])
     finally:
         logger.info("[Recognize] Codex image fallback finished: model=%s elapsed=%.3fs",
