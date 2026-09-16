@@ -1,4 +1,5 @@
 import random
+from contextlib import asynccontextmanager
 import logging
 import asyncio
 import aiohttp
@@ -142,6 +143,64 @@ def _extract_jp_login_token(session, html, dom=None):
     return None, None
 
 
+@asynccontextmanager
+async def _jp_login_session(headers):
+    """Keep the successful token's session; discard failed sessions before retrying."""
+    last_status = None
+    last_page = "unknown"
+    for attempt in range(3):
+        async with _create_session() as session:
+            token = None
+            try:
+                async with session.get(
+                    "https://maimaidx.jp/maimai-mobile/login/",
+                    headers=headers,
+                    timeout=aiohttp.ClientTimeout(total=15, connect=5),
+                ) as response:
+                    last_status = response.status
+                    if response.status == 503:
+                        token = "MAINTENANCE"
+                        logger.warning("[Maimai] ⚠ Server maintenance (503): server=JP")
+                    else:
+                        response.raise_for_status()
+                        html = await response.text()
+                        dom = await asyncio.to_thread(etree.HTML, html)
+                        token, source = _extract_jp_login_token(session, html, dom)
+                        last_page = _describe_jp_login_page(html)
+                        if token and attempt:
+                            logger.info(
+                                "[Maimai] ✓ JP login token recovered: attempt=%s, source=%s",
+                                attempt + 1, source,
+                            )
+                        elif not token:
+                            logger.warning(
+                                "[Maimai] ⚠ JP login token missing: attempt=%s/3, "
+                                "status=%s, html_len=%s, page=%s; discarding session",
+                                attempt + 1, last_status, len(html or ""), last_page,
+                            )
+            except Exception as exc:
+                last_page = type(exc).__name__
+                logger.warning(
+                    "[Maimai] ⚠ JP login page fetch failed: attempt=%s/3, "
+                    "error=%s; discarding session", attempt + 1, last_page,
+                )
+
+            # Do not catch exceptions from the caller's POST/Aime requests:
+            # they must not restart authentication or yield a second time.
+            if token:
+                yield session, token
+                return
+
+        # The old cookies and connector are closed before another attempt.
+        if attempt < 2:
+            await asyncio.sleep(1.5)
+
+    raise RuntimeError(
+        "Unable to fetch JP login token after 3 fresh sessions "
+        f"(last_status={last_status}, last_page={last_page})"
+    )
+
+
 def parse_level_value(input_str):
     input_str = input_str.strip()
 
@@ -282,59 +341,10 @@ async def login_to_maimai(sega_id: str, password: str, ver="jp", aime=0):
             return session.cookie_jar.filter_cookies("https://maimaidx-eng.com")
 
     else:  # jp
-        async with _create_session() as session:
-            # 偶发抖动重试（SEGA 偶尔返回不含 token 的页面 / 瞬时网络错）
-            token = None
-            token_source = None
-            last_status = None
-            last_html_len = 0
-            last_page_hint = ""
-            last_snippet = ""
-            headers = _jp_login_headers(user_agent)
-            for attempt in range(3):
-                try:
-                    async with session.get(
-                        "https://maimaidx.jp/maimai-mobile/login/",
-                        headers=headers,
-                    ) as response:
-                        last_status = response.status
-                        if response.status == 503:
-                            logger.warning("[Maimai] ⚠ Server maintenance (503): server=JP")
-                            return "MAINTENANCE"
-                        response.raise_for_status()
-                        html = await response.text()
-
-                    last_html_len = len(html or "")
-                    dom = await asyncio.to_thread(etree.HTML, html)
-                    token, token_source = _extract_jp_login_token(session, html, dom)
-                    if token:
-                        if attempt > 0:
-                            logger.info(
-                                f"[Maimai] ✓ JP login token recovered on attempt {attempt + 1}: "
-                                f"source={token_source}"
-                            )
-                        break
-                    last_page_hint = _describe_jp_login_page(html)
-                    last_snippet = (html or "")[:200].replace("\n", " ")
-                    logger.warning(
-                        f"[Maimai] ⚠ JP login token missing (attempt {attempt + 1}/3): "
-                        f"status={last_status}, html_len={last_html_len}, "
-                        f"page={last_page_hint}, snippet={last_snippet!r}"
-                    )
-                except Exception as e:
-                    logger.warning(
-                        f"[Maimai] ⚠ JP login page fetch failed (attempt {attempt + 1}/3): {e}"
-                    )
-
-                if attempt < 2:
-                    await asyncio.sleep(1.5)
-
-            if not token:
-                raise Exception(
-                    f"Unable to fetch login token after 3 attempts "
-                    f"(last_status={last_status}, last_html_len={last_html_len}, "
-                    f"last_page={last_page_hint})"
-                )
+        headers = _jp_login_headers(user_agent)
+        async with _jp_login_session(headers) as (session, token):
+            if token == "MAINTENANCE":
+                return "MAINTENANCE"
 
             # POST 登录
             async with session.post(
@@ -477,44 +487,10 @@ async def get_aime_candidates(sega_id: str, password: str, ver="jp"):
         }]
 
     user_agent = _get_random_user_agent()
-    async with _create_session() as session:
-        token = None
-        token_source = None
-        headers = _jp_login_headers(user_agent)
-        for attempt in range(3):
-            try:
-                async with session.get(
-                    "https://maimaidx.jp/maimai-mobile/login/",
-                    headers=headers,
-                ) as response:
-                    if response.status == 503:
-                        logger.warning("[Maimai] ⚠ Server maintenance (503): server=JP")
-                        return "MAINTENANCE"
-                    response.raise_for_status()
-                    html = await response.text()
-
-                dom = await asyncio.to_thread(etree.HTML, html)
-                token, token_source = _extract_jp_login_token(session, html, dom)
-                if token:
-                    if attempt > 0:
-                        logger.info(
-                            f"[Maimai] ✓ JP Aime-list login token recovered on attempt {attempt + 1}: "
-                            f"source={token_source}"
-                        )
-                    break
-                logger.warning(
-                    f"[Maimai] ⚠ JP login token missing for Aime list (attempt {attempt + 1}/3): "
-                    f"status={response.status}, html_len={len(html or '')}, "
-                    f"page={_describe_jp_login_page(html)}"
-                )
-            except Exception as e:
-                logger.warning(f"[Maimai] ⚠ JP login page fetch failed for Aime list (attempt {attempt + 1}/3): {e}")
-
-            if attempt < 2:
-                await asyncio.sleep(1.5)
-
-        if not token:
-            raise Exception("Unable to fetch JP login token for Aime list")
+    headers = _jp_login_headers(user_agent)
+    async with _jp_login_session(headers) as (session, token):
+        if token == "MAINTENANCE":
+            return "MAINTENANCE"
 
         async with session.post(
             "https://maimaidx.jp/maimai-mobile/submit/",
