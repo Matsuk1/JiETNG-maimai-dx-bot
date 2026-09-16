@@ -119,17 +119,21 @@ def test_invalid_upload_is_not_sent_to_codex():
     ask.assert_not_called()
 
 
-@pytest.mark.parametrize('ocr_only,expected', [(True, 'ocr-model'), (False, 'monitor-model')])
-def test_ocr_model_is_independent_from_monitor(ocr_only, expected):
+@pytest.mark.parametrize('ocr_only', [True, False])
+@pytest.mark.parametrize('model', ['monitor-model', ''])
+def test_ocr_uses_monitor_model_and_default_reasoning(ocr_only, model):
     server = codex_agent._CodexAppServer(ocr_only=ocr_only)
-    with patch.object(codex_agent, 'AI_OCR_MODEL', 'ocr-model'), patch.object(
-        codex_agent, 'AI_MONITOR_MODEL', 'monitor-model'), patch.object(
+    with patch.object(codex_agent, 'AI_MONITOR_MODEL', model), patch.object(
         server, '_request', return_value={'thread': {'id': 'test'}}) as request:
         server._new_thread(100)
-    assert request.call_args.args[1]['model'] == expected
+    params = request.call_args.args[1]
+    if model:
+        assert params['model'] == model
+    else:
+        assert 'model' not in params
     with patch.object(codex_agent, '_codex_path', return_value='codex'):
         command = server._command()
-    assert ('model_reasoning_effort="medium"' in command) is ocr_only
+    assert not any('model_reasoning_effort' in argument for argument in command)
 
 
 @pytest.mark.parametrize('title,achievement,reason', [

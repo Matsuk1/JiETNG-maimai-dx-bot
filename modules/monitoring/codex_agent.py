@@ -31,7 +31,6 @@ from modules.config_loader import (
     AI_MONITOR_CODEX_COMMAND,
     AI_MONITOR_ENABLED,
     AI_MONITOR_MODEL,
-    AI_OCR_MODEL,
     AI_MONITOR_SESSION_TTL_SECONDS,
     AI_MONITOR_TIMEOUT_SECONDS,
     BIND_TOKEN_KEY,
@@ -496,8 +495,7 @@ class _CodexAppServer:
             return [_codex_path(), "app-server", "--stdio",
                     "-c", 'web_search="disabled"',
                     "-c", 'features.shell_tool=false',
-                    "-c", 'features.image_generation=false',
-                    "-c", 'model_reasoning_effort="medium"']
+                    "-c", 'features.image_generation=false']
         return [
             _codex_path(),
             "app-server",
@@ -822,7 +820,7 @@ class _CodexAppServer:
             ),
             "personality": "pragmatic",
         }
-        model = AI_OCR_MODEL if self._ocr_only else AI_MONITOR_MODEL
+        model = AI_MONITOR_MODEL
         if model:
             params["model"] = model
         result = self._request("thread/start", params, deadline, cancel_check)
@@ -1113,13 +1111,13 @@ def recognize_score_with_codex(image_bytes: bytes) -> dict[str, Any] | None:
                 image_inputs.append((".png", output.getvalue()))
     session_id = "score-ocr-" + secrets.token_hex(16)
     started = time.monotonic()
-    logger.info("[Recognize] Codex image fallback started: model=%s effort=medium", AI_OCR_MODEL)
+    logger.info("[Recognize] Codex image fallback started: model=%s effort=default", AI_MONITOR_MODEL or "Codex default")
     try:
         answer = _ocr_server.ask(session_id, prompt, {}, [], image_inputs)
         return json.loads(answer["text"])
     finally:
         logger.info("[Recognize] Codex image fallback finished: model=%s elapsed=%.3fs",
-                    AI_OCR_MODEL, time.monotonic() - started)
+                    AI_MONITOR_MODEL or "Codex default", time.monotonic() - started)
         _ocr_server.release(session_id)
 
 
