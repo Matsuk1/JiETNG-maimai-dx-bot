@@ -1958,7 +1958,8 @@ def recognize_score_image_bytes(
             result = process_image_data(
                 image,
                 fields or ocr_fields,
-                _engine(),
+                None,
+                engine_factory=_engine,
             )
             _ENGINE_REQUEST_COUNT += 1
             rss_after = _process_rss_mb()

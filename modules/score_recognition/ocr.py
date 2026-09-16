@@ -2617,9 +2617,10 @@ def parse_sub_judgement(text: str) -> dict[str, dict[str, int]] | None:
 def process_image_data(
     source_image: Image.Image,
     fields: Iterable[str],
-    engine: PaddleOcrEngine,
+    engine: PaddleOcrEngine | None,
     *,
     debug_output_dir: str | Path | None = None,
+    engine_factory=None,
 ) -> dict[str, Any]:
     """Run the production OCR pipeline entirely in memory."""
     started_at = time.perf_counter()
@@ -2632,6 +2633,13 @@ def process_image_data(
         debug_input = Path(debug_output_dir) / "ocr_input"
         debug_input.mkdir(parents=True, exist_ok=True)
     crop_seconds = time.perf_counter() - started_at
+    if engine is None:
+        if engine_factory is None:
+            raise ValueError("An OCR engine or engine factory is required")
+        engine_started_at = time.perf_counter()
+        engine = engine_factory()
+        logger.info("[Recognize] OCR engine ready: elapsed=%.3fs crop=%.3fs",
+                    time.perf_counter() - engine_started_at, crop_seconds)
     selected_fields = tuple(fields)
     ocr_fields: dict[str, dict[str, Any]] = {}
     field_seconds: dict[str, float] = {}

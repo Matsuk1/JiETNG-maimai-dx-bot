@@ -75,3 +75,17 @@ class EngineFailureTests(unittest.TestCase):
             engine.read(Image.new('RGB',(100,30)))
         engine.ocr.predict.assert_called_once()
         engine.ocr.ocr.assert_not_called()
+
+
+def test_failed_crop_does_not_initialize_ocr_engine():
+    import pytest
+    from unittest.mock import Mock
+    from modules.score_recognition import ocr
+
+    engine_factory = Mock()
+    with Image.new('RGB', (100, 100)) as source, patch.object(
+        ocr, 'crop_result_fields_in_memory', side_effect=ValueError('four corners missing')
+    ):
+        with pytest.raises(ValueError, match='four corners missing'):
+            ocr.process_image_data(source, ocr.OCR_FIELDS, None, engine_factory=engine_factory)
+    engine_factory.assert_not_called()
