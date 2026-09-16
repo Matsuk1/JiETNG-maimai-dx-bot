@@ -83,3 +83,26 @@ peak-memory limits. Explicit environment settings override the defaults.
 Keep oneDNN disabled on the tested server: its table pipeline failed with
 `ReduceMeanCheckIfOneDNNSupport`. Confirm `reused=True` and near-zero startup
 in subsequent table request logs after deploying this change.
+
+
+## OCR 检测尺寸与日志
+
+文字检测默认将长边限制为 1280 像素，避免判定表先放大 3 倍、列图再放大 5 倍后，以最高 4000 像素运行检测。PaddleOCR 仍使用传入的原图裁出文字供识别，坐标也返回原图坐标。
+
+可在服务环境中设置 `JIETNG_OCR_DET_MAX_SIDE`（整数，至少 32），重启服务生效。默认 `1280`；如特定图片出现漏检，可设为 `4000` 对比。这个选项控制普通文字和列补识别的检测器，不修改独立表格模型。
+
+常规 INFO 日志包含：
+
+- `Score OCR timing`：裁切、曲名、达成率、判定表分别耗时。判定表耗时包括必要的列/单元格补识别，不含请求排队、模型首次加载和后续成绩校验。
+- `Table OCR request`：是否复用表格模型、加载和推理耗时、内存、完整/部分结果模式。
+- `OCR lock wait`：等待共享 OCR 锁超过 1 秒时记录，区分排队与计算。
+
+比较优化前后时，使用相同图片、相同服务器配置，先预热模型，再串行重复请求。比较判定数字和最终成绩校验结果，不能只看耗时。不要并行运行两组模型基准，以免 CPU 和内存争用干扰结果。
+
+## 日志约定
+
+使用模块级 logger 和 `[模块]` 标识。INFO 记录请求阶段、耗时和结果；
+DEBUG 记录详细诊断；WARNING 记录重试和降级；ERROR 记录最终失败，
+需要堆栈时使用 `logger.exception`。使用参数格式化（如
+`logger.info("elapsed=%.3fs", elapsed)`），避免提前拼接被过滤的日志。
+不输出密码、认证 token 或完整认证页面。
