@@ -1081,8 +1081,7 @@ def recognize_score_with_codex(image_bytes: bytes) -> dict[str, Any] | None:
         return None
     _codex_path()
     prompt = (
-        "These images show ONE maimai result: original photo, upper-half detail, "
-        "and lower-screen detail. They are overlapping views, not separate scores. "
+        "Read this original maimai result photo. "
         "The cabinet may be tilted: follow the table's rotated row labels and grid. "
         "Read the song title from the narrow title strip immediately below MASTER/EXPERT "
         "on the circular screen. CLEAR!, FAILED, NEW RECORD, track number and player "
@@ -1102,13 +1101,7 @@ def recognize_score_with_codex(image_bytes: bytes) -> dict[str, Any] | None:
     )
     with Image.open(BytesIO(image_bytes)) as image:
         suffix = {"JPEG": ".jpg", "PNG": ".png", "WEBP": ".webp"}.get(image.format, ".png")
-        image_inputs = [(suffix, image_bytes)]
-        width, height = image.size
-        # Detector-independent detail views still work when four-corner detection fails.
-        for top, bottom in ((0, (height + 1) // 2), (height // 4, height)):
-            with image.crop((0, top, width, bottom)) as crop, BytesIO() as output:
-                crop.save(output, format="PNG")
-                image_inputs.append((".png", output.getvalue()))
+    image_inputs = [(suffix, image_bytes)]
     session_id = "score-ocr-" + secrets.token_hex(16)
     started = time.monotonic()
     logger.info("[Recognize] Codex image fallback started: model=%s effort=default", AI_MONITOR_MODEL or "Codex default")

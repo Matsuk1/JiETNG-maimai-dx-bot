@@ -161,9 +161,7 @@ def test_main_screen_totals_reject_skipped_or_shifted_rows(caplog):
     assert 'column_total_mismatch' in caplog.text
 
 
-def test_vision_receives_original_and_detector_independent_details(tmp_path):
-    from io import BytesIO
-    from PIL import Image
+def test_vision_receives_only_unmodified_original(tmp_path):
     (tmp_path / 'auth.json').write_text('{}')
     raw = image_bytes()
     with patch.dict('os.environ', CODEX_HOME=str(tmp_path)), patch.object(
@@ -173,10 +171,8 @@ def test_vision_receives_original_and_detector_independent_details(tmp_path):
         codex_agent._ocr_server, 'release'):
         codex_agent.recognize_score_with_codex(raw)
     inputs = ask.call_args.args[4]
-    assert len(inputs) == 3 and inputs[0][1] == raw
-    for (_, content), size in zip(inputs[1:], [(32, 16), (32, 24)]):
-        with Image.open(BytesIO(content)) as crop:
-            assert crop.size == size
+    assert inputs == [(".png", raw)]
+    assert 'upper-half detail' not in ask.call_args.args[1]
 
 
 def test_correct_title_with_overfull_break_reports_row_mismatch(caplog):
