@@ -137,8 +137,14 @@
   .ocr-break-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-top: 20px; }
   .ocr-break-cell { border-left: 2px solid #879abc40; padding-left: 14px; }
   .ocr-break-label { font-size: 12px; letter-spacing: 1px; color: #71819c; margin-bottom: 14px; }
-  .ocr-part { display: grid; grid-template-columns: 26px 1fr; gap: 6px; margin: 12px 0; }
-  .ocr-part-label { font-size: 11px; color: #71819c; padding-top: 7px; }
+  .ocr-part {
+    display: grid;
+    grid-template-columns: 26px 1fr;
+    align-items: center;
+    gap: 6px;
+    margin: 12px 0;
+  }
+  .ocr-part-label { font-size: 11px; color: #71819c; }
   .ocr-note { padding: 18px 24px; border-top: 1px solid #687b9826; font-size: 14px; color: #846746; }
 </style>
 {% macro count_cell(item) %}
