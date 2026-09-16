@@ -1,93 +1,65 @@
 # 開発者 API
 
-JiETNG には 2 種類の API があります。
+接続先：`https://jietng-endpoint.matsuk1.com`。開発者 API は `Authorization: Bearer <developer_token>`、取り込みは `Authorization: Bearer <import_token>` を使います。相互に代用できません。
 
-- **開発者 API**：開発者 Token で呼び出し、ユーザー管理、連携リンク、権限、画像生成に使います。
-- **ユーザー Import API**：ユーザー Import Token で呼び出し、加工済み成績 JSON をアップロードします。
+## Token と権限
 
-既定のエンドポイント：
+開発者 Token は管理者が管理画面で作成・撤回します。利用には保守者へ連絡してください。現在の LINE コアコマンドに `devtoken create/list/revoke/info` はありません。Import Token は取り込み専用登録の成功画面、または `settings` で取得でき、平文は一度だけ表示されます。
 
-```text
-https://jietng-endpoint.matsuk1.com
-```
+作成元 Token（owner）またはユーザーが承認した Token（granted）がアクセスできます。`POST /api/v2/users/<user_id>/permissions` で申請し、JSON `requester_name` は省略可能です。LINE ユーザーは権限メッセージの承認・拒否ボタンで処理します。ボタン操作は通常のテキストコマンドではありません。
 
-## 認証
+| メソッド | パス | 権限・パラメータ |
+|---|---|---|
+| GET | `/api/v2/users` | 現 Token がアクセス可能なユーザー一覧 |
+| POST | `/api/v2/users` | JSON/form の `user_id`・`nickname` 必須。201 で `bind_url`・`token`・`expires_in`。既存ユーザーは 409 |
+| GET | `/api/v2/users/<user_id>` | owner/granted。SEGA ID・パスワード等を除くユーザー情報 |
+| DELETE | `/api/v2/users/<user_id>` | owner のみ。ユーザー削除 |
+| GET | `/api/v2/users/<user_id>/permissions/requests` | owner のみ。保留中の申請 |
+| PATCH | `/api/v2/users/<user_id>/permissions/requests/<request_id>` | owner のみ。JSON `action` は `accept` / `reject` |
+| DELETE | `/api/v2/users/<user_id>/permissions/<token_id>` | owner のみ。granted 権限撤回 |
+| DELETE | `/api/v2/users/<user_id>/permissions/self` | granted 権限の自己撤回。owner は不可 |
 
-開発者 API：
+## 連携と Web リンク
 
-```http
-Authorization: Bearer <developer_token>
-```
-
-Import API：
-
-```http
-Authorization: Bearer <import_token>
-```
-
-開発者 Token と Import Token は別物です。Import Token は単一ユーザーに属し、そのユーザーの成績アップロードにだけ使います。
-
-## 開発者 Token
-
-LINE で管理します。
-
-```text
-devtoken create <メモ>
-devtoken list
-devtoken revoke <token_id>
-devtoken info <token_id>
-```
-
-平文 token は作成時に一度だけ表示されます。
-
-## 権限
-
-開発者 Token がユーザーにアクセスできる条件：
-
-- その Token がユーザーを作成した owner である。
-- ユーザーがその Token の権限リクエストを承認した。
-
-権限エンドポイント：
+以下は owner または granted 権限が必要です。
 
 ```http
-POST /api/v2/users/<user_id>/permissions
-PATCH /api/v2/users/<user_id>/permissions/requests/<request_id>
-DELETE /api/v2/users/<user_id>/permissions/<token_id>
-DELETE /api/v2/users/<user_id>/permissions/self
-```
-
-ユーザーは LINE でも処理できます。
-
-```text
-accept-perm-request <request_id>
-reject-perm-request <request_id>
-```
-
-## ユーザー関連
-
-```http
-POST /api/v2/users
 POST /api/v2/users/<user_id>/bind
 PUT /api/v2/users/<user_id>/bind
 GET /api/v2/users/<user_id>/bind-url
 GET /api/v2/users/<user_id>/rebind-url
 GET /api/v2/users/<user_id>/settings-url
+```
+
+POST は `sega_id`・`password` が必須。任意項目は `ver`（jp/intl）、`aime`、`timezone`、`language`。PUT は完全な連携済みであることが必要で、`sega_id`・`password`・`ver`・`aime` を更新し、言語とタイムゾーンを維持します。LINE の再連携フォームと異なり API PUT は SEGA ID も変更可能です。
+
+連携・再連携リンクは 120 秒、設定リンクは 1800 秒有効です。リンク生成は 201 を返します。アカウント操作リンクは該当ユーザーだけに渡してください。
+
+## 同期
+
+```http
 POST /api/v2/users/<user_id>/sync/stream
 ```
 
-`/sync/stream` は `application/x-ndjson` を返し、最初の行が `accepted`、最後の行が `completed` または `failed` になります。同期には完全な SEGA 連携が必要です。Import Token ユーザーは加工済み成績をアップロードしてください。
+ユーザーへの権限と完全な SEGA 連携が必要です。`application/x-ndjson` で、ロック取得後に `accepted`、最後に `completed` または `failed` を返します。同期中の場合は `accepted` なしで `failed` になることがあります。HTTP 200 だけで成功と判断せず、最終イベントまで読んでください。ストリーム開始前の認証・頻度制限は HTTP エラーです。取り込み専用ユーザーは Import API を利用します。
 
-## スコア画像
+## 画像・曲庫
 
 ```http
 GET /api/v2/users/<user_id>/image?command=b50
 GET /api/v2/users/<user_id>/songs/<song_id>/image
 GET /api/v2/users/<user_id>/plate?title=真神
 GET /api/v2/users/<user_id>/achievement?level=14%2B&rank=sss
-GET /api/v2/songs/<song_id>/image
+GET /api/v2/songs/<song_id>/image?ver=jp
 GET /api/v2/users/<user_id>/export?fmt=json
+GET /api/v2/songs/search?q=ヒバナ&ver=jp&max_results=10
+GET /api/v2/versions
 GET /api/v2/dxdata?ver=jp
 ```
+
+ユーザー画像・エクスポートには権限と保存済みデータが必要です。画像は既定で PNG。`format=base64` なら `{ "success": true, "format": "base64", "image": "..." }`。エクスポートは `fmt=json` / `fmt=xml`。`achievement` は `rank` を省略すると譜面一覧です。plate/achievement API には LINE の `-uc/-up/-c` フィルターはありません。
+
+`songs/search` の `max_results` は 1–50、既定 10。現マッチャーは指定件数まで返すため、広い検索では先頭候補のみになることがあります。検索を絞ってください。バージョンは明示 `ver` > 権限のある `user_id` のバージョン > `jp`。候補なしは空の `songs` を持つ成功応答です。取得した曲 ID を楽曲画像に使用します。
 
 ### リザルト画像 OCR
 
@@ -104,7 +76,7 @@ multipart フィールド：
 | `image` | file | はい | JPEG、PNG、WebP。既定の上限は 20 MiB、4000 万画素 |
 | `ver` | text | いいえ | `jp` または `intl`。既定は `jp` |
 
-OCR は同期実行されます。曲名、達成率、完全な判定表を 1 つの譜面に照合して検証できた場合だけ成功します。メイン画面のみ、副画面が不完全、楽曲を特定できない場合は `422` を返します。
+OCR は同期実行されます。曲名、達成率、完全な判定表を 1 つの譜面に照合して検証できた場合だけ成功します。検証可能な完全な結果を得られない場合は `422` です。Calc で不足判定を推定する場合があり、推定値を画像から直接読んだ値とは見なせません。
 
 ```bash
 curl -X POST https://jietng-endpoint.matsuk1.com/api/v2/score-recognition \
@@ -197,7 +169,7 @@ POST /api/web/session-image
 Content-Type: application/json
 ```
 
-ブックマークレットの JSON を受け取り、`image/png` を返します。開発者 Token は不要です。
+ブックマークレットの JSON を受け取り、`image/jpeg` を返します。開発者 Token は不要です。
 
 主な body：
 
@@ -331,3 +303,13 @@ Content-Type: application/json
 - Import Token はユーザー自身のブラウザまたは信頼できるツール用です。
 - 第三者アプリは開発者 Token とユーザー権限フローを使ってください。
 - unlink 時は `DELETE /api/v2/users/<user_id>/permissions/self` を呼び出してください。
+
+## 取り込みの境界とクライアント
+
+`records` に `best` または `recent` が必要です。明示した `[]` はその区画を消去し、省略した区画の記録は維持します。両方を空にすると 400。省略区画の `best_count` / `recent_count` は `null` です。
+
+毎回 `profile` 全体を再構築します。省略した場合も同様で、名前・Rating・表示項目の不足は `Imported`・`0`・`N/A` 等の既定値になり、旧値は保持しません。バージョン優先順位は `maimai_version` > `version` > 保存済み > JP。無効値も現在は JP に戻るため、`jp` / `intl` のみ送ってください。
+
+リポジトリの `client/` は同期・非同期 Python クライアントです。`discord_bot/` は開発者 API を使う独立した Discord 連携で、スラッシュコマンドは LINE テキストコマンドと異なります。導入方法は各ディレクトリの README を参照してください。
+
+`achievement` は現在 `11`、`11+`、`12`、`12+`、`13`、`13+`、`14`、`14+`、`15` のみ対応し、LINE prog のカテゴリ・小数定数には対応しません。ユーザーは設定 Web で owner 関連付けを撤回できます。owner Token 自身による `/permissions/self` の撤回禁止とは別操作です。

@@ -7,7 +7,7 @@ description: JiETNG command reference for maimai B50, score tracking, rating bre
 
 This page follows the current command registry. Commands are case-insensitive unless noted.
 
-Append `-help` to any command to see its usage. Commands that require arguments also show their usage when sent without arguments.
+Send `help` for the directory. Commands with help support accept `-help`, for example `b50 -help`; some argument-taking commands also show help when sent alone.
 
 ## Account and System
 
@@ -17,10 +17,9 @@ Append `-help` to any command to see its usage. Commands that require arguments 
 | `rebind` | Update SEGA password, version, and Aime |
 | `settings` | Open settings and Import Token management |
 | `profile` / `getme` | Show account profile and binding state |
-| `unbind` / `unbind confirm` | Delete stored user data |
+| `unbind` | Delete stored user data |
 | `maimai update` / `update` | Sync records from maimai NET |
 | `export json` / `export xml` | Export processed score data |
-| `donate` | Show support information |
 | `status` | Show bot runtime status |
 | `help` | Show the command directory |
 
@@ -59,7 +58,7 @@ Filters such as `-lv`, `-ra`, `-scr`, `-dx`, `-star`, `-diff`, `-ver`, `-type`, 
 | Format | Description |
 |--------|-------------|
 | `[level/constant] records [page]` | Record list |
-| `[level/constant] levels` | Level/constant list |
+| `[level/category] levels` | Chart list |
 | `[level][target] prog` | Level target status |
 
 Targets: `s`, `s+`, `ss`, `ss+`, `sss`, `sss+`, `fc`, `fc+`, `ap`, `ap+`, `fdx`, `fdx+`.
@@ -79,3 +78,17 @@ Target and plate commands support `-uc`, `-up`, and `-c`.
 | `random [level/constant]` | Random song |
 | `rank` / `ranking` / `rank jp` / `rank intl` | Rankings |
 | LINE location message | Nearby maimai arcades, merged from JP and INTL sources |
+
+## Recognition and scope
+
+| Command | Description |
+|---|---|
+| `rec` / `rec -flex` | Quote a result image for judgement analysis images / cards |
+| `crop` | Quote an image to preview cropped regions |
+| `info` (quoted image) | Recognize the song title and look it up |
+| `fix-rcd Song Title` (multiline) | Submit the judgement correction template |
+| `refreshmenu` | Silently refresh the LINE menu |
+
+`unbind` opens a web confirmation page, not a second chat confirmation command. `friends` / `friend-rcd` are private-chat only and require SEGA binding. `prog` also accepts song categories. Rankings include participating JiETNG users; mention queries respect the target's setting. `levels` uses your own account; self-only actions reject mentions of others.
+
+See [record commands](/en/commands/record) for filters, Recent pagination limits, and OCR; see [basic commands](/en/commands/basic) for skins and privacy controls.

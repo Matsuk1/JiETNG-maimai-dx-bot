@@ -14,7 +14,7 @@
 1. 私聊 Bot 发送 `bind`。
 2. 在网页中选择绑定 SEGA 账号，或选择 Import Token 导入模式。
 3. SEGA 用户发送 `maimai update`；导入模式用户打开 `settings` 生成 token 后使用[网页书签工具](/zh/bookmarklet)。
-4. 发送 `b50`、`rct50`、`record`、`plate` 等命令查看成绩。
+4. 发送 `b50`、`rct50`、`ヒバナ record`、`真極 plate` 等命令查看成绩。
 
 ## 可以在聊天里输入 SEGA 密码吗？
 
@@ -68,10 +68,7 @@ export xml
 
 发送：
 
-```text
-unbind
-unbind confirm
-```
+`unbind` → 打开返回的网页并确认
 
 会删除 JiETNG 保存的用户数据。此操作不可恢复。
 
@@ -80,3 +77,19 @@ unbind confirm
 - 查看[命令大全](/zh/commands/)
 - 在 GitHub 提交 Issue
 - 加入 Discord 反馈
+
+## 我可以隐藏成绩或退出排行榜吗？
+
+可以。在 `settings` 分别关闭允许他人 @ 查询与排行榜参与。两项默认开启。该设置不等同于撤销第三方开发者授权，应用权限需要在设置页另行管理。
+
+## 为什么图片不是我选择的语言，或背景不显示？
+
+Bot 交互语言与成绩图片语言分开：JP 图片为日文，INTL 为英文。选择的皮肤也可能不使用背景。请检查设置中的皮肤、背景开关与背景选择。
+
+## `rec` 可以代替导入吗？
+
+不可以。`rec`、`rec -flex`、`fix-rcd` 用于判定分析，不写入 Best/Recent。保存成绩需要 `maimai update` 或 Import Token 上传。
+
+## 新用户的 Import Token 从哪里来？
+
+导入模式绑定成功页会立即生成一个 Token，明文只显示一次；不必再生成一个才开始使用。丢失时到 `settings` 创建新 Token，并撤销不再需要的旧 Token。书签成绩有标签页缓存，更新方法见[支持与反馈](/zh/more/support)。

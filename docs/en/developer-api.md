@@ -1,93 +1,65 @@
 # Developer API
 
-JiETNG exposes two API groups:
+Base URL: `https://jietng-endpoint.matsuk1.com`. Developer endpoints use `Authorization: Bearer <developer_token>`; imports use `Authorization: Bearer <import_token>`. They are not interchangeable.
 
-- **Developer API**: called with developer tokens for user management, binding links, permissions, and image generation.
-- **User Import API**: called with a user Import Token to upload processed score JSON.
+## Tokens and permissions
 
-Default endpoint:
+Service administrators create and revoke developer tokens in the admin panel. Contact the maintainer for integration access. Core LINE commands no longer provide `devtoken create/list/revoke/info`. Users get an Import Token on the import-only registration success page or through `settings`; plaintext is shown once.
 
-```text
-https://jietng-endpoint.matsuk1.com
-```
+A developer token may access users it created (owner) or users who accepted its permission request (granted). Request access with `POST /api/v2/users/<user_id>/permissions`, optionally passing JSON `requester_name`. LINE users accept/reject through buttons in the permission message; those button actions are not plain-text chat commands.
 
-## Authentication
+| Method | Path | Permission / parameters |
+|---|---|---|
+| GET | `/api/v2/users` | Users accessible to the current token |
+| POST | `/api/v2/users` | Required JSON/form `user_id`, `nickname`; returns 201 with `bind_url`, `token`, `expires_in`; existing user returns 409 |
+| GET | `/api/v2/users/<user_id>` | owner or granted; user data excluding SEGA ID/password and other sensitive fields |
+| DELETE | `/api/v2/users/<user_id>` | owner only; deletes user |
+| GET | `/api/v2/users/<user_id>/permissions/requests` | owner only; pending requests |
+| PATCH | `/api/v2/users/<user_id>/permissions/requests/<request_id>` | owner only; JSON `action`: `accept` or `reject` |
+| DELETE | `/api/v2/users/<user_id>/permissions/<token_id>` | owner only; revoke granted access |
+| DELETE | `/api/v2/users/<user_id>/permissions/self` | Relinquish granted access; owners cannot self-revoke |
 
-Developer API:
+## Binding and web links
 
-```http
-Authorization: Bearer <developer_token>
-```
-
-Import API:
-
-```http
-Authorization: Bearer <import_token>
-```
-
-Developer tokens and Import Tokens are different credentials. Developer tokens are for integrations. Import Tokens belong to one user and only upload that user's records.
-
-## Developer Tokens
-
-Manage tokens in LINE:
-
-```text
-devtoken create <note>
-devtoken list
-devtoken revoke <token_id>
-devtoken info <token_id>
-```
-
-The plaintext token is shown only once.
-
-## Permissions
-
-A developer token can access a user when:
-
-- the token created that user and is the owner, or
-- the user accepted a permission request from that token.
-
-Permission endpoints:
+These endpoints require owner or granted access:
 
 ```http
-POST /api/v2/users/<user_id>/permissions
-PATCH /api/v2/users/<user_id>/permissions/requests/<request_id>
-DELETE /api/v2/users/<user_id>/permissions/<token_id>
-DELETE /api/v2/users/<user_id>/permissions/self
-```
-
-Users can also handle requests in LINE:
-
-```text
-accept-perm-request <request_id>
-reject-perm-request <request_id>
-```
-
-## User Endpoints
-
-```http
-POST /api/v2/users
 POST /api/v2/users/<user_id>/bind
 PUT /api/v2/users/<user_id>/bind
 GET /api/v2/users/<user_id>/bind-url
 GET /api/v2/users/<user_id>/rebind-url
 GET /api/v2/users/<user_id>/settings-url
+```
+
+POST requires `sega_id` and `password`; optional fields are `ver` (jp/intl), `aime`, `timezone`, `language`. PUT requires an existing full binding and can update `sega_id`, `password`, `ver`, `aime`, preserving language/time zone. Unlike LINE's rebind web form, API PUT can change the SEGA ID.
+
+Bind/rebind links last 120 seconds; settings links last 1800 seconds. Link endpoints return 201. Deliver account-action links only to the corresponding user.
+
+## Sync
+
+```http
 POST /api/v2/users/<user_id>/sync/stream
 ```
 
-`/sync/stream` returns `application/x-ndjson`: the first line is `accepted`, then the final line is `completed` or `failed`. Sync requires a full SEGA binding. Import Token users should upload processed records instead.
+Requires user access and full SEGA binding. The response is `application/x-ndjson`: after obtaining the sync lock, it emits `accepted`, then `completed` or `failed`. An already-running sync can return `failed` immediately without `accepted`. HTTP 200 does not prove sync succeeded; read the final event. Authentication/rate-limit errors before streaming use HTTP error statuses. Import-only users should use the Import API.
 
-## Score Image
+## Images and song data
 
 ```http
 GET /api/v2/users/<user_id>/image?command=b50
 GET /api/v2/users/<user_id>/songs/<song_id>/image
 GET /api/v2/users/<user_id>/plate?title=真神
 GET /api/v2/users/<user_id>/achievement?level=14%2B&rank=sss
-GET /api/v2/songs/<song_id>/image
+GET /api/v2/songs/<song_id>/image?ver=jp
 GET /api/v2/users/<user_id>/export?fmt=json
+GET /api/v2/songs/search?q=ヒバナ&ver=jp&max_results=10
+GET /api/v2/versions
 GET /api/v2/dxdata?ver=jp
 ```
+
+User images/exports require access and stored data. Images default to PNG; `format=base64` returns `{ "success": true, "format": "base64", "image": "..." }`. Exports use `fmt=json` or `fmt=xml`. Omit `rank` on `achievement` for a chart list. The plate/achievement APIs do not expose LINE's `-uc/-up/-c` filters.
+
+`songs/search` accepts `max_results` from 1–50 (default 10). The current matcher returns at most that many entries; broad queries may return only the first candidates, so refine the query. Version precedence is explicit `ver`, then an authorized `user_id`'s version, then `jp`. No matches is a successful response with empty `songs`. Use returned song IDs in song-image requests.
 
 ### Score-result OCR
 
@@ -104,7 +76,7 @@ Multipart fields:
 | `image` | file | yes | JPEG, PNG, or WebP result image; defaults to 20 MiB and 40 million pixels maximum |
 | `ver` | text | no | `jp` or `intl`; defaults to `jp` and selects the song/chart dataset |
 
-OCR runs synchronously. A response is successful only when the title, achievement, and complete judgement table can be matched and validated against one chart. Main-screen-only images, incomplete sub-screens, and unidentified songs return `422`.
+OCR runs synchronously. A response is successful only when the title, achievement, and complete judgement table can be matched and validated against one chart. Results that cannot be fully validated return `422`. Missing judgements may be inferred by Calc; inferred values are not direct readings from the image.
 
 ```bash
 curl -X POST https://jietng-endpoint.matsuk1.com/api/v2/score-recognition \
@@ -199,7 +171,7 @@ POST /api/web/session-image
 Content-Type: application/json
 ```
 
-Receives bookmarklet JSON and returns `image/png`. It does not require a developer token.
+Receives bookmarklet JSON and returns `image/jpeg`. It does not require a developer token.
 
 Core body:
 
@@ -333,3 +305,13 @@ Local development also allows `http://localhost:5173` and `http://127.0.0.1:5173
 - Import Tokens are for the user's own browser or trusted tools.
 - Third-party applications should use developer token plus user permission flow.
 - When unlinking, call `DELETE /api/v2/users/<user_id>/permissions/self`.
+
+## Import boundaries and clients
+
+`records` must contain `best` or `recent`. An explicit `[]` clears that partition; omitted partitions retain old records. Sending both partitions empty returns 400. Omitted partitions return `null` for the corresponding `best_count` / `recent_count`.
+
+Every import rebuilds the entire `profile`, including requests that omit it. Missing name, Rating, and display fields receive defaults (`Imported`, `0`, `N/A`), not previous values. Version precedence is `maimai_version`, then `version`, then stored version, then JP. Invalid versions currently fall back to JP; clients should send only `jp` or `intl`.
+
+The repository's `client/` provides synchronous/asynchronous Python clients. `discord_bot/` is a separate Developer API integration whose slash commands differ from LINE text commands. See those directories' READMEs for integration/deployment.
+
+`achievement` currently accepts only `11`, `11+`, `12`, `12+`, `13`, `13+`, `14`, `14+`, `15`, not LINE prog categories or decimal constants. Users can revoke the owner association through settings; this differs from an owner token being unable to self-revoke through `/permissions/self`.

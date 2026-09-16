@@ -15,6 +15,7 @@ const imageUrl = ref('')
 const timezone = -new Date().getTimezoneOffset() / 60
 
 const CMD_INFO = {
+  sun50: { cmd: 's50', label: 's50 — SSS / SSS+ Near-miss 50', title: 'SUN 50' },
   best50: { cmd: 'b50',      label: 'b50 — Best 50',            title: 'BEST 50' },
   best40: { cmd: 'b40',      label: 'b40 — Best 40',            title: 'BEST 40' },
   best35: { cmd: 'b35',      label: 'b35 — Best 35',            title: 'BEST 35' },
@@ -299,7 +300,7 @@ function writeCookie() {
   <div class="demo-card result-card" v-if="imageUrl">
     <img :src="imageUrl" alt="成绩图" class="result-img" />
     <div class="result-actions">
-      <a :href="imageUrl" download="result.png" class="btn-primary">保存图片</a>
+      <a :href="imageUrl" download="result.jpg" class="btn-primary">保存图片</a>
       <button @click="reset" class="btn-secondary">重新生成</button>
     </div>
   </div>

@@ -1,118 +1,65 @@
 # 开发者 API
 
-JiETNG 提供两套 API：
+服务端地址：`https://jietng-endpoint.matsuk1.com`。开发者接口使用 `Authorization: Bearer <developer_token>`；用户导入接口使用 `Authorization: Bearer <import_token>`，二者不可互换。
 
-- **开发者 API**：由开发者 Token 调用，用于创建用户、生成绑定/设置链接、请求用户授权、生成图片等。
-- **用户导入 API**：由用户 Import Token 调用，用于上传网页书签或第三方工具整理后的成绩 JSON。
+## Token 与用户权限
 
-默认服务域名：
+开发者 Token 由服务管理员在管理面板创建和撤销，需要接入时联系维护者。当前核心 LINE 命令不提供 `devtoken create/list/revoke/info`。Import Token 则由用户在导入模式注册成功页或 `settings` 页面获取，明文只显示一次。
 
-```text
-https://jietng-endpoint.matsuk1.com
-```
+开发者 Token 可以访问自己创建的用户（owner），或接受过该 Token 授权请求的用户（granted）。通过 `POST /api/v2/users/<user_id>/permissions` 发起请求，可选 JSON 字段 `requester_name`。LINE 用户点击权限消息中的接受/拒绝按钮处理；这些按钮动作不是可直接发送的聊天命令。
 
-## 认证
+| 操作 | 路径 | 权限与参数 |
+|---|---|---|
+| GET | `/api/v2/users` | 列出当前 Token 可访问的用户 |
+| POST | `/api/v2/users` | 必须提供 JSON/form `user_id`、`nickname`；201 返回 `bind_url`、`token`、`expires_in`，重复用户为 409 |
+| GET | `/api/v2/users/<user_id>` | owner 或 granted，返回资料；排除 SEGA ID/密码等敏感字段 |
+| DELETE | `/api/v2/users/<user_id>` | 仅 owner，删除用户 |
+| GET | `/api/v2/users/<user_id>/permissions/requests` | 仅 owner，待处理请求 |
+| PATCH | `/api/v2/users/<user_id>/permissions/requests/<request_id>` | 仅 owner，JSON `action` 为 `accept` 或 `reject` |
+| DELETE | `/api/v2/users/<user_id>/permissions/<token_id>` | 仅 owner，撤销第三方 granted 权限 |
+| DELETE | `/api/v2/users/<user_id>/permissions/self` | 当前 Token 放弃 granted 权限；owner 不可自撤销 |
 
-开发者 API 使用 Bearer Token：
+## 绑定与网页链接
 
-```http
-Authorization: Bearer <developer_token>
-```
-
-Import API 使用用户 Import Token：
-
-```http
-Authorization: Bearer <import_token>
-```
-
-开发者 Token 和 Import Token 不是同一种凭证。开发者 Token 用于应用集成；Import Token 属于单个用户，只能上传该用户自己的成绩。
-
-## 开发者 Token
-
-开发者 Token 通过 LINE Bot 管理：
-
-```text
-devtoken create <备注>
-devtoken list
-devtoken revoke <token_id>
-devtoken info <token_id>
-```
-
-Token 明文只在创建时返回一次，请安全保存。
-
-## 用户与权限模型
-
-开发者 API 访问用户数据需要满足其一：
-
-- 该用户由当前 Token 创建，Token 是 owner。
-- 用户已接受当前 Token 的权限请求。
-
-权限请求流程：
-
-```http
-POST /api/v2/users/<user_id>/permissions
-PATCH /api/v2/users/<user_id>/permissions/requests/<request_id>
-DELETE /api/v2/users/<user_id>/permissions/<token_id>
-DELETE /api/v2/users/<user_id>/permissions/self
-```
-
-用户也可以在 LINE 中处理请求：
-
-```text
-accept-perm-request <request_id>
-reject-perm-request <request_id>
-```
-
-## 用户相关端点
-
-### 创建用户
-
-```http
-POST /api/v2/users
-```
-
-创建外部集成用户，并返回可用于绑定的用户 ID 或绑定链接。
-
-### 绑定 SEGA 账号
+以下端点需要 owner 或 granted 权限：
 
 ```http
 POST /api/v2/users/<user_id>/bind
 PUT /api/v2/users/<user_id>/bind
-```
-
-`POST` 用于首次绑定完整 SEGA 账号，`PUT` 用于换绑/更新密码、版本、Aime。当前 LINE 侧 `rebind` 不允许更换 SEGA ID；API 集成也应避免把换绑设计成任意换号。
-
-### 生成网页链接
-
-```http
 GET /api/v2/users/<user_id>/bind-url
 GET /api/v2/users/<user_id>/rebind-url
 GET /api/v2/users/<user_id>/settings-url
 ```
 
-用于让用户在 JiETNG 网页中完成绑定、换绑或设置。`settings` 页面也包含 Import Token 管理。
+首次绑定 POST 必填 `sega_id`、`password`；可选 `ver`（jp/intl）、`aime`、`timezone`、`language`。PUT 要求已有完整绑定，可更新 `sega_id`、`password`、`ver`、`aime`，保留语言与时区。注意：API 的 PUT 可以传入新的 SEGA ID，与 LINE 网页 `rebind` 固定原 SEGA ID 的行为不同。
 
-### 触发同步
+绑定/换绑链接有效期 120 秒，设置链接 1800 秒；链接端点成功返回 201。网页链接本身可操作账号，请只交给对应用户。
+
+## 同步
 
 ```http
 POST /api/v2/users/<user_id>/sync/stream
 ```
 
-`/sync/stream` 返回 `application/x-ndjson`，第一行是 `accepted`，结束时返回 `completed` 或 `failed`。仅适用于已绑定完整 SEGA 账号的用户。导入模式用户应调用导入 API 上传成绩。
+需要 owner 或 granted 和完整 SEGA 绑定。返回 `application/x-ndjson`，取得同步锁后先发送 `accepted`，再发送 `completed` 或 `failed`。如果该用户已有同步任务，可直接收到 `failed` 而没有 `accepted`。HTTP 200 不代表同步成功，必须读取最终事件；进入流之前的鉴权/限流失败仍使用对应 HTTP 错误码。导入用户使用 Import API。
 
-## 图片与查询端点
-
-### 生成成绩图
+## 图片与曲库
 
 ```http
 GET /api/v2/users/<user_id>/image?command=b50
 GET /api/v2/users/<user_id>/songs/<song_id>/image
 GET /api/v2/users/<user_id>/plate?title=真神
 GET /api/v2/users/<user_id>/achievement?level=14%2B&rank=sss
-GET /api/v2/songs/<song_id>/image
+GET /api/v2/songs/<song_id>/image?ver=jp
 GET /api/v2/users/<user_id>/export?fmt=json
+GET /api/v2/songs/search?q=ヒバナ&ver=jp&max_results=10
+GET /api/v2/versions
 GET /api/v2/dxdata?ver=jp
 ```
+
+用户图片、导出需要该用户的访问权限与已保存的数据。图片默认返回 PNG，可加 `format=base64` 返回 `{ "success": true, "format": "base64", "image": "..." }`。JSON/XML 导出使用 `fmt`。`achievement` 可省略 `rank` 查看谱面列表；`plate`、`achievement` 接口不提供 LINE 的 `-uc/-up/-c` 筛选参数。
+
+`songs/search` 的 `max_results` 默认 10、范围 1–50；当前匹配器最多返回指定数量，宽泛查询可能只得到前一批候选；请缩小查询。服务器版本选择为显式 `ver` > 有权限的 `user_id` 对应版本 > `jp`。无结果返回成功且 `songs` 为空。使用搜索返回的歌曲 ID 调用歌曲图片端点。
 
 ### 成绩图 OCR
 
@@ -129,7 +76,7 @@ Content-Type: multipart/form-data
 | `image` | 文件 | 是 | JPEG、PNG 或 WebP 成绩图。默认最大 20 MiB、4000 万像素 |
 | `ver` | 文本 | 否 | `jp` 或 `intl`，默认 `jp`，用于匹配对应服务器的乐曲和谱面 |
 
-该端点同步执行 OCR。只有图片中的曲名、达成率、完整判定表能够匹配并校验到一张谱面时才返回成功；只有主屏、缺少副屏或无法确认歌曲时返回 `422`。
+该端点同步执行 OCR。只有图片中的曲名、达成率、完整判定表能够匹配并校验到一张谱面时才返回成功；无法得到可验证的完整结果时返回 `422`；部分缺失判定可能由 Calc 推定，不能把推定视为原图明确识别值。
 
 ```bash
 curl -X POST https://jietng-endpoint.matsuk1.com/api/v2/score-recognition \
@@ -312,7 +259,7 @@ POST /api/web/session-image
 Content-Type: application/json
 ```
 
-接收网页书签整理出的 JSON，返回 `image/png`。该端点不需要开发者 Token。
+接收网页书签整理出的 JSON，返回 `image/jpeg`。该端点不需要开发者 Token。
 
 请求体核心字段：
 
@@ -399,7 +346,7 @@ Content-Type: application/json
 字段说明：
 
 - `version`：`jp` 或 `intl`。
-- `profile`：用户资料。缺失字段会尽量保留服务器已有值。
+- `profile`：每次导入都会重建用户资料。缺失字段使用默认值（如 `Imported`、Rating `0`、图片 `N/A`），不会保留旧资料；请上传完整 profile。
 - `records.best`：Best 记录。
 - `records.recent`：Recent 记录。
 - `rating_block_path` 不需要上传，服务端会根据 `rating` 计算。
@@ -461,3 +408,13 @@ Content-Type: application/json
 - Import Token 只适合用户自己的浏览器书签或可信工具。
 - 第三方应用应走开发者 Token + 用户授权流程。
 - 用户取消授权时，应用应调用 `DELETE /api/v2/users/<user_id>/permissions/self` 放弃权限。
+
+## 导入边界与客户端
+
+`records` 至少包含 `best` 或 `recent`。单个分区传 `[]` 会清空该分区，省略分区保留已有成绩；同时传入空的 `best` 和 `recent` 会返回 400。响应中的 `best_count` / `recent_count` 对省略的分区为 `null`。
+
+每次导入都会整体重建 `profile`，包括省略 profile 的请求；缺失名称、Rating、展示字段使用默认值，不保留旧资料。`maimai_version` 优先于 `version`，再取已保存版本，最终默认 JP；无效版本当前会回退 JP，调用方应只传 `jp` / `intl`。
+
+仓库 `client/` 提供 Python 同步/异步客户端；`discord_bot/` 是使用开发者 API 的独立 Discord 集成，其斜杠命令与本页 LINE 文本命令不同。部署与接入见对应目录 README。
+
+`achievement` 当前仅接受 `11`、`11+`、`12`、`12+`、`13`、`13+`、`14`、`14+`、`15`，不接受 LINE `prog` 的分类或小数定数。用户可以在 settings 网页撤销 owner 关联；这与开发者 Token 无法调用 `/permissions/self` 撤销自己的 owner 权限是不同操作。

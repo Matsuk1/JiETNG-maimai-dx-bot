@@ -37,3 +37,13 @@ SEGA パスワード、Import Token、開発者 Token は公開しないでく�
 
 - GitHub Issues：[github.com/Matsuk1/JiETNG/issues](https://github.com/Matsuk1/JiETNG/issues)
 - Discord：[サーバーに参加](https://discord.gg/NXxFn9T8Xz)
+
+## その他の確認
+
+- **LINE メニューが古い**：個別チャットで `refreshmenu`。成功時の追加返信はありません。
+- **OCR 失敗**：元画像を LINE「返信」で引用して `rec`。曲名・達成率・サブ判定表を含め、`rec -flex` で修正カード、`crop` で切り抜きを確認できます。
+- **メンション拒否・ランキング非表示**：`settings` の検索許可とランキング参加は別々のスイッチです。
+- **書籤のデータが古い**：同じタブの sessionStorage にあるプロフィール・成績を再利用し、再読み込みでも残る場合があります。古いタブを閉じ、新しいタブから公式サイトを開いて再実行してください。Aime 切り替え後も再取得が必要です。
+- **リンク期限切れ**：連携・再連携 2 分、設定 30 分、解除 10 分。該当コマンドを再送します。
+
+体験ページとブックマークレットは異なる CORS 許可元を使います。ローカルでフォームが表示されても本番体験 API が localhost を許可するとは限りません。運用側で `DEMO_CORS_ORIGINS` の設定が必要です。

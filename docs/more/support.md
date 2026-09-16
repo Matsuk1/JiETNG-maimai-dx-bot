@@ -42,10 +42,12 @@
 - GitHub Issues：[github.com/Matsuk1/JiETNG/issues](https://github.com/Matsuk1/JiETNG/issues)
 - Discord：[加入服务器](https://discord.gg/NXxFn9T8Xz)
 
-## 支持开发
+## 其他常见情况
 
-如果 JiETNG 对你有帮助，可以在 Bot 中发送：
+- **菜单没有更新**：私聊发送 `refreshmenu`，该命令成功时没有额外回复。
+- **图片识别失败**：通过 LINE「回复」引用原图片，再发送 `rec`。尽量保留主屏、曲名、达成率及副屏判定表；用 `rec -flex` 查看可修正卡片，或 `crop` 检查裁切。
+- **@ 查询被拒绝 / 排行榜没有自己**：检查 `settings` 中的允许 @ 查询与排行榜参与开关；两者分别控制。
+- **书签上传的还是旧数据**：书签会复用当前标签页 sessionStorage 中的资料与成绩，刷新页面也可能继续复用。关闭旧标签页，再从新标签页打开官方站点并运行书签；切换 Aime 后也应重新采集。
+- **网页链接过期**：绑定/换绑 2 分钟、设置 30 分钟、解绑 10 分钟，重新发送相应命令获取链接。
 
-```text
-donate
-```
+在线体验页与书签接口使用不同的跨域允许来源。本地预览能显示表单不代表生产 API 允许来自 localhost 的体验请求；部署者需要配置 `DEMO_CORS_ORIGINS`。

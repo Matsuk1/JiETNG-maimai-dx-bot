@@ -46,11 +46,11 @@ features:
     link: /commands/
     linkText: コマンド一覧
 
-  - icon: 🌐
-    title: JP / INTL
-    details: 国内版と海外版の maimai NET に対応。中文、English、日本語のドキュメントを用意。
-    link: /guide/getting-started
-    linkText: クイックスタート
+  - icon: 📷
+    title: リザルト画像解析
+    details: リザルト画像を引用して曲名・判定・失点を確認。対話カードと手動修正にも対応。
+    link: /commands/record
+    linkText: 画像認識の使い方
 
   - icon: 🔐
     title: エクスポートと API
@@ -59,38 +59,4 @@ features:
     linkText: API
 ---
 
-<style>
-.VPFeature { cursor: pointer; }
-.VPFeature:hover .icon {
-  transform: scale(1.12) rotate(4deg);
-  transition: transform 0.2s ease;
-}
-.vp-doc h2 {
-  border-top: none;
-  padding-top: 24px;
-}
-</style>
-
-## JiETNG とは
-
-JiETNG は **maimai でらっくす / maimai DX** 向けのスコア管理 Bot です。SEGA アカウント連携で maimai NET から同期することも、ブラウザのブックマークレットで取得した加工済みデータを Import Token でアップロードすることもできます。
-
-主な機能は B50 / Best 50 画像、Recent 50、DX Rating とレート内訳、楽曲/譜面検索、レベル/定数リスト、プレート達成状況、フレンド成績、近くの店舗検索、JSON/XML エクスポート、開発者 API、Import Token です。
-
-`maimai b50`、`maimai レート内訳`、`maimai DX Rating`、`maimai スコア管理` のような検索から見つけやすいツールを目指しています。
-
-## クイックスタート
-
-1. JiETNG LINE Bot を追加します。
-2. 個別チャットで `bind` を送信します。SEGA アカウント連携、または Import Token モードを選べます。
-3. `maimai update` で公式データを同期するか、[ブックマークレット](/bookmarklet)で公式サイトから取り込みます。
-4. `b50`、`record`、`13.6 records`、`真極 plate` などを試します。
-
-[ガイドを読む →](/guide/getting-started)
-
-## サポート
-
-- [コマンド一覧](/commands/)
-- [開発者 API](/developer-api)
-- [GitHub Issues](https://github.com/Matsuk1/JiETNG/issues)
-- [Discord](https://discord.gg/NXxFn9T8Xz)
+<HomeContent />

@@ -55,6 +55,14 @@ Import Token 在 LINE 私聊发送 `settings` 后进入设置页生成。明文�
 
 如果你的浏览器不方便拖拽按钮，可以点击 **复制书签地址**，然后手动新建书签，把 URL 设置为复制出来的 `javascript:...` 内容。
 
+## 缓存、Token 与图片格式
+
+Generate 不需要 Token；Upload 需要用户 Import Token。导入模式注册成功页已生成首个 Token，也可以从 `settings` 新建。
+
+Token 保存在当前官方站点的 localStorage，JP 与 INTL 独立。资料和成绩还会保存在当前标签页的 sessionStorage，刷新页面不一定重新采集。需要最新数据或切换 Aime 时，关闭旧标签页并在新标签页重新登录、运行书签。清除浏览器内的 Token 不等于撤销服务端凭证，停用 Token 请到设置页撤销。
+
+图片接口实际返回 JPEG。当前书签下载逻辑可能仍使用 `.png` 文件名，若软件提示格式不符，可改名为 `.jpg`。Generate 会把制图所需的资料和 Best 数据发送给 JiETNG，但不会保存到账号；Upload 才会写入账号的 profile、Best 和 Recent。
+
 <script setup>
 import { onMounted } from 'vue'
 

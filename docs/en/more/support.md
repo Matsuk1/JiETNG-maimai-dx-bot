@@ -37,3 +37,13 @@ Do not share SEGA passwords, Import Tokens, or developer tokens publicly.
 
 - GitHub Issues: [github.com/Matsuk1/JiETNG/issues](https://github.com/Matsuk1/JiETNG/issues)
 - Discord: [Join server](https://discord.gg/NXxFn9T8Xz)
+
+## More checks
+
+- **Stale LINE menu**: send `refreshmenu` in private chat; successful refresh has no extra reply.
+- **OCR fails**: use LINE Reply on the original image, then send `rec`. Include the title, achievement, and secondary judgement table. Use `rec -flex` for correction cards or `crop` to inspect regions.
+- **Mention blocked / absent from rankings**: inspect the separate mention-query and ranking-participation switches in `settings`.
+- **Bookmarklet keeps old scores**: it reuses profile/records from the tab's sessionStorage, even after reload. Close the old tab, open the official site in a new tab, and run the bookmarklet again. Recollect after switching Aime too.
+- **Expired links**: bind/rebind last 2 minutes, settings 30 minutes, unbind 10 minutes. Request a new link with the corresponding command.
+
+Demo and bookmarklet endpoints use different CORS allowlists. Rendering the demo locally does not mean the production demo API permits localhost; operators must configure `DEMO_CORS_ORIGINS` for that use.

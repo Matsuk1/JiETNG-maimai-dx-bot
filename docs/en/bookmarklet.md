@@ -49,6 +49,14 @@ The settings page can create tokens, revoke active tokens, and delete revoked to
 
 If dragging is inconvenient in your browser, click **Copy bookmark URL**, create a bookmark manually, and paste the copied `javascript:...` content into the URL field.
 
+## Cache, tokens, and image format
+
+Generate needs no token; Upload requires a user Import Token. Import-only setup already creates the first token; `settings` can create more.
+
+Tokens are stored in localStorage on the official site, separately for JP and INTL. Profile/records are also cached in the tab's sessionStorage, so reloading may reuse old data. For new scores or a different Aime, close the old tab and log in/run the bookmarklet in a new tab. Clearing a token from the browser does not revoke it on the server; revoke it in settings.
+
+The image endpoint returns JPEG. The current bookmarklet may still download it with a `.png` filename; rename it to `.jpg` if an application reports a format mismatch. Generate sends profile/Best data to JiETNG for rendering without storing account records; Upload writes profile, Best, and Recent to the account.
+
 <script setup>
 import { onMounted } from 'vue'
 

@@ -7,7 +7,7 @@ description: JiETNG 命令大全，包含舞萌DX / maimai B50、查分、レー
 
 本文档按当前代码中的命令注册表整理。除特别说明外，命令大小写不敏感。
 
-所有命令都可以在结尾追加 `-help` 查看该命令说明。需要参数的命令如果只发送命令名，也会返回对应说明。
+发送 `help` 查看分类目录；支持帮助的命令可追加 `-help`，例如 `b50 -help`。部分需要参数的命令单独发送时也会显示说明。
 
 ## 账号与系统
 
@@ -17,7 +17,7 @@ description: JiETNG 命令大全，包含舞萌DX / maimai B50、查分、レー
 | `rebind` | 修改已绑定 SEGA 账号的密码、版本、Aime |
 | `settings` | 打开设置页，修改偏好并管理 Import Token |
 | `profile` / `getme` | 查看账号资料与绑定状态 |
-| `unbind` / `unbind confirm` | 解除绑定并删除数据 |
+| `unbind` | 解除绑定并删除数据 |
 | `maimai update` / `update` | 从 maimai NET 同步成绩 |
 | `export json` / `export xml` | 导出加工后的成绩数据 |
 | `status` | 显示机器人运行状态 |
@@ -58,7 +58,7 @@ description: JiETNG 命令大全，包含舞萌DX / maimai B50、查分、レー
 | 命令格式 | 说明 |
 |---------|------|
 | `[等级/定数] records [页码]` | 查看等级或定数成绩列表 |
-| `[等级/定数] levels` | 查看等级/定数列表 |
+| `[等级/分类] levels` | 查看谱面列表 |
 | `[等级][目标] prog` | 查看等级目标达成情况 |
 
 目标支持 `s`、`s+`、`ss`、`ss+`、`sss`、`sss+`、`fc`、`fc+`、`ap`、`ap+`、`fdx`、`fdx+`。
@@ -96,3 +96,17 @@ description: JiETNG 命令大全，包含舞萌DX / maimai B50、查分、レー
 | `rank` / `ranking` | 排行榜 |
 | `rank jp` / `rank intl` | 指定服务器排行榜 |
 | 发送 LINE 位置 | 查询附近 maimai 机厅，JP 与 INTL 数据源会合并后排序 |
+
+## 识别与使用范围
+
+| 命令 | 说明 |
+|---|---|
+| `rec` / `rec -flex` | 回复引用成绩图，返回判定分析图片 / 卡片 |
+| `crop` | 回复引用图片，查看裁切区域 |
+| `info`（引用图片） | 识别曲名后查询歌曲 |
+| `fix-rcd 曲名`（多行） | 按修正模板提交判定；详见成绩命令 |
+| `refreshmenu` | 静默刷新 LINE 底部菜单 |
+
+`unbind` 打开网页确认，不是发送第二条确认命令。`friends` / `friend-rcd` 仅限私聊并需要 SEGA 绑定。`prog` 也支持歌曲分类。排行榜仅包含参与的 JiETNG 用户；@ 查询还受目标用户设置控制。`levels` 查询本人，账号操作遇到 @ 他人会被拒绝。
+
+完整参数、Recent 的分页限制与图片识别流程见[成绩命令](/zh/commands/record)；皮肤和隐私开关见[基础命令](/zh/commands/basic)。

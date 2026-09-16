@@ -2,6 +2,12 @@
 
 JiETNG supports two data sources: automatic sync from a bound SEGA account, or processed record uploads through an Import Token and the bookmarklet.
 
+## Add JiETNG on LINE
+
+Add JiETNG using the button below, then start binding in a private chat.
+
+<LineFriendButton />
+
 ## Requirements
 
 - A LINE account
@@ -41,7 +47,7 @@ The bot syncs profile, Best records, Recent records, and related data from the s
 settings
 ```
 
-Create an Import Token in the settings page, then install the [bookmarklet](/en/bookmarklet). Open the official maimai mobile site, click the bookmarklet, generate a B50 / AP50 image, and click **Upload** when you want to upload best / recent / profile data.
+Save the Import Token from the setup success page, or create a new one in settings, then install the [bookmarklet](/en/bookmarklet). Open the official maimai mobile site, click the bookmarklet, generate a B50 / AP50 image, and click **Upload** when you want to upload best / recent / profile data.
 
 Import Token plaintext is shown only once. The settings page can list tokens, revoke active tokens, and delete revoked tokens.
 
@@ -76,14 +82,15 @@ Update SEGA password, version, and Aime. This is only available to users with a 
 
 ## Unbind
 
-```text
-unbind
-unbind confirm
-```
-
-This deletes stored JiETNG user data and cannot be undone.
+Send `unbind` in a private LINE chat, open the returned web page, and confirm there. The link expires after 10 minutes; send `unbind` again if needed. Confirmation deletes the JiETNG user profile, Best/Recent records, custom backgrounds, and nickname cache. The bot has no undo operation.
 
 ## JP and INTL
 
 - JP: `https://maimaidx.jp/maimai-mobile/home/`
 - INTL: `https://maimaidx-eng.com/maimai-mobile/home/`
+
+## After initial setup
+
+Import-only setup immediately creates an Import Token on the success page. Save that plaintext value; if lost, create a new token in `settings`. Import-only users can send `bind` again to add a SEGA account. Bind/rebind links expire after 2 minutes.
+
+See [basic commands](/en/commands/basic) for skins, backgrounds, ranking, and mention settings.

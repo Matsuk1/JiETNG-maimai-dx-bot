@@ -49,6 +49,14 @@ LINE Bot に `settings` を送信し、設定ページで Import Token を作成
 
 ドラッグ操作が使いにくい場合は、**ブックマークURLをコピー** を押して手動でブックマークを作成し、URL 欄にコピーした `javascript:...` を貼り付けてください。
 
+## キャッシュ・Token・画像形式
+
+Generate は Token 不要、Upload はユーザー Import Token が必要です。取り込み専用登録時に最初の Token が作成され、`settings` で追加作成できます。
+
+Token は公式サイトの localStorage に保存され、JP/INTL で独立しています。プロフィール・成績はタブの sessionStorage にも保存されるため、再読み込みでも古いデータを再利用する場合があります。最新成績や別 Aime では古いタブを閉じ、新しいタブでログイン・実行してください。ブラウザから Token を消すだけでは失効しません。設定から撤回してください。
+
+画像 API は JPEG を返します。現ブックマークレットは `.png` 名で保存する場合があるため、形式エラーなら `.jpg` に変更してください。Generate は描画用プロフィール・Best を JiETNG に送りますがアカウント記録を保存しません。Upload が profile・Best・Recent を書き込みます。
+
 <script setup>
 import { onMounted } from 'vue'
 

@@ -7,7 +7,7 @@ description: JiETNG の maimai B50、スコア管理、レート内訳、プレ�
 
 現在のコマンド登録に基づいた一覧です。特記がない限り大文字小文字は区別されません。
 
-各コマンドの末尾に `-help` を付けると使い方を確認できます。引数が必要なコマンドを引数なしで送信した場合も説明を返します。
+`help` で一覧、対応コマンドに `-help` を付けると説明を表示します。引数が必要な一部コマンドは単独送信でも説明を返します。
 
 ## アカウントとシステム
 
@@ -17,10 +17,9 @@ description: JiETNG の maimai B50、スコア管理、レート内訳、プレ�
 | `rebind` | SEGA パスワード、サーバー、Aime を更新 |
 | `settings` | 設定と Import Token 管理 |
 | `profile` / `getme` | プロフィールと連携状態 |
-| `unbind` / `unbind confirm` | 保存データを削除 |
+| `unbind` | 保存データを削除 |
 | `maimai update` / `update` | maimai NET から同期 |
 | `export json` / `export xml` | 加工済み成績を出力 |
-| `donate` | 支援情報 |
 | `status` | Bot 稼働状態 |
 | `help` | コマンド一覧を表示 |
 
@@ -59,7 +58,7 @@ description: JiETNG の maimai B50、スコア管理、レート内訳、プレ�
 | 形式 | 説明 |
 |------|------|
 | `[レベル/定数] records [ページ]` | 成績リスト |
-| `[レベル/定数] levels` | レベル/定数リスト |
+| `[レベル/カテゴリ] levels` | 譜面リスト |
 | `[レベル][目標] prog` | レベル目標 |
 
 目標：`s`、`s+`、`ss`、`ss+`、`sss`、`sss+`、`fc`、`fc+`、`ap`、`ap+`、`fdx`、`fdx+`。
@@ -79,3 +78,17 @@ description: JiETNG の maimai B50、スコア管理、レート内訳、プレ�
 | `random [レベル/定数]` | ランダム選曲 |
 | `rank` / `ranking` / `rank jp` / `rank intl` | ランキング |
 | LINE 位置メッセージ | JP / INTL 店舗データを統合して近い店舗を表示 |
+
+## 画像認識と利用範囲
+
+| コマンド | 説明 |
+|---|---|
+| `rec` / `rec -flex` | リザルト画像を引用し、判定分析の画像 / カードを表示 |
+| `crop` | 引用画像の切り抜き領域を表示 |
+| `info`（画像引用） | 曲名を認識して楽曲検索 |
+| `fix-rcd 曲名`（複数行） | 判定修正テンプレートを送信 |
+| `refreshmenu` | LINE メニューを無返信で更新 |
+
+`unbind` は Web 確認ページを開きます。2 回目の確認テキストは不要です。`friends` / `friend-rcd` は個別チャット・SEGA 連携が必要。`prog` は曲カテゴリにも対応。ランキングは参加許可済み JiETNG ユーザーが対象で、メンション検索は相手の設定に従います。`levels` は本人のデータ、本人専用操作で他人をメンションすると拒否されます。
+
+フィルター・Recent の制限・OCR は[レコードコマンド](/commands/record)、スキン・プライバシー設定は[基本コマンド](/commands/basic)を参照してください。
