@@ -226,13 +226,43 @@ def _score_break_rows_from_internal(judgement, break_detail):
     ]
 
 
+def _score_judgement_table(payload):
+    """Keep counts and per-note/combined losses together; unknowns stay unknown."""
+    fields = ('critical_perfect', 'perfect', 'great', 'good', 'miss')
+    detail = payload['break_detail']
+    rows = []
+    for kind in ('tap', 'hold', 'slide', 'touch', 'break'):
+        source = payload['judgement'].get(kind) or {}
+        cells = []
+        for field in fields:
+            parts = [(None, field)]
+            if kind == 'break' and detail:
+                if field == 'perfect':
+                    parts = [('P1', 'perfect_high'), ('P2', 'perfect_low')]
+                elif field == 'great':
+                    parts = [('G1', 'great_high'), ('G2', 'great_middle'), ('G3', 'great_low')]
+            entries = []
+            for label, key in parts:
+                count = detail.get(key, source.get(key)) if kind == 'break' and detail else source.get(key)
+                losses = detail.get('loss_percentages', {}) if kind == 'break' else payload['loss_percentages']
+                loss = losses.get(key if kind == 'break' else f'{kind}_{key}')
+                active = isinstance(count, (int, float)) and count > 0
+                known_loss = isinstance(loss, (int, float))
+                entries.append(dict(label=label, count=count if count is not None else '—',
+                    zero=count == 0, unit=_format_score_loss(loss) if active and known_loss and loss else None,
+                    total=_format_score_loss(count * loss) if active and known_loss and loss else None))
+            cells.append(entries)
+        rows.append(dict(label=kind.upper(), cells=cells))
+    return rows
+
+
 @skinnable
 def generate_score_recognition_picture(result, ver="jp", img_width=1100, timezone_offset=9, bg_filter=None):
     from modules.images.renderer import file_uri, render_template
     payload = _score_recognition_payload(result)
     language = image_language(ver)
     texts = {key: _image_text(f"score.{key}", language)
-             for key in ("subtitle", "judgement", "loss", "break", "empty", "common_total", "break_total")}
+             for key in ("subtitle", "judgement", "loss", "break", "empty", "common_total", "break_total", "distribution", "cell_legend", "verified", "check_required", "validation_note")}
     judgement = payload['judgement']
     fields = ('critical_perfect', 'perfect', 'great', 'good', 'miss')
     rows = [(key.upper(), [judgement[key].get(field, 0) for field in fields])
@@ -284,7 +314,10 @@ def generate_score_recognition_picture(result, ver="jp", img_width=1100, timezon
                            header_color='#72148d' if payload['difficulty']=='remaster' else 'white',
                            cover=cover, type_src=file_uri(os.path.join(ICON_TYPE_DIR, f"{payload['type']}.png")),
                            achievement=achievement_text, constant=constant_text, icons=icons,
-                           progress=progress, panels=panels)
+                           progress=progress, panels=panels, table_rows=_score_judgement_table(payload),
+                           validation=(result or {}).get('validation') or {},
+                           rank_src=file_uri(os.path.join(ICON_SCORE_DIR, f"{rank}.png")) if rank else '',
+                           combo_src=file_uri(os.path.join(ICON_COMBO_RCD_DIR, f"{combo}.png")) if combo and combo != 'back' else '')
     return compose_generated_images([card], timezone_offset=timezone_offset, bg_filter=bg_filter)
 
 
