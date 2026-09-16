@@ -497,7 +497,7 @@ class _CodexAppServer:
                     "-c", 'web_search="disabled"',
                     "-c", 'features.shell_tool=false',
                     "-c", 'features.image_generation=false',
-                    "-c", 'model_reasoning_effort="low"']
+                    "-c", 'model_reasoning_effort="medium"']
         return [
             _codex_path(),
             "app-server",
@@ -1113,7 +1113,7 @@ def recognize_score_with_codex(image_bytes: bytes) -> dict[str, Any] | None:
                 image_inputs.append((".png", output.getvalue()))
     session_id = "score-ocr-" + secrets.token_hex(16)
     started = time.monotonic()
-    logger.info("[Recognize] Codex image fallback started: model=%s effort=low", AI_OCR_MODEL)
+    logger.info("[Recognize] Codex image fallback started: model=%s effort=medium", AI_OCR_MODEL)
     try:
         answer = _ocr_server.ask(session_id, prompt, {}, [], image_inputs)
         return json.loads(answer["text"])

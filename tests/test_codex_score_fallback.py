@@ -129,7 +129,7 @@ def test_ocr_model_is_independent_from_monitor(ocr_only, expected):
     assert request.call_args.args[1]['model'] == expected
     with patch.object(codex_agent, '_codex_path', return_value='codex'):
         command = server._command()
-    assert ('model_reasoning_effort="low"' in command) is ocr_only
+    assert ('model_reasoning_effort="medium"' in command) is ocr_only
 
 
 @pytest.mark.parametrize('title,achievement,reason', [
