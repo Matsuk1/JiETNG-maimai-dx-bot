@@ -1710,6 +1710,26 @@ def validate_recognized_judgement(
             "incomplete_judgement" if calc.get("complete") is not True else
             "uncertain_cells"
         )
+        if not checked.get("song_id"):
+            songs, _ = read_dxdata(ver)
+            matches, match_type = match_recognized_song_title(title, songs, max_results=120)
+            if matches:
+                reason = "chart_judgement_mismatch"
+                observed = {name: sum(row.values()) for name, row in clean_rows.items()}
+                charts = []
+                for song in matches:
+                    for sheet in song.get("sheets", []):
+                        counts = sheet.get("noteCounts") or {}
+                        delta = {name: observed[name] - int(counts.get(name, 0) or 0)
+                                 for name in JUDGEMENT_ROW_NAMES}
+                        charts.append(dict(song_id=song.get("id"), difficulty=sheet.get("difficulty"),
+                                           delta=delta, distance=sum(abs(n) for n in delta.values())))
+                charts.sort(key=lambda chart: chart["distance"])
+                logger.warning(
+                    "[Recognize] Codex title matched: match=%s observed_row_totals=%s "
+                    "nearest_charts=%s (delta=observed-minus-chart)",
+                    match_type, observed, charts[:3],
+                )
         logger.warning(
             "[Recognize] Codex fallback rejected: reason=%s title=%r achievement=%s "
             "ver=%s song_id=%s difficulty=%s calc=%s unmatched=%s uncertain=%s rows=%s",

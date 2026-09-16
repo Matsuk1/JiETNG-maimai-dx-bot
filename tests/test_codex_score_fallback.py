@@ -177,3 +177,15 @@ def test_vision_receives_original_and_detector_independent_details(tmp_path):
     for (_, content), size in zip(inputs[1:], [(32, 16), (32, 24)]):
         with Image.open(BytesIO(content)) as crop:
             assert crop.size == size
+
+
+def test_correct_title_with_overfull_break_reports_row_mismatch(caplog):
+    song, parsed = sample()
+    parsed['sub_judgement']['break']['great'] = 1
+    original = {'parsed': {}}
+    with patch.object(recognizer, 'read_dxdata', return_value=([song], None)), patch.object(
+        codex_agent, 'recognize_score_with_codex', return_value=parsed):
+        assert recognizer.validate_recognized_judgement(original, image_bytes=b'image') is original
+    assert 'reason=chart_judgement_mismatch' in caplog.text
+    assert "'break': 1" in caplog.text
+    assert 'reason=chart_not_matched' not in caplog.text
