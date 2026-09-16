@@ -385,7 +385,7 @@ TEXTS["web"]["settings"] = {
     "labelLanguage": "語言",
     "languagePlatformHint": "語言設定可能不會套用到 LINE 以外的第三方平台。",
     "labelTimezone": "時區",
-    "skinSection": "圖片皮膚",
+    "skinSection": "皮膚與背景",
     "labelSkin": "皮膚",
     "skinUsesBackground": "使用背景圖",
     "skinNoBackground": "不使用背景圖",

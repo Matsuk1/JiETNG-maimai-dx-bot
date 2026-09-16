@@ -443,7 +443,7 @@ TEXTS["web"]["settings"] = {
     "labelLanguage": "Language",
     "languagePlatformHint": "Language settings may not apply to third-party platforms outside LINE.",
     "labelTimezone": "Timezone",
-    "skinSection": "Image skin",
+    "skinSection": "Skin & background",
     "labelSkin": "Skin",
     "skinUsesBackground": "Uses background images",
     "skinNoBackground": "No background images",

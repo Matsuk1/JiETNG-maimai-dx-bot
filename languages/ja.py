@@ -386,7 +386,7 @@ TEXTS["web"]["settings"] = {
     "labelLanguage": "言語",
     "languagePlatformHint": "言語設定は LINE 以外の外部プラットフォームには反映されない場合があります。",
     "labelTimezone": "タイムゾーン",
-    "skinSection": "画像スキン",
+    "skinSection": "スキンと背景",
     "labelSkin": "スキン",
     "skinUsesBackground": "背景画像を使用",
     "skinNoBackground": "背景画像なし",

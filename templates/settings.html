@@ -39,19 +39,6 @@
       line-height: 1.16;
     }
 
-    .section-title {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text-secondary);
-      margin-bottom: 10px;
-      margin-top: 26px;
-      padding-left: 4px;
-    }
-
-    .section-title:first-of-type {
-      margin-top: 0;
-    }
-
     .settings-header {
       position: relative;
       min-height: 40px;
@@ -577,8 +564,8 @@
         </div>
       </div>
 
-      <div class="section-title" id="skin-section-title">画像のスキン</div>
-      <div class="list-panel" style="margin-bottom: 20px;">
+      <section class="list-panel" id="appearance-settings" aria-labelledby="skin-section-title" style="margin-bottom: 20px;">
+        <div class="list-panel-header" id="skin-section-title">スキンと背景</div>
         <div class="list-item">
           <label for="image_skin" id="label-image-skin">スキン</label>
           <select id="image_skin" name="image_skin" onchange="updateSkinSettings()">
@@ -592,9 +579,6 @@
           </select>
         </div>
         <div class="list-item"><span class="list-item-meta" id="skin-background-note"></span></div>
-      </div>
-
-      <div class="list-panel" style="margin-bottom: 20px;">
         <div class="list-item">
           <label for="bg_enabled_toggle" id="label-bg-enabled">背景画像を使用</label>
           <label class="toggle-switch">
@@ -602,38 +586,8 @@
             <span class="toggle-slider"></span>
           </label>
         </div>
-      </div>
 
-      <div class="list-panel" style="margin-bottom: 20px;">
-        <div class="list-panel-header" id="privacy-panel-title">プライバシー設定</div>
-        <div class="list-item">
-          <div class="list-item-info">
-            <span class="list-item-label" id="label-mention-score-query">メンションでの成績参照を許可</span>
-            <span class="list-item-meta" id="meta-mention-score-query">他のユーザーがあなたをメンションして成績を表示できます。</span>
-          </div>
-          <label class="toggle-switch">
-            <input type="checkbox" name="allow_mention_score_query" value="1" {% if allow_mention_score_query %}checked{% endif %}>
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
-      </div>
-
-      <div class="list-panel" style="margin-bottom: 20px;">
-        <div class="list-panel-header" id="ranking-panel-title">ランキング設定</div>
-        <div class="list-item">
-          <div class="list-item-info">
-            <span class="list-item-label" id="label-global-ranking">総合ランキングに参加</span>
-            <span class="list-item-meta" id="meta-global-ranking">rank / ranking の総合ランキングに表示されます。</span>
-          </div>
-          <label class="toggle-switch">
-            <input type="checkbox" name="participate_global_ranking" value="1" {% if participate_global_ranking %}checked{% endif %}>
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
-      </div>
-
-      <div id="bg-settings-area" {% if not bg_enabled %}style="display: none;"{% endif %}>
-        <div class="list-panel" style="margin-bottom: 20px;">
+        <div id="bg-settings-area" {% if not bg_enabled %}style="display: none;"{% endif %}>
           <div class="bg-preview" id="bg-preview"><div class="bg-preview-card"></div></div>
           <div class="list-item">
             <label for="bg_blur" id="label-bg-blur">背景ぼかし</label>
@@ -664,10 +618,8 @@
             </div>
             {% endfor %}
           </div>
-        </div>
 
-        <div id="section-title-custom-bg" class="section-title">カスタム背景</div>
-        <div class="list-panel" style="margin-bottom: 20px;">
+          <div id="section-title-custom-bg" class="list-panel-header">カスタム背景</div>
           <div class="bg-hint" id="custom-bg-hint-text">自分だけの背景画像をアップロードできます（2枚まで、各5MB以下）。</div>
           <div class="list-item" id="custom-bg-delete-all-row" {% if not custom_bg_filenames %}style="display: none;"{% endif %}>
             <span class="list-item-meta" id="custom-bg-upload-count">{{ custom_bg_filenames | length }}/2</span>
@@ -682,6 +634,34 @@
             </div>
             <button type="button" class="upload-btn" id="upload-btn" onclick="uploadCustomBg()">アップロード</button>
           </div>
+        </div>
+      </section>
+
+      <div class="list-panel" style="margin-bottom: 20px;">
+        <div class="list-panel-header" id="privacy-panel-title">プライバシー設定</div>
+        <div class="list-item">
+          <div class="list-item-info">
+            <span class="list-item-label" id="label-mention-score-query">メンションでの成績参照を許可</span>
+            <span class="list-item-meta" id="meta-mention-score-query">他のユーザーがあなたをメンションして成績を表示できます。</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" name="allow_mention_score_query" value="1" {% if allow_mention_score_query %}checked{% endif %}>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="list-panel" style="margin-bottom: 20px;">
+        <div class="list-panel-header" id="ranking-panel-title">ランキング設定</div>
+        <div class="list-item">
+          <div class="list-item-info">
+            <span class="list-item-label" id="label-global-ranking">総合ランキングに参加</span>
+            <span class="list-item-meta" id="meta-global-ranking">rank / ranking の総合ランキングに表示されます。</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" name="participate_global_ranking" value="1" {% if participate_global_ranking %}checked{% endif %}>
+            <span class="toggle-slider"></span>
+          </label>
         </div>
       </div>
 
