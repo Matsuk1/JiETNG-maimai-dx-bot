@@ -235,6 +235,11 @@ AI_MONITOR_MODEL = os.getenv(
     "JIETNG_CODEX_MODEL",
     AI_MONITOR_CONFIG.get("model", ""),
 ).strip()
+# OCR fallback is a bounded extraction task; do not inherit the monitor model.
+AI_OCR_MODEL = os.getenv(
+    "JIETNG_CODEX_OCR_MODEL",
+    AI_MONITOR_CONFIG.get("ocr_model", "gpt-5.6-luna"),
+).strip() or "gpt-5.6-luna"
 try:
     AI_MONITOR_TIMEOUT_SECONDS = max(
         30,

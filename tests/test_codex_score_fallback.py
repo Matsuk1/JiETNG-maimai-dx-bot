@@ -117,3 +117,16 @@ def test_invalid_upload_is_not_sent_to_codex():
         with pytest.raises(recognizer.InvalidScoreImageError):
             recognizer.recognize_score_image_bytes(b'not an image')
     ask.assert_not_called()
+
+
+@pytest.mark.parametrize('ocr_only,expected', [(True, 'ocr-model'), (False, 'monitor-model')])
+def test_ocr_model_is_independent_from_monitor(ocr_only, expected):
+    server = codex_agent._CodexAppServer(ocr_only=ocr_only)
+    with patch.object(codex_agent, 'AI_OCR_MODEL', 'ocr-model'), patch.object(
+        codex_agent, 'AI_MONITOR_MODEL', 'monitor-model'), patch.object(
+        server, '_request', return_value={'thread': {'id': 'test'}}) as request:
+        server._new_thread(100)
+    assert request.call_args.args[1]['model'] == expected
+    with patch.object(codex_agent, '_codex_path', return_value='codex'):
+        command = server._command()
+    assert ('model_reasoning_effort="low"' in command) is ocr_only

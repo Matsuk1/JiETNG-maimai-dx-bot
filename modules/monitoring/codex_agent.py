@@ -31,6 +31,7 @@ from modules.config_loader import (
     AI_MONITOR_CODEX_COMMAND,
     AI_MONITOR_ENABLED,
     AI_MONITOR_MODEL,
+    AI_OCR_MODEL,
     AI_MONITOR_SESSION_TTL_SECONDS,
     AI_MONITOR_TIMEOUT_SECONDS,
     BIND_TOKEN_KEY,
@@ -495,7 +496,8 @@ class _CodexAppServer:
             return [_codex_path(), "app-server", "--stdio",
                     "-c", 'web_search="disabled"',
                     "-c", 'features.shell_tool=false',
-                    "-c", 'features.image_generation=false']
+                    "-c", 'features.image_generation=false',
+                    "-c", 'model_reasoning_effort="low"']
         return [
             _codex_path(),
             "app-server",
@@ -820,8 +822,9 @@ class _CodexAppServer:
             ),
             "personality": "pragmatic",
         }
-        if AI_MONITOR_MODEL:
-            params["model"] = AI_MONITOR_MODEL
+        model = AI_OCR_MODEL if self._ocr_only else AI_MONITOR_MODEL
+        if model:
+            params["model"] = model
         result = self._request("thread/start", params, deadline, cancel_check)
         thread = result.get("thread", {})
         thread_id = thread.get("id") if isinstance(thread, dict) else None
