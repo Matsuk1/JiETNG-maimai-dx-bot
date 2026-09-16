@@ -3907,7 +3907,7 @@ def cmd_bpm(ctx):
     )
 
 def cmd_song_info(ctx):
-    keyword = re.sub(r"(\s+info|ってどんな曲)$", "", ctx.text, flags=re.IGNORECASE).strip()
+    keyword = re.sub(r"(^info|\s+info|ってどんな曲)$", "", ctx.text.strip(), flags=re.IGNORECASE).strip()
     if not keyword:
         quoted_message_id = getattr(ctx.event.message, "quoted_message_id", None)
         if not quoted_message_id:
@@ -4107,7 +4107,7 @@ COMMANDS = [
         re.IGNORECASE),
             cmd_level_rank_progress, queue=QUEUE_IMAGE, mention_queryable=True,
             name="level_rank_progress"),
-    Command(Regex(r"^.+(\s+info|ってどんな曲)$", re.IGNORECASE),
+    Command(Regex(r"^(?:info|.+(?:\s+info|ってどんな曲))$", re.IGNORECASE),
             cmd_song_info, queue=QUEUE_IMAGE,
             name="song_info"),
     Command(Regex(r"^.+\s+plate(\s*-(uc|up|c))?\s*$", re.IGNORECASE),
