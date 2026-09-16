@@ -1,3 +1,5 @@
+import pytest
+
 from modules.images.records import _score_judgement_table
 
 
@@ -26,12 +28,13 @@ def test_break_splits_keep_unknown_losses_and_counts_unknown():
     assert cells[2][0]['unit'] is None
 
 
-def test_glass_template_keeps_section_and_row_loss_totals():
+@pytest.mark.parametrize('skin', ['default', 'glass'])
+def test_templates_keep_section_and_row_loss_totals(skin):
     from pathlib import Path
     from jinja2 import Environment, FileSystemLoader
 
-    root = Path(__file__).resolve().parents[1] / 'templates/images/skins/glass'
-    template = Environment(loader=FileSystemLoader(root)).get_template('score.html')
+    root = Path(__file__).resolve().parents[1] / 'templates/images'
+    template = Environment(loader=FileSystemLoader(root)).get_template('skins/glass/score.html' if skin == 'glass' else 'score.html')
     html = template.render(
         validation={}, payload={'title': 'Test', 'difficulty_label': 'MASTER'},
         texts={'common_total': 'COMMON TOTAL', 'break_total': 'BREAK TOTAL'},

@@ -1,398 +1,308 @@
 <style>
-  .score-page {
-    margin: 21px;
-    padding: 45px 43px 30px;
-    border-radius: 28px;
-    background: #fffffff5;
+  .ocr-page {
+    padding: 28px;
+    color: #29344b;
+    font-variant-numeric: tabular-nums;
   }
 
-  .score-header {
-    height: 150px;
-    background: {{ color }};
-    color: {{ header_color }};
-    border-radius: 18px;
+  .ocr-shell {
+    overflow: hidden;
+    border: 1px solid #dce2ec;
+    border-radius: 24px;
+    background: #ffffff;
+    box-shadow: 0 4px 18px #273e5810;
+  }
+
+  .ocr-header {
     display: flex;
     align-items: center;
-    gap: 26px;
-    padding: 20px 26px;
-    margin-bottom: 28px;
+    gap: 22px;
+    padding: 24px;
+    border-bottom: 1px solid #687b9826;
   }
 
-  .score-title {
-    font-size: 48px;
-    margin-bottom: 18px;
-  }
-
-  .score-subtitle {
-    font-size: 26px;
-  }
-
-  .score-cover {
-    width: 112px;
-    height: 112px;
-    flex-shrink: 0;
+  .ocr-cover {
+    width: 90px;
+    height: 90px;
     border-radius: 12px;
     overflow: hidden;
+    flex-shrink: 0;
   }
 
-  .metrics {
+  .ocr-cover > div {
+    transform: scale(.6);
+    transform-origin: top left;
+  }
+
+  .ocr-info { flex: 1; min-width: 0; }
+  .ocr-kicker { font-size: 12px; letter-spacing: 3px; color: #76849a; }
+  .ocr-title { font-size: 32px; line-height: 1.4; margin: 3px 0 8px; }
+  .ocr-meta { display: flex; align-items: center; gap: 18px; font-size: 17px; }
+  .ocr-type { width: 66px; height: 22px; object-fit: contain; }
+  .ocr-state { font-size: 14px; color: #846746; white-space: nowrap; }
+  .ocr-state.valid { color: #28754d; }
+
+  .ocr-workspace {
     display: grid;
-    grid-template-columns: 2.7fr 2.7fr 2.6fr;
-    gap: 16px;
-    margin-bottom: 30px;
+    grid-template-columns: 286px minmax(0, 1fr);
   }
 
-  .metric {
-    height: 100px;
-    background: #f8fafc;
-    border-radius: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    min-width: 0;
-    font-size: 42px;
+  .ocr-summary {
+    padding: 28px 22px;
+    background: #f1f5fb;
+    border-right: 1px solid #687b9826;
   }
 
-  .metric img {
-    max-width: 46%;
-    height: 58px;
-    object-fit: contain;
-  }
-
-  .dx-progress {
-    padding: 24px 30px 30px;
-    background: #f8fafc;
-    border-radius: 14px;
-    margin-bottom: 28px;
-  }
-
-  .dx-heading {
-    display: flex;
-    justify-content: space-between;
-    font-size: 28px;
-  }
-
-  .dx-axis {
-    margin-top: 60px;
-    height: 18px;
-    border-radius: 9px;
-    background: #e2e6ec;
+  .ocr-label { font-size: 12px; letter-spacing: 1.5px; color: #748098; }
+  .ocr-achievement { font-size: 36px; letter-spacing: -1px; margin: 10px 0 18px; }
+  .ocr-icons { display: flex; align-items: center; gap: 20px; min-height: 56px; }
+  .ocr-rank { width: 105px; height: 56px; object-fit: contain; }
+  .ocr-combo { width: 84px; height: 56px; object-fit: contain; }
+  .ocr-dx { border-top: 1px solid #687b9826; margin-top: 25px; padding-top: 22px; }
+  .ocr-dx-value { font-size: 28px; margin: 8px 0; }
+  .ocr-dx-value small { font-size: 17px; color: #78849a; }
+  .ocr-percentage { font-size: 18px; color: #536684; }
+  .ocr-meter {
     position: relative;
-  }
-
-  .dx-fill {
-    position: absolute;
-    inset: 0;
-    border-radius: 9px;
-  }
-
-  .dx-marker {
-    position: absolute;
-    top: -7px;
-    height: 32px;
-    border-left: 3px solid #a0a5ae;
-  }
-
-  .dx-marker img {
-    position: absolute;
-    bottom: 33px;
-    left: -42px;
-    width: 84px;
     height: 16px;
-  }
-
-  .dx-marker span {
-    position: absolute;
-    top: 38px;
-    left: 0;
-    transform: translateX(-50%);
-    font-size: 20px;
-  }
-
-  .dx-bounds {
-    display: flex;
-    justify-content: space-between;
-    font-size: 20px;
-    margin-top: 10px;
-    color: #696e78;
-  }
-
-  h2 {
-    font-size: 34px;
-    font-weight: normal;
-    border-left: 10px solid var(--accent);
-    padding-left: 10px;
-    margin: 28px 0 16px;
-    line-height: 1.25;
-  }
-
-  .judgements {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    border-radius: 12px;
-    overflow: hidden;
-    table-layout: fixed;
-    font-size: 26px;
-  }
-
-  .judgements th {
-    background: #eef1f5;
-    font-size: 28px;
-    font-weight: normal;
-  }
-
-  .judgements td,.judgements th {
-    height: 58px;
-    text-align: center;
-    padding: 7px 4px;
-  }
-
-  .judgements td:first-child,.judgements th:first-child {
-    width: 28.57%;
-    text-align: left;
-    padding-left: 22px;
-  }
-
-  .judgements tr:nth-child(even) {
-    background: #f8fafc;
-  }
-
-  .judgements td span {
-    display: block;
+    margin: 20px 0 8px;
     border-radius: 8px;
-    padding: 6px 0;
-    background: #e9edf2;
+    background: #65779526;
+    box-shadow: inset 0 1px 3px #43547518;
   }
 
-  .judgements td:nth-child(2) span,.judgements td:nth-child(3) span {
-    background: #fff6dc;
+  .ocr-meter-fill {
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #8ba1d0, #597dbd);
   }
 
-  .judgements td:nth-child(4) span {
-    background: #fbe5f1;
+  .ocr-meter-tick {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    border-left: 2px solid #ffffffa6;
   }
 
-  .judgements td:nth-child(5) span {
-    background: #e7f5ed;
+  .ocr-meter-position {
+    position: absolute;
+    top: 50%;
+    width: 20px;
+    height: 20px;
+    transform: translate(-50%, -50%);
+    border: 3px solid white;
+    border-radius: 50%;
+    background: #486daa;
+    box-shadow: 0 1px 5px #354d7950;
   }
 
-  .zero {
-    color: #9196a0;
+  .ocr-meter-bounds {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    color: #78849a;
+    font-size: 11px;
   }
-
-  .loss-row {
+  .ocr-star {
     display: flex;
     align-items: center;
-    background: #f8fafc;
+    justify-content: space-between;
+    padding: 9px 0;
+    border-bottom: 1px solid #687b9817;
+    color: #8792a3;
+    font-size: 14px;
+  }
+  .ocr-star img { width: 76px; height: 18px; object-fit: contain; }
+  .ocr-star.reached { color: #3b6a58; }
+  .ocr-star:not(.reached) img { filter: grayscale(1); opacity: .4; }
+
+  .ocr-analysis { padding: 28px 20px; min-width: 0; }
+  .ocr-section-title { font-size: 23px; margin: 0 0 7px; }
+  .ocr-legend { font-size: 12px; color: #778198; margin-bottom: 24px; }
+  .ocr-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  .ocr-table th { font-size: 11px; color: #7d899d; font-weight: normal; height: 36px; }
+  .ocr-table th:first-child { width: 60px; }
+  .ocr-table td { text-align: center; padding: 18px 2px; height: 106px; border-top: 1px solid #687b9826; }
+  .ocr-table td:first-child { text-align: left; font-size: 13px; color: #556681; }
+  .ocr-count { font-size: 25px; }
+  .ocr-zero { color: #b1bac8; }
+  .ocr-loss { font-size: 12px; color: #b45d6c; margin-top: 6px; }
+  .ocr-unit { font-size: 10px; color: #a88b94; margin-top: 3px; }
+  .ocr-table th:nth-child(2), .ocr-table th:nth-child(3) { color: #a48b45; }
+  .ocr-table th:nth-child(4) { color: #a87593; }
+  .ocr-table th:nth-child(5) { color: #518e82; }
+
+  .ocr-break { border-top: 1px solid #687b9826; padding: 24px; }
+  .ocr-break-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-top: 20px; }
+  .ocr-break-cell { border-left: 2px solid #879abc40; padding-left: 14px; }
+  .ocr-break-label { font-size: 12px; letter-spacing: 1px; color: #71819c; margin-bottom: 14px; }
+  .ocr-part {
+    display: grid;
+    grid-template-columns: 26px 1fr;
+    align-items: center;
+    gap: 6px;
+    margin: 12px 0;
+  }
+  .ocr-part-label { font-size: 11px; color: #71819c; }
+  .ocr-subtotals {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 22px;
+    padding-top: 18px;
+    margin-top: 18px;
+    border-top: 1px solid #687b9826;
+    font-size: 13px;
+    color: #71819c;
+  }
+
+  .ocr-subtotals strong { margin-left: 8px; color: #a45b6c; font-weight: normal; }
+  .ocr-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-top: 16px;
+    padding: 14px 16px;
     border-radius: 12px;
-    padding: 10px 8px 10px 24px;
-    gap: 8px;
-    min-height: 82px;
-    margin-top: 8px;
+    background: #798dab12;
+    color: #536684;
+    font-size: 15px;
   }
 
-  .loss-label {
-    width: 148px;
-    flex-shrink: 0;
-  }
-
-  .loss-cell {
-    flex: 1;
-    text-align: center;
-    border-radius: 10px;
-    background: #fff0c7;
-    color: #9a5b12;
-    padding: 6px;
-    min-width: 0;
-  }
-
-  .loss-cell.great {
-    background: #fbe5f1;
-    color: #923468;
-  }
-
-  .loss-cell.good {
-    background: #e7f5ed;
-    color: #277047;
-  }
-
-  .loss-cell.miss {
-    background: #e9edf2;
-    color: #555;
-  }
-
-  .loss-amount {
-    font-size: 22px;
-    color: #696e78;
-  }
-
-  .loss-amount.active {
-    color: #c0392b;
-  }
-
-  .subtotal {
-    margin: 8px 0 16px 180px;
-    border-radius: 10px;
-    background: #fdedec;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 16px;
-    color: #c0392b;
-  }
-
-  .subtotal small {
-    color: #696e78;
-    font-size: 22px;
-  }
-
-  .summary-total {
-    display: flex;
-    justify-content: space-between;
-    background: var(--accent);
-    color: #fff6dc;
-    border-radius: 14px;
-    margin-top: 8px;
-    padding: 16px 24px;
-  }
-
-  .summary-total small {
-    color: white;
-    font-size: 22px;
-  }
+  .ocr-total strong { color: #a45b6c; font-size: 22px; font-weight: normal; }
+  .ocr-note { padding: 18px 24px; border-top: 1px solid #687b9826; font-size: 14px; color: #846746; }
 </style>
-<article class="score-page">
-  <header class="score-header">
-    <div style="
-      flex: 1;
-      min-width: 0;
-    ">
-      <div class="score-title ellipsis">{{ payload.title }}</div>
-      <div class="score-subtitle">{{ texts.subtitle }}　{{ payload.difficulty_label }}</div>
-    </div>
-    {% if cover %}
-      <div class="score-cover">
-        <div style="
-          transform: scale(.746667);
-          transform-origin: top left;
-        ">{{ cover|safe }}</div>
-      </div>
-    {% elif type_src %}
-      <img src="{{ type_src }}" style="
-        width: 78px;
-        height: 26px;
-      ">
-    {% endif %}
-  </header>
-  <div class="metrics">
-    <div class="metric" style="color: #b86e19;">
-      <span data-fit="25" class="ellipsis">{{ achievement }}</span>
-    </div>
-    <div class="metric">
-      {% for src, width in icons %}
-        {% if src %}
-          <img src="{{ src }}" style="width: {{ width }}px;">
-        {% endif %}
-      {% endfor %}
-    </div>
-    <div class="metric" style="color: {{ '#72148d' if payload.difficulty == 'remaster' else color }};">
-      <span data-fit="25" class="ellipsis">{{ constant }}</span>
-    </div>
-  </div>
-  {% if progress %}
-    <section class="dx-progress">
-      <div class="dx-heading">
-        <span>DX SCORE</span>
-        <span style="color: #b86e19;">{{ progress.display }}</span>
-      </div>
-      <div class="dx-axis">
-        <div class="dx-fill" style="
-          background: linear-gradient(to right,{{ progress.gradient }});
-          clip-path: inset(0 {{ 100-progress.fill }}% 0 0);
-        "></div>
-        {% for marker in progress.markers %}
-          <div class="dx-marker" style="left: {{ marker.position }}%;">
-            {% if marker.icon %}
-              <img src="{{ marker.icon }}" style="
-                {% if not marker.achieved %}filter:grayscale(1);
-                opacity: .45{% endif %}
-              ">
-            {% endif %}
-            <span>{{ marker.threshold }}%</span>
-          </div>
-        {% endfor %}
-        <div style="
-          position: absolute;
-          left: {{ progress.fill }}%;
-          top: 2px;
-          transform: translateX(-50%);
-          width: 14px;
-          height: 14px;
-          background: white;
-          border: 3px solid #ed9a18;
-          border-radius: 50%;
-        "></div>
-      </div>
-      <div class="dx-bounds">
-        <span>{{ '%.1f'|format(progress.start_percentage) }}%</span>
-        <span>100%</span>
-      </div>
-    </section>
+{% macro count_cell(item) %}
+  <div class="ocr-count {{ 'ocr-zero' if item.zero else '' }}">{{ item.count }}</div>
+  {% if item.total %}
+    <div class="ocr-loss">{{ item.total }}</div>
+    <div class="ocr-unit">{{ item.unit }}</div>
   {% endif %}
-  <h2 style="--accent: #267d8b;">{{ texts.judgement }}</h2>
-  <table class="judgements">
-    <thead>
-      <tr>
-        {% for text in ['TYPE','CP','PF','GR','GD','MS'] %}
-          <th>{{ text }}</th>
+{% endmacro %}
+{% macro loss_summary(total_label) %}
+  {% for panel in panels if panel.total_label == total_label %}
+    {% if panel.rows|selectattr('total')|list %}
+      <div class="ocr-subtotals">
+        {% for row in panel.rows if row.total %}
+          <span>{{ row.label }}<strong>{{ row.total }}</strong></span>
         {% endfor %}
-      </tr>
-    </thead>
-    <tbody>
-      {% for label, values in rows %}
-        <tr>
-          <td>{{ label }}</td>
-          {% for value in values %}
-            <td>
-              <span class="{{ 'zero' if value == 0 else '' }}">{{ value }}</span>
-            </td>
-          {% endfor %}
-        </tr>
-      {% else %}
-        <tr>
-          <td colspan="6">{{ texts.empty }}</td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  {% for panel in panels %}
-    <section style="--accent: {{ panel.accent }};">
-      <h2>{{ panel.title }}</h2>
-      {% for row in panel.rows %}
-        <div class="loss-row">
-          <div class="loss-label">{{ row.label }}</div>
+      </div>
+    {% endif %}
+    {% if panel.total %}
+      <div class="ocr-total">
+        <span>{{ panel.total_label }}</span>
+        <strong>{{ panel.total }}</strong>
+      </div>
+    {% endif %}
+  {% endfor %}
+{% endmacro %}
+{% set verified = validation.get('song_id') and (validation.get('achievement_calc') or {}).get('consistent') == true and (validation.get('achievement_calc') or {}).get('complete') == true and not validation.get('uncertain_cells') %}
+{% set headings = ['CRITICAL', 'PERFECT', 'GREAT', 'GOOD', 'MISS'] %}
+<article class="ocr-page">
+  <div class="ocr-shell">
+    <header class="ocr-header">
+      {% if cover %}
+        <div class="ocr-cover"><div>{{ cover|safe }}</div></div>
+      {% endif %}
+      <div class="ocr-info">
+        <div class="ocr-kicker">JiETNG / SCORE ANALYSIS</div>
+        <div class="ocr-title ellipsis" data-fit="19">{{ payload.title }}</div>
+        <div class="ocr-meta">
+          {% if type_src %}<img class="ocr-type" src="{{ type_src }}">{% endif %}
+          <span style="color: {{ color }};">{{ payload.difficulty_label }} {{ validation.get('level') or '' }}</span>
+          <span>{{ '%.1f'|format(payload.internal_level) if payload.internal_level is number else '—' }}</span>
+          {% if validation.get('song_id') %}<span>#{{ validation.song_id }}</span>{% endif %}
+        </div>
+      </div>
+      <div class="ocr-state {{ 'valid' if verified else '' }}">
+        {{ '✓ ' ~ texts.verified if verified else texts.check_required }}
+      </div>
+    </header>
+
+    <div class="ocr-workspace">
+      <aside class="ocr-summary">
+        <div class="ocr-label">ACHIEVEMENT</div>
+        <div class="ocr-achievement">{{ achievement }}</div>
+        <div class="ocr-icons">
+          {% if rank_src %}<img class="ocr-rank" src="{{ rank_src }}">{% endif %}
+          {% if combo_src %}<img class="ocr-combo" src="{{ combo_src }}">{% endif %}
+        </div>
+        <section class="ocr-dx">
+          <div class="ocr-label">DX SCORE</div>
+          {% if progress %}
+            <div class="ocr-dx-value">{{ progress.score }} <small>/ {{ progress.maximum }}</small></div>
+            <div class="ocr-percentage">{{ '%.2f'|format(progress.percentage) }}%</div>
+            <div class="ocr-meter">
+              <div class="ocr-meter-fill" style="width: {{ progress.fill }}%;"></div>
+              {% for marker in progress.markers %}
+                <span class="ocr-meter-tick" style="left: {{ marker.position }}%;"></span>
+              {% endfor %}
+              <span class="ocr-meter-position" style="left: {{ progress.fill }}%;"></span>
+            </div>
+            <div class="ocr-meter-bounds">
+              <span>{{ '%.1f'|format(progress.start_percentage) }}%</span>
+              <span>100%</span>
+            </div>
+            {% for marker in progress.markers %}
+              <div class="ocr-star {{ 'reached' if marker.achieved else '' }}">
+                {% if marker.icon %}<img src="{{ marker.icon }}">{% endif %}
+                <span>{{ marker.threshold }}% {{ '✓' if marker.achieved else '·' }}</span>
+              </div>
+            {% endfor %}
+          {% else %}
+            <div class="ocr-dx-value">—</div>
+          {% endif %}
+        </section>
+      </aside>
+
+      <section class="ocr-analysis">
+        <h2 class="ocr-section-title">{{ texts.distribution }}</h2>
+        <div class="ocr-legend">{{ texts.cell_legend }}</div>
+        <table class="ocr-table">
+          <thead>
+            <tr>
+              <th>TYPE</th>
+              {% for label in headings %}<th>{{ label }}</th>{% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in table_rows if row.label != 'BREAK' %}
+              <tr>
+                <td>{{ row.label }}</td>
+                {% for cell in row.cells %}
+                  <td>{{ count_cell(cell[0]) }}</td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {{ loss_summary(texts.common_total) }}
+      </section>
+    </div>
+
+    <section class="ocr-break">
+      <h2 class="ocr-section-title">{{ texts.break }}</h2>
+      <div class="ocr-break-grid">
+        {% for row in table_rows if row.label == 'BREAK' %}
           {% for cell in row.cells %}
-            <div class="loss-cell {{ cell.tone }}">
-              <div class="loss-amount {{ 'active' if cell.nonzero else '' }}">{{ cell.loss }}</div>
-              <div class="{{ 'zero' if not cell.count else '' }}">{{ cell.count }}</div>
+            <div class="ocr-break-cell">
+              <div class="ocr-break-label">{{ headings[loop.index0] }}</div>
+              {% for item in cell %}
+                {% if item.label %}
+                  <div class="ocr-part">
+                    <span class="ocr-part-label">{{ item.label }}</span>
+                    <div>{{ count_cell(item) }}</div>
+                  </div>
+                {% else %}
+                  {{ count_cell(item) }}
+                {% endif %}
+              {% endfor %}
             </div>
           {% endfor %}
-        </div>
-        {% if row.total %}
-          <div class="subtotal">
-            <small>TOTAL</small>
-            <span>{{ row.total }}</span>
-          </div>
-        {% endif %}
-      {% endfor %}
-      {% if panel.total %}
-        <div class="summary-total">
-          <small>{{ panel.total_label }}</small>
-          <span>{{ panel.total }}</span>
-        </div>
-      {% endif %}
+        {% endfor %}
+      </div>
+      {{ loss_summary(texts.break_total) }}
     </section>
-  {% endfor %}
+    {% if not verified %}<div class="ocr-note">{{ texts.validation_note }}</div>{% endif %}
+  </div>
 </article>
