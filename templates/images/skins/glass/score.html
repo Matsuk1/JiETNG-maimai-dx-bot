@@ -145,6 +145,32 @@
     margin: 12px 0;
   }
   .ocr-part-label { font-size: 11px; color: #71819c; }
+  .ocr-subtotals {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 22px;
+    padding-top: 18px;
+    margin-top: 18px;
+    border-top: 1px solid #687b9826;
+    font-size: 13px;
+    color: #71819c;
+  }
+
+  .ocr-subtotals strong { margin-left: 8px; color: #a45b6c; font-weight: normal; }
+  .ocr-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-top: 16px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: #798dab12;
+    color: #536684;
+    font-size: 15px;
+  }
+
+  .ocr-total strong { color: #a45b6c; font-size: 22px; font-weight: normal; }
   .ocr-note { padding: 18px 24px; border-top: 1px solid #687b9826; font-size: 14px; color: #846746; }
 </style>
 {% macro count_cell(item) %}
@@ -153,6 +179,23 @@
     <div class="ocr-loss">{{ item.total }}</div>
     <div class="ocr-unit">{{ item.unit }}</div>
   {% endif %}
+{% endmacro %}
+{% macro loss_summary(total_label) %}
+  {% for panel in panels if panel.total_label == total_label %}
+    {% if panel.rows|selectattr('total')|list %}
+      <div class="ocr-subtotals">
+        {% for row in panel.rows if row.total %}
+          <span>{{ row.label }}<strong>{{ row.total }}</strong></span>
+        {% endfor %}
+      </div>
+    {% endif %}
+    {% if panel.total %}
+      <div class="ocr-total">
+        <span>{{ panel.total_label }}</span>
+        <strong>{{ panel.total }}</strong>
+      </div>
+    {% endif %}
+  {% endfor %}
 {% endmacro %}
 {% set verified = validation.get('song_id') and (validation.get('achievement_calc') or {}).get('consistent') == true and (validation.get('achievement_calc') or {}).get('complete') == true and not validation.get('uncertain_cells') %}
 {% set headings = ['CRITICAL', 'PERFECT', 'GREAT', 'GOOD', 'MISS'] %}
@@ -234,6 +277,7 @@
             {% endfor %}
           </tbody>
         </table>
+        {{ loss_summary(texts.common_total) }}
       </section>
     </div>
 
@@ -258,6 +302,7 @@
           {% endfor %}
         {% endfor %}
       </div>
+      {{ loss_summary(texts.break_total) }}
     </section>
     {% if not verified %}<div class="ocr-note">{{ texts.validation_note }}</div>{% endif %}
   </div>

@@ -24,3 +24,29 @@ def test_break_splits_keep_unknown_losses_and_counts_unknown():
     assert cells[1][1]['total'] is None
     assert cells[2][0]['count'] == '—'
     assert cells[2][0]['unit'] is None
+
+
+def test_glass_template_keeps_section_and_row_loss_totals():
+    from pathlib import Path
+    from jinja2 import Environment, FileSystemLoader
+
+    root = Path(__file__).resolve().parents[1] / 'templates/images/skins/glass'
+    template = Environment(loader=FileSystemLoader(root)).get_template('score.html')
+    html = template.render(
+        validation={}, payload={'title': 'Test', 'difficulty_label': 'MASTER'},
+        texts={'common_total': 'COMMON TOTAL', 'break_total': 'BREAK TOTAL'},
+        table_rows=[], panels=[
+            dict(total_label='COMMON TOTAL', total='-0.12000%', rows=[
+                dict(label='TAP', total='-0.03000%'),
+                dict(label='HOLD', total=None),
+            ]),
+            dict(total_label='BREAK TOTAL', total='-0.07000%', rows=[
+                dict(label='PERFECT', total='-0.02000%'),
+                dict(label='GREAT', total='-0.05000%'),
+            ]),
+        ],
+    )
+    for text in ('COMMON TOTAL', 'BREAK TOTAL', '-0.12000%', '-0.07000%',
+                 '-0.03000%', '-0.02000%', '-0.05000%'):
+        assert text in html
+    assert 'None' not in html
