@@ -196,6 +196,20 @@
     {% endif %}
   {% endfor %}
 {% endmacro %}
+{# Older workers may still supply the previous template context during deployment. #}
+{% set validation = validation|default({}, true) %}
+{% if table_rows is not defined %}
+  {% set legacy = namespace(rows=[]) %}
+  {% for label, values in rows|default([]) %}
+    {% set cells = namespace(items=[]) %}
+    {% for value in values %}
+      {% set item = dict(count=value, zero=value == 0, label=none, total=none, unit=none) %}
+      {% set cells.items = cells.items + [[item]] %}
+    {% endfor %}
+    {% set legacy.rows = legacy.rows + [dict(label=label, cells=cells.items)] %}
+  {% endfor %}
+  {% set table_rows = legacy.rows %}
+{% endif %}
 {% set verified = validation.get('song_id') and (validation.get('achievement_calc') or {}).get('consistent') == true and (validation.get('achievement_calc') or {}).get('complete') == true and not validation.get('uncertain_cells') %}
 {% set headings = ['CRITICAL', 'PERFECT', 'GREAT', 'GOOD', 'MISS'] %}
 <article class="ocr-page">
@@ -215,7 +229,7 @@
         </div>
       </div>
       <div class="ocr-state {{ 'valid' if verified else '' }}">
-        {{ '✓ ' ~ texts.verified if verified else texts.check_required }}
+        {{ '✓ ' ~ texts.verified if verified else texts.check_required|default('CHECK REQUIRED') }}
       </div>
     </header>
 
@@ -224,8 +238,14 @@
         <div class="ocr-label">ACHIEVEMENT</div>
         <div class="ocr-achievement">{{ achievement }}</div>
         <div class="ocr-icons">
-          {% if rank_src %}<img class="ocr-rank" src="{{ rank_src }}">{% endif %}
-          {% if combo_src %}<img class="ocr-combo" src="{{ combo_src }}">{% endif %}
+          {% if rank_src is defined or combo_src is defined %}
+            {% if rank_src %}<img class="ocr-rank" src="{{ rank_src }}">{% endif %}
+            {% if combo_src %}<img class="ocr-combo" src="{{ combo_src }}">{% endif %}
+          {% else %}
+            {% for src, width in icons|default([]) %}
+              {% if src %}<img class="ocr-rank" src="{{ src }}">{% endif %}
+            {% endfor %}
+          {% endif %}
         </div>
         <section class="ocr-dx">
           <div class="ocr-label">DX SCORE</div>
@@ -256,8 +276,8 @@
       </aside>
 
       <section class="ocr-analysis">
-        <h2 class="ocr-section-title">{{ texts.distribution }}</h2>
-        <div class="ocr-legend">{{ texts.cell_legend }}</div>
+        <h2 class="ocr-section-title">{{ texts.distribution|default(texts.judgement) }}</h2>
+        <div class="ocr-legend">{{ texts.cell_legend|default('COUNT / TOTAL LOSS / LOSS PER NOTE') }}</div>
         <table class="ocr-table">
           <thead>
             <tr>
@@ -303,6 +323,6 @@
       </div>
       {{ loss_summary(texts.break_total) }}
     </section>
-    {% if not verified %}<div class="ocr-note">{{ texts.validation_note }}</div>{% endif %}
+    {% if not verified %}<div class="ocr-note">{{ texts.validation_note|default('CHECK REQUIRED') }}</div>{% endif %}
   </div>
 </article>

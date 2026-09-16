@@ -53,3 +53,22 @@ def test_templates_keep_section_and_row_loss_totals(skin):
                  '-0.03000%', '-0.02000%', '-0.05000%'):
         assert text in html
     assert 'None' not in html
+
+
+@pytest.mark.parametrize('skin', ['default', 'glass'])
+@pytest.mark.parametrize('validation_context', [{}, {'validation': None}])
+def test_legacy_worker_context_keeps_counts_and_totals(skin, validation_context):
+    from modules.images.renderer import template
+
+    html = template('score.html', skin=skin,
+        payload={'title': 'Legacy score', 'difficulty_label': 'MASTER'},
+        texts={'judgement': 'Judgements', 'break': 'BREAK',
+               'common_total': 'COMMON TOTAL', 'break_total': 'BREAK TOTAL'},
+        rows=[('TAP', [123, 4, 3, 2, 1]), ('BREAK', [20, 5, 0, 0, 0])],
+        panels=[dict(total_label='COMMON TOTAL', total='-0.25000%', rows=[])],
+        icons=[('data:image/png;base64,test', 130)], **validation_context)
+    assert 'Legacy score' in html
+    assert '>123</div>' in html and '>20</div>' in html
+    assert '-0.25000%' in html
+    assert 'data:image/png;base64,test' in html
+    assert 'CHECK REQUIRED' in html
