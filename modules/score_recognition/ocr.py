@@ -44,9 +44,12 @@ logger = logging.getLogger(__name__)
 os.environ.setdefault("PADDLE_PDX_CACHE_HOME", str(PROJECT_ROOT / ".paddle-home" / "paddlex"))
 os.environ.setdefault("MPLCONFIGDIR", "/tmp/jietng-matplotlib")
 os.environ.setdefault("PADDLE_PDX_MODEL_SOURCE", "huggingface")
-os.environ.setdefault("PADDLE_PDX_ENABLE_MKLDNN_BYDEFAULT", "0")
-os.environ.setdefault("FLAGS_use_onednn", "0")
-os.environ.setdefault("FLAGS_use_mkldnn", "0")
+OCR_CPU_THREADS = max(1, int(os.getenv("JIETNG_OCR_CPU_THREADS", "4")))
+OCR_ENABLE_MKLDNN = os.getenv("JIETNG_OCR_ENABLE_MKLDNN", "0") == "1"
+for _flag in ("PADDLE_PDX_ENABLE_MKLDNN_BYDEFAULT", "FLAGS_use_onednn", "FLAGS_use_mkldnn"):
+    os.environ[_flag] = "1" if OCR_ENABLE_MKLDNN else "0"
+for _flag in ("PADDLE_PDX_CPU_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
+    os.environ.setdefault(_flag, str(OCR_CPU_THREADS))
 os.environ.setdefault("FLAGS_enable_pir_api", "0")
 
 OCR_FIELDS = (
@@ -127,12 +130,13 @@ def _start_table_model_process() -> subprocess.Popen[str]:
         "PADDLE_PDX_CACHE_HOME",
         str(PROJECT_ROOT / ".paddle-home" / "paddlex"),
     )
-    cpu_threads = min(8, os.cpu_count() or 1)
+    cpu_threads = max(1, int(env.get("JIETNG_TABLE_OCR_CPU_THREADS", str(OCR_CPU_THREADS))))
     env.setdefault("JIETNG_TABLE_OCR_CPU_THREADS", str(cpu_threads))
-    env.setdefault("PADDLE_PDX_CPU_NUM_THREADS", str(cpu_threads))
-    env.setdefault("OMP_NUM_THREADS", str(cpu_threads))
-    env.setdefault("MKL_NUM_THREADS", str(cpu_threads))
-    use_onednn = env.get("JIETNG_TABLE_OCR_ENABLE_MKLDNN", "0") == "1"
+    env["PADDLE_PDX_CPU_NUM_THREADS"] = str(cpu_threads)
+    env["OMP_NUM_THREADS"] = str(cpu_threads)
+    env["MKL_NUM_THREADS"] = str(cpu_threads)
+    env.setdefault("JIETNG_TABLE_OCR_ENABLE_MKLDNN", "1" if OCR_ENABLE_MKLDNN else "0")
+    use_onednn = env["JIETNG_TABLE_OCR_ENABLE_MKLDNN"] == "1"
     if use_onednn:
         env["PADDLE_PDX_ENABLE_MKLDNN_BYDEFAULT"] = "1"
         env["FLAGS_use_onednn"] = "1"
@@ -405,6 +409,8 @@ class PaddleOcrEngine:
 
         # Supported runtime is pinned to PaddleOCR 3.7.x in requirements.txt.
         # Do not retry initialization failures as legacy API incompatibilities.
+        logger.info("[Recognize] OCR runtime: threads=%s onednn=%s models=%s",
+                    OCR_CPU_THREADS, OCR_ENABLE_MKLDNN, self.model_names)
         self.ocr = PaddleOCR(
             **model_kwargs,
             use_doc_orientation_classify=False,
@@ -415,8 +421,8 @@ class PaddleOcrEngine:
             # original image and returns boxes in its original coordinates.
             text_det_limit_side_len=detection_max_side,
             text_det_limit_type="max",
-            enable_mkldnn=False,
-            cpu_threads=4,
+            enable_mkldnn=OCR_ENABLE_MKLDNN,
+            cpu_threads=OCR_CPU_THREADS,
         )
 
     def read(self, image_source: str | Path | Image.Image) -> list[dict[str, Any]]:
@@ -2633,11 +2639,13 @@ def process_image_data(
         debug_input = Path(debug_output_dir) / "ocr_input"
         debug_input.mkdir(parents=True, exist_ok=True)
     crop_seconds = time.perf_counter() - started_at
+    engine_seconds = 0.0
     if engine is None:
         if engine_factory is None:
             raise ValueError("An OCR engine or engine factory is required")
         engine_started_at = time.perf_counter()
         engine = engine_factory()
+        engine_seconds = time.perf_counter() - engine_started_at
         logger.info("[Recognize] OCR engine ready: elapsed=%.3fs crop=%.3fs",
                     time.perf_counter() - engine_started_at, crop_seconds)
     selected_fields = tuple(fields)
@@ -2744,6 +2752,8 @@ def process_image_data(
         },
     }
     return {
+        "timing": {"crop": crop_seconds, "engine": engine_seconds,
+                   "fields": field_seconds, "total": time.perf_counter() - started_at},
         "source": "memory",
         "crop_metadata": debug_metadata or public_metadata,
         "ocr_fields": ocr_fields,

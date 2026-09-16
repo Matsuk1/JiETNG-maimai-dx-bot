@@ -1964,7 +1964,7 @@ def recognize_score_image_bytes(
             _ENGINE_REQUEST_COUNT += 1
             rss_after = _process_rss_mb()
             if rss_before is not None or rss_after is not None:
-                logger.debug(
+                logger.info(
                     "[Recognize] OCR memory: rss_before=%sMB rss_after=%sMB requests=%s",
                     rss_before,
                     rss_after,

@@ -48,3 +48,27 @@ HTTP 路由仍在 `api/score_api.py`。通用评分规则和计算继续由 `sco
 迁移没有保留旧路径转发模块。部署时同步新增目录、调用文件和旧文件删除，并重启服务；仅覆盖上传新文件会留下旧模块。
 
 运行 `.venv/bin/python -m pytest -q`。需要验证 Chromium 渲染时加上 `JIETNG_RENDER_TESTS=1`。离线预览和历史对比仍使用 `devtools/image_preview/server.py`、`scripts/preview_image_migration.py`。
+
+### CPU OCR performance comparison
+
+`JIETNG_OCR_ENABLE_MKLDNN=1` enables oneDNN (default: disabled).
+`JIETNG_OCR_CPU_THREADS` controls main OCR threads (default: 4).
+The table worker inherits both settings unless overridden by
+`JIETNG_TABLE_OCR_ENABLE_MKLDNN` / `JIETNG_TABLE_OCR_CPU_THREADS`.
+Restart the service after changing these environment variables.
+
+On the server, run a representative set of local photos through all four
+oneDNN off/on × 4/8-thread configurations:
+
+```sh
+python3 scripts/benchmark_score_ocr.py /path/to/photo1.jpg /path/to/photo2.jpg --runs 3 --output /tmp/ocr-benchmark
+```
+
+This uses production OCR and local validation, never Codex. Each configuration
+has a fresh process; later iterations show warm performance unless production
+memory/request limits reset the engine. Logs include worker startup, field
+recognition and reset events. JSON includes parsed results, validation, elapsed
+time and post-request parent/child RSS (not peak memory). Compare accuracy as
+well as latency; a faster failed recognition is not a successful optimization.
+Run during a quiet period: this loads additional models alongside the service.
+Production reset thresholds and model choices are unchanged.

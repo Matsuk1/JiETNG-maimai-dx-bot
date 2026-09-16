@@ -89,3 +89,52 @@ def test_failed_crop_does_not_initialize_ocr_engine():
         with pytest.raises(ValueError, match='four corners missing'):
             ocr.process_image_data(source, ocr.OCR_FIELDS, None, engine_factory=engine_factory)
     engine_factory.assert_not_called()
+
+class CpuRuntimeTests(unittest.TestCase):
+    def test_engine_passes_cpu_configuration(self):
+        import sys
+        from types import SimpleNamespace
+        from unittest.mock import Mock
+        from modules.score_recognition import ocr
+        factory = Mock()
+        with patch.dict(sys.modules, paddleocr=SimpleNamespace(PaddleOCR=factory)), \
+             patch.object(ocr, 'OCR_CPU_THREADS', 8), \
+             patch.object(ocr, 'OCR_ENABLE_MKLDNN', True):
+            ocr.PaddleOcrEngine()
+        self.assertEqual(factory.call_args.kwargs['cpu_threads'], 8)
+        self.assertTrue(factory.call_args.kwargs['enable_mkldnn'])
+
+    def test_import_configures_backend_environment_before_paddle(self):
+        import os
+        import subprocess
+        import sys
+        env = dict(os.environ, JIETNG_OCR_CPU_THREADS='8', JIETNG_OCR_ENABLE_MKLDNN='1',
+                   FLAGS_use_onednn='0', FLAGS_use_mkldnn='0')
+        result = subprocess.run([sys.executable, '-c', '''
+import os
+from modules.score_recognition import ocr
+assert ocr.OCR_CPU_THREADS == 8
+assert ocr.OCR_ENABLE_MKLDNN
+assert os.environ['FLAGS_use_onednn'] == '1'
+assert os.environ['FLAGS_use_mkldnn'] == '1'
+assert os.environ['PADDLE_PDX_ENABLE_MKLDNN_BYDEFAULT'] == '1'
+'''], env=env, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_benchmark_never_supplies_images_to_codex_validation(self):
+        import argparse
+        import json
+        from scripts.benchmark_score_ocr import run_worker
+        from modules.score_recognition import recognizer, ocr
+        with tempfile.TemporaryDirectory() as directory:
+            photo = Path(directory) / 'photo.jpg'
+            photo.write_bytes(b'test-original')
+            output = Path(directory) / 'result.json'
+            result = {'parsed': {'title': 'test'}, 'timing': {'crop': 0.1}}
+            with patch.object(recognizer, 'recognize_score_image_bytes', return_value=result) as recognize, \
+                 patch.object(recognizer, 'validate_recognized_judgement', return_value=result) as validate:
+                run_worker(argparse.Namespace(images=[photo], runs=2, version='jp', output=output))
+            self.assertEqual(recognize.call_count, 2)
+            self.assertEqual(recognize.call_args.kwargs, {'fields': ocr.OCR_FIELDS})
+            self.assertEqual(validate.call_args.kwargs, {'ver': 'jp'})
+            self.assertEqual(len(json.loads(output.read_text())), 2)
