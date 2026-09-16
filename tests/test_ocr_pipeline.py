@@ -138,3 +138,44 @@ assert os.environ['PADDLE_PDX_ENABLE_MKLDNN_BYDEFAULT'] == '1'
             self.assertEqual(recognize.call_args.kwargs, {'fields': ocr.OCR_FIELDS})
             self.assertEqual(validate.call_args.kwargs, {'ver': 'jp'})
             self.assertEqual(len(json.loads(output.read_text())), 2)
+
+class TableWorkerLifetimeTests(unittest.TestCase):
+    def test_reuse_and_memory_protection_preserve_results(self):
+        import json
+        from contextlib import ExitStack
+        from types import SimpleNamespace
+        from unittest.mock import Mock
+        from modules.score_recognition import ocr
+
+        for rss, available, count, should_stop in (
+            (2172, 1024, 0, False),  # Normal measured production footprint.
+            (2600, 1024, 0, True),  # Worker exceeds its own limit.
+            (2172, 400, 0, True),   # Host needs memory even below worker limit.
+            (2172, 1024, 49, True), # Periodic recycling remains in place.
+        ):
+            with self.subTest(rss=rss, available=available, count=count), ExitStack() as stack:
+                worker = Mock(pid=123)
+                worker.poll.return_value = None
+                result = {name: {'critical_perfect': 1} for name in ocr.JUDGEMENT_ROW_NAMES}
+                stack.enter_context(patch.object(ocr, '_TABLE_MODEL_PROCESS', worker))
+                stack.enter_context(patch.object(ocr, '_TABLE_MODEL_REQUEST_COUNT', count))
+                stack.enter_context(patch.object(ocr, 'TABLE_MODEL_MAX_RSS_MB', 2560))
+                stack.enter_context(patch.object(ocr, 'TABLE_MODEL_MIN_AVAILABLE_MB', 512))
+                stack.enter_context(patch.object(ocr, 'TABLE_MODEL_MAX_REQUESTS', 50))
+                stack.enter_context(patch.object(ocr, '_start_table_model_process', return_value=worker))
+                stop = stack.enter_context(patch.object(ocr, '_stop_table_model_process'))
+                stack.enter_context(patch.object(ocr.psutil, 'Process', return_value=Mock(
+                    memory_info=Mock(return_value=SimpleNamespace(rss=rss * 1024**2)))))
+                stack.enter_context(patch.object(ocr.psutil, 'virtual_memory', return_value=SimpleNamespace(
+                    available=available * 1024**2)))
+                def response(*args):
+                    request = json.loads(worker.stdin.write.call_args.args[0])
+                    return ocr.TABLE_MODEL_RESULT_MARKER + json.dumps({'id': request['id'], 'result': result})
+                stack.enter_context(patch.object(ocr, '_read_table_model_line', side_effect=response))
+                image = Image.new('RGB', (10, 10))
+                self.assertEqual(ocr.recognize_judgement_with_table_model(image), result)
+                self.assertEqual(stop.called, should_stop)
+                if not should_stop:
+                    self.assertEqual(ocr.recognize_judgement_with_table_model(image), result)
+                    self.assertEqual(ocr._TABLE_MODEL_REQUEST_COUNT, 2)
+                    stop.assert_not_called()

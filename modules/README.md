@@ -72,3 +72,14 @@ time and post-request parent/child RSS (not peak memory). Compare accuracy as
 well as latency; a faster failed recognition is not a successful optimization.
 Run during a quiet period: this loads additional models alongside the service.
 Production reset thresholds and model choices are unchanged.
+
+The table worker is retained between requests while its RSS is below
+`JIETNG_TABLE_OCR_MAX_RSS_MB` (default 2560 MiB). The previous 1536 MiB limit
+was below the measured normal footprint and caused repeated cold starts.
+It is recycled after 50 requests (`JIETNG_TABLE_OCR_MAX_REQUESTS`) or when
+host available memory falls below 512 MiB (`JIETNG_TABLE_OCR_MIN_AVAILABLE_MB`).
+Memory checks happen after inference; these are recycling policies, not hard
+peak-memory limits. Explicit environment settings override the defaults.
+Keep oneDNN disabled on the tested server: its table pipeline failed with
+`ReduceMeanCheckIfOneDNNSupport`. Confirm `reused=True` and near-zero startup
+in subsequent table request logs after deploying this change.

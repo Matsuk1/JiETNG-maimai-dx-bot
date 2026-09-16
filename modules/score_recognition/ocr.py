@@ -67,7 +67,10 @@ TABLE_MODEL_RESULT_MARKER = "JIETNG_TABLE_RESULT="
 TABLE_MODEL_READY_MARKER = "JIETNG_TABLE_READY"
 TABLE_MODEL_START_TIMEOUT_SECONDS = 180
 TABLE_MODEL_REQUEST_TIMEOUT_SECONDS = 60
-TABLE_MODEL_MAX_RSS_MB = int(os.getenv("JIETNG_TABLE_OCR_MAX_RSS_MB", "1536"))
+# PP-OCRv6 table workers normally use ~1.7–2.2 GiB on the production CPU.
+# The old 1536 MiB cap recycled even a healthy worker after every request.
+TABLE_MODEL_MAX_RSS_MB = int(os.getenv("JIETNG_TABLE_OCR_MAX_RSS_MB", "2560"))
+TABLE_MODEL_MIN_AVAILABLE_MB = int(os.getenv("JIETNG_TABLE_OCR_MIN_AVAILABLE_MB", "512"))
 TABLE_MODEL_MAX_REQUESTS = int(os.getenv("JIETNG_TABLE_OCR_MAX_REQUESTS", "50"))
 _TABLE_MODEL_PROCESS: subprocess.Popen[str] | None = None
 _TABLE_MODEL_LOCK = threading.Lock()
@@ -252,13 +255,19 @@ def recognize_judgement_with_table_model(
                 _TABLE_MODEL_REQUEST_COUNT,
                 payload.get("mode") or "unknown",
             )
-            if (
-                rss_mb >= TABLE_MODEL_MAX_RSS_MB
-                or _TABLE_MODEL_REQUEST_COUNT >= TABLE_MODEL_MAX_REQUESTS
-            ):
+            available_mb = psutil.virtual_memory().available / (1024**2)
+            reset_reason = None
+            if TABLE_MODEL_MAX_RSS_MB > 0 and rss_mb >= TABLE_MODEL_MAX_RSS_MB:
+                reset_reason = "rss_threshold"
+            elif TABLE_MODEL_MIN_AVAILABLE_MB > 0 and available_mb < TABLE_MODEL_MIN_AVAILABLE_MB:
+                reset_reason = "system_memory_pressure"
+            elif TABLE_MODEL_MAX_REQUESTS > 0 and _TABLE_MODEL_REQUEST_COUNT >= TABLE_MODEL_MAX_REQUESTS:
+                reset_reason = "request_threshold"
+            if reset_reason:
                 logger.info(
-                    "[Recognize] Restarting table model worker: rss=%.1fMB requests=%s",
-                    rss_mb,
+                    "[Recognize] Restarting table model worker: reason=%s "
+                    "rss=%.1fMB limit=%sMB available=%.1fMB requests=%s",
+                    reset_reason, rss_mb, TABLE_MODEL_MAX_RSS_MB, available_mb,
                     _TABLE_MODEL_REQUEST_COUNT,
                 )
                 _stop_table_model_process()
