@@ -3469,11 +3469,9 @@ def _score_recognition_queue_task(event, command: str, quoted_message_id: str, f
                 time.perf_counter() - request_started_at,
             )
         else:
-            result = recognize_score_image_bytes(
-                image_bytes,
-            )
             ver = get_user_field(user_id, "version", "jp") or "jp"
-            result = validate_recognized_judgement(result, ver=ver)
+            result = recognize_score_image_bytes(image_bytes, ver=ver)
+            result = validate_recognized_judgement(result, ver=ver, image_bytes=image_bytes)
             result_variants = expand_score_recognition_calc_variants(result)
             if force_flex or (
                 len(result_variants) == 1

@@ -25,6 +25,8 @@
 
 HTTP 路由仍在 `api/score_api.py`。通用评分规则和计算继续由 `score_rules.py`、`score_calculator.py` 负责。
 
+完整成绩识别先走本地定位、OCR 和校验。定位/裁切/引擎异常，或校验未通过且没有本地补全候选时，才使用已启用 AI Monitor 的 Codex 登录尝试一次原图识别。Codex OCR 使用独立临时会话，不启用后台 MCP、网页或 shell 工具；结果必须再次通过谱面和达成率校验。未登录、不可用或结果不合格时保留原错误/手动修正流程。仅歌名识别、手动 `fix-rcd` 和裁切预览不触发保底。
+
 歌名搜索、OCR 错字与滚动标题匹配统一放在 `song_matcher.py`，识别入口直接调用，不保留转发包装。
 
 ## LINE 消息：`messages/`

@@ -1603,7 +1603,7 @@ def _apply_judgement_validation(result, best, title_match_type, *, preserve_inpu
     return result
 
 
-def validate_recognized_judgement(
+def _validate_recognized_judgement(
     result,
     ver="jp",
     allow_ocr_alignment=True,
@@ -1643,17 +1643,68 @@ def validate_recognized_judgement(
     return _apply_judgement_validation(result, best, title_match_type, preserve_input=preserve_input)
 
 
-def score_recognition_needs_manual_fix(result) -> bool:
+def validate_recognized_judgement(
+    result, ver="jp", allow_ocr_alignment=True, preserve_input=False, *, image_bytes=None,
+):
+    result = _validate_recognized_judgement(result, ver, allow_ocr_alignment, preserve_input)
     validation = result.get("validation") or {}
-    judgement = (result.get("parsed") or {}).get("sub_judgement") or {}
+    if (
+        image_bytes is None or preserve_input or _score_is_validated(result)
+        or validation.get("calc_completion_candidates")
+    ):
+        return result
+    try:
+        from modules.monitoring.codex_agent import recognize_score_with_codex
+
+        parsed = recognize_score_with_codex(image_bytes)
+        if not isinstance(parsed, dict):
+            return result
+        title, achievement = parsed.get("title"), parsed.get("achievement")
+        judgement = parsed.get("sub_judgement")
+        if not isinstance(title, str) or len(title) > 500:
+            return result
+        if type(achievement) not in (int, float) or not 0 <= achievement <= 101:
+            return result
+        if not isinstance(judgement, dict):
+            return result
+        clean_rows = {}
+        for name in JUDGEMENT_ROW_NAMES:
+            row = judgement.get(name)
+            if not isinstance(row, dict):
+                return result
+            if any(type(row.get(field)) is not int or not 0 <= row[field] <= 100000
+                   for field in ALL_JUDGEMENT_VALUE_NAMES):
+                return result
+            clean_rows[name] = {field: row[field] for field in ALL_JUDGEMENT_VALUE_NAMES}
+        candidate = _validate_recognized_judgement(
+            {"source": "codex", "parsed": {"title": title, "achievement": achievement,
+                                            "sub_judgement": clean_rows}},
+            ver=ver, allow_ocr_alignment=False, preserve_input=True,
+        )
+        if _score_is_validated(candidate):
+            logger.info("[Recognize] Codex fallback passed chart and achievement validation")
+            return candidate
+        logger.info("[Recognize] Codex fallback did not pass validation; retaining OCR result")
+    except Exception as exc:
+        # Optional vision must never prevent delivery of the original correction UI.
+        logger.warning("[Recognize] Codex fallback unavailable: %s", type(exc).__name__)
+    return result
+
+
+def _score_is_validated(result):
+    validation = result.get("validation") or {}
     achievement_calc = validation.get("achievement_calc") or {}
-    uncertain_cells = validation.get("uncertain_cells") or []
-    fully_validated = (
+    return (
         bool(validation.get("song_id"))
         and achievement_calc.get("consistent") is True
         and achievement_calc.get("complete") is True
-        and not uncertain_cells
+        and not validation.get("uncertain_cells")
     )
+
+
+def score_recognition_needs_manual_fix(result) -> bool:
+    judgement = (result.get("parsed") or {}).get("sub_judgement") or {}
+    fully_validated = _score_is_validated(result)
     has_judgement_data = any(
         isinstance(judgement.get(row_name), dict)
         for row_name in JUDGEMENT_ROW_NAMES
@@ -1820,6 +1871,7 @@ def recognize_score_image_bytes(
     image_bytes: bytes,
     fields: tuple[str, ...] | None = None,
     line_like_preprocess: bool = False,
+    ver: str = "jp",
 ) -> dict[str, Any]:
     global _ENGINE_REQUEST_COUNT
     try:
@@ -1842,38 +1894,52 @@ def recognize_score_image_bytes(
     except (UnidentifiedImageError, OSError) as exc:
         raise InvalidScoreImageError("Uploaded data is not a valid image") from exc
 
-    # PaddleOCR inference is heavy and may not be thread-safe across concurrent
-    # LINE tasks. Serialize access to the shared model instance.
-    lock_started_at = time.perf_counter()
-    with _OCR_LOCK:
-        lock_wait_seconds = time.perf_counter() - lock_started_at
-        if lock_wait_seconds >= 1.0:
-            logger.info("[Recognize] OCR lock wait: %.3fs", lock_wait_seconds)
-        rss_before = _process_rss_mb()
-        ocr_fields, _, process_image_data = _load_ocr_module()
-        result = process_image_data(
-            image,
-            fields or ocr_fields,
-            _engine(),
-        )
-        _ENGINE_REQUEST_COUNT += 1
-        rss_after = _process_rss_mb()
-        if rss_before is not None or rss_after is not None:
-            logger.debug(
-                "[Recognize] OCR memory: rss_before=%sMB rss_after=%sMB requests=%s",
-                rss_before,
-                rss_after,
-                _ENGINE_REQUEST_COUNT,
+    try:
+        # PaddleOCR inference is heavy and may not be thread-safe across concurrent
+        # LINE tasks. Serialize access to the shared model instance.
+        lock_started_at = time.perf_counter()
+        with _OCR_LOCK:
+            lock_wait_seconds = time.perf_counter() - lock_started_at
+            if lock_wait_seconds >= 1.0:
+                logger.info("[Recognize] OCR lock wait: %.3fs", lock_wait_seconds)
+            rss_before = _process_rss_mb()
+            ocr_fields, _, process_image_data = _load_ocr_module()
+            result = process_image_data(
+                image,
+                fields or ocr_fields,
+                _engine(),
             )
-        if (
-            OCR_ENGINE_MAX_REQUESTS > 0
-            and _ENGINE_REQUEST_COUNT >= OCR_ENGINE_MAX_REQUESTS
-        ):
-            _reset_ocr_engine("request_threshold", rss_after)
-        elif (
-            OCR_ENGINE_MAX_RSS_MB > 0
-            and rss_after is not None
-            and rss_after >= OCR_ENGINE_MAX_RSS_MB
-        ):
-            _reset_ocr_engine("rss_threshold", rss_after)
-        return result
+            _ENGINE_REQUEST_COUNT += 1
+            rss_after = _process_rss_mb()
+            if rss_before is not None or rss_after is not None:
+                logger.debug(
+                    "[Recognize] OCR memory: rss_before=%sMB rss_after=%sMB requests=%s",
+                    rss_before,
+                    rss_after,
+                    _ENGINE_REQUEST_COUNT,
+                )
+            if (
+                OCR_ENGINE_MAX_REQUESTS > 0
+                and _ENGINE_REQUEST_COUNT >= OCR_ENGINE_MAX_REQUESTS
+            ):
+                _reset_ocr_engine("request_threshold", rss_after)
+            elif (
+                OCR_ENGINE_MAX_RSS_MB > 0
+                and rss_after is not None
+                and rss_after >= OCR_ENGINE_MAX_RSS_MB
+            ):
+                _reset_ocr_engine("rss_threshold", rss_after)
+            return result
+
+    except Exception:
+        if fields is not None:
+            raise
+        logger.warning("[Recognize] Local OCR failed before validation; trying Codex image fallback")
+        recovered = validate_recognized_judgement(
+            {"parsed": {}}, ver=ver, image_bytes=image_bytes,
+        )
+        if _score_is_validated(recovered):
+            return recovered
+        raise
+    finally:
+        image.close()

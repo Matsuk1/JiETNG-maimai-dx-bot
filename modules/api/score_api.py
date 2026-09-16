@@ -71,8 +71,10 @@ def create_score_api(max_image_bytes, *, services=None):
                 services.recognize(
                     image_bytes,
                     line_like_preprocess=True,
+                    ver=version,
                 ),
                 ver=version,
+                image_bytes=image_bytes,
             )
             selected = expand_score_recognition_calc_variants(result)[0]
             public = build_score_recognition_response(selected)
