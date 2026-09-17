@@ -14,7 +14,7 @@
   <meta name="theme-color" content="#f5f5f5" media="(prefers-color-scheme: light)">
   {% include 'common_styles.html' %}
 
-  <link rel="stylesheet" href="/static/admin-panel.css">
+  <link rel="stylesheet" href="/static/admin-panel.css?v=audit-20260917-10">
 </head>
 <body class="admin-mobile-nav-collapsed">
   <svg aria-hidden="true" width="0" height="0" style="position:absolute;overflow:hidden;">
@@ -366,7 +366,7 @@
           <span>DXData Status</span>
           <div style="display: flex; gap: 8px;">
             <button class="btn btn-primary" onclick="loadDXDataStatus()" style="font-size: 12px;">Refresh</button>
-            <button class="btn btn-success" id="update-dxdata-btn" onclick="updateDXData()" style="font-size: 12px;">Update</button>
+            <button class="btn btn-success" id="update-dxdata-btn" onclick="updateDXData()" style="font-size: 12px;">Update &amp; Check</button>
           </div>
         </div>
 
@@ -374,6 +374,44 @@
           <div style="text-align: center; padding: 40px; opacity: 0.5;">
             Loading DXData status...
           </div>
+        </div>
+        <div id="dxdata-audit-panel" style="margin-top:24px;">
+          <div class="section-title">JP / INTL 定数与版本检查 · LEVEL ≥ 12</div>
+          <p class="audit-intro">仅检查 12、12+ 及以上谱面。对照当前值与官网结果，选择要修正的谱面后保存。</p>
+          <details id="dxdata-audit-setup" class="audit-setup">
+            <summary>登录并重新检查</summary>
+            <form class="audit-login-form" onsubmit="event.preventDefault();startDXDataAudit()">
+              <div class="audit-login-fields">
+                <div class="form-group">
+                  <label class="form-label" for="dxdata-audit-id">SEGA ID</label>
+                  <input class="form-input" id="dxdata-audit-id" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="输入 SEGA ID" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="dxdata-audit-password">密码</label>
+                  <input class="form-input" id="dxdata-audit-password" type="password" autocomplete="off" placeholder="输入密码" required>
+                </div>
+              </div>
+              <div class="audit-login-footer">
+                <div class="form-group audit-login-aime">
+                  <label class="form-label" for="dxdata-audit-aime">JP Aime</label>
+                  <select class="form-input" id="dxdata-audit-aime"><option value="0">1</option><option value="1">2</option><option value="2">3</option></select>
+                </div>
+                <div class="audit-login-actions">
+                  <button type="button" class="btn" onclick="loadDXDataAudit()">刷新结果</button>
+                  <button type="submit" class="btn btn-primary" id="dxdata-audit-start">检查当前数据</button>
+                </div>
+              </div>
+              <p class="audit-help">登录信息仅用于本次检查，不保存。</p>
+            </form>
+          </details>
+          <div id="dxdata-audit-status" role="status" aria-live="polite"></div>
+          <div style="display:flex;gap:10px;margin:12px 0;">
+            <label>版本 <select id="dxdata-audit-region" onchange="dxdataAuditPage=0;renderDXDataAudit()"><option value="jp">JP</option><option value="intl">INTL</option></select></label>
+            <label>问题 <select id="dxdata-audit-filter" onchange="dxdataAuditPage=0;renderDXDataAudit()"><option value="constant">定数</option><option value="version">版本</option></select></label>
+          </div>
+          <button type="button" class="btn btn-success" id="dxdata-audit-approve-versions" hidden onclick="approveDXDataVersions()">一键通过全部版本修正</button>
+          <div id="dxdata-audit-results"></div>
+          <div id="dxdata-audit-pagination" style="display:flex;gap:10px;margin-top:12px;"></div>
         </div>
       </div>
     </div>
@@ -805,6 +843,6 @@
     };
   </script>
   <script src="/static/admin-user-editor.js"></script>
-  <script src="/static/admin-panel.js"></script>
+  <script src="/static/admin-panel.js?v=audit-20260917-10"></script>
 </body>
 </html>

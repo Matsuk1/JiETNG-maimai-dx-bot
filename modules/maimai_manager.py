@@ -5,7 +5,7 @@ import asyncio
 import aiohttp
 import unicodedata
 import re
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
 from lxml import etree
 import os
 from modules.config_loader import DOMAIN, RATING_DIR
@@ -693,6 +693,154 @@ async def get_maimai_records(cookies: dict, ver="jp"):
                 })
 
         return music_record
+
+
+def parse_music_level_options(dom):
+    """Read displayed levels and their opaque search values from the official form."""
+    if dom is None or isinstance(dom, str):
+        raise RuntimeError("Music level page unavailable (login expired or maintenance)")
+    if 'too many access' in ''.join(dom.itertext()).lower():
+        raise RuntimeError('Official site rate limit: please try again later')
+    options = {}
+    for option in dom.xpath('//select[@name="level"]/option'):
+        label = normalize(''.join(option.itertext()))
+        label = re.sub(r'^(?:LEVEL|Lv\.?)\s*', '', label, flags=re.I)
+        value = option.get('value', '')
+        if re.fullmatch(r'\d{1,2}\+?', label) and value:
+            if label in options:
+                raise RuntimeError(f"Duplicate music level option: {label}")
+            options[label] = value
+    if not options:
+        raise RuntimeError("Music level selector missing; login expired or page structure changed")
+    return options
+
+
+def parse_music_level_records(dom, level):
+    """Preserve DOM order, including charts without a played score."""
+    options = parse_music_level_options(dom)
+    if level not in options:
+        raise RuntimeError(f"Music level {level} missing from response")
+    selected = dom.xpath('//select[@name="level"]/option[@selected]/@value')
+    if selected and selected != [options[level]]:
+        raise RuntimeError(f"Server returned a different music level than {level}")
+    rows = _parse_music_chart_blocks(dom)
+    for row in rows:
+        row['level'] = level
+    return rows
+
+
+def _parse_music_chart_blocks(dom):
+    """Common markup shared by official level and version result pages."""
+    rows = []
+    for name in dom.xpath('//div[contains(concat(" ", normalize-space(@class), " "), " music_name_block ")]'):
+        block = next((parent for parent in name.iterancestors()
+                      if re.search(r'music_(?:basic|advanced|expert|master|remaster)_score_back',
+                                   parent.get('class', ''))), None)
+        if block is None:
+            raise RuntimeError("Cannot identify chart difficulty on music level page")
+        difficulty = re.search(r'music_(basic|advanced|expert|master|remaster)_score_back',
+                               block.get('class')).group(1)
+        icons = block.xpath('.//img[contains(@class, "music_kind_icon")]/@src')
+        chart_type = next((kind for suffix, kind in [('standard.png', 'std'), ('dx.png', 'dx')]
+                           if any(src.split('?')[0].endswith(suffix) for src in icons)), None)
+        raw_title = ''.join(name.itertext())
+        # The official song named U+3000 is intentionally blank.
+        title = normalize(raw_title) or ('\u3000' if raw_title == '\u3000' else '')
+        if not chart_type or not title:
+            raise RuntimeError("Cannot identify chart title/type on music level page")
+        rows.append({'position': len(rows) + 1, 'title': title,
+                     'type': chart_type, 'difficulty': difficulty})
+        labels = block.xpath('.//div[contains(@class, "music_lv_block")]')
+        if labels:
+            rows[-1]['level'] = normalize(''.join(labels[0].itertext()))
+    # An empty result must never silently pass a data audit.
+    if not rows:
+        raise RuntimeError("No charts parsed; check filters/page structure")
+    # Distinct songs can share title/type/difficulty (e.g. the two STD Links).
+    # Preserve both positions; auditing skips ambiguous matches.
+    return rows
+
+
+async def get_music_level_lists(cookies: dict, levels=None, ver="jp"):
+    """Fetch regional level lists sequentially; fail instead of returning partial results.
+
+    ``levels`` contains display labels, e.g. ['13', '13+']; checks start at 12.
+    Search values are discovered rather than assuming labels equal URL values.
+    """
+    if ver not in ('jp', 'intl'):
+        raise ValueError('ver must be jp or intl')
+    base = f"{_mobile_base(ver)}/record/musicLevel/"
+    async with _create_session(cookies, limit=1,
+                               timeout=aiohttp.ClientTimeout(total=30, connect=10)) as session:
+        options = parse_music_level_options(await fetch_dom(session, base, ver))
+        requested = list(dict.fromkeys(str(level) for level in levels)) if levels is not None else list(options)
+        if not requested or any(level not in options for level in requested):
+            raise ValueError(f"Choose levels from: {', '.join(options)}")
+        requested = [level for level in requested if int(level.rstrip('+')) >= 12]
+        if not requested:
+            raise ValueError('Music level checks require LEVEL 12 or above')
+        result = []
+        for level in requested:
+            if result:
+                await asyncio.sleep(1)
+            url = base + 'search/?' + urlencode({'level': options[level]})
+            dom = await fetch_dom(session, url, ver)
+            result.append({'level': level, 'url': url,
+                           'charts': parse_music_level_records(dom, level)})
+        return result
+
+
+def parse_music_version_options(dom):
+    if dom is None or isinstance(dom, str):
+        raise RuntimeError('Music version page unavailable (login expired or maintenance)')
+    if 'too many access' in ''.join(dom.itertext()).lower():
+        raise RuntimeError('Official site rate limit: please try again later')
+    options = {}
+    for node in dom.xpath('//select[@name="version"]/option'):
+        value = node.get('value', '')
+        label = normalize(''.join(node.itertext()))
+        if value.isdigit() and label:
+            options[value] = label
+    if not options:
+        raise RuntimeError('Music version selector missing; login expired or page structure changed')
+    return options
+
+
+def parse_music_version_records(dom, version_id):
+    options = parse_music_version_options(dom)
+    selected = dom.xpath('//select[@name="version"]/option[@selected]/@value')
+    if version_id not in options or selected and selected != [version_id]:
+        raise RuntimeError('Server returned a different music version')
+    rows = _parse_music_chart_blocks(dom)
+    if any(row['difficulty'] != 'master' for row in rows):
+        raise RuntimeError('Music version page returned a different difficulty than MASTER')
+    return rows
+
+
+async def get_music_version_lists(cookies: dict, ver='jp'):
+    """Read each release's MASTER list to identify song/type release versions."""
+    if ver not in ('jp', 'intl'):
+        raise ValueError('ver must be jp or intl')
+    base = f"{_mobile_base(ver)}/record/musicVersion/search/"
+    async with _create_session(cookies, limit=1,
+                               timeout=aiohttp.ClientTimeout(total=30, connect=10)) as session:
+        first_url = base + '?' + urlencode({'version': '0', 'diff': 3})
+        first = await fetch_dom(session, first_url, ver)
+        options = parse_music_version_options(first)
+        results = []
+        for version_id, label in options.items():
+            url = base + '?' + urlencode({'version': version_id, 'diff': 3})
+            if version_id == '0':
+                dom = first
+            else:
+                await asyncio.sleep(1)
+                dom = await fetch_dom(session, url, ver)
+            charts = parse_music_version_records(dom, version_id)
+            if any(not re.fullmatch(r'\d{1,2}\+?', row.get('level', '')) for row in charts):
+                raise RuntimeError('Cannot identify official levels on music version page')
+            results.append({'version_id': version_id, 'version': label, 'url': url,
+                            'charts': [row for row in charts if int(row['level'].rstrip('+')) >= 12]})
+        return results
 
 
 async def get_recent_records(cookies: dict, ver="jp"):

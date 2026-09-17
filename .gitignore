@@ -84,6 +84,10 @@ assets/richmenu/_upload/
 # 临时产物：导出文件（30 分钟内自动清理）
 data/exports/
 
+# Panel music level audit runtime state
+data/dxdata/music_level_audit.json
+data/dxdata/music_level_audit.lock
+
 # 成绩图裁切原型调试产物
 data/score_cropper_debug/
 

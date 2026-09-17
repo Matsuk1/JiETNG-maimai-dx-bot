@@ -41,6 +41,9 @@ admin_download_backup
 admin_delete_backup
 admin_dxdata_status
 admin_update_dxdata
+admin_dxdata_audit
+admin_dxdata_audit_correction
+admin_dxdata_audit_versions
 admin_get_notifications
 admin_clear_notifications
 admin_vapid_public_key
@@ -102,3 +105,35 @@ def test_real_admin_session_and_local_bridge_rules(app):
         with patch.object(admin, 'verify_service_bridge_token', return_value=True) as verify:
             assert admin.check_admin_auth() is False
             verify.assert_not_called()
+
+
+def test_dxdata_correction_passes_region_and_selection(app):
+    client = app.test_client()
+    with client.session_transaction() as session:
+        session['admin_authenticated'] = True
+    payload = {'revision': 'r', 'region': 'intl', 'issue_index': 2, 'song_id': 'abc',
+               'difficulty': 'master', 'field': 'internalLevelValue', 'value': '13.4'}
+    with patch.object(admin, 'save_music_level_correction', return_value={'status': 'complete'}) as save:
+        response = client.post('/admin/dxdata_audit/correction', json=payload)
+    assert response.status_code == 200
+    save.assert_called_once_with('r', 'intl', 2, 'abc', 'master', 'internalLevelValue', '13.4')
+
+
+def test_dxdata_writes_require_csrf(app):
+    from flask_wtf.csrf import CSRFProtect
+    CSRFProtect(app)
+    client = app.test_client()
+    with client.session_transaction() as session:
+        session['admin_authenticated'] = True
+    for path in ('/admin/dxdata_audit', '/admin/dxdata_audit/correction', '/admin/dxdata_audit/versions'):
+        assert client.post(path, json={}).status_code == 400
+
+
+def test_bulk_versions_passes_revision_and_region(app):
+    client = app.test_client()
+    with client.session_transaction() as session:
+        session['admin_authenticated'] = True
+    with patch.object(admin, 'save_music_version_corrections', return_value={'status': 'complete'}) as save:
+        response = client.post('/admin/dxdata_audit/versions', json={'revision': 'r', 'region': 'intl'})
+    assert response.status_code == 200
+    save.assert_called_once_with('r', 'intl')

@@ -159,6 +159,7 @@ DXDATA_FILE = "./data/dxdata/dxdata.json"
 DXDATA_VERSION_FILE = "./data/dxdata/dxdata_version.json"
 OVERRIDE_FILE = "./data/dxdata/override.csv"
 INTL_OVERRIDE_FILE = "./data/dxdata/intl_override.csv"
+JP_OVERRIDE_FILE = "./data/dxdata/jp_override.csv"
 NOTICE_FILE = "./data/notice.json"
 TIP_AD_FILE = "./data/tip_ad.json"
 DEV_TOKENS_FILE = "./data/dev_tokens.json"
@@ -267,11 +268,16 @@ def apply_override(songs, override_file):
     """应用 CSV override 文件到歌曲数据"""
     if not os.path.exists(override_file):
         return
-    csv_map = {}
     with open(override_file, 'r', encoding='utf-8') as f:
-        for row in csv.reader(f):
-            if row:
-                csv_map.setdefault(row[0], []).append(row[1:])
+        apply_override_rows(songs, csv.reader(f))
+
+
+def apply_override_rows(songs, rows):
+    """Apply the existing CSV path format from an iterable of rows."""
+    csv_map = {}
+    for row in rows:
+        if row:
+            csv_map.setdefault(row[0], []).append(row[1:])
 
     for song in songs:
         if song['title'] not in csv_map:
@@ -309,13 +315,13 @@ def apply_override(songs, override_file):
 
 
 # dxdata 内存缓存：按 ver 缓存 (mtimes, songs, versions)
-# mtimes 任一变化（dxdata.json / override.csv / intl_override.csv）即失效重建
+# 任一对应版本数据或覆盖文件变化即失效重建
 # 注意：返回的 songs/versions 是共享引用，调用方禁止原地修改
 _dxdata_cache: dict = {}
 _dxdata_cache_lock = threading.Lock()
 
 
-def read_dxdata(ver="jp"):
+def read_dxdata(ver="jp", *, include_generated=True, include_manual=True):
     """
     读取歌曲数据（带 mtime 失效缓存）
 
@@ -325,19 +331,24 @@ def read_dxdata(ver="jp"):
     Returns:
         tuple: (songs, versions) — 共享引用，请勿原地修改
     """
-    files = [DXDATA_FILE, OVERRIDE_FILE]
-    if ver == "intl":
-        files.append(INTL_OVERRIDE_FILE)
+    generated_file = INTL_OVERRIDE_FILE if ver == 'intl' else JP_OVERRIDE_FILE
+    files = [DXDATA_FILE]
+    if include_manual:
+        files.append(OVERRIDE_FILE)
+    if include_generated:
+        files.append(generated_file)
     mtimes = []
     for path in files:
         try:
-            mtimes.append(os.path.getmtime(path))
+            stat = os.stat(path)
+            mtimes.append((stat.st_mtime_ns, stat.st_size, stat.st_ino))
         except OSError:
             mtimes.append(0.0)
     mtimes = tuple(mtimes)
 
+    cache_key = (ver, include_generated, include_manual)
     with _dxdata_cache_lock:
-        cached = _dxdata_cache.get(ver)
+        cached = _dxdata_cache.get(cache_key)
         if cached and cached[0] == mtimes:
             return cached[1], cached[2]
 
@@ -346,17 +357,18 @@ def read_dxdata(ver="jp"):
         dxdata_file = json.load(f)
     songs = list(dxdata_file['songs'])
 
-    # 通用 override（所有版本生效）
-    apply_override(songs, OVERRIDE_FILE)
+    # Generated corrections are region-specific; hand-written overrides win.
+    if include_generated:
+        apply_override(songs, generated_file)
 
-    # intl 专用 override
-    if ver == "intl":
-        apply_override(songs, INTL_OVERRIDE_FILE)
+    # 通用 override（所有版本生效）
+    if include_manual:
+        apply_override(songs, OVERRIDE_FILE)
 
     versions = list(dxdata_file['versions'])
 
     with _dxdata_cache_lock:
-        _dxdata_cache[ver] = (mtimes, songs, versions)
+        _dxdata_cache[cache_key] = (mtimes, songs, versions)
     return songs, versions
 
 def load_user():

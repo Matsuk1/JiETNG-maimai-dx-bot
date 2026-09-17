@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 import os
 from typing import Dict, Any
 from modules.config_loader import (
-    DXDATA_FILE, DXDATA_VERSION_FILE, OVERRIDE_FILE, INTL_OVERRIDE_FILE,
+    DXDATA_FILE, DXDATA_VERSION_FILE, OVERRIDE_FILE, JP_OVERRIDE_FILE, INTL_OVERRIDE_FILE,
     NOTICE_FILE, TIP_AD_FILE,
     BACKUP_DIR, DEV_TOKENS_FILE, IMG_DIR,
     FONT_FILE, LOGO_FILE, QR_CODE_FILE,
@@ -165,6 +165,7 @@ def check_required_files() -> Dict[str, bool]:
         "dxdata_file": ("file", DXDATA_FILE),
         "dxdata_version": ("file", DXDATA_VERSION_FILE),
         "override_file": ("file", OVERRIDE_FILE),
+        "jp_override_file": ("file", JP_OVERRIDE_FILE),
         "intl_override_file": ("file", INTL_OVERRIDE_FILE),
         "notice_file": ("file", NOTICE_FILE),
         "tip_ad_file": ("file", TIP_AD_FILE),

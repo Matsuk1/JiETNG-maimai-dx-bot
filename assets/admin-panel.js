@@ -76,6 +76,7 @@
       }
       if (tabName === 'maintenance') {
         loadDXDataStatus();
+        loadDXDataAudit();
         loadBackups();
         loadBackgrounds();
         loadDevTokens();
@@ -1759,6 +1760,7 @@
           const added = data.sheets_added || 0;
           showToast(added > 0 ? `✓ +${added} charts` : '✓ DXData up to date');
           loadDXDataStatus();
+          startDXDataAudit();
         } else {
           showToast('✗ ' + (data.message || 'Failed to update DXData'), 'error');
         }
@@ -2861,3 +2863,193 @@
     }
 
     initStatsInteractions();
+
+    let dxdataAuditReport = null;
+    let dxdataAuditTimer = null;
+    let dxdataAuditPage = 0;
+    const dxdataAuditNames = {order_conflict: '定数排序冲突', version_mismatch: '版本不符'};
+
+    async function startDXDataAudit() {
+      const id = document.getElementById('dxdata-audit-id');
+      const password = document.getElementById('dxdata-audit-password');
+      const status = document.getElementById('dxdata-audit-status');
+      if (!id.value.trim() || !password.value) {
+        status.textContent = '数据更新与官网检查是两个步骤。请输入 SEGA ID 和密码，然后点击「检查当前数据」。';
+        document.getElementById('dxdata-audit-setup').open = true;
+        document.getElementById('dxdata-audit-panel').scrollIntoView({block: 'center'});
+        (id.value.trim() ? password : id).focus();
+        return;
+      }
+      const button = document.getElementById('dxdata-audit-start');
+      button.disabled = true;
+      try {
+        const body = JSON.stringify({sega_id: id.value.trim(), password: password.value,
+          aime: Number(document.getElementById('dxdata-audit-aime').value)});
+        password.value = '';
+        const response = await fetch('/admin/dxdata_audit', {
+          method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': window.JIETNG_ADMIN_CONFIG.csrfToken}, body
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || '无法开始检查');
+        dxdataAuditPage = 0;
+        await loadDXDataAudit();
+      } catch (error) {
+        status.textContent = error.message;
+        button.disabled = false;
+      }
+    }
+
+    async function loadDXDataAudit() {
+      clearTimeout(dxdataAuditTimer);
+      try {
+        const response = await fetch('/admin/dxdata_audit');
+        if (!response.ok) throw new Error('无法读取检查结果');
+        dxdataAuditReport = await response.json();
+        renderDXDataAudit();
+        if (dxdataAuditReport.status === 'running') dxdataAuditTimer = setTimeout(loadDXDataAudit, 2500);
+      } catch (error) {
+        document.getElementById('dxdata-audit-status').textContent = error.message;
+      }
+    }
+
+    async function approveDXDataVersions() {
+      const report = dxdataAuditReport;
+      const region = document.getElementById('dxdata-audit-region').value;
+      const button = document.getElementById('dxdata-audit-approve-versions');
+      if (!report || report.stale || report.status !== 'complete' || button.disabled) return;
+      button.disabled = true;
+      button.textContent = '保存中…';
+      try {
+        const response = await fetch('/admin/dxdata_audit/versions', {
+          method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': window.JIETNG_ADMIN_CONFIG.csrfToken},
+          body: JSON.stringify({revision: report.revision, region})
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || '保存失败');
+        dxdataAuditReport = data.report;
+        dxdataAuditPage = 0;
+        showToast(`${region.toUpperCase()} 版本修正已全部保存`, 'success');
+      } catch (error) {
+        showToast(error.message, 'error');
+      } finally {
+        renderDXDataAudit();
+      }
+    }
+
+    function renderDXDataAudit() {
+      const report = dxdataAuditReport;
+      if (!report) return;
+      const running = report.status === 'running';
+      document.getElementById('dxdata-audit-start').disabled = running;
+      document.getElementById('update-dxdata-btn').disabled = running;
+      const stateNames = {pending: '等待', running: '检查中', complete: '完成', failed: '失败'};
+      document.getElementById('dxdata-audit-status').textContent = report.status === 'idle' ? '尚未检查' :
+        ['jp', 'intl'].map(r => `${r.toUpperCase()}: ${stateNames[report.regions?.[r]?.status] || '未检查'}`).join(' · ') +
+        (report.stale ? ' · 数据已变化，请重新检查后保存。' : '');
+      const region = document.getElementById('dxdata-audit-region').value;
+      const result = report.regions?.[region];
+      const approve = document.getElementById('dxdata-audit-approve-versions');
+      approve.hidden = true;
+      const container = document.getElementById('dxdata-audit-results');
+      const pagination = document.getElementById('dxdata-audit-pagination');
+      container.replaceChildren(); pagination.replaceChildren();
+      function text(parent, tag, value) {
+        const node = document.createElement(tag); node.textContent = value; parent.append(node); return node;
+      }
+      if (!result || result.status !== 'complete') {
+        text(container, 'p', result?.error || (running ? '正在抓取官网列表，请稍候…' : '此版本暂无结果'));
+        return;
+      }
+      const summary = text(container, 'div', `${result.summary.issues} 项待核对 · ${result.summary.charts} 个谱面 · 检查于 ${result.fetched_at ? new Date(result.fetched_at).toLocaleString() : '—'}`);
+      summary.className = 'audit-summary';
+      const filter = document.getElementById('dxdata-audit-filter').value;
+      const issues = result.issues.map((issue, index) => ({issue, index})).filter(({issue}) => issue.kind === (filter === 'version' ? 'version_mismatch' : 'order_conflict'));
+      approve.hidden = filter !== 'version' || !issues.length;
+      approve.disabled = report.status !== 'complete' || report.stale;
+      approve.textContent = `一键通过全部版本修正（${issues.length}）`;
+      const pages = Math.max(1, Math.ceil(issues.length / 20));
+      dxdataAuditPage = Math.min(dxdataAuditPage, pages - 1);
+      if (!issues.length) text(container, 'p', '当前筛选没有问题。');
+      for (const {issue, index} of issues.slice(dxdataAuditPage * 20, (dxdataAuditPage + 1) * 20)) {
+        const isVersion = issue.kind === 'version_mismatch';
+        let charts = isVersion ? [issue.chart] : (issue.correction_candidates ?? [issue.before, issue.after].filter(chart => {
+          const inference = chart?.inference;
+          return inference && ['exact', 'range'].includes(inference.status) &&
+            (chart.internalLevelValue < inference.min || chart.internalLevelValue > inference.max);
+        }));
+        const needsManualReview = !isVersion && !charts.length;
+        if (needsManualReview) charts = [issue.before, issue.after];
+        for (const chart of charts.filter(Boolean)) {
+          const card = document.createElement('article'); card.className = 'section audit-compact-card'; container.append(card);
+          const title = chart.title.trim() || '（全角空格曲名）';
+          text(card, 'strong', title).className = 'audit-compact-title';
+          text(card, 'small', `${region.toUpperCase()} · ${chart.type.toUpperCase()} · ${chart.difficulty.toUpperCase()}`).className = 'audit-compact-meta';
+          const inference = chart.inference;
+          const manual = !isVersion && (needsManualReview || !inference || inference.status === 'level_only');
+          const current = isVersion ? (chart.version || '未知') : chart.internalLevelValue;
+          const predicted = isVersion ? issue.official_version : manual ? '无法确定' : inference.min === inference.max ?
+            inference.min.toFixed(1) : `${inference.min.toFixed(1)}～${inference.max.toFixed(1)}`;
+          const comparison = document.createElement('div'); comparison.className = 'audit-compact-values'; card.append(comparison);
+          const oldValue = document.createElement('div'); comparison.append(oldValue);
+          text(oldValue, 'small', isVersion ? '文件内版本' : '文件内定数'); text(oldValue, 'strong', current);
+          text(comparison, 'span', '→').className = 'audit-compact-arrow';
+          const newValue = document.createElement('div'); comparison.append(newValue);
+          text(newValue, 'small', isVersion ? '官网版本' : '推测定数'); text(newValue, 'strong', predicted);
+          const form = document.createElement('form'); form.className = 'audit-compact-actions'; card.append(form);
+          let chosenValue = isVersion ? issue.official_version : manual ? '' : inference.min.toFixed(1);
+          if (manual) {
+            const input = document.createElement('input');
+            input.type = 'number'; input.step = '0.1'; input.min = '1'; input.max = '15.9'; input.required = true;
+            input.className = 'form-input'; input.placeholder = '手动输入修正定数';
+            input.setAttribute('aria-label', `${title} 修正值`);
+            input.oninput = () => { chosenValue = input.value; };
+            form.append(input);
+          } else if (!isVersion && inference.min !== inference.max) {
+            const select = document.createElement('select');
+            select.setAttribute('aria-label', `${title} 修正值`); select.required = true;
+            select.add(new Option('选择区间内的值', ''));
+            for (let value = Math.round(inference.min * 10); value <= Math.round(inference.max * 10); value++) {
+              select.add(new Option((value / 10).toFixed(1), (value / 10).toFixed(1)));
+            }
+            chosenValue = '';
+            select.onchange = () => { chosenValue = select.value; };
+            form.append(select);
+          }
+          const prompt = text(form, 'span', '是否修改？');
+          const yes = document.createElement('button'); yes.type = 'submit'; yes.className = 'btn btn-success'; yes.textContent = '修改';
+          const no = document.createElement('button'); no.type = 'button'; no.className = 'btn'; no.textContent = '不修改';
+          yes.disabled = running || report.stale || !chart.song_id;
+          form.append(yes, no);
+          no.onclick = () => {
+            const skipped = card.classList.toggle('audit-skipped');
+            prompt.textContent = skipped ? '已跳过' : '是否修改？';
+            yes.disabled = skipped || running || report.stale || !chart.song_id;
+            no.textContent = skipped ? '重新选择' : '不修改';
+          };
+          form.onsubmit = async event => {
+            event.preventDefault();
+            if (!chosenValue) return;
+            yes.disabled = true; no.disabled = true; yes.textContent = '保存中…';
+            try {
+              const response = await fetch('/admin/dxdata_audit/correction', {
+                method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': window.JIETNG_ADMIN_CONFIG.csrfToken},
+                body: JSON.stringify({revision: report.revision, region, issue_index: index, song_id: chart.song_id,
+                  difficulty: chart.difficulty, field: isVersion ? 'version' : 'internalLevelValue', value: chosenValue})
+              });
+              const data = await response.json();
+              if (!response.ok) throw new Error(data.message || '保存失败');
+              dxdataAuditReport = data.report; renderDXDataAudit(); showToast('已修改', 'success');
+            } catch (error) {
+              showToast(error.message, 'error'); yes.disabled = false; no.disabled = false; yes.textContent = '修改';
+            }
+          };
+        }
+      }
+      for (const [label, step] of [['上一页', -1], ['下一页', 1]]) {
+        const button = document.createElement('button'); button.className = 'btn'; button.textContent = label;
+        button.disabled = dxdataAuditPage + step < 0 || dxdataAuditPage + step >= pages;
+        button.onclick = () => { dxdataAuditPage += step; renderDXDataAudit(); };
+        pagination.append(button);
+      }
+      text(pagination, 'span', `${dxdataAuditPage + 1} / ${pages} 页`);
+    }

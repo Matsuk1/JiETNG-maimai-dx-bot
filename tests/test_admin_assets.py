@@ -14,7 +14,8 @@ class AdminAssetTests(unittest.TestCase):
         with app.test_request_context():
             html=render_template('admin_panel.html',stats=stats,total_users=0,logs='',language_options=[],default_language='ja',csrf_token=lambda:'csrf-test-token')
         self.assertIn('csrf-test-token',html)
-        self.assertLess(html.index('window.JIETNG_ADMIN_CONFIG'),html.index('src="/static/admin-panel.js"'))
+        self.assertLess(html.index('window.JIETNG_ADMIN_CONFIG'),html.index('src="/static/admin-panel.js?'))
+        self.assertIn('/static/admin-panel.css?v=', html)
         for name in ('admin-panel.css','admin-monitor.css','admin-panel.js','admin-user-editor.js'):
             self.assertIn('/static/'+name,html)
             response=app.test_client().get('/static/'+name)
