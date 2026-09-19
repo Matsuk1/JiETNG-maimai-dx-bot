@@ -226,7 +226,7 @@
     .glass-card-rating {
       margin-left: auto;
       padding: 5px 9px;
-      border: 1px solid #ffffffc9;
+      border: 1px solid var(--rating-border, #ffffffc9);
       border-radius: 13px;
       background: var(--difficulty);
       color: var(--difficulty-text);
@@ -248,7 +248,7 @@
     }
 
   </style>
-  <article class="glass-card" style="--difficulty: {{ color }}; --difficulty-text: {{ text_color }};">
+  <article class="glass-card" style="--difficulty: {{ color }}; --difficulty-text: {{ text_color }};{% if song.difficulty == 'remaster' %} --rating-border: {{ text_color }};{% endif %}">
     <div class="glass-card-cover">
       <div class="glass-card-cover-content">{{ cover|safe }}</div>
     </div>
