@@ -311,7 +311,6 @@ def generate_score_recognition_picture(result, ver="jp", img_width=1100, timezon
     cover = cover_html(payload['cover_url'], payload['type'], cover_name=payload['cover_name'], show_type=False) if payload['cover_url'] or payload['cover_name'] else ''
     card = render_template('score.html', img_width, payload=payload, texts=texts, rows=rows,
                            color=difficulty_color(payload['difficulty']),
-                           difficulty_badge_color=difficulty_color('master'),
                            header_color='#72148d' if payload['difficulty']=='remaster' else 'white',
                            cover=cover, type_src=file_uri(os.path.join(ICON_TYPE_DIR, f"{payload['type']}.png")),
                            achievement=achievement_text, constant=constant_text, icons=icons,
