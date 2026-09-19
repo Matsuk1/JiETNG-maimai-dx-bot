@@ -308,7 +308,7 @@ def generate_score_recognition_picture(result, ver="jp", img_width=1100, timezon
                 total=_format_score_loss(subtotal) if _has_score_loss(subtotal) else None)
                 for label,cells,subtotal in panel_rows], total_label=total_label,
                 total=_format_score_loss(total) if _has_score_loss(total) else None))
-    cover = cover_html(payload['cover_url'], payload['type'], cover_name=payload['cover_name']) if payload['cover_url'] or payload['cover_name'] else ''
+    cover = cover_html(payload['cover_url'], payload['type'], cover_name=payload['cover_name'], show_type=False) if payload['cover_url'] or payload['cover_name'] else ''
     card = render_template('score.html', img_width, payload=payload, texts=texts, rows=rows,
                            color=difficulty_color(payload['difficulty']),
                            header_color='#72148d' if payload['difficulty']=='remaster' else 'white',
@@ -486,7 +486,8 @@ def icon_uri(value, directory, url):
 
 
 def cover_html(cover_url, type, icon=None, icon_type=None, cover_name=None,
-               complete_info=None, difficulty=None, achieved=None, song_title=None, skin=None):
+               complete_info=None, difficulty=None, achieved=None, song_title=None, skin=None,
+               show_type=True):
     from modules.images.renderer import file_uri, image_uri, template
 
     path = Path(COVERS_DIR) / Path(cover_name).name if cover_name else None
@@ -500,7 +501,7 @@ def cover_html(cover_url, type, icon=None, icon_type=None, cover_name=None,
                 cover.close()
     type_src = icon_uri(type, ICON_TYPE_DIR,
                         'https://maimaidx.jp/maimai-mobile/img/music_standard.png' if type == 'std'
-                        else 'https://maimaidx.jp/maimai-mobile/img/music_dx.png')
+                        else 'https://maimaidx.jp/maimai-mobile/img/music_dx.png') if show_type else ''
     status = icon_uri(icon, str(Path(ICON_BASE_DIR) / str(icon_type)),
                       f'https://maimaidx.jp/maimai-mobile/img/music_icon_{icon}.png') if icon and icon_type and icon != 'back' else ''
     footer = complete_info is not None or difficulty is not None
