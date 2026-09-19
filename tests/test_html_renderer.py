@@ -51,6 +51,44 @@ class HtmlRendererTests(unittest.TestCase):
         with render_html('<div>OK</div>', 100) as im:
             self.assertGreater(im.height, 0)
 
+    def test_batched_font_fit_matches_stepwise_sizes(self):
+        from modules.images import renderer
+        text = 'A long title that must fit inside a narrow card'
+        body = ''.join(
+            f'<div data-fit="12" style="width:{width}px;font-size:32px;white-space:nowrap">{text}</div>'
+            for width in (45, 150, 300, 900)
+        )
+        # Inspect on the renderer worker thread through its screenshot hook.
+        from unittest.mock import patch
+        screenshot = renderer._screenshot
+        checked = []
+
+        def inspect(body, width, height):
+            # The normal cleanup clears the DOM, so capture measurements just
+            # before screenshot through a temporary wrapper of page.evaluate.
+            renderer._ensure_page(width, height)
+            evaluate = renderer._page.evaluate
+            def evaluate_and_check(script, *args):
+                result = evaluate(script, *args)
+                if 'Binary-search all overflowing labels' in script:
+                    checked.extend(evaluate("""() => [...document.querySelectorAll('[data-fit]')].map(el => {
+                        const actual = parseFloat(el.style.fontSize || '32');
+                        let expected = 32;
+                        el.style.fontSize = '32px';
+                        while (el.scrollWidth > el.clientWidth && expected > 12) {
+                            el.style.fontSize = `${--expected}px`;
+                        }
+                        return [actual, expected];
+                    })"""))
+                return result
+            with patch.object(renderer._page, 'evaluate', side_effect=evaluate_and_check):
+                return screenshot(body, width, height)
+        with patch.object(renderer, '_screenshot', side_effect=inspect):
+            with render_html(body, 950):
+                pass
+        self.assertEqual(len(checked), 4)
+        self.assertTrue(all(actual == expected for actual, expected in checked), checked)
+
     def test_profile_rating_baseline_matches_pillow(self):
         from modules.images.renderer import render_template, ROOT
         from PIL import ImageFont

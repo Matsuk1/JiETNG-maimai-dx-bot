@@ -14,6 +14,7 @@ from functools import lru_cache
 from io import BytesIO
 from pathlib import Path
 import threading
+import time
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from PIL import Image
@@ -33,7 +34,8 @@ RENDERER_IDLE_SECONDS = max(0, float(os.getenv('JIETNG_RENDERER_IDLE_SECONDS', '
 
 def image_uri(image):
     with BytesIO() as buffer:
-        image.save(buffer, format='PNG')
+        # Intermediate transport: favor encoding speed; pixels remain lossless.
+        image.save(buffer, format='PNG', compress_level=1)
         return 'data:image/png;base64,' + base64.b64encode(buffer.getvalue()).decode('ascii')
 
 
@@ -100,7 +102,9 @@ def _ensure_page(width, height):
 
 def _screenshot(body, width, height):
     global _page
+    started = time.perf_counter()
     _ensure_page(width, height)
+    ready = time.perf_counter()
     try:
         _page.set_viewport_size({'width': width, 'height': min(height or 800, 2000)})
         _page.evaluate("""({body,width,height}) => {
@@ -112,16 +116,42 @@ def _screenshot(body, width, height):
         _page.evaluate("""async () => {
             await document.fonts.ready;
             await Promise.all([...document.images].map(img => img.decode()));
-            for (const el of document.querySelectorAll('[data-fit]')) {
-                const minimum = Number(el.dataset.fit) || 12;
-                let size = parseFloat(getComputedStyle(el).fontSize);
-                while (el.scrollWidth > el.clientWidth && size > minimum) {
-                    el.style.fontSize = `${--size}px`;
+            // Binary-search all overflowing labels together. Each round writes
+            // every size before reading layout, avoiding per-label reflows.
+            let pending = [...document.querySelectorAll('[data-fit]')].map(el => ({
+                el, maximum: parseFloat(getComputedStyle(el).fontSize),
+                minimum: Number(el.dataset.fit) || 12,
+                overflow: el.scrollWidth > el.clientWidth,
+            })).filter(item => item.overflow && item.maximum > item.minimum)
+              .map(item => ({...item, low: 1,
+                  high: Math.ceil(item.maximum - item.minimum)}));
+            while (pending.length) {
+                for (const item of pending) {
+                    item.mid = Math.floor((item.low + item.high) / 2);
+                    item.el.style.fontSize = `${item.maximum - item.mid}px`;
                 }
+                const measured = pending.map(item => ({item,
+                    overflow: item.el.scrollWidth > item.el.clientWidth}));
+                for (const {item, overflow} of measured) {
+                    if (overflow) item.low = item.mid + 1;
+                    else item.high = item.mid;
+                }
+                const finished = pending.filter(item => item.low >= item.high);
+                for (const item of finished) {
+                    item.el.style.fontSize = `${item.maximum - item.high}px`;
+                }
+                pending = pending.filter(item => item.low < item.high);
             }
         }""")
-        return _page.locator('#image-root').screenshot(type='png', omit_background=True,
-                                                      animations='disabled')
+        laid_out = time.perf_counter()
+        png = _page.locator('#image-root').screenshot(type='png', omit_background=True,
+                                                     animations='disabled')
+        logging.getLogger(__name__).info(
+            '[Renderer] render: width=%s height=%s browser=%.3fs layout_assets=%.3fs screenshot=%.3fs png_kb=%.1f',
+            width, height or 'auto', ready-started, laid_out-ready,
+            time.perf_counter()-laid_out, len(png)/1024,
+        )
+        return png
     except Exception:
         _page.close()
         _page = None
@@ -145,6 +175,7 @@ def render_html(body, width, height=None):
                 _worker_thread = threading.Thread(target=_work, name='image-renderer', daemon=True)
                 _worker_thread.start()
         future = Future()
+        future.render_enqueued_at = time.perf_counter()
         _queue.put((future, body, width, height))
         png = future.result()
     finally:
@@ -188,6 +219,9 @@ def _work():
             if item is None:
                 return
             future, body, width, height = item
+            queued_at = getattr(future, 'render_enqueued_at', None)
+            if queued_at is not None:
+                logging.getLogger(__name__).info('[Renderer] queue_wait=%.3fs', time.perf_counter()-queued_at)
             try:
                 future.set_result(_screenshot(body, width, height))
             except Exception as exc:
