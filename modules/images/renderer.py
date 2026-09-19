@@ -7,8 +7,9 @@ import atexit
 import base64
 import os
 import logging
+import gc
 from concurrent.futures import Future
-from queue import Queue
+from queue import Queue, Empty
 from functools import lru_cache
 from io import BytesIO
 from pathlib import Path
@@ -27,6 +28,7 @@ _slots = threading.BoundedSemaphore(8)
 _playwright = None
 _browser = None
 _page = None
+RENDERER_IDLE_SECONDS = max(0, float(os.getenv('JIETNG_RENDERER_IDLE_SECONDS', '300')))
 
 
 def image_uri(image):
@@ -74,8 +76,10 @@ def _close_browser():
         _browser = None
         _page = None
         if _playwright is not None:
-            _playwright.stop()
-            _playwright = None
+            try:
+                _playwright.stop()
+            finally:
+                _playwright = None
 
 
 def _screenshot(body, width, height):
@@ -151,7 +155,21 @@ def render_template(name, width, height=None, **data):
 def _work():
     try:
         while True:
-            item = _queue.get()
+            try:
+                item = _queue.get(timeout=RENDERER_IDLE_SECONDS or None)
+            except Empty:
+                # Playwright handles belong to this thread. Never close them
+                # from the application's periodic cleanup thread.
+                try:
+                    if _browser is not None or _playwright is not None:
+                        _close_browser()
+                        logging.getLogger(__name__).info('[Renderer] Released idle browser')
+                except Exception:
+                    logging.getLogger(__name__).exception('[Renderer] Idle browser cleanup failed')
+                finally:
+                    _file_uri.cache_clear()
+                    gc.collect()
+                continue
             if item is None:
                 return
             future, body, width, height = item
@@ -159,6 +177,10 @@ def _work():
                 future.set_result(_screenshot(body, width, height))
             except Exception as exc:
                 future.set_exception(exc)
+            finally:
+                # A waiting worker must not retain the previous HTML or PNG
+                # through its Future, including after inference errors.
+                del item, future, body
     finally:
         _close_browser()
 

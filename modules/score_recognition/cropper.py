@@ -12,6 +12,10 @@ import argparse
 import json
 import os
 import shutil
+import gc
+import logging
+import threading
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Iterable
@@ -25,6 +29,27 @@ _CROPPER_MODEL = None
 _CROPPER_MODEL_UNAVAILABLE = False
 _MAIN_SCREEN_MODEL = None
 _MAIN_SCREEN_MODEL_UNAVAILABLE = False
+_MODEL_LOCK = threading.Lock()
+_MODELS_LAST_USED = 0.0
+CROPPER_IDLE_SECONDS = max(0, float(os.getenv("JIETNG_CROPPER_IDLE_SECONDS", "300")))
+
+
+def cleanup_cropper_memory() -> bool:
+    """Release idle YOLO references, including models used by crop previews."""
+    global _CROPPER_MODEL, _MAIN_SCREEN_MODEL
+    if CROPPER_IDLE_SECONDS <= 0 or not _MODEL_LOCK.acquire(blocking=False):
+        return False
+    try:
+        if time.monotonic() - _MODELS_LAST_USED < CROPPER_IDLE_SECONDS:
+            return False
+        if _CROPPER_MODEL is None and _MAIN_SCREEN_MODEL is None:
+            return False
+        _CROPPER_MODEL = _MAIN_SCREEN_MODEL = None
+        gc.collect()
+        logging.getLogger(__name__).info('[Recognize] Released idle YOLO models')
+        return True
+    finally:
+        _MODEL_LOCK.release()
 
 
 @dataclass(frozen=True)
@@ -332,14 +357,17 @@ def _warp_quad(
 
 
 def _main_screen_pose_image(image: Image.Image) -> tuple[Box | None, Image.Image | None]:
-    model = _load_main_screen_model()
-    if model is None:
-        return None, None
-
-    try:
-        prediction = model.predict(image, imgsz=640, conf=0.15, verbose=False)[0]
-    except Exception:
-        return None, None
+    global _MODELS_LAST_USED
+    with _MODEL_LOCK:
+        try:
+            model = _load_main_screen_model()
+            if model is None:
+                return None, None
+            prediction = model.predict(image, imgsz=640, conf=0.15, verbose=False)[0]
+        except Exception:
+            return None, None
+        finally:
+            _MODELS_LAST_USED = time.monotonic()
 
     keypoints = getattr(prediction, "keypoints", None)
     points_tensor = getattr(keypoints, "xy", None)
@@ -404,14 +432,17 @@ def _warp_main_screen_quad(image: Image.Image, points: np.ndarray) -> Image.Imag
 
 
 def _cropper_pose_table(image: Image.Image) -> tuple[Box | None, Image.Image | None]:
-    model = _load_cropper_model()
-    if model is None:
-        return None, None
-
-    try:
-        prediction = model.predict(image, imgsz=640, conf=0.15, verbose=False)[0]
-    except Exception:
-        return None, None
+    global _MODELS_LAST_USED
+    with _MODEL_LOCK:
+        try:
+            model = _load_cropper_model()
+            if model is None:
+                return None, None
+            prediction = model.predict(image, imgsz=640, conf=0.15, verbose=False)[0]
+        except Exception:
+            return None, None
+        finally:
+            _MODELS_LAST_USED = time.monotonic()
 
     keypoints = getattr(prediction, "keypoints", None)
     points_tensor = getattr(keypoints, "xy", None)

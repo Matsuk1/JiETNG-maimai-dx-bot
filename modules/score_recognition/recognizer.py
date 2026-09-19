@@ -10,6 +10,7 @@ import math
 import logging
 import gc
 import os
+import sys
 import threading
 import time
 from io import BytesIO
@@ -39,6 +40,8 @@ _OCR_LOCK = threading.Lock()
 _OCR_FIELDS: tuple[str, ...] | None = None
 _PROCESS_IMAGE_DATA: Any | None = None
 _ENGINE_REQUEST_COUNT = 0
+_OCR_LAST_USED = 0.0
+OCR_IDLE_SECONDS = max(0, float(os.getenv("JIETNG_OCR_IDLE_SECONDS", "300")))
 SUPPORTED_SCORE_IMAGE_FORMATS = {"JPEG", "PNG", "WEBP"}
 MAX_SCORE_IMAGE_PIXELS = 40_000_000
 API_LINE_LIKE_OCR_MAX_EDGE = int(
@@ -1782,11 +1785,12 @@ def _load_ocr_module() -> tuple[tuple[str, ...], Any, Any]:
 
 
 def _engine() -> Any:
-    global _ENGINE
+    global _ENGINE, _OCR_LAST_USED
     with _ENGINE_LOCK:
         if _ENGINE is None:
             _, PaddleOcrEngine, _ = _load_ocr_module()
             _ENGINE = PaddleOcrEngine(lang="japan")
+        _OCR_LAST_USED = time.monotonic()
         return _ENGINE
 
 
@@ -1808,20 +1812,27 @@ def _reset_ocr_engine(reason: str, rss_mb: float | None = None) -> bool:
 
 
 def cleanup_score_recognizer_memory() -> bool:
-    """Best-effort idle cleanup hook for the periodic memory manager."""
+    """Recycle only loaded components; never import models just to clean up."""
+    cleaned = False
+    for module_name, callback in (
+        ('modules.score_recognition.ocr', 'cleanup_table_model_memory'),
+        ('modules.score_recognition.cropper', 'cleanup_cropper_memory'),
+    ):
+        module = sys.modules.get(module_name)
+        if module is not None:
+            cleaned = getattr(module, callback)() or cleaned
     if not _OCR_LOCK.acquire(blocking=False):
-        return False
+        return cleaned
     try:
         rss_mb = _process_rss_mb()
-        if (
-            _ENGINE is not None
-            and rss_mb is not None
-            and rss_mb >= OCR_ENGINE_IDLE_RESET_RSS_MB
-        ):
-            return _reset_ocr_engine("idle_rss_threshold", rss_mb)
+        idle = OCR_IDLE_SECONDS > 0 and time.monotonic() - _OCR_LAST_USED >= OCR_IDLE_SECONDS
+        high_rss = (OCR_ENGINE_IDLE_RESET_RSS_MB > 0 and rss_mb is not None
+                    and rss_mb >= OCR_ENGINE_IDLE_RESET_RSS_MB)
+        if _ENGINE is not None and (idle or high_rss):
+            cleaned = _reset_ocr_engine('idle_timeout' if idle else 'idle_rss_threshold', rss_mb) or cleaned
     finally:
         _OCR_LOCK.release()
-    return False
+    return cleaned
 
 
 def initialize_score_recognizer() -> None:
@@ -1924,7 +1935,7 @@ def recognize_score_image_bytes(
     line_like_preprocess: bool = False,
     ver: str = "jp",
 ) -> dict[str, Any]:
-    global _ENGINE_REQUEST_COUNT
+    global _ENGINE_REQUEST_COUNT, _OCR_LAST_USED
     try:
         with Image.open(BytesIO(image_bytes)) as source:
             image_format = str(source.format or "").upper()
@@ -1955,12 +1966,15 @@ def recognize_score_image_bytes(
                 logger.info("[Recognize] OCR lock wait: %.3fs", lock_wait_seconds)
             rss_before = _process_rss_mb()
             ocr_fields, _, process_image_data = _load_ocr_module()
-            result = process_image_data(
-                image,
-                fields or ocr_fields,
-                None,
-                engine_factory=_engine,
-            )
+            try:
+                result = process_image_data(
+                    image,
+                    fields or ocr_fields,
+                    None,
+                    engine_factory=_engine,
+                )
+            finally:
+                _OCR_LAST_USED = time.monotonic()
             _ENGINE_REQUEST_COUNT += 1
             rss_after = _process_rss_mb()
             if rss_before is not None or rss_after is not None:

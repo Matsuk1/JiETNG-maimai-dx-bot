@@ -72,6 +72,8 @@ TABLE_MODEL_REQUEST_TIMEOUT_SECONDS = 60
 TABLE_MODEL_MAX_RSS_MB = int(os.getenv("JIETNG_TABLE_OCR_MAX_RSS_MB", "2560"))
 TABLE_MODEL_MIN_AVAILABLE_MB = int(os.getenv("JIETNG_TABLE_OCR_MIN_AVAILABLE_MB", "512"))
 TABLE_MODEL_MAX_REQUESTS = int(os.getenv("JIETNG_TABLE_OCR_MAX_REQUESTS", "50"))
+TABLE_MODEL_IDLE_SECONDS = max(0, float(os.getenv("JIETNG_TABLE_OCR_IDLE_SECONDS", "300")))
+_TABLE_MODEL_LAST_USED = 0.0
 _TABLE_MODEL_PROCESS: subprocess.Popen[str] | None = None
 _TABLE_MODEL_LOCK = threading.Lock()
 _TABLE_MODEL_REQUEST_COUNT = 0
@@ -85,14 +87,20 @@ def _stop_table_model_process() -> None:
     _TABLE_MODEL_PROCESS = None
     _TABLE_MODEL_REQUEST_COUNT = 0
     _TABLE_MODEL_HELPER_MTIME_NS = None
-    if process is None or process.poll() is not None:
+    if process is None:
         return
-    process.terminate()
     try:
-        process.wait(timeout=5)
-    except subprocess.TimeoutExpired:
-        process.kill()
-        process.wait(timeout=5)
+        if process.poll() is None:
+            process.terminate()
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait(timeout=5)
+    finally:
+        for stream in (process.stdin, process.stdout):
+            if stream is not None:
+                stream.close()
 
 
 def _read_table_model_line(
@@ -182,15 +190,34 @@ def _start_table_model_process() -> subprocess.Popen[str]:
 
 def warm_table_model() -> None:
     """Load the table model during service startup instead of the first request."""
+    global _TABLE_MODEL_LAST_USED
     with _TABLE_MODEL_LOCK:
-        _start_table_model_process()
+        try:
+            _start_table_model_process()
+        finally:
+            _TABLE_MODEL_LAST_USED = time.monotonic()
+
+
+def cleanup_table_model_memory() -> bool:
+    """Stop an idle worker without interrupting startup or inference."""
+    if TABLE_MODEL_IDLE_SECONDS <= 0 or not _TABLE_MODEL_LOCK.acquire(blocking=False):
+        return False
+    try:
+        if (_TABLE_MODEL_PROCESS is not None
+                and time.monotonic() - _TABLE_MODEL_LAST_USED >= TABLE_MODEL_IDLE_SECONDS):
+            _stop_table_model_process()
+            logger.info('[Recognize] Released idle table OCR worker')
+            return True
+        return False
+    finally:
+        _TABLE_MODEL_LOCK.release()
 
 
 def recognize_judgement_with_table_model(
     image: Image.Image,
     partial_out: dict[str, dict[str, int]] | None = None,
 ) -> dict[str, dict[str, int]] | None:
-    global _TABLE_MODEL_REQUEST_COUNT
+    global _TABLE_MODEL_REQUEST_COUNT, _TABLE_MODEL_LAST_USED
     buffer = BytesIO()
     image.save(buffer, format="PNG")
     request_id = uuid.uuid4().hex
@@ -288,6 +315,8 @@ def recognize_judgement_with_table_model(
         ) as exc:
             _stop_table_model_process()
             logger.warning("[Recognize] Table model failed; using column OCR: %s", exc)
+        finally:
+            _TABLE_MODEL_LAST_USED = time.monotonic()
     return None
 
 

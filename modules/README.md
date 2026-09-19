@@ -85,6 +85,21 @@ Keep oneDNN disabled on the tested server: its table pipeline failed with
 in subsequent table request logs after deploying this change.
 
 
+## 空闲内存回收
+
+以下组件默认空闲 300 秒后回收，下一次使用自动重建。设置对应环境变量为 `0` 可关闭空闲回收；修改后重启服务生效。
+
+| 环境变量 | 回收内容 |
+| --- | --- |
+| `JIETNG_TABLE_OCR_IDLE_SECONDS` | 终止并等待独立表格 OCR 子进程退出，关闭通信管道 |
+| `JIETNG_OCR_IDLE_SECONDS` | 释放主 OCR 引擎引用并执行垃圾回收 |
+| `JIETNG_CROPPER_IDLE_SECONDS` | 释放两套 YOLO 裁切模型引用并执行垃圾回收，包含裁切预览使用的模型 |
+| `JIETNG_RENDERER_IDLE_SECONDS` | 在渲染线程内关闭 Chromium 和 Playwright，并清空 Base64 素材缓存 |
+
+OCR/YOLO 由现有 120 秒周期清理触发，因此通常在空闲 300–420 秒后回收；模型锁被占用时跳过。Playwright 在渲染队列等待超时后自行回收，正在执行的渲染不会中断。识别或渲染失败也会更新空闲计时。渲染线程等待期间不保留上一次任务的 HTML 和截图 Future。
+
+表格 OCR 的现有 RSS、请求次数及系统可用内存保护仍然生效。主 OCR/YOLO 的 Python 引用释放不保证底层推理库立即归还全部 RSS；独立 OCR 与浏览器进程退出会释放其进程资源。空闲回收后的首个请求需要重新加载模型或启动浏览器。
+
 ## OCR 检测尺寸与日志
 
 文字检测默认将长边限制为 1280 像素，避免判定表先放大 3 倍、列图再放大 5 倍后，以最高 4000 像素运行检测。PaddleOCR 仍使用传入的原图裁出文字供识别，坐标也返回原图坐标。

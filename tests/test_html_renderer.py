@@ -8,6 +8,31 @@ from modules.images.renderer import render_html, template
 
 @unittest.skipUnless(os.getenv('JIETNG_RENDER_TESTS') == '1', 'requires installed Chromium')
 class HtmlRendererTests(unittest.TestCase):
+    def test_idle_browser_is_closed_and_recreated(self):
+        import threading
+        from unittest.mock import patch
+        from modules.images import renderer
+        renderer.shutdown_renderer()
+        closed = threading.Event()
+        original_close = renderer._close_browser
+
+        def close():
+            had_browser = renderer._browser is not None
+            original_close()
+            if had_browser:
+                closed.set()
+
+        with patch.object(renderer, 'RENDERER_IDLE_SECONDS', 0.1), \
+             patch.object(renderer, '_close_browser', side_effect=close):
+            try:
+                with render_html('<div>First</div>', 100, 40) as image:
+                    self.assertEqual(image.size, (100, 40))
+                self.assertTrue(closed.wait(timeout=5), 'idle browser was not closed')
+                with render_html('<div>Second</div>', 100, 40) as image:
+                    self.assertEqual(image.size, (100, 40))
+            finally:
+                renderer.shutdown_renderer()
+
     def test_transparency_and_parallel_callers(self):
         def render(_):
             with render_html('<div style="width:20px;height:20px;background:red"></div>', 40, 40) as im:
