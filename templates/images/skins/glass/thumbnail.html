@@ -113,20 +113,12 @@
       width: 300px;
       height: 150px;
       overflow: hidden;
-      border: 4px solid var(--difficulty-border, var(--difficulty));
+      border: 4px solid #c7d3e3;
       border-radius: 23px;
       color: #25334e;
       background: linear-gradient(135deg, #ffffffc7, #f2f5ff99);
       box-shadow: inset 0 1px 2px #ffffff, 0 8px 18px #24355524, 0 2px 4px #24355512;
       backdrop-filter: blur(14px) saturate(.95);
-    }
-
-    .glass-card::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      background: linear-gradient(115deg, color-mix(in srgb, var(--difficulty) 13%, transparent), transparent 62%);
     }
 
     .glass-card-cover {
@@ -236,13 +228,14 @@
       padding: 5px 9px;
       border: 1px solid #ffffffc9;
       border-radius: 13px;
-      background: #ffffff77;
+      background: var(--difficulty);
+      color: var(--difficulty-text);
       font-size: 16px;
       white-space: nowrap;
     }
 
     .glass-card-level {
-      color: #62728b;
+      color: inherit;
       font-size: 13px;
     }
 
@@ -255,7 +248,7 @@
     }
 
   </style>
-  <article class="glass-card" style="--difficulty: {{ color }};{% if song.difficulty == 'remaster' %} --difficulty-border: #C59CDD;{% endif %}">
+  <article class="glass-card" style="--difficulty: {{ color }}; --difficulty-text: {{ text_color }};">
     <div class="glass-card-cover">
       <div class="glass-card-cover-content">{{ cover|safe }}</div>
     </div>
