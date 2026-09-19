@@ -194,6 +194,7 @@ TEXTS["main"] = {'account_already_bound': 'A SEGA account is already linked. To 
                           'command first to unlink your account.',
  'account_not_linked': 'No account is linked.',
  'already_linked_title': 'Already Linked',
+ 'login_rate_limited': 'The JP login rate limit was reached. This operation has stopped. Please try again later.',
  'candidates_failed': 'Failed to fetch the account list. Please try again later.',
  'constant_out_of_range': 'Constant {level} is out of range. Please enter a value between 1.0 and '
                           '15.0.',

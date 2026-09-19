@@ -748,6 +748,13 @@ def _run_check(report, sega_id, password, aime, guard):
             _persist_audit(report)
             try:
                 cookies = await asyncio.wait_for(login_to_maimai(sega_id, password, ver=region, aime=aime), 90)
+                if cookies == 'RATE_LIMITED':
+                    report['regions'][region] = {
+                        'status': 'failed',
+                        'error': 'The JP login rate limit was reached. Please try again later.',
+                    }
+                    _persist_audit(report)
+                    continue
                 if cookies == 'MAINTENANCE':
                     raise RuntimeError('Official site is under maintenance')
                 if not cookies:

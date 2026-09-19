@@ -718,6 +718,8 @@ def website_segaid_bind():
                     )
                     merged = []
                     maintenance_count = 0
+                    if any(result == "RATE_LIMITED" for result in results):
+                        return "RATE_LIMITED"
                     for version, result in zip(("jp", "intl"), results):
                         if isinstance(result, Exception):
                             logger.warning(
@@ -747,6 +749,10 @@ def website_segaid_bind():
                 message = language_catalog("main.candidates_failed")
                 return jsonify({"success": False, "message": select_text(message, language=user_language, default_language=DEFAULT_WEB_LANGUAGE)}), 500
 
+            if candidates == "RATE_LIMITED":
+                message = language_catalog("main.login_rate_limited")
+                return jsonify({"success": False, "message": select_text(message, language=user_language, default_language=DEFAULT_WEB_LANGUAGE)}), 429
+
             if candidates == "MAINTENANCE":
                 message = language_catalog("main.maintenance")
                 return jsonify({"success": False, "message": select_text(message, language=user_language, default_language=DEFAULT_WEB_LANGUAGE)}), 503
@@ -770,6 +776,8 @@ def website_segaid_bind():
             aime_int = 0  # 默认 0
 
         result = asyncio.run(process_sega_credentials(user_id, segaid, password, user_version, user_language, timezone_int, aime_int, (mode == "rebind")))
+        if result == "RATE_LIMITED":
+            return _error_page(language_catalog("main.login_rate_limited"), user_language, 429)
         if result == "MAINTENANCE":
             maintenance_messages = language_catalog("main.maintenance")
             return _error_page(maintenance_messages, user_language, 503)
@@ -1409,7 +1417,7 @@ def demo_page():
 
     async def _pipeline():
         cookies = await login_to_maimai(segaid, password, ver=ver, aime=aime)
-        if not cookies or cookies == "MAINTENANCE":
+        if not cookies or cookies in ("MAINTENANCE", "RATE_LIMITED"):
             return cookies
         user_info, raw_records = await asyncio.gather(
             get_maimai_info(cookies, ver=ver),
@@ -1438,6 +1446,8 @@ def demo_page():
 
     try:
         result = asyncio.run(_pipeline())
+        if result == "RATE_LIMITED":
+            return _demo_cors(jsonify({"error": "The JP login rate limit was reached. Please try again later."})), 429
         if result == "MAINTENANCE":
             return _demo_cors(jsonify({"error": "The official website is under maintenance. Please try again later."})), 503
         if not result:
@@ -1450,6 +1460,10 @@ def demo_page():
     except Exception as e:
         logger.error(f"[Demo] Pipeline error: {e}", exc_info=True)
         return _demo_cors(jsonify({"error": "An error occurred while generating your score card."})), 500
+
+
+def login_rate_limit_message(user_id):
+    return TextMessage(text=get_multilingual_text(language_catalog("main.login_rate_limited"), user_id))
 
 
 async def process_sega_credentials(
@@ -1469,8 +1483,8 @@ async def process_sega_credentials(
     )
 
     cookies = await login_to_maimai(segaid, password, ver=ver, aime=aime)
-    if cookies == "MAINTENANCE":
-        return "MAINTENANCE"
+    if cookies in ("MAINTENANCE", "RATE_LIMITED"):
+        return cookies
     if not cookies:
         logger.warning(f"[Auth] ⚠ Login failed for user_id={user_id}")
         return False
@@ -1547,6 +1561,9 @@ def async_get_friend_list_task(ctx):
 
     try:
         cookies = asyncio.run(login_to_maimai(sega_id, sega_pwd, ver=ver, aime=aime))
+        if cookies == "RATE_LIMITED":
+            smart_reply(user_id, reply_token, login_rate_limit_message(user_id), configuration, source_type=source_type)
+            return
         if cookies is None:
             smart_reply(user_id, reply_token, segaid_error(user_id), configuration, source_type=source_type)
             return
@@ -1703,6 +1720,17 @@ async def _sync_maimai_user_data(user_id, ver="jp"):
             "func_status": func_status,
             "elapsed_time": time.time() - start_time,
         }
+    if cookies == "RATE_LIMITED":
+        return {
+            "success": False,
+            "error": "Rate limited",
+            "message": "The JP login rate limit was reached. Please try again later.",
+            "status_code": 429,
+            "user_id": user_id,
+            "version": ver,
+            "func_status": func_status,
+            "elapsed_time": time.time() - start_time,
+        }
     if cookies == "MAINTENANCE":
         return {
             "success": False,
@@ -1788,6 +1816,8 @@ async def maimai_update(user_id, ver="jp"):
 
     if result.get("error") == "Account not bound" or result.get("error") == "Authentication failed":
         return segaid_error(user_id)
+    if result.get("error") == "Rate limited":
+        return login_rate_limit_message(user_id)
     if result.get("error") == "Maintenance":
         return maintenance_error(user_id)
 
@@ -2304,6 +2334,8 @@ async def get_song_record_by_id(user_id, id_use, song_id, ver="jp"):
             sega_pwd = _id_use_data['sega_pwd']
             aime = _id_use_data.get('aime', 0)
             cookies = await login_to_maimai(sega_id, sega_pwd, ver=ver, aime=aime)
+            if cookies == "RATE_LIMITED":
+                return login_rate_limit_message(user_id)
             if cookies is None:
                 logger.warning(f"[Song Record] ⚠ Login failed: user_id={user_id}")
 
@@ -3093,7 +3125,7 @@ async def generate_friend_record(user_id, friend_code, type="best50", cmd="", ve
     # 使用异步登录和获取好友成绩
     async def fetch_friend_data():
         cookies = await login_to_maimai(sega_id, sega_pwd, ver)
-        if cookies is None or cookies == "MAINTENANCE":
+        if cookies is None or cookies in ("MAINTENANCE", "RATE_LIMITED"):
             return cookies, None, None
         tasks = [
             get_friend_info(cookies, friend_code, ver),
@@ -3104,6 +3136,8 @@ async def generate_friend_record(user_id, friend_code, type="best50", cmd="", ve
 
     error, friend_info, friend_records = await fetch_friend_data()
 
+    if error == "RATE_LIMITED":
+        return login_rate_limit_message(user_id)
     if error == "MAINTENANCE":
         return maintenance_error(user_id)
     if error is None and friend_records is None:

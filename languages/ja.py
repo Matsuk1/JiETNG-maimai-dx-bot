@@ -161,6 +161,7 @@ TEXTS["message_manager"].update({
 TEXTS["main"] = {'account_already_bound': 'すでに SEGA アカウントが連携されています。再度連携する場合は、先に unbind コマンドで連携を解除してください。',
  'account_not_linked': 'アカウントが連携されていません。',
  'already_linked_title': '連携済み',
+ 'login_rate_limited': '日本版のログインのレート制限に達したため、今回の操作を中止しました。しばらくしてからもう一度お試しください。',
  'candidates_failed': 'アカウント一覧の取得に失敗しました。しばらくしてからもう一度お試しください。',
  'constant_out_of_range': '定数 {level} は範囲外です。1.0～15.0の範囲で入力してください。',
  'constant_precision': '定数 {level} は無効です。小数点以下は1桁まで入力可能です（例：13.2）。',

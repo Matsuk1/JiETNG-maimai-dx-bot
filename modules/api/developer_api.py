@@ -345,6 +345,8 @@ def api_bind_user(user_id):
             return jsonify({"error": "Already bound", "message": "User already has a SEGA account linked. Use PUT to rebind."}), 409
 
         result = asyncio.run(_services.process_credentials(user_id, sega_id, password, ver, language, timezone_int, aime_int, False))
+        if result == "RATE_LIMITED":
+            return jsonify({"error": "Rate limited", "message": "The JP login rate limit was reached. Please try again later."}), 429
         if result == "MAINTENANCE":
             return jsonify({"error": "Maintenance", "message": "The official website is under maintenance. Please try again later."}), 503
         elif result:
@@ -390,6 +392,8 @@ def api_rebind_user(user_id):
             aime_int = user_data.get('aime', 0)
 
         result = asyncio.run(_services.process_credentials(user_id, sega_id, password, ver, language, timezone_int, aime_int, True))
+        if result == "RATE_LIMITED":
+            return jsonify({"error": "Rate limited", "message": "The JP login rate limit was reached. Please try again later."}), 429
         if result == "MAINTENANCE":
             return jsonify({"error": "Maintenance", "message": "The official website is under maintenance. Please try again later."}), 503
         elif result:

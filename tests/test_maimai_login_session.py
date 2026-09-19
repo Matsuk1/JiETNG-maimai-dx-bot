@@ -73,7 +73,7 @@ def install_sessions(monkeypatch, responses):
 
 
 @pytest.mark.parametrize('entrypoint', [maimai.login_to_maimai, maimai.get_aime_candidates])
-@pytest.mark.parametrize('first', [Response('<html>No token</html>'), Response(error=TimeoutError())])
+@pytest.mark.parametrize('first', [Response(error=TimeoutError())])
 def test_failed_session_is_closed_and_fresh_session_used_for_post(monkeypatch, entrypoint, first):
     sessions = install_sessions(monkeypatch, [first, Response('<input name="token" value="fresh">')])
     asyncio.run(entrypoint('test-id', 'test-password'))
@@ -86,7 +86,7 @@ def test_failed_session_is_closed_and_fresh_session_used_for_post(monkeypatch, e
 
 
 def test_exhaustion_closes_all_three_sessions(monkeypatch):
-    sessions = install_sessions(monkeypatch, [Response()] * 3)
+    sessions = install_sessions(monkeypatch, [Response(error=TimeoutError())] * 3)
     with pytest.raises(RuntimeError, match='after 3 fresh sessions'):
         asyncio.run(maimai.login_to_maimai('test-id', 'test-password'))
     assert len(sessions) == 3
@@ -146,3 +146,40 @@ def test_friend_records_request_timeouts_do_not_return_empty_success(monkeypatch
     monkeypatch.setattr(Session, 'get', lambda *args, **kwargs: Response(error=TimeoutError()))
     assert asyncio.run(maimai.get_friend_records({}, 'test-friend')) is None
     assert sessions[0].closed
+
+
+@pytest.mark.parametrize('entrypoint', [maimai.login_to_maimai, maimai.get_aime_candidates])
+def test_missing_token_returns_without_retry(monkeypatch, entrypoint):
+    sessions = install_sessions(monkeypatch, [Response('<html>No token</html>')])
+    assert asyncio.run(entrypoint('test-id', 'test-password')) == 'RATE_LIMITED'
+    assert len(sessions) == 1 and sessions[0].closed
+    assert len(sessions[0].requests) == 1
+    maimai.asyncio.sleep.assert_not_awaited()
+
+
+def test_rate_limit_reaches_binding_and_sync_user_message():
+    # Load only these handlers; importing main starts production services.
+    import ast
+    from pathlib import Path
+    from types import SimpleNamespace
+    import time
+    from modules.i18n import language_catalog
+
+    source = Path(__file__).resolve().parents[1] / 'main.py'
+    names = {'process_sega_credentials', '_sync_maimai_user_data',
+             'maimai_update', 'login_rate_limit_message'}
+    nodes = [node for node in ast.parse(source.read_text()).body
+             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name in names]
+    login = AsyncMock(return_value='RATE_LIMITED')
+    namespace = dict(
+        DEFAULT_WEB_LANGUAGE='zh', login_to_maimai=login, time=time,
+        get_user=lambda uid: {'sega_id': 'test', 'sega_pwd': 'test'},
+        language_catalog=language_catalog,
+        get_multilingual_text=lambda texts, uid: texts['zh'], TextMessage=SimpleNamespace,
+    )
+    exec(compile(ast.Module(body=nodes, type_ignores=[]), str(source), 'exec'), namespace)
+    assert asyncio.run(namespace['process_sega_credentials']('user', 'id', 'pwd')) == 'RATE_LIMITED'
+    result = asyncio.run(namespace['_sync_maimai_user_data']('user'))
+    assert result['success'] is False and result['status_code'] == 429
+    message = asyncio.run(namespace['maimai_update']('user'))
+    assert '触发了日服登录速率限制' in message.text

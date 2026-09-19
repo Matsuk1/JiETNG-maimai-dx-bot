@@ -161,6 +161,7 @@ TEXTS["message_manager"].update({
 TEXTS["main"] = {'account_already_bound': '已绑定 SEGA 账号。如需重新绑定，请先使用 unbind 命令解除绑定。',
  'account_not_linked': '未绑定账号。',
  'already_linked_title': '已绑定',
+ 'login_rate_limited': '触发了日服登录速率限制，本次操作已停止。请稍后再试。',
  'candidates_failed': '获取账号列表失败。请稍后再试。',
  'constant_out_of_range': '定数 {level} 超出范围。请输入 1.0~15.0 范围内的数值。',
  'constant_precision': '定数 {level} 无效。仅支持一位小数（例如：13.2）。',

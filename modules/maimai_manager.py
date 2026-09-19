@@ -173,9 +173,10 @@ async def _jp_login_session(headers):
                                 attempt + 1, source,
                             )
                         elif not token:
+                            token = "RATE_LIMITED"
                             logger.warning(
                                 "[Maimai] ⚠ JP login token missing: attempt=%s/3, "
-                                "status=%s, html_len=%s, page=%s; discarding session",
+                                "status=%s, html_len=%s, page=%s; not retrying",
                                 attempt + 1, last_status, len(html or ""), last_page,
                             )
             except Exception as exc:
@@ -343,8 +344,8 @@ async def login_to_maimai(sega_id: str, password: str, ver="jp", aime=0):
     else:  # jp
         headers = _jp_login_headers(user_agent)
         async with _jp_login_session(headers) as (session, token):
-            if token == "MAINTENANCE":
-                return "MAINTENANCE"
+            if token in ("MAINTENANCE", "RATE_LIMITED"):
+                return token
 
             # POST 登录
             async with session.post(
@@ -489,8 +490,8 @@ async def get_aime_candidates(sega_id: str, password: str, ver="jp"):
     user_agent = _get_random_user_agent()
     headers = _jp_login_headers(user_agent)
     async with _jp_login_session(headers) as (session, token):
-        if token == "MAINTENANCE":
-            return "MAINTENANCE"
+        if token in ("MAINTENANCE", "RATE_LIMITED"):
+            return token
 
         async with session.post(
             "https://maimaidx.jp/maimai-mobile/submit/",
