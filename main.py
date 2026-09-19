@@ -4560,6 +4560,22 @@ def start_runtime():
         )
         logger.info("[Recognize] → Continuing startup; recognize command will fail until OCR is fixed")
 
+    try:
+        from modules.score_recognition.cropper import warm_cropper_models
+
+        warm_cropper_models()
+        logger.info('[Recognize] YOLO models warmed up')
+    except Exception:
+        logger.exception('[Recognize] YOLO startup warmup failed')
+
+    try:
+        from modules.images.renderer import warm_renderer
+
+        warm_renderer()
+        logger.info('[Renderer] Browser warmed up')
+    except Exception:
+        logger.exception('[Renderer] Startup warmup failed; next render will retry')
+
     # 启动 worker 线程
     for i in range(MAX_CONCURRENT_IMAGE_TASKS):
         threading.Thread(target=image_worker, daemon=True, name=f"ImageWorker-{i+1}").start()

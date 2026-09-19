@@ -82,7 +82,7 @@ def _close_browser():
                 _playwright = None
 
 
-def _screenshot(body, width, height):
+def _ensure_page(width, height):
     global _playwright, _browser, _page
     from playwright.sync_api import sync_playwright
     if _browser is None or not _browser.is_connected():
@@ -96,6 +96,11 @@ def _screenshot(body, width, height):
         _page.set_default_timeout(30000)
         _page.set_content(template('document.html', body='', width=width, height=height,
                                    font=file_uri('assets/fonts/line_seed_jietng.ttf')))
+
+
+def _screenshot(body, width, height):
+    global _page
+    _ensure_page(width, height)
     try:
         _page.set_viewport_size({'width': width, 'height': min(height or 800, 2000)})
         _page.evaluate("""({body,width,height}) => {
@@ -152,6 +157,12 @@ def render_template(name, width, height=None, **data):
     return render_html(template(name, **data), width, height)
 
 
+def warm_renderer():
+    """Start the render worker and exercise its browser before serving jobs."""
+    image = render_html('', 1, 1)
+    image.close()
+
+
 def _work():
     try:
         while True:
@@ -163,12 +174,16 @@ def _work():
                 try:
                     if _browser is not None or _playwright is not None:
                         _close_browser()
-                        logging.getLogger(__name__).info('[Renderer] Released idle browser')
+                        _file_uri.cache_clear()
+                        gc.collect()
+                        _ensure_page(800, 800)
+                        logging.getLogger(__name__).info('[Renderer] Rebuilt idle browser')
                 except Exception:
-                    logging.getLogger(__name__).exception('[Renderer] Idle browser cleanup failed')
-                finally:
-                    _file_uri.cache_clear()
-                    gc.collect()
+                    logging.getLogger(__name__).exception('[Renderer] Idle browser rebuild failed; next render will retry')
+                    try:
+                        _close_browser()
+                    except Exception:
+                        logging.getLogger(__name__).exception('[Renderer] Failed to close browser after rebuild error')
                 continue
             if item is None:
                 return

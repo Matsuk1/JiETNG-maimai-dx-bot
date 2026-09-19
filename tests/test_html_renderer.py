@@ -13,21 +13,24 @@ class HtmlRendererTests(unittest.TestCase):
         from unittest.mock import patch
         from modules.images import renderer
         renderer.shutdown_renderer()
-        closed = threading.Event()
-        original_close = renderer._close_browser
+        rebuilt = threading.Event()
+        original_ensure = renderer._ensure_page
+        browsers = []
 
-        def close():
-            had_browser = renderer._browser is not None
-            original_close()
-            if had_browser:
-                closed.set()
+        def ensure(width, height):
+            original_ensure(width, height)
+            if not browsers or browsers[-1] is not renderer._browser:
+                browsers.append(renderer._browser)
+            if len(browsers) >= 2:
+                rebuilt.set()
 
         with patch.object(renderer, 'RENDERER_IDLE_SECONDS', 0.1), \
-             patch.object(renderer, '_close_browser', side_effect=close):
+             patch.object(renderer, '_ensure_page', side_effect=ensure):
             try:
-                with render_html('<div>First</div>', 100, 40) as image:
-                    self.assertEqual(image.size, (100, 40))
-                self.assertTrue(closed.wait(timeout=5), 'idle browser was not closed')
+                renderer.warm_renderer()
+                self.assertEqual(len(browsers), 1)
+                self.assertTrue(rebuilt.wait(timeout=5), 'browser was not rebuilt without a new request')
+                self.assertFalse(browsers[0].is_connected())
                 with render_html('<div>Second</div>', 100, 40) as image:
                     self.assertEqual(image.size, (100, 40))
             finally:

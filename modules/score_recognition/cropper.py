@@ -34,9 +34,37 @@ _MODELS_LAST_USED = 0.0
 CROPPER_IDLE_SECONDS = max(0, float(os.getenv("JIETNG_CROPPER_IDLE_SECONDS", "300")))
 
 
+def _warm_cropper_predictor(loader) -> None:
+    model = loader()
+    if model is None:
+        raise RuntimeError('YOLO cropper model is unavailable')
+    model.predict(np.zeros((640, 640, 3), dtype=np.uint8),
+                  imgsz=640, conf=0.15, verbose=False)
+
+
+def warm_cropper_models() -> None:
+    """Initialize both predictors, letting either one succeed independently."""
+    global _MODELS_LAST_USED, _CROPPER_MODEL_UNAVAILABLE, _MAIN_SCREEN_MODEL_UNAVAILABLE
+    with _MODEL_LOCK:
+        failed = False
+        try:
+            for loader in (_load_cropper_model, _load_main_screen_model):
+                try:
+                    _warm_cropper_predictor(loader)
+                except Exception:
+                    failed = True
+                    logging.getLogger(__name__).exception('[Recognize] YOLO predictor warmup failed')
+            if failed:
+                _CROPPER_MODEL_UNAVAILABLE = _MAIN_SCREEN_MODEL_UNAVAILABLE = False
+                raise RuntimeError('YOLO warmup incomplete; next request will retry')
+        finally:
+            _MODELS_LAST_USED = time.monotonic()
+
+
 def cleanup_cropper_memory() -> bool:
-    """Release idle YOLO references, including models used by crop previews."""
-    global _CROPPER_MODEL, _MAIN_SCREEN_MODEL
+    """Recycle only previously loaded YOLO models and immediately rebuild them."""
+    global _CROPPER_MODEL, _MAIN_SCREEN_MODEL, _MODELS_LAST_USED
+    global _CROPPER_MODEL_UNAVAILABLE, _MAIN_SCREEN_MODEL_UNAVAILABLE
     if CROPPER_IDLE_SECONDS <= 0 or not _MODEL_LOCK.acquire(blocking=False):
         return False
     try:
@@ -44,9 +72,28 @@ def cleanup_cropper_memory() -> bool:
             return False
         if _CROPPER_MODEL is None and _MAIN_SCREEN_MODEL is None:
             return False
+        reload_cropper = _CROPPER_MODEL is not None
+        reload_main = _MAIN_SCREEN_MODEL is not None
         _CROPPER_MODEL = _MAIN_SCREEN_MODEL = None
         gc.collect()
-        logging.getLogger(__name__).info('[Recognize] Released idle YOLO models')
+        try:
+            failed = False
+            for needed, loader in ((reload_cropper, _load_cropper_model),
+                                   (reload_main, _load_main_screen_model)):
+                if needed:
+                    try:
+                        _warm_cropper_predictor(loader)
+                    except Exception:
+                        failed = True
+                        logging.getLogger(__name__).exception('[Recognize] Idle YOLO predictor rebuild failed')
+            if failed:
+                # Transient failures must not disable models permanently.
+                _CROPPER_MODEL_UNAVAILABLE = _MAIN_SCREEN_MODEL_UNAVAILABLE = False
+                logging.getLogger(__name__).warning('[Recognize] Idle YOLO rebuild incomplete; next request will retry')
+            else:
+                logging.getLogger(__name__).info('[Recognize] Rebuilt idle YOLO models')
+        finally:
+            _MODELS_LAST_USED = time.monotonic()
         return True
     finally:
         _MODEL_LOCK.release()

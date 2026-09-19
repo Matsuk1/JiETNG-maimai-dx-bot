@@ -199,14 +199,22 @@ def warm_table_model() -> None:
 
 
 def cleanup_table_model_memory() -> bool:
-    """Stop an idle worker without interrupting startup or inference."""
+    """Recycle and immediately warm an idle worker under its inference lock."""
+    global _TABLE_MODEL_LAST_USED
     if TABLE_MODEL_IDLE_SECONDS <= 0 or not _TABLE_MODEL_LOCK.acquire(blocking=False):
         return False
     try:
         if (_TABLE_MODEL_PROCESS is not None
                 and time.monotonic() - _TABLE_MODEL_LAST_USED >= TABLE_MODEL_IDLE_SECONDS):
             _stop_table_model_process()
-            logger.info('[Recognize] Released idle table OCR worker')
+            try:
+                _start_table_model_process()
+                logger.info('[Recognize] Rebuilt idle table OCR worker')
+            except Exception:
+                _stop_table_model_process()
+                logger.exception('[Recognize] Idle table OCR rebuild failed; next request will retry')
+            finally:
+                _TABLE_MODEL_LAST_USED = time.monotonic()
             return True
         return False
     finally:

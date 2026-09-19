@@ -1830,6 +1830,12 @@ def cleanup_score_recognizer_memory() -> bool:
                     and rss_mb >= OCR_ENGINE_IDLE_RESET_RSS_MB)
         if _ENGINE is not None and (idle or high_rss):
             cleaned = _reset_ocr_engine('idle_timeout' if idle else 'idle_rss_threshold', rss_mb) or cleaned
+            if idle:
+                try:
+                    _engine()
+                    logger.info('[Recognize] Rebuilt idle OCR engine')
+                except Exception:
+                    logger.exception('[Recognize] Idle OCR rebuild failed; next request will retry')
     finally:
         _OCR_LOCK.release()
     return cleaned
