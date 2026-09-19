@@ -15,14 +15,14 @@
       height: 225px;
       overflow: hidden;
       padding: 18px 22px;
-      border: 4px solid var(--difficulty);
+      border: 4px solid var(--difficulty-border, var(--difficulty));
       border-radius: 30px;
       color: #25334e;
       background:
         radial-gradient(ellipse at top left, #c0eafa99, transparent 70%),
-        linear-gradient(135deg, #ffffffe0, #f2f5ffbf);
+        linear-gradient(135deg, #ffffffc7, #f2f5ff99);
       box-shadow: inset 0 1px 2px #ffffff, 0 8px 18px #24355524, 0 2px 4px #24355512;
-      backdrop-filter: blur(28px) saturate(.8);
+      backdrop-filter: blur(14px) saturate(.95);
     }
 
     .glass-inline-achievement {
@@ -85,7 +85,7 @@
       font-size: 25px;
     }
   </style>
-  <article class="glass-inline" style="--difficulty: {{ color }};">
+  <article class="glass-inline" style="--difficulty: {{ color }};{% if song.difficulty == 'remaster' %} --difficulty-border: #C59CDD;{% endif %}">
     <div class="glass-inline-achievement">{{ song.score }}</div>
     <div class="glass-inline-dx">DX {{ song.dx_score }} → {{ '%.1f'|format(song.dx_percentage * 100) }}%</div>
     {% if 'last_play_time' in song and 'play_count' in song %}
@@ -113,12 +113,12 @@
       width: 300px;
       height: 150px;
       overflow: hidden;
-      border: 4px solid var(--difficulty);
+      border: 4px solid var(--difficulty-border, var(--difficulty));
       border-radius: 23px;
       color: #25334e;
-      background: linear-gradient(135deg, #ffffffe0, #f2f5ffbf);
+      background: linear-gradient(135deg, #ffffffc7, #f2f5ff99);
       box-shadow: inset 0 1px 2px #ffffff, 0 8px 18px #24355524, 0 2px 4px #24355512;
-      backdrop-filter: blur(28px) saturate(.8);
+      backdrop-filter: blur(14px) saturate(.95);
     }
 
     .glass-card::before {
@@ -255,7 +255,7 @@
     }
 
   </style>
-  <article class="glass-card" style="--difficulty: {{ color }};">
+  <article class="glass-card" style="--difficulty: {{ color }};{% if song.difficulty == 'remaster' %} --difficulty-border: #C59CDD;{% endif %}">
     <div class="glass-card-cover">
       <div class="glass-card-cover-content">{{ cover|safe }}</div>
     </div>
