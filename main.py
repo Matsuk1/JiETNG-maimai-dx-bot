@@ -263,7 +263,7 @@ from modules.rich_menu_manager import (
     unlink_rich_menu,
 )
 from modules.song_matcher import find_matching_songs, normalize_text
-from modules.memory_manager import memory_manager, cleanup_user_caches
+from modules.memory_manager import memory_manager, cleanup_user_caches, get_process_memory_stats
 from modules.score_recognition.results import expand_score_recognition_calc_variants
 from modules.score_recognition.recognizer import (
     InvalidScoreImageError,
@@ -4429,8 +4429,7 @@ def _build_admin_overview_stats(force_refresh=False):
     cpu_percent = round(psutil.cpu_percent(interval=0.1), 1)
     cpu_count = psutil.cpu_count()
     memory = psutil.virtual_memory()
-    process = psutil.Process(os.getpid())
-    process_memory_mb = round(process.memory_info().rss / (1024**2), 1)
+    process_memory_stats = get_process_memory_stats()
 
     with stats_lock:
         task_stats = dict(STATS)
@@ -4447,7 +4446,7 @@ def _build_admin_overview_stats(force_refresh=False):
         'memory_percent': round(memory.percent, 1),
         'memory_used_gb': round(memory.used / (1024**3), 1),
         'total_memory': round(memory.total / (1024**3), 1),
-        'process_memory_mb': process_memory_mb,
+        **process_memory_stats,
         'uptime': uptime_str,
         'python_version': platform.python_version(),
         'platform': f"{platform.system()} {platform.release()}",

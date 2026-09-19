@@ -1683,6 +1683,17 @@
         .catch(err => alert('Error refreshing logs: ' + err));
     }
 
+    function renderComponentMemory(stats) {
+      for (const component of stats.memory_components || []) {
+        const row = Array.from(document.querySelectorAll('[data-memory-component]'))
+          .find(element => element.dataset.memoryComponent === component.key);
+        if (!row) continue;
+        row.querySelector('.health-value').textContent = component.memory_mb == null
+          ? 'N/A' : component.memory_mb + ' MiB';
+        row.querySelector('.health-fill').style.width = Math.max(0, Math.min(100, component.percent || 0)) + '%';
+      }
+    }
+
     function refreshStats(btn) {
       const originalText = btn.textContent;
       btn.disabled = true;
@@ -1699,6 +1710,7 @@
         .then(data => {
           if (!data.success) throw new Error(data.message || 'Refresh failed');
           const s = data.stats;
+          renderComponentMemory(s);
           document.getElementById('overview-total-users').textContent = s.total_users;
           document.getElementById('overview-user-delta').textContent = `+${s.today_new_users} today`;
           document.getElementById('overview-user-segments').innerHTML = `

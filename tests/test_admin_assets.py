@@ -9,11 +9,22 @@ class AdminAssetTests(unittest.TestCase):
     def test_template_renders_config_and_serves_extracted_assets(self):
         source=(ROOT/'templates/admin_panel.html').read_text()
         stats={key:0 for key in re.findall(r'stats\.([a-zA-Z_0-9]+)',source)}
-        stats.update(dau_30d=[],image_command_breakdown=[])
+        stats.update(dau_30d=[],image_command_breakdown=[],memory_components=[
+            dict(key='ocr', name='OCR', description='Table OCR', memory_mb=512, percent=50),
+            dict(key='playwright', name='Playwright', description='Browser', memory_mb=256, percent=25),
+        ])
         app=Flask(__name__,template_folder=str(ROOT/'templates'),static_folder=str(ROOT/'assets'),static_url_path='/static')
         with app.test_request_context():
             html=render_template('admin_panel.html',stats=stats,total_users=0,logs='',language_options=[],default_language='ja',csrf_token=lambda:'csrf-test-token')
         self.assertIn('csrf-test-token',html)
+        from bs4 import BeautifulSoup
+        page = BeautifulSoup(html, 'html.parser')
+        runtime = page.find('h2', string='Runtime Pressure').find_parent('section')
+        self.assertEqual(len(runtime.select('[data-memory-component]')), 2)
+        self.assertIn('512 MiB', runtime.get_text())
+        self.assertIsNone(page.select_one('.process-memory-panel'))
+        self.assertIn('Process Memory', page.select_one('.system-summary').get_text())
+
         self.assertLess(html.index('window.JIETNG_ADMIN_CONFIG'),html.index('src="/static/admin-panel.js?'))
         self.assertIn('/static/admin-panel.css?v=', html)
         for name in ('admin-panel.css','admin-monitor.css','admin-panel.js','admin-user-editor.js'):

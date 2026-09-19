@@ -208,6 +208,13 @@
               <div class="health-track"><div class="health-fill" id="overview-memory-fill" style="width: {{ stats.memory_percent }}%;"></div></div>
               <div class="health-value" id="overview-memory">{{ stats.memory_used_gb }}/{{ stats.total_memory }} GB</div>
             </div>
+            {% for component in stats.memory_components %}
+            <div class="health-row" title="{{ component.description }}" data-memory-component="{{ component.key }}">
+              <div class="health-label">{{ component.name }}</div>
+              <div class="health-track"><div class="health-fill" style="width: {{ component.percent }}%;"></div></div>
+              <div class="health-value">{{ (component.memory_mb|string + ' MiB') if component.memory_mb is not none else 'N/A' }}</div>
+            </div>
+            {% endfor %}
             <div class="health-row">
               <div class="health-label">Images</div>
               <div class="health-track"><div class="health-fill" id="overview-image-queue-fill" style="width: {{ (stats.image_queue_size / stats.max_queue_size * 100) if stats.max_queue_size else 0 }}%;"></div></div>
@@ -843,6 +850,6 @@
     };
   </script>
   <script src="/static/admin-user-editor.js"></script>
-  <script src="/static/admin-panel.js?v=audit-20260917-10"></script>
+  <script src="/static/admin-panel.js?v=components-20260919"></script>
 </body>
 </html>

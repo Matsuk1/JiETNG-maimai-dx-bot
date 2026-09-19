@@ -6,7 +6,80 @@ import threading
 import time
 from datetime import datetime
 
+import psutil
+
 logger = logging.getLogger(__name__)
+
+
+def get_process_memory_stats():
+    """Sample component RSS for this worker and its descendants."""
+    root = psutil.Process()
+    complete = True
+    try:
+        children = root.children(recursive=True)
+    except psutil.Error:
+        children = []
+        complete = False
+    processes = {}
+    for process in [root, *children]:
+        if process.pid in processes:
+            continue
+        ppid, rss, component = None, None, None
+        try:
+            with process.oneshot():
+                ppid = process.ppid()
+                rss = process.memory_info().rss
+        except psutil.NoSuchProcess:
+            continue
+        except psutil.AccessDenied:
+            complete = False
+        try:
+            argv = process.cmdline()
+            if any(arg.replace(chr(92), '/').split('/')[-1] == 'table_model.py' for arg in argv):
+                component = 'ocr'
+            elif any('playwright' in arg.lower() for arg in argv[:2]):
+                component = 'playwright'
+            elif argv and any(name in argv[0].lower() for name in ('chrome', 'chromium')):
+                component = 'playwright'
+        except psutil.Error:
+            pass
+        processes[process.pid] = dict(ppid=ppid, rss=rss, component=component)
+
+    components = {
+        key: dict(key=key, name=name, description=description, rss=0, complete=complete)
+        for key, name, description in [
+            ('service', 'Service', 'Main service including in-process OCR and YOLO; their RSS cannot be separated.'),
+            ('ocr', 'OCR', 'Dedicated table OCR process. Main OCR and YOLO are included in Service.'),
+            ('playwright', 'Playwright', 'Playwright driver and all browser processes.'),
+            ('other', 'Other', 'Other service subprocesses.'),
+        ]
+    }
+    for pid, process in processes.items():
+        component = 'service' if pid == root.pid else 'other'
+        current, seen = pid, set()
+        while current in processes and current not in seen and pid != root.pid:
+            seen.add(current)
+            ancestor = processes[current]
+            if ancestor['component']:
+                component = ancestor['component']
+                break
+            current = ancestor['ppid']
+        group = components[component]
+        if process['rss'] is None:
+            group['complete'] = False
+        else:
+            group['rss'] += process['rss']
+    total = sum(group['rss'] for group in components.values())
+    rows = []
+    for group in components.values():
+        rss = group.pop('rss')
+        group['memory_mb'] = round(rss / 1024 ** 2, 1) if group['complete'] else None
+        group['percent'] = round(rss / total * 100, 1) if total else 0
+        rows.append(group)
+    main_rss = processes.get(root.pid, {}).get('rss')
+    return dict(process_memory_mb=round(main_rss / 1024 ** 2, 1) if main_rss is not None else None,
+                process_tree_memory_mb=round(total / 1024 ** 2, 1),
+                process_memory_complete=complete, memory_components=rows)
 
 
 class MemoryManager:
