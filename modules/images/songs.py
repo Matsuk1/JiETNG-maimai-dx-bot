@@ -15,15 +15,15 @@ def _song_text(key, language):
 @skinnable
 def song_info_generate(
     song_json,
-    played_data=None,
+    played_data=(),
     timezone_offset=9,
     ver="jp",
     bg_filter=None,
 ):
     language = image_language(ver)
     img1 = resize_by_width(_render_basic_info_image(song_json, language), 900)
-    if played_data is not None:
-        img2 = resize_by_width(_makeup_played_data(played_data, song_json, language), 900)
+    if played_data:
+        img2 = resize_by_width(_makeup_played_data(played_data), 780)
     else:
         img2 = resize_by_width(_generate_song_table_image(song_json, language=language), 1200)
     return compose_generated_images(
@@ -63,23 +63,11 @@ def _generate_song_table_image(song_json, scale_width=1.5, scale_height=2.0, lan
                            headers=[_song_text(f"headers.{key}", language) for key in header_keys], rows=rows)
 
 
-def _makeup_played_data(played_data, song_json=None, language="en", gap=12):
+def _makeup_played_data(played_data, gap=10):
     from modules.images.records import thumbnail_html
     from modules.images.renderer import render_template
-    from modules.score_rules import DIFFICULTY_LABELS
-    records = {record.get('difficulty'): record for record in played_data}
-    sheets = (song_json or {}).get('sheets') or list(played_data)
-    rows = []
-    for sheet in sheets:
-        difficulty = sheet.get('difficulty')
-        record = records.get(difficulty)
-        rows.append(dict(label=DIFFICULTY_LABELS.get(difficulty, difficulty or '—'),
-                         constant=sheet.get('internalLevelValue'),
-                         color=difficulty_color(difficulty),
-                         text_color='#72148d' if difficulty == 'remaster' else 'white',
-                         card=thumbnail_html(record, inline=True) if record else ''))
-    return render_template("song.html", 760, mode="played", played_rows=rows, gap=gap,
-                           empty_text='未プレイ' if language == 'ja' else 'Not played')
+    return render_template("stack.html", 600, gap=gap,
+                           items=[thumbnail_html(record, inline=True) for record in played_data])
 
 
 @skinnable
