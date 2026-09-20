@@ -13,8 +13,9 @@
   .note-loss-table .great { color: #dc5899; }
   .note-loss-table .good { color: #349880; }
   .note-loss-table .miss { color: #89909b; }
-  .note-loss-detail { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; white-space: nowrap; }
-  .note-loss-detail small { font-size: 16px; padding: 3px 7px; border-radius: 8px; background: #ffffffa6; }
+  .note-loss-value { position: relative; display: inline-block; width: 12ch; text-align: left; white-space: nowrap; }
+  .note-loss-detail { display: flex; align-items: center; justify-content: center; min-height: 40px; }
+  .note-loss-value small { position: absolute; right: calc(100% + 8px); top: 50%; transform: translateY(-50%); font-size: 16px; padding: 3px 7px; border-radius: 8px; background: #ffffffa6; }
   .note-loss-table .break-row td { background: #fff6df; }
   .note-loss-tolerance { margin-top: 18px; padding: 16px 20px; background: #f8eff5; border-radius: 14px; font-size: 22px; text-align: center; }
   .note-loss-tolerance-title { display: block; margin-bottom: 14px; font-size: 20px; color: #78849a; }
@@ -26,8 +27,8 @@
   .glass-song .note-loss-table td { background: #ffffff80; }
   .glass-song .note-loss-table .break-row td { background: #fff6df99; }
 </style>
-{% macro loss(value) -%}
-  {{ '-%.7f%%'|format(value) if value is number else '—' }}
+{% macro loss(value, label=None) -%}
+  <span class="note-loss-value">{% if label %}<small>{{ label }}</small>{% endif %}{{ '-%.7f%%'|format(value) if value is number else '—' }}</span>
 {%- endmacro %}
 <section class="note-loss-section">
   <div class="song-rating-heading">
@@ -51,8 +52,8 @@
           {% endfor %}
           <tr class="break-row">
             <td>BREAK</td><td>{{ card.break_count }}</td>
-            <td class="perfect">{% for label, value in card.breaks[:2] %}<div class="note-loss-detail"><small>{{ label }}</small>{{ loss(value) }}</div>{% endfor %}</td>
-            <td class="great">{% for label, value in card.breaks[2:5] %}<div class="note-loss-detail"><small>{{ label }}</small>{{ loss(value) }}</div>{% endfor %}</td>
+            <td class="perfect">{% for label, value in card.breaks[:2] %}<div class="note-loss-detail">{{ loss(value, label) }}</div>{% endfor %}</td>
+            <td class="great">{% for label, value in card.breaks[2:5] %}<div class="note-loss-detail">{{ loss(value, label) }}</div>{% endfor %}</td>
             {% for label, value in card.breaks[5:] %}<td class="{{ 'good' if loop.first else 'miss' }}">{{ loss(value) }}</td>{% endfor %}
           </tr>
         </tbody>
