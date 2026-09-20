@@ -90,4 +90,38 @@
       </div>
     {% endfor %}
   </div>
+  {% if rating_rows %}
+    <style>
+      .song-rating-section { margin-top: 32px; }
+      .song-rating-heading { background: white; border-radius: 16px; padding: 18px 24px; margin-bottom: 12px; }
+      .song-rating-title { margin: 0 0 10px; font-size: 34px; }
+      .song-rating-note { margin: 0; font-size: 22px; color: #65758d; }
+      .song-rating-row { grid-template-columns: 190fr 340fr repeat(6, 130fr); }
+      .song-rating-rank small { display: block; font-size: 19px; color: #65758d; margin-top: 3px; }
+      .song-rating-difficulty { margin: 0 12px; padding: 10px 4px; border-radius: 12px; font-size: 25px; }
+      .song-rating-designer { font-size: 24px; overflow-wrap: anywhere; }
+    </style>
+    <section class="song-rating-section">
+      <div class="song-rating-heading">
+      <h2 class="song-rating-title">{{ rating_title }}</h2>
+      <p class="song-rating-note">{{ rating_note }}</p>
+      </div>
+      <div class="song-table">
+        <div class="song-row song-rating-row" style="--border: #b4b4b4;">
+          <div class="song-cell">{{ difficulty_label }}</div>
+          <div class="song-cell">{{ designer_label }}</div>
+          {% for rank, threshold in thresholds %}
+            <div class="song-cell song-rating-rank">{{ rank }}<small>{{ '%.1f'|format(threshold) }}%</small></div>
+          {% endfor %}
+        </div>
+        {% for row in rating_rows %}
+          <div class="song-row song-rating-row" style="--border: {{ row.color }};">
+            <div class="song-cell song-rating-difficulty" style="background: {{ row.color }}; color: {{ row.text_color }};">{{ row.label }}</div>
+            <div class="song-cell song-rating-designer" data-fit="18">{{ row.designer }}</div>
+            {% for rating in row.ratings %}<div class="song-cell">{{ rating }}</div>{% endfor %}
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
 {% endif %}

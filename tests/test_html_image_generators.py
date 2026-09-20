@@ -98,3 +98,23 @@ class ImageDataTests(unittest.TestCase):
                 with patch('modules.images.renderer.render_template') as render, patch.object(records, 'compose_generated_images'):
                     records.generate_score_recognition_picture(dict(parsed={}), ver=ver)
                 self.assertEqual(render.call_args.kwargs['texts']['analysis_title'], analysis)
+
+    def test_song_rating_targets_only_include_existing_upper_charts(self):
+        from modules.images.songs import _generate_song_table_image
+        from modules.record_manager import get_single_ra
+        sheets = [dict(difficulty=d, internalLevelValue=level, noteDesigner='Designer')
+                  for d, level in [('master', 14.6), ('basic', 5), ('expert', 13.3), ('remaster', 14.7)]]
+        with patch('modules.images.renderer.render_template') as render:
+            _generate_song_table_image({'sheets': sheets}, language='en')
+        data = render.call_args.kwargs
+        rows = data['rating_rows']
+        self.assertNotIn('Notes Designer', data['headers'])
+        self.assertEqual(len(data['headers']), len(data['rows'][0][1]))
+        self.assertEqual([r['label'] for r in rows], ['EXPERT', 'MASTER', 'Re:MASTER'])
+        self.assertEqual(rows[1]['ratings'], [get_single_ra(14.6, score) for _, score in data['thresholds']])
+        self.assertEqual(rows[2]['text_color'], '#72148d')
+        self.assertEqual(data['rating_title'], 'Notes Designer & rating targets')
+        with patch('modules.images.renderer.render_template') as render:
+            _generate_song_table_image({'sheets': sheets[:-1]}, language='ja')
+        self.assertEqual(len(render.call_args.kwargs['rating_rows']), 2)
+        self.assertEqual(render.call_args.kwargs['rating_title'], '譜面作者・ランク別 Rating')

@@ -43,21 +43,41 @@ def _render_basic_info_image(song_json, language="en"):
 
 def _generate_song_table_image(song_json, scale_width=1.5, scale_height=2.0, language="en"):
     from modules.images.renderer import render_template
-    header_keys = ("chart_type", "level", "designer", "total", "tap", "hold",
+    header_keys = ("chart_type", "level", "total", "tap", "hold",
                    "slide", "touch", "break", "jp", "intl", "usa")
-    widths = [int(w * scale_width) for w in (160, 90, 300, 90, 80, 80, 90, 90, 95, 70, 70, 70)]
+    widths = [int(w * scale_width) for w in (160, 90, 90, 80, 80, 90, 90, 95, 70, 70, 70)]
     rows = []
     for sheet in song_json["sheets"]:
         notes, regions = sheet.get("noteCounts", {}), sheet.get("regions", {})
-        values = [sheet["difficulty"].capitalize(), f"{sheet['internalLevelValue']:.1f}",
-                  sheet.get("noteDesigner") or "-"]
+        values = [sheet["difficulty"].capitalize(), f"{sheet['internalLevelValue']:.1f}"]
         values += [notes.get(key) or "-" for key in ("total", "tap", "hold", "slide", "touch", "break")]
         values += ["✓" if regions.get(key) else "✕" for key in ("jp", "intl", "usa")]
         rows.append((difficulty_color(sheet.get("difficulty", "")), values))
+    from modules.record_manager import get_single_ra
+    from modules.score_rules import DIFFICULTY_LABELS
+    thresholds = [("SSS+", 100.5), ("SSS", 100.0), ("SS+", 99.5),
+                  ("SS", 99.0), ("S+", 98.0), ("S", 97.0)]
+    rating_rows = []
+    for difficulty in ("expert", "master", "remaster"):
+        for sheet in song_json["sheets"]:
+            if sheet.get("difficulty") != difficulty:
+                continue
+            constant = sheet.get("internalLevelValue")
+            ratings = [get_single_ra(constant, score) if isinstance(constant, (int, float)) and constant > 0 else "—"
+                       for _, score in thresholds]
+            rating_rows.append(dict(label=DIFFICULTY_LABELS[difficulty],
+                                    color=difficulty_color(difficulty),
+                                    text_color="#72148d" if difficulty == "remaster" else "white",
+                                    designer=sheet.get("noteDesigner") or "—", ratings=ratings))
     # Fractional tracks include the border in the original total width.
     return render_template("song.html", sum(widths), mode="table",
                            columns=" ".join(f"{w}fr" for w in widths), row_height=int(48 * scale_height),
-                           headers=[_song_text(f"headers.{key}", language) for key in header_keys], rows=rows)
+                           headers=[_song_text(f"headers.{key}", language) for key in header_keys], rows=rows,
+                           rating_rows=rating_rows, thresholds=thresholds,
+                           rating_title=_song_text("rating_title", language),
+                           rating_note=_song_text("rating_note", language),
+                           difficulty_label=_song_text("headers.chart_type", language),
+                           designer_label=_song_text("headers.designer", language))
 
 
 def _makeup_played_data(played_data, song_json, language="en"):
