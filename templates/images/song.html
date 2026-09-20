@@ -70,13 +70,20 @@
     border-radius: 16px;
   }
 
+  .song-note-table .song-cell:nth-child(3),
+  .song-note-table .song-cell:nth-child(9) { border-left: 2px solid #71809940; }
+
+  .song-section-heading { background: white; border-radius: 16px; padding: 18px 24px; margin-bottom: 14px; }
+  .song-section-heading h2 { margin: 0; font-size: 34px; }
+
   .song-cell {
     text-align: center;
     padding: 0 8px;
     font-size: 28px;
   }
 </style>
-  <div class="song-table">
+  <div class="song-section-heading"><h2>{{ notes_title }}</h2></div>
+  <div class="song-table song-note-table">
     <div class="song-row" style="--border: #b4b4b4;">
       {% for value in headers %}
         <div class="song-cell ellipsis">{{ value }}</div>
@@ -92,7 +99,7 @@
   </div>
   {% if rating_rows %}
     <style>
-      .song-rating-section { margin-top: 32px; }
+      .song-rating-section { margin-top: 56px; }
       .song-rating-heading { background: white; border-radius: 16px; padding: 18px 24px; margin-bottom: 12px; }
       .song-rating-title { margin: 0 0 10px; font-size: 34px; }
       .song-rating-note { margin: 0; font-size: 22px; color: #65758d; }

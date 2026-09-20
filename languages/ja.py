@@ -624,6 +624,7 @@ TEXTS["images"] = {
         "level_list_suffix": "レベル一覧",
     },
     "song": {
+        "notes_title": "ノーツ内訳",
         "rating_title": "譜面作者・ランク別 Rating",
         "rating_note": "各ランクの最低達成率で算出した Rating（AP ボーナスを除く）",
         "records": "プレイ記録",

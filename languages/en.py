@@ -691,6 +691,7 @@ TEXTS["images"] = {
         "level_list_suffix": "LEVEL LIST",
     },
     "song": {
+        "notes_title": "Note distribution",
         "rating_title": "Notes Designer & rating targets",
         "rating_note": "Rating at the minimum achievement for each rank (excluding the AP bonus)",
         "records": "Play records",

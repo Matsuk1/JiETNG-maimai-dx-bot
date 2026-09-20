@@ -74,6 +74,7 @@ def _generate_song_table_image(song_json, scale_width=1.5, scale_height=2.0, lan
                            columns=" ".join(f"{w}fr" for w in widths), row_height=int(48 * scale_height),
                            headers=[_song_text(f"headers.{key}", language) for key in header_keys], rows=rows,
                            rating_rows=rating_rows, thresholds=thresholds,
+                           notes_title=_song_text("notes_title", language),
                            rating_title=_song_text("rating_title", language),
                            rating_note=_song_text("rating_note", language),
                            difficulty_label=_song_text("headers.chart_type", language),
