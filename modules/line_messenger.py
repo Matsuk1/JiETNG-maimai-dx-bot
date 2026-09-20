@@ -77,6 +77,13 @@ def smart_reply(user_id: str, reply_token: str, messages, configuration: Configu
                     messages.append(notice_flex)
                     record_notice_read(user_id, notice_id)
 
+    # LINE displays quick replies from the last message in a reply batch.
+    # Keep the actionable image after any automatically appended notices.
+    for index in range(len(messages) - 1, -1, -1):
+        if getattr(messages[index], "quick_reply", None):
+            messages.append(messages.pop(index))
+            break
+
     with ApiClient(configuration) as api_client:
         line_bot_api = MessagingApi(api_client)
         line_bot_api.reply_message(

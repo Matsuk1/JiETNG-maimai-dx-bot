@@ -167,7 +167,7 @@ from modules.messages.service import (
     generate_ranking_flex,
     generate_rc_flex,
     generate_search_results_flex,
-    generate_song_info_flex,
+    generate_song_image_message,
     generate_song_list_flex,
     generate_status_flex,
     generate_update_result_flex,
@@ -1930,9 +1930,8 @@ async def random_song(user_id, key="", ver="jp"):
         ver=ver,
         bg_filter=_get_user_bg_filter(user_id),
     )
-    img_w, img_h = song_img.size
-    original_url, _ = await upload_generated_image(song_img, user_id)
-    return generate_song_info_flex(song_id, original_url, img_w, img_h, user_id, mode='info')
+    original_url, preview_url = await upload_generated_image(song_img, user_id)
+    return generate_song_image_message(song_id, original_url, preview_url, user_id, mode='info')
 
 @user_image
 async def search_song(user_id, acronym, ver="jp"):
@@ -1976,9 +1975,8 @@ async def search_song_by_id(user_id, song_id, ver="jp"):
         ver=ver,
         bg_filter=_get_user_bg_filter(user_id),
     )
-    img_w, img_h = song_img.size
-    original_url, _ = await upload_generated_image(song_img, user_id)
-    return generate_song_info_flex(song_id, original_url, img_w, img_h, user_id, mode='info')
+    original_url, preview_url = await upload_generated_image(song_img, user_id)
+    return generate_song_image_message(song_id, original_url, preview_url, user_id, mode='info')
 
 def get_ranking(user_id, id_use, ver=None):
     user_ver = ver or (get_user(id_use) or {}).get('version', 'jp')
@@ -2372,9 +2370,8 @@ async def get_song_record_by_id(user_id, id_use, song_id, ver="jp"):
         ver=ver,
         bg_filter=_get_user_bg_filter(user_id),
     )
-    img_w, img_h = song_img.size
-    original_url, _ = await upload_generated_image(song_img, user_id)
-    return generate_song_info_flex(song_id, original_url, img_w, img_h, user_id, mode='record')
+    original_url, preview_url = await upload_generated_image(song_img, user_id)
+    return generate_song_image_message(song_id, original_url, preview_url, user_id, mode='record')
 
 @user_image
 async def generate_plate_rcd(user_id, id_use, title, ver="jp", filter_mode=None):
