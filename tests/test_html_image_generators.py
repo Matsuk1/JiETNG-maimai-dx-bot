@@ -119,3 +119,20 @@ class ImageDataTests(unittest.TestCase):
             _generate_song_table_image({'sheets': sheets[:-1]}, language='ja')
         self.assertEqual(len(render.call_args.kwargs['rating_rows']), 2)
         self.assertEqual(render.call_args.kwargs['rating_title'], '譜面作者・ランク別 Rating')
+
+    def test_info_note_losses_share_calculator_and_keep_break_in_same_chart(self):
+        from modules.images.songs import _generate_song_table_image
+        from modules.score_calculator import get_note_score
+        notes = dict(tap=300, hold=30, slide=50, touch=0, **{'break': 10})
+        sheets = [dict(difficulty=d, internalLevelValue=14, noteCounts=notes)
+                  for d in ('expert', 'master', 'remaster')]
+        with patch('modules.images.renderer.render_template') as render:
+            _generate_song_table_image({'sheets': sheets}, language='en')
+        cards = render.call_args.kwargs['loss_cards']
+        self.assertEqual([c['label'] for c in cards], ['MASTER', 'Re:MASTER'])
+        expected = get_note_score(notes)
+        self.assertEqual(cards[0]['normal'][0][2][0], expected['tap_great'])
+        self.assertEqual(cards[0]['normal'][3][2], [None, None, None])
+        self.assertEqual(cards[0]['breaks'][0], ('P1', expected['break_high_perfect']))
+        self.assertEqual(cards[0]['break_count'], 10)
+        self.assertEqual(cards[0]['tolerance'][0][1], int(.5 / expected['tap_great']))

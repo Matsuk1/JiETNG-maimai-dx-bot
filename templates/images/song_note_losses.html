@@ -1,0 +1,65 @@
+<style>
+  .note-loss-section { margin-top: 56px; }
+  .note-loss-card { margin-top: 18px; padding: 24px; border: 1px solid #dce2ec; border-radius: 24px; background: white; color: #29344b; }
+  .note-loss-header { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+  .note-loss-badge { padding: 8px 18px; border-radius: 14px; font-size: 26px; }
+  .note-loss-level { font-size: 24px; color: #68758a; }
+  .note-loss-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; table-layout: fixed; font-variant-numeric: tabular-nums; }
+  .note-loss-table th { font-size: 20px; padding: 8px; }
+  .note-loss-table td { background: #f5f7fb; padding: 14px 8px; font-size: 22px; text-align: center; }
+  .note-loss-table td:first-child { border-radius: 14px 0 0 14px; font-size: 21px; }
+  .note-loss-table td:last-child { border-radius: 0 14px 14px 0; }
+  .note-loss-table .perfect { color: #bd8d16; }
+  .note-loss-table .great { color: #dc5899; }
+  .note-loss-table .good { color: #349880; }
+  .note-loss-table .miss { color: #89909b; }
+  .note-loss-detail { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; white-space: nowrap; }
+  .note-loss-detail small { font-size: 16px; padding: 3px 7px; border-radius: 8px; background: #ffffffa6; }
+  .note-loss-table .break-row td { background: #fff6df; }
+  .note-loss-legend { margin: 10px 0 18px; font-size: 19px; color: #78849a; }
+  .note-loss-tolerance { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 28px; padding: 16px 20px; background: #f8eff5; border-radius: 14px; font-size: 22px; }
+  .note-loss-tolerance span { color: #dc5899; }
+  .glass-song .note-loss-card { border-color: #ffffffdd; background: linear-gradient(135deg,#ffffffc7,#f2f5ff99); box-shadow: inset 0 1px 2px white,0 6px 12px -3px #24355526; }
+  .glass-song .note-loss-table td { background: #ffffff80; }
+  .glass-song .note-loss-table .break-row td { background: #fff6df99; }
+</style>
+{% macro loss(value) -%}
+  {{ '-%.7f%%'|format(value) if value is number else '—' }}
+{%- endmacro %}
+<section class="note-loss-section">
+  <div class="song-rating-heading">
+    <h2 class="song-rating-title">{{ loss_texts.title }}</h2>
+    <p class="song-rating-note">{{ loss_texts.unit }}</p>
+  </div>
+  {% for card in loss_cards %}
+    <article class="note-loss-card">
+      <header class="note-loss-header">
+        <strong class="note-loss-badge" style="background: {{ card.color }}; color: {{ card.text_color }};">{{ card.label }}</strong>
+        {% if card.level %}<span class="note-loss-level">Lv. {{ '%.1f'|format(card.level) }}</span>{% endif %}
+      </header>
+      <table class="note-loss-table">
+        <colgroup><col style="width: 12%"><col style="width: 8%"><col style="width: 22%"><col style="width: 24%"><col style="width: 17%"><col style="width: 17%"></colgroup>
+        <thead><tr><th>{{ loss_texts.type }}</th><th>{{ loss_texts.count }}</th><th class="perfect">PERFECT</th><th class="great">GREAT</th><th class="good">GOOD</th><th class="miss">MISS</th></tr></thead>
+        <tbody>
+          {% for label, count, losses in card.normal %}
+            <tr><td>{{ label }}</td><td>{{ count }}</td><td class="perfect">—</td>
+              {% for value in losses %}<td class="{{ ['great','good','miss'][loop.index0] }}">{{ loss(value) }}</td>{% endfor %}
+            </tr>
+          {% endfor %}
+          <tr class="break-row">
+            <td>BREAK</td><td>{{ card.break_count }}</td>
+            <td class="perfect">{% for label, value in card.breaks[:2] %}<div class="note-loss-detail"><small>{{ label }}</small>{{ loss(value) }}</div>{% endfor %}</td>
+            <td class="great">{% for label, value in card.breaks[2:5] %}<div class="note-loss-detail"><small>{{ label }}</small>{{ loss(value) }}</div>{% endfor %}</td>
+            {% for label, value in card.breaks[5:] %}<td class="{{ 'good' if loop.first else 'miss' }}">{{ loss(value) }}</td>{% endfor %}
+          </tr>
+        </tbody>
+      </table>
+      <p class="note-loss-legend">{{ loss_texts.legend }}</p>
+      {% if card.tolerance %}
+        <div class="note-loss-tolerance"><strong>{{ loss_texts.tolerance }}</strong>
+          {% for target, count in card.tolerance %}<div>{{ target }} <span>{{ loss_texts.max_tap.format(count=count) }}</span></div>{% endfor %}
+        </div>
+      {% endif %}
+    </article>
+  {% endfor %}
+</section>

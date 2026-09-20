@@ -624,6 +624,7 @@ TEXTS["images"] = {
         "level_list_suffix": "レベル一覧",
     },
     "song": {
+        "note_loss": {'type': '種類', 'title': 'ノーツ判定・失点', 'unit': '各数値は 1 個あたりの達成率減少量', 'count': '数量', 'tolerance': 'TAP GREAT 許容数', 'max_tap': '最大 {count} 回', 'legend': 'P1/P2：高/低 PERFECT · G1/G2/G3：高/中/低 GREAT'},
         "notes_title": "ノーツ内訳",
         "rating_title": "譜面作者・ランク別 Rating",
         "rating_note": "各ランクの最低達成率で算出した Rating（AP ボーナスを除く）",

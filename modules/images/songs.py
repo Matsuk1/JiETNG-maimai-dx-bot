@@ -69,11 +69,39 @@ def _generate_song_table_image(song_json, scale_width=1.5, scale_height=2.0, lan
                                     color=difficulty_color(difficulty),
                                     text_color="#72148d" if difficulty == "remaster" else "white",
                                     designer=sheet.get("noteDesigner") or "—", ratings=ratings))
+    from modules.score_calculator import get_note_score
+    loss_cards = []
+    for difficulty in ("master", "remaster"):
+        for sheet in song_json["sheets"]:
+            if sheet.get("difficulty") != difficulty:
+                continue
+            counts = sheet.get("noteCounts") or {}
+            notes = {key: counts.get(key) or 0 for key in ("tap", "hold", "slide", "touch", "break")}
+            scores = get_note_score(notes)
+            if not scores:
+                continue
+            normal = [(key.upper(), notes.get(key, 0),
+                       [scores.get(f"{key}_{judgement}") if notes.get(key) else None
+                        for judgement in ("great", "good", "miss")])
+                      for key in ("tap", "hold", "slide", "touch")]
+            breaks = [(label, scores.get(f"break_{key}") if notes.get("break") else None)
+                      for label, key in (("P1", "high_perfect"), ("P2", "low_perfect"),
+                                         ("G1", "high_great"), ("G2", "middle_great"),
+                                         ("G3", "low_great"), ("GOOD", "good"), ("MISS", "miss"))]
+            tap_loss = scores.get("tap_great", 0)
+            tolerance = [(target, int(allowed / tap_loss)) for target, allowed in
+                         (("100.5000%", .5), ("100.0000%", 1.0))] if tap_loss > 0 and notes.get("tap") else []
+            loss_cards.append(dict(label=DIFFICULTY_LABELS[difficulty], level=sheet.get("internalLevelValue"),
+                                   color=difficulty_color(difficulty),
+                                   text_color="#72148d" if difficulty == "remaster" else "white",
+                                   normal=normal, breaks=breaks, break_count=notes.get("break", 0), tolerance=tolerance))
     # Fractional tracks include the border in the original total width.
     return render_template("song.html", sum(widths), mode="table",
                            columns=" ".join(f"{w}fr" for w in widths), row_height=int(48 * scale_height),
                            headers=[_song_text(f"headers.{key}", language) for key in header_keys], rows=rows,
-                           rating_rows=rating_rows, thresholds=thresholds,
+                           rating_rows=rating_rows, thresholds=thresholds, loss_cards=loss_cards,
+                           loss_texts={key: _song_text(f"note_loss.{key}", language)
+                                       for key in ("title", "unit", "type", "count", "tolerance", "max_tap", "legend")},
                            notes_title=_song_text("notes_title", language),
                            rating_title=_song_text("rating_title", language),
                            rating_note=_song_text("rating_note", language),
