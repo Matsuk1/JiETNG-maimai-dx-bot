@@ -4,7 +4,7 @@ from modules.messages.service import generate_song_image_message
 
 
 def test_song_images_keep_localized_single_use_actions():
-    for mode, commands in [('info', ['calc-song abc123', 'search-record abc123']),
+    for mode, commands in [('info', ['search-record abc123']),
                            ('record', ['search-song abc123'])]:
         with patch('modules.messages.service.image_button_data', side_effect=lambda value: 'signed:' + value) as sign, \
              patch('modules.messages.service.get_multilingual_text', return_value='Localized action'):

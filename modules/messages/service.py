@@ -449,7 +449,7 @@ def get_nearby_stores_alt_text(user_id=None):
 def generate_song_image_message(song_id, image_url, preview_url=None, user_id=None, mode='info'):
     """Attach localized, single-use song actions to a native image message."""
     actions = (
-        [('calc_button_text', 'calc-song'), ('view_record_button_text', 'search-record')]
+        [('view_record_button_text', 'search-record')]
         if mode == 'info' else [('view_info_button_text', 'search-song')]
     )
     return ImageMessage(
