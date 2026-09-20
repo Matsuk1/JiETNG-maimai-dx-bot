@@ -43,18 +43,18 @@ def _render_basic_info_image(song_json, language="en"):
 
 def _generate_song_table_image(song_json, scale_width=1.5, scale_height=2.0, language="en"):
     from modules.images.renderer import render_template
+    from modules.score_rules import DIFFICULTY_LABELS
     header_keys = ("chart_type", "level", "total", "tap", "hold",
                    "slide", "touch", "break", "jp", "intl", "usa")
     widths = [int(w * scale_width) for w in (160, 90, 90, 80, 80, 90, 90, 95, 70, 70, 70)]
     rows = []
     for sheet in song_json["sheets"]:
         notes, regions = sheet.get("noteCounts", {}), sheet.get("regions", {})
-        values = [sheet["difficulty"].capitalize(), f"{sheet['internalLevelValue']:.1f}"]
+        values = [DIFFICULTY_LABELS.get(sheet["difficulty"], sheet["difficulty"].upper()), f"{sheet['internalLevelValue']:.1f}"]
         values += [notes.get(key) or "-" for key in ("total", "tap", "hold", "slide", "touch", "break")]
         values += ["✓" if regions.get(key) else "✕" for key in ("jp", "intl", "usa")]
         rows.append((difficulty_color(sheet.get("difficulty", "")), values))
     from modules.record_manager import get_single_ra
-    from modules.score_rules import DIFFICULTY_LABELS
     thresholds = [("SSS+", 100.5), ("SSS", 100.0), ("SS+", 99.5),
                   ("SS", 99.0), ("S+", 98.0), ("S", 97.0)]
     rating_rows = []

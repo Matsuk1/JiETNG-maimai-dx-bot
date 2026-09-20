@@ -76,6 +76,8 @@
   .song-section-heading { background: white; border-radius: 16px; padding: 18px 24px; margin-bottom: 14px; }
   .song-section-heading h2 { margin: 0; font-size: 34px; }
 
+  .song-cell.song-difficulty-pill { margin: 0 12px; padding: 10px 4px; border-radius: 12px; font-size: 25px; }
+
   .song-cell {
     text-align: center;
     padding: 0 8px;
@@ -92,7 +94,11 @@
     {% for color, cells in rows %}
       <div class="song-row" style="--border: {{ color }};">
         {% for value in cells %}
-          <div class="song-cell ellipsis">{{ value }}</div>
+          {% if loop.first %}
+            <div class="song-cell song-difficulty-pill" style="background: {{ color }}; color: {{ '#72148d' if value == 'Re:MASTER' else 'white' }};">{{ value }}</div>
+          {% else %}
+            <div class="song-cell ellipsis">{{ value }}</div>
+          {% endif %}
         {% endfor %}
       </div>
     {% endfor %}
@@ -105,7 +111,6 @@
       .song-rating-note { margin: 0; font-size: 22px; color: #65758d; }
       .song-rating-row { grid-template-columns: 190fr 340fr repeat(6, 130fr); }
       .song-rating-rank small { display: block; font-size: 19px; color: #65758d; margin-top: 3px; }
-      .song-rating-difficulty { margin: 0 12px; padding: 10px 4px; border-radius: 12px; font-size: 25px; }
       .song-rating-designer { font-size: 24px; overflow-wrap: anywhere; }
     </style>
     <section class="song-rating-section">
@@ -123,7 +128,7 @@
         </div>
         {% for row in rating_rows %}
           <div class="song-row song-rating-row" style="--border: {{ row.color }};">
-            <div class="song-cell song-rating-difficulty" style="background: {{ row.color }}; color: {{ row.text_color }};">{{ row.label }}</div>
+            <div class="song-cell song-difficulty-pill" style="background: {{ row.color }}; color: {{ row.text_color }};">{{ row.label }}</div>
             <div class="song-cell song-rating-designer" data-fit="18">{{ row.designer }}</div>
             {% for rating in row.ratings %}<div class="song-cell">{{ rating }}</div>{% endfor %}
           </div>

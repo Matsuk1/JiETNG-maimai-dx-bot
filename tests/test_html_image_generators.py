@@ -109,6 +109,7 @@ class ImageDataTests(unittest.TestCase):
         data = render.call_args.kwargs
         rows = data['rating_rows']
         self.assertNotIn('Notes Designer', data['headers'])
+        self.assertEqual([row[1][0] for row in data['rows']], ['MASTER', 'BASIC', 'EXPERT', 'Re:MASTER'])
         self.assertEqual(len(data['headers']), len(data['rows'][0][1]))
         self.assertEqual([r['label'] for r in rows], ['EXPERT', 'MASTER', 'Re:MASTER'])
         self.assertEqual(rows[1]['ratings'], [get_single_ra(14.6, score) for _, score in data['thresholds']])
