@@ -691,7 +691,7 @@ TEXTS["images"] = {
         "level_list_suffix": "LEVEL LIST",
     },
     "song": {
-        "note_loss": {'type': 'Type', 'title': 'Judgement losses', 'unit': 'Achievement lost per note', 'count': 'Count', 'tolerance': 'TAP GREAT allowance', 'max_tap': 'Max {count}', 'legend': 'P1/P2: high/low PERFECT · G1/G2/G3: high/middle/low GREAT'},
+        "note_loss": {'type': 'Type', 'title': 'Judgement losses', 'unit': 'Achievement lost per note', 'count': 'Count', 'tolerance': 'TAP GREAT allowance', 'max_tap': 'Max {count}'},
         "notes_title": "Note distribution",
         "rating_title": "Notes Designer & rating targets",
         "rating_note": "Rating at the minimum achievement for each rank (excluding the AP bonus)",

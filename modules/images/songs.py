@@ -101,7 +101,7 @@ def _generate_song_table_image(song_json, scale_width=1.5, scale_height=2.0, lan
                            headers=[_song_text(f"headers.{key}", language) for key in header_keys], rows=rows,
                            rating_rows=rating_rows, thresholds=thresholds, loss_cards=loss_cards,
                            loss_texts={key: _song_text(f"note_loss.{key}", language)
-                                       for key in ("title", "unit", "type", "count", "tolerance", "max_tap", "legend")},
+                                       for key in ("title", "unit", "type", "count", "tolerance", "max_tap")},
                            notes_title=_song_text("notes_title", language),
                            rating_title=_song_text("rating_title", language),
                            rating_note=_song_text("rating_note", language),

@@ -16,9 +16,12 @@
   .note-loss-detail { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; white-space: nowrap; }
   .note-loss-detail small { font-size: 16px; padding: 3px 7px; border-radius: 8px; background: #ffffffa6; }
   .note-loss-table .break-row td { background: #fff6df; }
-  .note-loss-legend { margin: 10px 0 18px; font-size: 19px; color: #78849a; }
-  .note-loss-tolerance { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 28px; padding: 16px 20px; background: #f8eff5; border-radius: 14px; font-size: 22px; }
-  .note-loss-tolerance span { color: #dc5899; }
+  .note-loss-tolerance { margin-top: 18px; padding: 16px 20px; background: #f8eff5; border-radius: 14px; font-size: 22px; text-align: center; }
+  .note-loss-tolerance-title { display: block; margin-bottom: 14px; font-size: 20px; color: #78849a; }
+  .note-loss-targets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .note-loss-target + .note-loss-target { border-left: 1px solid #dc58992b; }
+  .note-loss-target strong { display: block; font-size: 26px; }
+  .note-loss-target span { display: block; margin-top: 5px; color: #dc5899; }
   .glass-song .note-loss-card { border-color: #ffffffdd; background: linear-gradient(135deg,#ffffffc7,#f2f5ff99); box-shadow: inset 0 1px 2px white,0 6px 12px -3px #24355526; }
   .glass-song .note-loss-table td { background: #ffffff80; }
   .glass-song .note-loss-table .break-row td { background: #fff6df99; }
@@ -54,10 +57,14 @@
           </tr>
         </tbody>
       </table>
-      <p class="note-loss-legend">{{ loss_texts.legend }}</p>
       {% if card.tolerance %}
-        <div class="note-loss-tolerance"><strong>{{ loss_texts.tolerance }}</strong>
-          {% for target, count in card.tolerance %}<div>{{ target }} <span>{{ loss_texts.max_tap.format(count=count) }}</span></div>{% endfor %}
+        <div class="note-loss-tolerance">
+          <strong class="note-loss-tolerance-title">{{ loss_texts.tolerance }}</strong>
+          <div class="note-loss-targets">
+            {% for target, count in card.tolerance %}
+              <div class="note-loss-target"><strong>{{ target }}</strong><span>{{ loss_texts.max_tap.format(count=count) }}</span></div>
+            {% endfor %}
+          </div>
         </div>
       {% endif %}
     </article>
