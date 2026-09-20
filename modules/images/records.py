@@ -24,7 +24,7 @@ def _format_rating_value(value):
 
 def create_thumbnail_in_line(song, skin=None):
     from modules.images.renderer import render_html
-    return render_html(thumbnail_html(song, inline=True, skin=skin), 600, 225)
+    return render_html(thumbnail_html(song, inline=True, skin=skin), 600, 160)
 
 
 def create_thumbnail(song, skin=None):

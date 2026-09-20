@@ -1,0 +1,54 @@
+<style>
+  .inline-result {
+    width: 600px;
+    height: 160px;
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 150px 122px;
+    align-items: center;
+    gap: 10px;
+    padding: 18px;
+    border: 2px solid #d9e1ed;
+    border-radius: 22px;
+    background: white;
+    color: #25334e;
+  }
+  .inline-result.glass-inline {
+    background: linear-gradient(135deg, #ffffffc7, #f2f5ff99);
+    border-color: #ffffffdd;
+    backdrop-filter: blur(14px) saturate(.95);
+    box-shadow: inset 0 1px 2px white, 0 8px 18px #24355524;
+  }
+  #image-root > .inline-result { box-shadow: inset 0 1px 2px white; }
+  .inline-result-score { font-size: 42px; line-height: 1.1; white-space: nowrap; }
+  .inline-result-dx { margin-top: 10px; font-size: 17px; color: #596e89; }
+  .inline-result-history { margin-top: 8px; font-size: 13px; color: #596e89; }
+  .inline-result-icons { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; }
+  .inline-result-rank { width: 125px; height: 56px; object-fit: contain; }
+  .inline-result-status { width: 53px; height: 30px; object-fit: contain; }
+  .inline-result-rating { text-align: center; border-left: 1px solid #8193b833; padding-left: 10px; }
+  .inline-result-rating strong { font-size: 34px; }
+  .inline-result-rating small { font-size: 14px; color: #61738c; }
+  .inline-result-level { margin-top: 6px; padding: 4px 9px; border-radius: 12px; font-size: 17px; background: var(--difficulty); color: var(--difficulty-text); }
+  .inline-result-star { width: 85px; height: 20px; margin: 8px auto 0; object-fit: contain; }
+</style>
+<article class="inline-result {{ 'glass-inline' if glass_inline else '' }}" style="--difficulty: {{ color }}; --difficulty-text: {{ text_color }};">
+  <div>
+    <div class="inline-result-score" data-fit="25">{{ song.score }}</div>
+    <div class="inline-result-dx">DX {{ song.dx_score }} · {{ '%.1f'|format(song.dx_percentage * 100) }}%</div>
+    {% if 'last_play_time' in song and 'play_count' in song %}
+      <div class="inline-result-history ellipsis">PC: {{ song.play_count }} · {{ song.last_play_time }}</div>
+    {% endif %}
+  </div>
+  <div class="inline-result-icons">
+    {% if icons.score_icon %}<img class="inline-result-rank" src="{{ icons.score_icon }}">{% endif %}
+    {% for key in ['combo_icon', 'sync_icon'] %}
+      {% if icons[key] %}<img class="inline-result-status" src="{{ icons[key] }}">{% endif %}
+    {% endfor %}
+  </div>
+  <div class="inline-result-rating">
+    <small>RA</small> <strong>{{ song.ra }}</strong>
+    <div class="inline-result-level">{{ '%.1f'|format(song.internalLevelValue) }}</div>
+    {% if icons.dx_star %}<img class="inline-result-star" src="{{ icons.dx_star }}">{% endif %}
+  </div>
+</article>

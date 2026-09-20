@@ -50,6 +50,26 @@
       </dl>
     </div>
   </section>
+{% elif mode == 'played' %}
+  <style>
+    .song-played { display: grid; gap: {{ gap }}px; padding: 10px; }
+    .song-played-row { display: grid; grid-template-columns: 126px 600px; gap: 14px; align-items: stretch; }
+    .song-difficulty { display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 20px; padding: 10px 4px; }
+    .song-difficulty span { font-size: 15px; }
+    .song-difficulty strong { font-size: 33px; }
+    .song-unplayed { height: 160px; display: grid; place-items: center; border: 2px solid #d9e1ed; border-radius: 22px; background: #ffffffb3; color: #718098; font-size: 24px; }
+  </style>
+  <section class="song-played">
+    {% for row in played_rows %}
+      <div class="song-played-row">
+        <div class="song-difficulty" style="background: {{ row.color }}; color: {{ row.text_color }};">
+          <span>{{ row.label }}</span>
+          <strong>{{ '%.1f'|format(row.constant) if row.constant is number else '—' }}</strong>
+        </div>
+        {% if row.card %}{{ row.card|safe }}{% else %}<div class="song-unplayed">{{ empty_text }}</div>{% endif %}
+      </div>
+    {% endfor %}
+  </section>
 {% else %}
   <style>
   .song-table {
