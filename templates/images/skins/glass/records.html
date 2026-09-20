@@ -134,7 +134,7 @@
 <section class="glass-records">
   <header class="glass-records-header">
     <div class="glass-records-identity">
-      <div class="glass-records-kicker">MAIMAI / RECORD COLLECTION</div>
+      <div class="glass-records-kicker">MAIMAI / {{ texts.heading }}</div>
       <h1 class="glass-records-title" data-fit="38">{{ title }}</h1>
     </div>
     <div class="glass-records-rating">
@@ -171,8 +171,8 @@
   {% for cards in [up, down] %}
     {% if cards %}
       <div class="glass-records-section">
-        <span>{{ '01' if loop.first else '02' }} / {{ 'B35' if title == 'B50' and loop.first else 'B15' if title == 'B50' else 'RECORDS' }}</span>
-        <span>{{ cards|length }} TRACKS</span>
+        <span>{{ '01' if loop.first else '02' }} / {{ 'B35' if title == 'B50' and loop.first else 'B15' if title == 'B50' else texts.heading }}</span>
+        <span>{{ cards|length }} {{ texts.tracks }}</span>
       </div>
       <div class="glass-records-grid">
         {% for card in cards %}

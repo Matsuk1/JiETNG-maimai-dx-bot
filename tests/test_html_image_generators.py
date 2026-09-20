@@ -85,3 +85,16 @@ class ImageDataTests(unittest.TestCase):
              patch('modules.images.renderer.render_template') as render:
             songs.generate_version_list(source)
         self.assertEqual(render.call_args.kwargs['rows'], [('14+', ['B']), ('13', ['A', 'Z'])])
+
+
+    def test_record_and_ocr_labels_follow_server_version(self):
+        record = dict(ra=305, internalLevelValue=13.7, score='100.1234%')
+        for ver, heading, analysis in [('jp', 'プレイ記録', 'スコア解析'),
+                                       ('intl', 'Play records', 'Score analysis')]:
+            with self.subTest(ver=ver):
+                with patch.object(records, 'thumbnail_html', return_value='card'), patch('modules.images.renderer.render_template') as render:
+                    records.generate_records_picture([record], ver=ver)
+                self.assertEqual(render.call_args.kwargs['texts']['heading'], heading)
+                with patch('modules.images.renderer.render_template') as render, patch.object(records, 'compose_generated_images'):
+                    records.generate_score_recognition_picture(dict(parsed={}), ver=ver)
+                self.assertEqual(render.call_args.kwargs['texts']['analysis_title'], analysis)

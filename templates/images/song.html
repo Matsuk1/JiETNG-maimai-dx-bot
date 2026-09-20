@@ -1,4 +1,6 @@
-{% if mode == 'basic' %}
+{% if mode == 'played' %}
+  {% include 'song_records.html' %}
+{% elif mode == 'basic' %}
   <style>
   .song {
     height: 260px;

@@ -219,7 +219,7 @@
         <div class="ocr-cover"><div>{{ cover|safe }}</div></div>
       {% endif %}
       <div class="ocr-info">
-        <div class="ocr-kicker">JiETNG / SCORE ANALYSIS</div>
+        <div class="ocr-kicker">JiETNG / {{ texts.analysis_title }}</div>
         <div class="ocr-title ellipsis" data-fit="19">{{ payload.title }}</div>
         <div class="ocr-meta">
           {% if type_src %}<img class="ocr-type" src="{{ type_src }}">{% endif %}
@@ -286,7 +286,7 @@
         <table class="ocr-table">
           <thead>
             <tr>
-              <th>TYPE</th>
+              <th>{{ texts.type }}</th>
               {% for label in headings %}<th>{{ label }}</th>{% endfor %}
             </tr>
           </thead>

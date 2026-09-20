@@ -1,0 +1,54 @@
+<style>
+  .inline-record {
+    width: 600px;
+    height: 180px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 164px 108px;
+    align-items: center;
+    gap: 12px;
+    padding: 18px;
+    border: 2px solid #dce3ed;
+    border-radius: 22px;
+    background: white;
+    color: #293851;
+  }
+  .inline-record.is-glass {
+    border-color: #ffffffdd;
+    background: linear-gradient(130deg, #ffffffcc, #f3f7ffa6);
+    backdrop-filter: blur(14px);
+    box-shadow: inset 0 1px 1px white;
+  }
+  .inline-record-score { font-size: 48px; line-height: 1.15; letter-spacing: -1.7px; white-space: nowrap; }
+  .inline-record-score small { font-size: .5em; letter-spacing: 0; }
+  .inline-record-dx { margin-top: 9px; font-size: 16px; color: #65758d; white-space: nowrap; }
+  .inline-record-history { margin-top: 9px; font-size: 12px; color: #78869a; }
+  .inline-record-icons { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 8px; }
+  .inline-record-rank { width: 152px; height: 68px; object-fit: contain; }
+  .inline-record-status { width: 64px; height: 38px; object-fit: contain; }
+  .inline-record-ra { align-self: center; text-align: center; border-left: 1px solid #52678b26; padding-left: 12px; }
+  .inline-record-ra-label { font-size: 12px; color: #78869a; letter-spacing: 1px; }
+  .inline-record-ra-value { font-size: 34px; line-height: 1.25; }
+  .inline-record-constant { display: inline-block; margin-top: 5px; border-radius: 10px; padding: 3px 10px; background: var(--difficulty); color: var(--difficulty-text); font-size: 16px; }
+  .inline-record-star { width: 90px; height: 22px; object-fit: contain; margin: 8px auto 0; }
+</style>
+<article class="inline-record {{ 'is-glass' if glass_inline else '' }}" style="--difficulty: {{ color }}; --difficulty-text: {{ text_color }};">
+  <div>
+    <div class="inline-record-score" data-fit="30">{{ song.score|string|replace('%', '') }}<small>%</small></div>
+    <div class="inline-record-dx">DX {{ song.dx_score }} · {{ '%.1f'|format(song.dx_percentage * 100) }}%</div>
+    {% if song.last_play_time is defined and song.play_count is defined %}
+      <div class="inline-record-history ellipsis">{{ play_count_label }} {{ song.play_count }} · {{ song.last_play_time }}</div>
+    {% endif %}
+  </div>
+  <div class="inline-record-icons">
+    {% if icons.score_icon %}<img class="inline-record-rank" src="{{ icons.score_icon }}">{% endif %}
+    {% for key in ['combo_icon', 'sync_icon'] %}
+      {% if icons[key] %}<img class="inline-record-status" src="{{ icons[key] }}">{% endif %}
+    {% endfor %}
+  </div>
+  <div class="inline-record-ra">
+    <div class="inline-record-ra-label">RATING</div>
+    <div class="inline-record-ra-value">{{ song.ra }}</div>
+    <div class="inline-record-constant">{{ '%.1f'|format(song.internalLevelValue) }}</div>
+    {% if icons.dx_star %}<img class="inline-record-star" src="{{ icons.dx_star }}">{% endif %}
+  </div>
+</article>

@@ -1,0 +1,57 @@
+<style>
+  .song-results { padding: 20px; color: #293851; }
+  .song-results-hero, .song-results-panel { border: 1px solid #dbe3ef; border-radius: 28px; background: #fff; }
+  .song-results-hero { display: flex; align-items: center; gap: 30px; padding: 26px; }
+  .song-results-cover { width: 220px; height: 220px; flex-shrink: 0; border-radius: 18px; overflow: hidden; }
+  .song-results-cover > div { transform: scale(1.4666667); transform-origin: top left; }
+  .song-results-info { min-width: 0; flex: 1; }
+  .song-results-title { font-size: 38px; line-height: 1.3; margin: 0 0 12px; }
+  .song-results-artist { font-size: 19px; color: #68758a; }
+  .song-results-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 22px; }
+  .song-results-tag { padding: 7px 12px; border-radius: 12px; background: #eef3f9; font-size: 16px; }
+  .song-results-tag small { color: #7c899d; margin-right: 8px; font-size: 12px; letter-spacing: 1px; }
+  .song-results-category { margin-top: 14px; font-size: 15px; color: #6c7c94; }
+  .song-results-panel { margin-top: 20px; padding: 24px; }
+  .song-results-heading { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 20px; }
+  .song-results-heading strong { font-size: 23px; }
+  .song-results-heading span { font-size: 14px; color: #708096; }
+  .song-results-rows { display: grid; gap: 12px; }
+  .song-result-row { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 14px; }
+  .song-result-difficulty { border-radius: 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
+  .song-result-difficulty span { font-size: 13px; }
+  .song-result-difficulty strong { font-size: 31px; }
+  .song-result-row .inline-record { width: 100%; height: 148px; }
+  .song-result-row .inline-record-constant { display: none; }
+  .song-result-empty { height: 148px; border: 1px dashed #c9d3e2; border-radius: 22px; display: flex; align-items: center; justify-content: center; gap: 12px; color: #91a0b5; background: #f6f8fb; font-size: 19px; }
+  .song-result-empty span { font-size: 26px; color: #b3bfce; }
+  .glass-song .song-results-hero, .glass-song .song-results-panel { background: linear-gradient(135deg, #ffffffb8, #f2f7ff70); border-color: #ffffffe0; box-shadow: inset 0 1px 1px white, 0 8px 18px #24355512; }
+  .glass-song .song-results-tag { background: #ffffffb3; }
+  .glass-song .song-result-empty { background: #ffffff66; border-color: #ffffffc9; }
+</style>
+<section class="song-results">
+  <header class="song-results-hero">
+    <div class="song-results-cover">{{ cover|safe }}</div>
+    <div class="song-results-info">
+      <h1 class="song-results-title ellipsis" data-fit="22">{{ song.title }}</h1>
+      <div class="song-results-artist ellipsis">{{ song.artist or '—' }}</div>
+      <div class="song-results-tags">
+        <span class="song-results-tag"><small>ID</small>{{ song.id or '—' }}</span>
+        <span class="song-results-tag"><small>BPM</small>{{ song.bpm or '—' }}</span>
+      </div>
+      <div class="song-results-category ellipsis">{{ song.category or '—' }} · {{ song.version or '—' }}</div>
+    </div>
+  </header>
+  <section class="song-results-panel">
+    <div class="song-results-heading"><strong>{{ heading }}</strong></div>
+    <div class="song-results-rows">
+      {% for row in played_rows %}
+        <div class="song-result-row">
+          <div class="song-result-difficulty" style="background: {{ row.color }}; color: {{ row.text_color }};">
+            <span>{{ row.label }}</span><strong>{{ row.constant }}</strong>
+          </div>
+          {% if row.card %}{{ row.card|safe }}{% else %}<div class="song-result-empty"><span>—</span>{{ empty_text }}</div>{% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+</section>

@@ -24,7 +24,7 @@ def _format_rating_value(value):
 
 def create_thumbnail_in_line(song, skin=None):
     from modules.images.renderer import render_html
-    return render_html(thumbnail_html(song, inline=True, skin=skin), 600, 225)
+    return render_html(thumbnail_html(song, inline=True, skin=skin), 600, 180)
 
 
 def create_thumbnail(song, skin=None):
@@ -262,7 +262,7 @@ def generate_score_recognition_picture(result, ver="jp", img_width=1100, timezon
     payload = _score_recognition_payload(result)
     language = image_language(ver)
     texts = {key: _image_text(f"score.{key}", language)
-             for key in ("subtitle", "judgement", "loss", "break", "empty", "common_total", "break_total", "distribution", "cell_legend", "verified", "check_required", "validation_note")}
+             for key in ("analysis_title", "type", "subtitle", "judgement", "loss", "break", "empty", "common_total", "break_total", "distribution", "cell_legend", "verified", "check_required", "validation_note")}
     judgement = payload['judgement']
     fields = ('critical_perfect', 'perfect', 'great', 'good', 'miss')
     rows = [(key.upper(), [judgement[key].get(field, 0) for field in fields])
@@ -339,10 +339,11 @@ def generate_records_picture(up_songs=None, down_songs=None, title="RECORD", ver
     detail_rows = [(key, [(token, difficulty_color(token.lower()) if token.lower() in DIFFICULTY_STYLES else None)
                           for token in str(value).split()]) for key, value in (details or {}).items()]
     return render_template("records.html", 1580, skin=skin, title=title, stats=stats,
+                           texts={key: _image_text(f"records.{key}", language) for key in ("heading", "tracks")},
                            rating=str(int(all_ra)).rjust(5), rating_src=file_uri(get_rating_image_path(int(all_ra))),
                            equation=f"= {_format_rating_value(up_ra)} + {_format_rating_value(down_ra)}" if up_ra and down_ra else "",
-                           details=detail_rows, up=[thumbnail_html(song, skin=skin) for song in up_songs],
-                           down=[thumbnail_html(song, skin=skin) for song in down_songs])
+                           details=detail_rows, up=[thumbnail_html(song, skin=skin, language=language) for song in up_songs],
+                           down=[thumbnail_html(song, skin=skin, language=language) for song in down_songs])
 
 
 @skinnable
@@ -513,7 +514,7 @@ def cover_html(cover_url, type, icon=None, icon_type=None, cover_name=None,
                     title=song_title or '', text_color='#72148d' if difficulty == 'remaster' else 'white')
 
 
-def thumbnail_html(song, inline=False, skin=None):
+def thumbnail_html(song, inline=False, skin=None, language="ja"):
     from modules.images.renderer import template
 
     icons = {}
@@ -529,6 +530,7 @@ def thumbnail_html(song, inline=False, skin=None):
         icons[key] = icon_uri(value, directory, f'https://maimaidx.jp/maimai-mobile/img/{name(str(value))}.png') if value else ''
     cover = '' if inline else cover_html(song.get('cover_url'), song.get('type'), cover_name=song.get('cover_name'), skin=skin)
     return template('thumbnail.html', skin=skin, song=song, inline=inline, icons=icons, cover=cover,
+                    play_count_label=_image_text('records.play_count', language),
                     color=difficulty_color(song.get('difficulty')),
                     text_color='#72148d' if song.get('difficulty') == 'remaster' else 'white',
                     version=str(song.get('version','')).replace(' PLUS','+').replace('でらっくす','DX'))

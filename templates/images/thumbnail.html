@@ -1,51 +1,6 @@
 {% if inline %}
-  <div style="
-    width: 600px;
-    height: 225px;
-    border: 7px solid {{ color }};
-    background: white;
-    position: relative;
-    color: black;
-  ">
-    <div style="
-      position: absolute;
-      left: 13px;
-      top: -3px;
-      font-size: 60px;
-    ">{{ song.score }}</div>
-    <div style="
-      position: absolute;
-      left: 18px;
-      top: 70px;
-      font-size: 29px;
-    ">{{ song.dx_score }} → {{ '%.1f'|format(song.dx_percentage * 100) }}%</div>
-    {% if 'last_play_time' in song and 'play_count' in song %}
-      <div class="ellipsis" style="
-        position: absolute;
-        left: 18px;
-        right: 10px;
-        top: 108px;
-        font-size: 29px;
-      ">PC: {{ song.play_count }}　Recent: {{ song.last_play_time }}</div>
-    {% endif %}
-    {% for key, x, y, w, h in [('score_icon',373,13,203,90),('combo_icon',8,149,100,56),('sync_icon',120,149,100,56),('dx_star',232,163,152,33)] %}
-      {% if icons[key] %}
-        <img src="{{ icons[key] }}" style="
-          position: absolute;
-          left: {{ x }}px;
-          top: {{ y }}px;
-          width: {{ w }}px;
-          height: {{ h }}px;
-        ">
-      {% endif %}
-    {% endfor %}
-    <div style="
-      position: absolute;
-      right: 18px;
-      top: 163px;
-      font-size: 29px;
-    ">{{ '%.1f'|format(song.internalLevelValue) }} → {{ song.ra }}</div>
-  </div>
+  {% set glass_inline = false %}
+  {% include 'inline_record.html' %}
 {% else %}
   <div style="
     width: 300px;

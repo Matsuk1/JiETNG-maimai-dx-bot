@@ -592,6 +592,8 @@ TEXTS["messages"] = MESSAGE_TEXTS
 
 TEXTS["images"] = {
     "score": {
+        "analysis_title": "スコア解析",
+        "type": "種類",
         "subtitle": "判定詳細",
         "judgement": "判定データ",
         "loss": "詳細判定",
@@ -606,6 +608,9 @@ TEXTS["images"] = {
         "break_total": "BREAK 合計",
     },
     "records": {
+        "heading": "プレイ記録",
+        "tracks": "曲",
+        "play_count": "プレイ回数",
         "avg_level": "平均レベル",
         "avg_achievement": "平均達成率",
         "avg_rating": "平均レーティング",
@@ -619,6 +624,8 @@ TEXTS["images"] = {
         "level_list_suffix": "レベル一覧",
     },
     "song": {
+        "records": "プレイ記録",
+        "unplayed": "未プレイ",
         "artist": "アーティスト", "category": "カテゴリ", "bpm": "BPM", "version": "バージョン",
         "unknown_title": "タイトル不明", "unknown_artist": "アーティスト不明", "unknown_category": "カテゴリ不明",
         "headers": {

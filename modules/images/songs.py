@@ -15,22 +15,19 @@ def _song_text(key, language):
 @skinnable
 def song_info_generate(
     song_json,
-    played_data=(),
+    played_data=None,
     timezone_offset=9,
     ver="jp",
     bg_filter=None,
 ):
     language = image_language(ver)
-    img1 = resize_by_width(_render_basic_info_image(song_json, language), 900)
-    if played_data:
-        img2 = resize_by_width(_makeup_played_data(played_data), 780)
+    if played_data is not None:
+        images = [_makeup_played_data(played_data, song_json, language)]
     else:
-        img2 = resize_by_width(_generate_song_table_image(song_json, language=language), 1200)
-    return compose_generated_images(
-        [img1, img2],
-        timezone_offset=timezone_offset,
-        bg_filter=bg_filter,
-    )
+        images = [resize_by_width(_render_basic_info_image(song_json, language), 900),
+                  resize_by_width(_generate_song_table_image(song_json, language=language), 1200)]
+    return compose_generated_images(images, timezone_offset=timezone_offset, bg_filter=bg_filter)
+
 
 def _render_basic_info_image(song_json, language="en"):
     from modules.images.renderer import image_uri, render_template
@@ -63,11 +60,32 @@ def _generate_song_table_image(song_json, scale_width=1.5, scale_height=2.0, lan
                            headers=[_song_text(f"headers.{key}", language) for key in header_keys], rows=rows)
 
 
-def _makeup_played_data(played_data, gap=10):
-    from modules.images.records import thumbnail_html
+def _makeup_played_data(played_data, song_json, language="en"):
+    from modules.images.records import thumbnail_html, cover_html
     from modules.images.renderer import render_template
-    return render_template("stack.html", 600, gap=gap,
-                           items=[thumbnail_html(record, inline=True) for record in played_data])
+    from modules.score_rules import DIFFICULTY_LABELS
+
+    records = {record.get('difficulty'): record for record in played_data}
+    # Only charts in the song definition get slots. Never invent Re:MASTER.
+    sheets = sorted(song_json.get('sheets', []), key=lambda sheet:
+                    list(DIFFICULTY_LABELS).index(sheet['difficulty'])
+                    if sheet.get('difficulty') in DIFFICULTY_LABELS else 99)
+    rows = []
+    for sheet in sheets:
+        difficulty = sheet.get('difficulty')
+        record = records.get(difficulty)
+        constant = sheet.get('internalLevelValue')
+        rows.append(dict(label=DIFFICULTY_LABELS.get(difficulty, difficulty or '—'),
+                         constant=f"{constant:.1f}" if isinstance(constant, (int, float)) else sheet.get('level', '—'),
+                         color=difficulty_color(difficulty),
+                         text_color='#72148d' if difficulty == 'remaster' else 'white',
+                         card=thumbnail_html(record, inline=True, language=language) if record else ''))
+    cover = cover_html(song_json.get('cover_url'), song_json.get('type'),
+                       cover_name=song_json.get('cover_name'))
+    return render_template('song.html', 940, mode='played', song=song_json,
+                           cover=cover, played_rows=rows,
+                           heading=_song_text('records', language),
+                           empty_text=_song_text('unplayed', language))
 
 
 @skinnable

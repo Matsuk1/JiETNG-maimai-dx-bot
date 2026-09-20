@@ -30,7 +30,8 @@ def test_glass_skin_overrides_and_default_fallback():
     assert image_skins.resolve_template('records.html', 'glass') == 'skins/glass/records.html'
     assert image_skins.resolve_template('document.html', 'glass') == 'document.html'
     html = template('records.html', skin='glass', title='<script>unsafe</script>',
-                    stats=[], rating='12345', equation='', details=[], up=['card'], down=[])
+                    stats=[], rating='12345', equation='', details=[], up=['card'], down=[],
+                    texts={'heading': 'Play records', 'tracks': 'tracks'})
     assert '&lt;script&gt;' in html
     assert '<script>' not in html
     assert 'glass-records' in html

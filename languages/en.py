@@ -659,6 +659,8 @@ TEXTS["messages"] = MESSAGE_TEXTS
 
 TEXTS["images"] = {
     "score": {
+        "analysis_title": "Score analysis",
+        "type": "Type",
         "subtitle": "Judgement Details",
         "judgement": "Judgements",
         "loss": "Detailed Judgements",
@@ -673,6 +675,9 @@ TEXTS["images"] = {
         "break_total": "BREAK TOTAL",
     },
     "records": {
+        "heading": "Play records",
+        "tracks": "tracks",
+        "play_count": "Plays",
         "avg_level": "AVG LEVEL",
         "avg_achievement": "AVG ACHIEVEMENT",
         "avg_rating": "AVG RATING",
@@ -686,6 +691,8 @@ TEXTS["images"] = {
         "level_list_suffix": "LEVEL LIST",
     },
     "song": {
+        "records": "Play records",
+        "unplayed": "Not played",
         "artist": "ARTIST", "category": "CATEGORY", "bpm": "BPM", "version": "VERSION",
         "unknown_title": "Unknown title", "unknown_artist": "Unknown artist", "unknown_category": "Unknown category",
         "headers": {
