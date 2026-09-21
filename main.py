@@ -68,12 +68,12 @@ from modules.images.songs import (
     song_info_generate,
 )
 from modules.images.records import (
-    generate_cover,
     generate_level_rank_progress_image,
     generate_plate_image,
     generate_records_picture,
     generate_score_recognition_picture,
 )
+from modules.images.progress import build_plate_entries, build_progress_entries
 
 # User and data managers
 from modules.user_manager import (
@@ -114,7 +114,11 @@ from modules.maimai_manager import (
 from modules.score_calculator import get_note_score
 from modules.dxdata_manager import start_weekly_update_scheduler as start_dxdata_weekly_update
 from modules.record_manager import (
+    PLATE_RULES,
+    PROGRESS_RANKS,
+    SUPPORTED_PROGRESS_LEVELS,
     achievement_value,
+    filter_progress_entries,
     get_detailed_info,
     get_ideal_score,
     get_single_ra,
@@ -259,7 +263,7 @@ from modules.rich_menu_manager import (
     link_unbound_rich_menu,
     unlink_rich_menu,
 )
-from modules.song_matcher import find_matching_songs, normalize_text
+from modules.song_matcher import find_matching_songs
 from modules.memory_manager import memory_manager, cleanup_user_caches, get_process_memory_stats
 from modules.score_recognition.results import expand_score_recognition_calc_variants
 from modules.score_recognition.recognizer import (
@@ -1669,94 +1673,47 @@ def async_admin_maimai_update_task(event):
 # ==================== 主程序入口 ====================
 
 async def _sync_maimai_user_data(user_id, ver="jp"):
-    # 记录开始时间
     start_time = time.time()
-
     func_status = {
         "User Info": True,
         "Best Records": True,
         "Recent Records": True,
     }
 
+    def failure(error, message, status_code):
+        return {
+            "success": False, "error": error, "message": message,
+            "status_code": status_code, "user_id": user_id, "version": ver,
+            "func_status": func_status, "elapsed_time": time.time() - start_time,
+        }
+
     _udata = get_user(user_id)
     if not _udata or 'sega_id' not in _udata or 'sega_pwd' not in _udata:
-        return {
-            "success": False,
-            "error": "Account not bound",
-            "message": f"User {user_id} has not bound a SEGA account",
-            "status_code": 400,
-            "user_id": user_id,
-            "version": ver,
-            "func_status": func_status,
-            "elapsed_time": time.time() - start_time,
-        }
+        return failure("Account not bound", f"User {user_id} has not bound a SEGA account", 400)
 
     sega_id = _udata.get('sega_id')
     sega_pwd = _udata.get('sega_pwd')
     aime = _udata.get('aime', 0)
 
-    # 定义数据获取函数（在重试循环外定义一次）
-    async def fetch_all_data(cookies):
-        return await asyncio.gather(
-            get_maimai_info(cookies, ver),
-            get_maimai_records(cookies, ver),
-            get_recent_records(cookies, ver),
-        )
-
-    user_info = maimai_records = recent_records = None
-
     cookies = await login_to_maimai(sega_id, sega_pwd, ver=ver, aime=aime)
     if cookies is None:
         logger.warning(f"[User] ⚠ Login failed: user_id={user_id}")
-        return {
-            "success": False,
-            "error": "Authentication failed",
-            "message": "Invalid SEGA ID or password.",
-            "status_code": 401,
-            "user_id": user_id,
-            "version": ver,
-            "func_status": func_status,
-            "elapsed_time": time.time() - start_time,
-        }
+        return failure("Authentication failed", "Invalid SEGA ID or password.", 401)
     if cookies == "RATE_LIMITED":
-        return {
-            "success": False,
-            "error": "Rate limited",
-            "message": "The JP login rate limit was reached. Please try again later.",
-            "status_code": 429,
-            "user_id": user_id,
-            "version": ver,
-            "func_status": func_status,
-            "elapsed_time": time.time() - start_time,
-        }
+        return failure("Rate limited", "The JP login rate limit was reached. Please try again later.", 429)
     if cookies == "MAINTENANCE":
-        return {
-            "success": False,
-            "error": "Maintenance",
-            "message": "The official website is under maintenance. Please try again later.",
-            "status_code": 503,
-            "user_id": user_id,
-            "version": ver,
-            "func_status": func_status,
-            "elapsed_time": time.time() - start_time,
-        }
+        return failure("Maintenance", "The official website is under maintenance. Please try again later.", 503)
 
-    # 使用异步函数并发获取所有数据
-    user_info, maimai_records, recent_records = await fetch_all_data(cookies)
+    user_info, maimai_records, recent_records = await asyncio.gather(
+        get_maimai_info(cookies, ver),
+        get_maimai_records(cookies, ver),
+        get_recent_records(cookies, ver),
+    )
 
     if (user_info == "MAINTENANCE" or
         maimai_records == "MAINTENANCE" or
         recent_records == "MAINTENANCE"):
-        return {
-            "success": False,
-            "error": "Maintenance",
-            "message": "The official website is under maintenance. Please try again later.",
-            "status_code": 503,
-            "user_id": user_id,
-            "version": ver,
-            "func_status": func_status,
-            "elapsed_time": time.time() - start_time,
-        }
+        return failure("Maintenance", "The official website is under maintenance. Please try again later.", 503)
 
     if not user_info or not maimai_records or not recent_records:
         logger.warning(f"[User] ⚠ Data fetch incomplete: user_id={user_id}, user_info={bool(user_info)}, records={bool(maimai_records)}, recent={bool(recent_records)}")
@@ -1959,12 +1916,7 @@ async def search_song(user_id, acronym, ver="jp"):
 @user_image
 async def search_song_by_id(user_id, song_id, ver="jp"):
     songs, _ = read_dxdata(ver)
-
-    matching_song = None
-    for song in songs:
-        if song.get('id') == song_id:
-            matching_song = song
-            break
+    matching_song = next((song for song in songs if song.get('id') == song_id), None)
 
     # 没有匹配结果
     if not matching_song:
@@ -2018,59 +1970,47 @@ def get_ranking(user_id, id_use, ver=None):
         else:
             u["rank"] = i + 1
 
-    # 指定版本时直接显示前15名，不做个人区域
+    def display_entry(user, highlight=True):
+        entry = {key: user[key] for key in ("rank", "name", "rating")}
+        if highlight and user["user_id"] == id_use:
+            entry["is_user"] = True
+        return entry
+
     if ver is not None:
-        top15 = []
-        for u in ranked_users[:15]:
-            top15.append({"rank": u["rank"], "name": u["name"], "rating": u["rating"]})
         return generate_ranking_flex(
-            user_id, top15, nearby_entries=None, ver=user_ver,
+            user_id, [display_entry(user, False) for user in ranked_users[:15]],
+            nearby_entries=None, ver=user_ver,
         )
 
-    # 找到当前用户在排名列表中的索引
-    user_idx = None
-    for i, u in enumerate(ranked_users):
-        if u["user_id"] == id_use:
-            user_idx = i
-            break
-
-    # 前5名
-    top5 = []
-    for u in ranked_users[:5]:
-        entry = {"rank": u["rank"], "name": u["name"], "rating": u["rating"]}
-        if u["user_id"] == id_use:
-            entry["is_user"] = True
-        top5.append(entry)
-
-    # 用户在前5名内，不需要附近区域
+    user_idx = next((i for i, user in enumerate(ranked_users)
+                     if user["user_id"] == id_use), None)
+    top5 = [display_entry(user) for user in ranked_users[:5]]
     user_in_top5 = user_idx is not None and user_idx < 5
 
-    # 用户不在前5时，构建以用户为中心的附近名单（前后各3名）
     nearby_entries = None
     if not user_in_top5 and user_idx is not None:
-        # 避免与前5名重叠，附近区域从索引5开始
         nearby_start = max(5, user_idx - 3)
         nearby_end = min(len(ranked_users), user_idx + 4)
-        nearby_entries = []
-        for u in ranked_users[nearby_start:nearby_end]:
-            entry = {"rank": u["rank"], "name": u["name"], "rating": u["rating"]}
-            if u["user_id"] == id_use:
-                entry["is_user"] = True
-            nearby_entries.append(entry)
+        nearby_entries = [display_entry(user)
+                          for user in ranked_users[nearby_start:nearby_end]]
 
     return generate_ranking_flex(
         user_id, top5, nearby_entries=nearby_entries, ver=user_ver,
     )
 
 
-def search_by_artist(user_id, artist_query, ver="jp", page=1, source_type="user"):
+def _private_chat_warning(user_id, source_type, message):
     if source_type != 'user':
         return generate_status_flex(
             language_catalog("main.private_chat_title"),
-            language_catalog("messages.search_group_warning_text"),
-            user_id,
-            tone="warning",
-        )
+            message, user_id, tone="warning")
+
+
+def search_by_artist(user_id, artist_query, ver="jp", page=1, source_type="user"):
+    warning = _private_chat_warning(
+        user_id, source_type, language_catalog("messages.search_group_warning_text"))
+    if warning:
+        return warning
 
     songs, _ = read_dxdata(ver)
 
@@ -2088,13 +2028,10 @@ def search_by_artist(user_id, artist_query, ver="jp", page=1, source_type="user"
     return generate_song_list_flex(user_id, title, matching_songs, page, "artist", artist_query)
 
 def search_by_designer(user_id, designer_query, ver="jp", page=1, source_type="user"):
-    if source_type != 'user':
-        return generate_status_flex(
-            language_catalog("main.private_chat_title"),
-            language_catalog("messages.search_group_warning_text"),
-            user_id,
-            tone="warning",
-        )
+    warning = _private_chat_warning(
+        user_id, source_type, language_catalog("messages.search_group_warning_text"))
+    if warning:
+        return warning
 
     songs, _ = read_dxdata(ver)
 
@@ -2119,13 +2056,10 @@ def search_by_designer(user_id, designer_query, ver="jp", page=1, source_type="u
     return generate_song_list_flex(user_id, title, matching_songs, page, "designer", designer_query, matched_sheets_map)
 
 def search_by_bpm(user_id, bpm_min, bpm_max=None, ver="jp", page=1, source_type="user"):
-    if source_type != 'user':
-        return generate_status_flex(
-            language_catalog("main.private_chat_title"),
-            language_catalog("messages.search_group_warning_text"),
-            user_id,
-            tone="warning",
-        )
+    warning = _private_chat_warning(
+        user_id, source_type, language_catalog("messages.search_group_warning_text"))
+    if warning:
+        return warning
 
     songs, _ = read_dxdata(ver)
     exact_match = bpm_max is None
@@ -2161,12 +2095,7 @@ def search_by_bpm(user_id, bpm_min, bpm_max=None, ver="jp", page=1, source_type=
 
 def calc_by_id(user_id, song_id, ver="jp"):
     songs, _ = read_dxdata(ver)
-
-    matching_song = None
-    for song in songs:
-        if song.get('id') == song_id:
-            matching_song = song
-            break
+    matching_song = next((song for song in songs if song.get('id') == song_id), None)
 
     # 没有匹配结果
     if not matching_song:
@@ -2304,12 +2233,8 @@ async def get_song_record_by_id(user_id, id_use, song_id, ver="jp"):
     if not len(song_record):
         return mention_record_error(user_id) if id_use != user_id else record_error(user_id)
 
-    matching_song = None
     songs, _ = read_dxdata(ver)
-    for song in songs:
-        if song.get('id') == song_id:
-            matching_song = song
-            break
+    matching_song = next((song for song in songs if song.get('id') == song_id), None)
 
     # 没有匹配结果
     if not matching_song:
@@ -2375,25 +2300,6 @@ async def get_song_record_by_id(user_id, id_use, song_id, ver="jp"):
     original_url, preview_url = await upload_generated_image(song_img, user_id)
     return generate_song_image_message(song_id, original_url, preview_url, user_id, mode='record')
 
-def _index_records_by_chart(records):
-    index = {}
-    for record in records:
-        suffix = (record['difficulty'], record['type'])
-        index[(record['name'], *suffix)] = record
-        index[(normalize_text(record['name']), *suffix)] = record
-    return index
-
-
-def _find_chart_record(index, title, difficulty, chart_type):
-    suffix = (difficulty, chart_type)
-    return index.get((title, *suffix)) or index.get((normalize_text(title), *suffix))
-
-
-def _achievement_percent(record):
-    score = record.get('score', '0.0000%')
-    return float(score[:-1]) if score.endswith('%') else 0.0
-
-
 @user_image
 async def generate_plate_rcd(user_id, id_use, title, ver="jp", filter_mode=None):
     _id_use_data = get_user(id_use)
@@ -2432,84 +2338,18 @@ async def generate_plate_rcd(user_id, id_use, title, ver="jp", filter_mode=None)
     if not len(target_version):
         return version_error(user_id)
 
-    if plate_type == "極":
-        target_type = "combo"
-        target_icon = ["fc", "fcp", "ap", "app"]
-
-    elif plate_type == "将":
-        target_type = "score"
-        target_icon = ["sss", "sssp"]
-
-    elif plate_type == "神":
-        target_type = "combo"
-        target_icon = ["ap", "app"]
-
-    elif plate_type == "舞舞":
-        target_type = "sync"
-        target_icon = ["fdx", "fdxp"]
-
-    else:
+    if plate_type not in PLATE_RULES:
         return plate_error(user_id)
+    target_type, target_icon = PLATE_RULES[plate_type]
 
     version_rcd_data = list(filter(lambda x: x['version'] in target_version, song_record))
     if not version_rcd_data:
         return version_error(user_id)
 
-    target_data = []
-    target_num = {
-        'basic': {'all': 0, 'clear': 0},
-        'advanced': {'all': 0, 'clear': 0},
-        'expert': {'all': 0, 'clear': 0},
-        'master': {'all': 0, 'clear': 0}
-    }
+    target_data, target_num = build_plate_entries(
+        songs, version_rcd_data, target_version, target_type, target_icon, ver)
 
-    rcd_map = _index_records_by_chart(version_rcd_data)
-
-    for song in songs:
-        if song['version'] not in target_version or song['type'] == 'utage':
-            continue
-
-        for sheet in song['sheets']:
-            if not sheet['regions'][ver] or sheet["difficulty"] not in target_num:
-                continue
-
-            icon = "back"
-            achieved = False
-            achievement_rate = 0.0
-            target_num[sheet['difficulty']]['all'] += 1
-
-            song_title = song['title']
-            difficulty = sheet['difficulty']
-            song_type = song['type']
-            rcd = _find_chart_record(rcd_map, song_title, difficulty, song_type)
-            if rcd:
-                icon = rcd[f'{target_type}_icon']
-                achievement_rate = _achievement_percent(rcd)
-                achieved = icon in target_icon
-                if achieved:
-                    target_num[difficulty]['clear'] += 1
-
-            if sheet['difficulty'] == "master":
-                complete_info = {
-                    diff: bool(record := _find_chart_record(rcd_map, song_title, diff, song_type))
-                    and record[f'{target_type}_icon'] in target_icon
-                    for diff in ("basic", "advanced", "expert", "master")
-                }
-
-                target_data.append({
-                    "img": generate_cover(song['cover_url'], song_type, icon, target_type, cover_name=song.get('cover_name'), complete_info=complete_info, achieved=achieved),
-                    "level": sheet['level'],
-                    "achieved": achieved,
-                    "achievement_rate": achievement_rate
-                })
-
-    # 按 filter_mode 过滤数据
-    if filter_mode == "uncleared":
-        target_data = [d for d in target_data if not d["achieved"]]
-    elif filter_mode == "unplayed":
-        target_data = [d for d in target_data if d["achievement_rate"] == 0.0 and not d["achieved"]]
-    elif filter_mode == "cleared":
-        target_data = [d for d in target_data if d["achieved"]]
+    target_data = filter_progress_entries(target_data, filter_mode)
 
     if not target_data:
         return mention_no_matching_data(user_id) if id_use != user_id else no_matching_data(user_id)
@@ -2547,112 +2387,30 @@ async def generate_level_rank_progress(user_id, id_use, level, rank=None, ver="j
     if "personal_info" not in _id_use_data:
         return mention_error(user_id) if id_use != user_id else info_error(user_id)
 
-    supported_levels = ["11", "11+", "12", "12+", "13", "13+", "14", "14+", "15"]
     songs, _ = read_dxdata(ver)
     target_category = None
-    is_level_target = level in supported_levels
+    is_level_target = level in SUPPORTED_PROGRESS_LEVELS
     if not is_level_target:
         target_category = _resolve_progress_category(level)
         if not target_category:
             return level_not_supported(user_id)
 
-    # 评级映射：用户输入 -> 内部标识
-    rank_mapping = {
-        "s": ("score", ["s", "sp", "ss", "ssp", "sss", "sssp"]),
-        "s+": ("score", ["sp", "ss", "ssp", "sss", "sssp"]),
-        "ss": ("score", ["ss", "ssp", "sss", "sssp"]),
-        "ss+": ("score", ["ssp", "sss", "sssp"]),
-        "sss": ("score", ["sss", "sssp"]),
-        "sss+": ("score", ["sssp"]),
-        "fc": ("combo", ["fc", "fcp", "ap", "app"]),
-        "fc+": ("combo", ["fcp", "ap", "app"]),
-        "ap": ("combo", ["ap", "app"]),
-        "ap+": ("combo", ["app"]),
-        "fdx": ("sync", ["fdx", "fdxp"]),
-        "fdx+": ("sync", ["fdxp"])
-    }
-
-    if rank is not None and rank not in rank_mapping:
+    if rank is not None and rank not in PROGRESS_RANKS:
         return song_error(user_id)
 
-    target_type, target_icons = rank_mapping[rank] if rank else (None, None)
     song_record = read_record(id_use, ver=ver)
 
     if not len(song_record):
         return mention_record_error(user_id) if id_use != user_id else record_error(user_id)
 
-    region_key = ver
-
-    rcd_map = _index_records_by_chart(song_record)
-
-    # 收集数据并统计
-    target_data = []
-    total_charts = 0  # 总谱面数
-    achieved_count = 0  # 已达成
-    unachieved_count = 0  # 未达成（有记录但未达标）
-    unplayed_count = 0  # 未游玩
-    
-    for song in songs:
-        if song['type'] == 'utage':
-            continue
-        if target_category and song.get("category") != target_category:
-            continue
-
-        for sheet in song['sheets']:
-            if not sheet['regions'].get(region_key, False):
-                continue
-
-            if is_level_target:
-                # 14+ 包含 14+ 和 15 级别
-                if level == "14+":
-                    if sheet['level'] not in ["14+", "15"]:
-                        continue
-                else:
-                    if sheet['level'] != level:
-                        continue
-
-            difficulty = sheet['difficulty']
-            total_charts += 1
-
-            song_title = song['title']
-            song_type = song['type']
-            icon = "back"
-            achieved = False
-            record = _find_chart_record(rcd_map, song_title, difficulty, song_type)
-            achievement_rate = _achievement_percent(record) if record else 0.0
-            if not record:
-                unplayed_count += 1
-            elif rank is None:
-                achieved = True
-                achieved_count += 1
-            else:
-                icon = record.get(f'{target_type}_icon', "back")
-                achieved = icon in target_icons
-                if achieved:
-                    achieved_count += 1
-                else:
-                    unachieved_count += 1
-
-            # 生成所有难度的封面
-            target_data.append({
-                "img": generate_cover(song['cover_url'], song_type, icon if rank else None, target_type if rank else None, cover_name=song.get('cover_name'), difficulty=difficulty, achieved=achieved if rank else None, song_title=song_title),
-                "level": sheet["level"],
-                "internal_level": sheet['internalLevelValue'],
-                "achieved": achieved,
-                "difficulty": difficulty,
-                "achievement_rate": achievement_rate
-            })
+    target_data, stats = build_progress_entries(
+        songs, song_record, level if is_level_target else None, target_category,
+        rank, ver, PROGRESS_RANKS.get(rank))
 
     if not target_data:
         return mention_no_matching_data(user_id) if id_use != user_id else no_matching_data(user_id)
 
-    # 按 filter_mode 过滤数据
-    if filter_mode == "uncleared":
-        target_data = [d for d in target_data if not d["achieved"]]
-    elif filter_mode == "unplayed":
-        target_data = [d for d in target_data if d["achievement_rate"] == 0.0 and not d["achieved"]]
-    elif filter_mode == "cleared":
-        target_data = [d for d in target_data if d["achieved"]]
+    target_data = filter_progress_entries(target_data, filter_mode)
 
     if not target_data:
         return mention_no_matching_data(user_id) if id_use != user_id else no_matching_data(user_id)
@@ -2660,14 +2418,6 @@ async def generate_level_rank_progress(user_id, id_use, level, rank=None, ver="j
     # 生成标题
     level_display = level.replace("+", "⁺") if is_level_target else target_category
     rank_display = rank.upper().replace("+", "⁺") if rank else ""
-
-    # 总体统计数据
-    stats = {
-        "achieved": achieved_count,
-        "unachieved": unachieved_count,
-        "unplayed": unplayed_count,
-        "total": total_charts
-    }
 
     # 生成图片（定数列表+统计卡片）
     record_img = generate_level_rank_progress_image(
@@ -3961,14 +3711,7 @@ def cmd_calc_notes(ctx):
 # ---- bind / rebind / settings 共用小工具 ----
 
 def _check_private_or_warn(ctx, warn_text_dict):
-    if ctx.source_type != 'user':
-        return generate_status_flex(
-            language_catalog("main.private_chat_title"),
-            warn_text_dict,
-            ctx.user_id,
-            tone="warning",
-        )
-    return None
+    return _private_chat_warning(ctx.user_id, ctx.source_type, warn_text_dict)
 
 def _has_full_account(user_data):
     return all(k in user_data for k in ['sega_id', 'sega_pwd', 'version'])

@@ -58,6 +58,27 @@ RECENT_RA_COEFFICIENTS = (
     (10.0000, 0.010),
 )
 DX_STAR_THRESHOLDS = (0.85, 0.90, 0.93, 0.95, 0.97)
+SUPPORTED_PROGRESS_LEVELS = ("11", "11+", "12", "12+", "13", "13+", "14", "14+", "15")
+PROGRESS_RANKS = {
+    "s": ("score", ("s", "sp", "ss", "ssp", "sss", "sssp")),
+    "s+": ("score", ("sp", "ss", "ssp", "sss", "sssp")),
+    "ss": ("score", ("ss", "ssp", "sss", "sssp")),
+    "ss+": ("score", ("ssp", "sss", "sssp")),
+    "sss": ("score", ("sss", "sssp")),
+    "sss+": ("score", ("sssp",)),
+    "fc": ("combo", ("fc", "fcp", "ap", "app")),
+    "fc+": ("combo", ("fcp", "ap", "app")),
+    "ap": ("combo", ("ap", "app")),
+    "ap+": ("combo", ("app",)),
+    "fdx": ("sync", ("fdx", "fdxp")),
+    "fdx+": ("sync", ("fdxp",)),
+}
+PLATE_RULES = {
+    "極": ("combo", ("fc", "fcp", "ap", "app")),
+    "将": ("score", ("sss", "sssp")),
+    "神": ("combo", ("ap", "app")),
+    "舞舞": ("sync", ("fdx", "fdxp")),
+}
 
 
 def _rating_coefficient(
@@ -238,6 +259,30 @@ def achievement_value(value: Any) -> float:
         return float(str(value or 0).rstrip("%"))
     except (TypeError, ValueError):
         return 0.0
+
+
+def index_records_by_chart(records, normalize):
+    index = {}
+    for record in records:
+        suffix = (record['difficulty'], record['type'])
+        index[(record['name'], *suffix)] = record
+        index[(normalize(record['name']), *suffix)] = record
+    return index
+
+
+def find_chart_record(index, title, difficulty, chart_type, normalize):
+    suffix = (difficulty, chart_type)
+    return index.get((title, *suffix)) or index.get((normalize(title), *suffix))
+
+
+def filter_progress_entries(entries, mode):
+    if mode == "uncleared":
+        return [entry for entry in entries if not entry["achieved"]]
+    if mode == "unplayed":
+        return [entry for entry in entries if not entry["achievement_rate"] and not entry["achieved"]]
+    if mode == "cleared":
+        return [entry for entry in entries if entry["achieved"]]
+    return entries
 
 
 def get_detailed_info(song_record, ver="jp", recent_type=False):

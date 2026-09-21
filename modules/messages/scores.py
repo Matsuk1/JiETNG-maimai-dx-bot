@@ -24,6 +24,7 @@ from modules.messages.layout import (
     section_title,
     metric_card,
     song_type_icon,
+    standard_bubble,
 )
 
 
@@ -116,17 +117,7 @@ def _generate_score_recognition_single_flex(result, user_id=None):
     body_contents.extend(_break_sections(data.validation.get("break_detail") or {}, tr))
     validation_sections, footer = _validation_sections(data, tr)
     body_contents.extend(validation_sections)
-    bubble = {
-        "type": "bubble",
-        "size": "giga",
-        "body": {
-            "type": "box",
-            "layout": "vertical",
-            "spacing": "md",
-            "paddingAll": "16px",
-            "contents": body_contents,
-        },
-    }
+    bubble = standard_bubble(body_contents, "giga")
     if footer:
         bubble["footer"] = footer
     return FlexMessage(

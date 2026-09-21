@@ -91,6 +91,22 @@ def normalize(s):
     s = re.sub(r"\s+", " ", s)
     return s.strip()
 
+
+def _chart_type(icon_paths, default="N/A"):
+    for source in icon_paths:
+        path = source.split('?', 1)[0]
+        if path.endswith('standard.png'):
+            return 'std'
+        if path.endswith('dx.png'):
+            return 'dx'
+    return default
+
+
+def _music_icon(icon_paths, default='back'):
+    if not icon_paths:
+        return default
+    return icon_paths[0].split('/')[-1].split('?', 1)[0].removesuffix('.png').removeprefix('music_icon_')
+
 def _get_random_user_agent():
     """返回随机 User-Agent"""
     return random.choice(USER_AGENTS)
@@ -661,15 +677,7 @@ async def get_maimai_records(cookies: dict, ver="jp"):
                     dx_score = "N/A"
 
                 type_icon = block.xpath('.//img[contains(@class, "music_kind_icon")]/@src')
-                if type_icon:
-                    if "standard.png" in type_icon[0]:
-                        type = "std"
-                    elif "dx.png" in type_icon[0]:
-                        type = "dx"
-                    else:
-                        type = "N/A"
-                else:
-                    type = "N/A"
+                type = _chart_type(type_icon)
 
                 icons = block.xpath('.//img[contains(@class, "h_30")]/@src')
                 sync_icon = combo_icon = score_icon = ""
@@ -742,8 +750,7 @@ def _parse_music_chart_blocks(dom):
         difficulty = re.search(r'music_(basic|advanced|expert|master|remaster)_score_back',
                                block.get('class')).group(1)
         icons = block.xpath('.//img[contains(@class, "music_kind_icon")]/@src')
-        chart_type = next((kind for suffix, kind in [('standard.png', 'std'), ('dx.png', 'dx')]
-                           if any(src.split('?')[0].endswith(suffix) for src in icons)), None)
+        chart_type = _chart_type(icons, None)
         raw_title = ''.join(name.itertext())
         # The official song named U+3000 is intentionally blank.
         title = normalize(raw_title) or ('\u3000' if raw_title == '\u3000' else '')
@@ -886,15 +893,7 @@ async def get_recent_records(cookies: dict, ver="jp"):
                 dx_score = dx_score[0].strip() if dx_score else "?"
 
                 type_icon = block.xpath('.//img[contains(@class, "playlog_music_kind_icon")]/@src')
-                if type_icon:
-                    if "standard.png" in type_icon[0]:
-                        type = "std"
-                    elif "dx.png" in type_icon[0]:
-                        type = "dx"
-                    else:
-                        type = "N/A"
-                else:
-                    type = "utage"
+                type = _chart_type(type_icon, "utage")
 
                 diff_img = block.xpath('.//img[contains(@class, "playlog_diff")]/@src')
                 if diff_img:
@@ -985,11 +984,7 @@ async def get_single_record(title: str, type: str, cookies: dict, ver="jp"):
             if not type_icon:
                 continue
 
-            song_type = None
-            if 'standard.png' in type_icon[0]:
-                song_type = 'std'
-            elif 'dx.png' in type_icon[0]:
-                song_type = 'dx'
+            song_type = _chart_type(type_icon, None)
 
             # 同时匹配 title 和 type
             if song_type == type:
@@ -1031,15 +1026,7 @@ async def get_single_record(title: str, type: str, cookies: dict, ver="jp"):
 
             # 获取谱面类型
             type_img = block.xpath('.//img[contains(@class, "music_kind_icon")]/@src')
-            if type_img:
-                if 'standard.png' in type_img[0]:
-                    chart_type = 'std'
-                elif 'dx.png' in type_img[0]:
-                    chart_type = 'dx'
-                else:
-                    chart_type = 'N/A'
-            else:
-                chart_type = 'N/A'
+            chart_type = _chart_type(type_img)
 
             # 获取达成率
             # 格式：<div class="music_score_block w_120 d_ib t_r f_12">100.9277%</div>
@@ -1063,26 +1050,17 @@ async def get_single_record(title: str, type: str, cookies: dict, ver="jp"):
             # 获取成绩图标
             # 格式：<img src=".../music_icon_sssp.png?ver=1.60">
             score_icon_img = block.xpath('.//img[contains(@class, "p_t_5") and contains(@class, "v_t")]/@src')
-            score_icon = ''
-            if score_icon_img:
-                icon_name = score_icon_img[0].split('/')[-1].split('?')[0].replace('.png', '').replace('music_icon_', '')
-                score_icon = icon_name
+            score_icon = _music_icon(score_icon_img, '')
 
             # 获取 Combo 图标
             # 格式：<img src=".../music_icon_fcp.png?ver=1.60" class="h_45 v_t">
             combo_icon_img = block.xpath('.//img[contains(@class, "h_45 v_t")]/@src')
-            combo_icon = 'back'
-            if combo_icon_img:
-                icon_name = combo_icon_img[0].split('/')[-1].split('?')[0].replace('.png', '').replace('music_icon_', '')
-                combo_icon = icon_name
+            combo_icon = _music_icon(combo_icon_img)
 
             # 获取 Sync 图标
             # 格式：<img src=".../music_icon_sync.png?ver=1.60" class="h_45 m_r_10 v_t">
             sync_icon_img = block.xpath('.//img[contains(@class, "h_45") and contains(@class, "m_r_10") and contains(@class, "v_t")]/@src')
-            sync_icon = 'back'
-            if sync_icon_img:
-                icon_name = sync_icon_img[0].split('/')[-1].split('?')[0].replace('.png', '').replace('music_icon_', '')
-                sync_icon = icon_name
+            sync_icon = _music_icon(sync_icon_img)
 
             # 获取最终游玩时间和游玩次数
             # JP格式：<tr><td>最終プレイ日時：</td><td>2024/11/29 15:22</td></tr>
@@ -1338,15 +1316,7 @@ async def get_friend_records(cookies: dict, friend_id: str, ver="jp"):
                         continue
 
                     type_img = block.xpath('.//img[contains(@class, "music_kind_icon")]/@src')
-                    if type_img:
-                        if "standard.png" in type_img[0]:
-                            type = "std"
-                        elif "dx.png" in type_img[0]:
-                            type = "dx"
-                        else:
-                            type = "N/A"
-                    else:
-                        type = "N/A"
+                    type = _chart_type(type_img)
 
                     icons = block.xpath('.//td[@class="t_r f_0"]/img/@src')
                     sync_icon = combo_icon = score_icon = ""

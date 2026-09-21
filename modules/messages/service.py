@@ -20,6 +20,7 @@ from modules.messages.layout import (
     round_icon_action,
     song_type_icon,
     standard_action_bubble,
+    standard_bubble,
     standard_header_box,
     standard_help_bubble,
 )
@@ -67,6 +68,11 @@ def format_timezone_string(user_id):
     tz_offset = get_user_timezone(user_id)
     tz_sign = '+' if tz_offset >= 0 else ''
     return f"(UTC{tz_sign}{tz_offset})"
+
+
+def _tip_ad_boxes(lang):
+    boxes = (generate_tip_ad_box(item, lang) for item in (get_random_tip(), get_random_ad()) if item)
+    return [box for box in boxes if box]
 
 def generate_status_flex(title_text, body_text, user_id=None, alt_text=None, tone="info"):
     accent_by_tone = {
@@ -720,32 +726,10 @@ def generate_update_result_flex(
             "contents": failed_rows,
         })
 
-    random_tip = get_random_tip()
-    random_ad = get_random_ad()
-    extra_rows = []
-    if random_tip:
-        tip_box = generate_tip_ad_box(random_tip, lang)
-        if tip_box:
-            extra_rows.append(tip_box)
-    if random_ad:
-        ad_box = generate_tip_ad_box(random_ad, lang)
-        if ad_box:
-            extra_rows.append(ad_box)
-    if extra_rows:
-        body_contents.extend(extra_rows)
+    body_contents.extend(_tip_ad_boxes(lang))
 
     alt_text = texts['alt_text_success'] if success else texts['alt_text_error']
-    bubble = {
-        "type": "bubble",
-        "size": "mega",
-        "body": {
-            "type": "box",
-            "layout": "vertical",
-            "spacing": "md",
-            "paddingAll": "16px",
-            "contents": body_contents,
-        },
-    }
+    bubble = standard_bubble(body_contents)
     return FlexMessage(
         alt_text=get_multilingual_text(alt_text, language=lang),
         contents=FlexContainer.from_dict(bubble),
@@ -1675,31 +1659,9 @@ def generate_bot_status_flex(uptime_str, image_queue_size, web_queue_size,
         },
     ]
 
-    random_tip = get_random_tip()
-    random_ad = get_random_ad()
-    extra_rows = []
-    if random_tip:
-        tip_box = generate_tip_ad_box(random_tip, lang)
-        if tip_box:
-            extra_rows.append(tip_box)
-    if random_ad:
-        ad_box = generate_tip_ad_box(random_ad, lang)
-        if ad_box:
-            extra_rows.append(ad_box)
-    if extra_rows:
-        body_contents.extend(extra_rows)
+    body_contents.extend(_tip_ad_boxes(lang))
 
-    bubble = {
-        "type": "bubble",
-        "size": "mega",
-        "body": {
-            "type": "box",
-            "layout": "vertical",
-            "spacing": "md",
-            "paddingAll": "16px",
-            "contents": body_contents,
-        },
-    }
+    bubble = standard_bubble(body_contents)
     return FlexMessage(
         alt_text=select_text(texts['title'], language=lang),
         contents=FlexContainer.from_dict(bubble),

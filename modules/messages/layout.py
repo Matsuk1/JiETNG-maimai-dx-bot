@@ -156,6 +156,20 @@ def help_docs_footer(user_id=None):
     }
 
 
+def standard_bubble(contents, size="mega"):
+    return {
+        "type": "bubble",
+        "size": size,
+        "body": {
+            "type": "box",
+            "layout": "vertical",
+            "spacing": "md",
+            "paddingAll": "16px",
+            "contents": contents,
+        },
+    }
+
+
 def standard_help_bubble(title, subtitle, sections, alt_text, user_id=None, docs_button=True):
     body_contents = [
         standard_header_box(title, subtitle),
@@ -168,17 +182,7 @@ def standard_help_bubble(title, subtitle, sections, alt_text, user_id=None, docs
             "spacing": "sm",
             "contents": rows,
         })
-    bubble = {
-        "type": "bubble",
-        "size": "giga",
-        "body": {
-            "type": "box",
-            "layout": "vertical",
-            "spacing": "md",
-            "paddingAll": "16px",
-            "contents": body_contents,
-        },
-    }
+    bubble = standard_bubble(body_contents, "giga")
     if docs_button:
         bubble["footer"] = help_docs_footer(user_id)
     return FlexMessage(
@@ -354,17 +358,7 @@ def standard_action_bubble(title, subtitle, body_text, alt_text, actions=None, n
             "contents": rows,
         })
 
-    bubble = {
-        "type": "bubble",
-        "size": "mega",
-        "body": {
-            "type": "box",
-            "layout": "vertical",
-            "spacing": "md",
-            "paddingAll": "16px",
-            "contents": body_contents,
-        },
-    }
+    bubble = standard_bubble(body_contents)
     if actions:
         bubble["footer"] = {
             "type": "box",

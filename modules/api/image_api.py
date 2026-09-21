@@ -15,14 +15,18 @@ from modules.images.skins import user_image
 from modules.images.composition import compose_generated_images
 from modules.task_runtime import check_rate_limit
 from modules.images.records import (
-    generate_cover,
     generate_level_rank_progress_image,
     generate_plate_image,
     generate_records_picture,
 )
-from modules.record_manager import read_record
+from modules.images.progress import build_plate_entries, build_progress_entries
+from modules.record_manager import (
+    PLATE_RULES,
+    PROGRESS_RANKS,
+    SUPPORTED_PROGRESS_LEVELS,
+    read_record,
+)
 from modules.images.songs import song_info_generate
-from modules.song_matcher import normalize_text
 from modules.user_manager import get_user_timezone
 
 
@@ -77,6 +81,17 @@ def _find_song(song_id, version):
     return next((song for song in read_dxdata(version)[0] if song.get("id") == song_id), None)
 
 
+def _authorized_user(user_id, token_id, rate_key):
+    if check_rate_limit(user_id, rate_key):
+        return None, (jsonify({"error": "Rate limited", "message": "Too many image requests. Please retry later."}), 429)
+    allowed, result = check_user_permission(user_id, token_id)
+    if not allowed:
+        return None, result
+    if "personal_info" not in result:
+        return None, (jsonify({"error": "User info not found, please sync first"}), 404)
+    return result, None
+
+
 @image_api.route("/api/v2/songs/<song_id>/image", methods=["GET"])
 @require_dev_token
 def api_v2_song_info(song_id):
@@ -115,16 +130,9 @@ def api_v2_song_info(song_id):
 def api_v2_song_record(user_id, song_id):
     try:
         token_info = request.token_info
-        if check_rate_limit(user_id, "api_song_record_image"):
-            return jsonify({"error": "Rate limited", "message": "Too many image requests. Please retry later."}), 429
-
-        has_permission, result = check_user_permission(user_id, token_info['token_id'])
-        if not has_permission:
-            return result
-
-        _udata = result
-        if "personal_info" not in _udata:
-            return jsonify({"error": "User info not found, please sync first"}), 404
+        _udata, error = _authorized_user(user_id, token_info['token_id'], "api_song_record_image")
+        if error:
+            return error
 
         ver = _udata.get("version", "jp")
         matching_song = _find_song(song_id, ver)
@@ -171,16 +179,9 @@ def api_v2_song_record(user_id, song_id):
 def api_v2_generate_record_image(user_id):
     try:
         token_info = request.token_info
-        if check_rate_limit(user_id, "api_record_image"):
-            return jsonify({"error": "Rate limited", "message": "Too many image requests. Please retry later."}), 429
-
-        has_permission, result = check_user_permission(user_id, token_info['token_id'])
-        if not has_permission:
-            return result
-
-        _udata = result
-        if "personal_info" not in _udata:
-            return jsonify({"error": "User info not found, please sync first"}), 404
+        _udata, error = _authorized_user(user_id, token_info['token_id'], "api_record_image")
+        if error:
+            return error
 
         command = request.args.get('command', 'b50').strip().lower()
         parts = re.split(r"[ \n]", command, 1)
@@ -251,16 +252,9 @@ def api_v2_generate_record_image(user_id):
 def api_v2_generate_plate(user_id):
     try:
         token_info = request.token_info
-        if check_rate_limit(user_id, "api_plate_image"):
-            return jsonify({"error": "Rate limited", "message": "Too many image requests. Please retry later."}), 429
-
-        has_permission, result = check_user_permission(user_id, token_info['token_id'])
-        if not has_permission:
-            return result
-
-        _udata = result
-        if "personal_info" not in _udata:
-            return jsonify({"error": "User info not found, please sync first"}), 404
+        _udata, error = _authorized_user(user_id, token_info['token_id'], "api_plate_image")
+        if error:
+            return error
 
         title = request.args.get('title', '').strip()
         if not title:
@@ -289,69 +283,16 @@ def api_v2_generate_plate(user_id):
         if not target_version:
             return jsonify({"error": "Version not found"}), 404
 
-        if plate_type == "極":
-            target_type, target_icon = "combo", ["fc", "fcp", "ap", "app"]
-        elif plate_type == "将":
-            target_type, target_icon = "score", ["sss", "sssp"]
-        elif plate_type == "神":
-            target_type, target_icon = "combo", ["ap", "app"]
-        elif plate_type == "舞舞":
-            target_type, target_icon = "sync", ["fdx", "fdxp"]
-        else:
+        if plate_type not in PLATE_RULES:
             return jsonify({"error": "Invalid plate type, must be 極/将/神/舞舞"}), 400
+        target_type, target_icon = PLATE_RULES[plate_type]
 
         version_rcd_data = list(filter(lambda x: x['version'] in target_version, song_record))
         if not version_rcd_data:
             return jsonify({"error": "No version records found"}), 404
 
-        target_data = []
-        target_num = {d: {'all': 0, 'clear': 0} for d in ['basic', 'advanced', 'expert', 'master']}
-
-        rcd_map = {}
-        for rcd in version_rcd_data:
-            key1 = (rcd['name'], rcd['difficulty'], rcd['type'])
-            rcd_map[key1] = rcd
-            key2 = (normalize_text(rcd['name']), rcd['difficulty'], rcd['type'])
-            rcd_map[key2] = rcd
-
-        for song in songs:
-            if song['version'] not in target_version or song['type'] == 'utage':
-                continue
-            for sheet in song['sheets']:
-                if not sheet['regions'].get(ver, False) or sheet['difficulty'] not in target_num:
-                    continue
-                icon = "back"
-                achieved = False
-                achievement_rate = 0.0
-                target_num[sheet['difficulty']]['all'] += 1
-                song_title = song['title']
-                difficulty = sheet['difficulty']
-                song_type = song['type']
-
-                rcd = rcd_map.get((song_title, difficulty, song_type)) or \
-                      rcd_map.get((normalize_text(song_title), difficulty, song_type))
-                if rcd:
-                    icon = rcd[f'{target_type}_icon']
-                    score_str = rcd.get('score', '0.0000%')
-                    achievement_rate = float(score_str[:-1]) if score_str.endswith('%') else 0.0
-                    if icon in target_icon:
-                        target_num[difficulty]['clear'] += 1
-                        achieved = True
-
-                if difficulty == "master":
-                    complete_info = {}
-                    for diff in ["basic", "advanced", "expert", "master"]:
-                        d_rcd = rcd_map.get((song_title, diff, song_type)) or \
-                                rcd_map.get((normalize_text(song_title), diff, song_type))
-                        complete_info[diff] = d_rcd is not None and d_rcd[f'{target_type}_icon'] in target_icon
-
-                    target_data.append({
-                        "img": generate_cover(song['cover_url'], song_type, icon, target_type,
-                                              cover_name=song.get('cover_name'), complete_info=complete_info, achieved=achieved),
-                        "level": sheet['level'],
-                        "achieved": achieved,
-                        "achievement_rate": achievement_rate
-                    })
+        target_data, target_num = build_plate_entries(
+            songs, version_rcd_data, target_version, target_type, target_icon, ver)
 
         try:
             plate_img = generate_plate_image(target_data, title, headers=target_num)
@@ -387,130 +328,34 @@ def api_v2_generate_plate(user_id):
 def api_v2_generate_achievement(user_id):
     try:
         token_info = request.token_info
-        if check_rate_limit(user_id, "api_achievement_image"):
-            return jsonify({"error": "Rate limited", "message": "Too many image requests. Please retry later."}), 429
-
-        has_permission, result = check_user_permission(user_id, token_info['token_id'])
-        if not has_permission:
-            return result
-
-        _udata = result
-        if "personal_info" not in _udata:
-            return jsonify({"error": "User info not found, please sync first"}), 404
+        _udata, error = _authorized_user(user_id, token_info['token_id'], "api_achievement_image")
+        if error:
+            return error
 
         level = request.args.get('level', '').strip()
         rank = request.args.get('rank', None)
         if rank:
             rank = rank.strip().lower()
 
-        supported_levels = ["11", "11+", "12", "12+", "13", "13+", "14", "14+", "15"]
-        if level not in supported_levels:
-            return jsonify({"error": f"Invalid level, supported: {supported_levels}"}), 400
-
-        rank_mapping = {
-            "s":    ("score", ["s", "sp", "ss", "ssp", "sss", "sssp"]),
-            "s+":   ("score", ["sp", "ss", "ssp", "sss", "sssp"]),
-            "ss":   ("score", ["ss", "ssp", "sss", "sssp"]),
-            "ss+":  ("score", ["ssp", "sss", "sssp"]),
-            "sss":  ("score", ["sss", "sssp"]),
-            "sss+": ("score", ["sssp"]),
-            "fc":   ("combo", ["fc", "fcp", "ap", "app"]),
-            "fc+":  ("combo", ["fcp", "ap", "app"]),
-            "ap":   ("combo", ["ap", "app"]),
-            "ap+":  ("combo", ["app"]),
-            "fdx":  ("sync", ["fdx", "fdxp"]),
-            "fdx+": ("sync", ["fdxp"])
-        }
-
-        if rank is not None and rank not in rank_mapping:
-            return jsonify({"error": f"Invalid rank, supported: {list(rank_mapping.keys())}"}), 400
+        if level not in SUPPORTED_PROGRESS_LEVELS:
+            return jsonify({"error": f"Invalid level, supported: {list(SUPPORTED_PROGRESS_LEVELS)}"}), 400
+        if rank is not None and rank not in PROGRESS_RANKS:
+            return jsonify({"error": f"Invalid rank, supported: {list(PROGRESS_RANKS)}"}), 400
 
         ver = _udata.get("version", "jp")
-        target_type, target_icons = rank_mapping[rank] if rank else (None, None)
-
         song_record = read_record(user_id, ver=ver)
         if not song_record:
             return jsonify({"error": "No records found, please sync first"}), 404
 
-        rcd_map = {}
-        for rcd in song_record:
-            key1 = (rcd['name'], rcd['difficulty'], rcd['type'])
-            rcd_map[key1] = rcd
-            key2 = (normalize_text(rcd['name']), rcd['difficulty'], rcd['type'])
-            rcd_map[key2] = rcd
-
-        target_data = []
-        total_charts = achieved_count = unachieved_count = unplayed_count = 0
-
         songs, _ = read_dxdata(ver)
-        for song in songs:
-            if song['type'] == 'utage':
-                continue
-            for sheet in song['sheets']:
-                if not sheet['regions'].get(ver, False):
-                    continue
-                if level == "14+":
-                    if sheet['level'] not in ["14+", "15"]:
-                        continue
-                else:
-                    if sheet['level'] != level:
-                        continue
-
-                difficulty = sheet['difficulty']
-                total_charts += 1
-                song_title = song['title']
-                song_type = song['type']
-                icon = "back"
-                achieved = False
-                has_record = False
-                achievement_rate = 0.0
-
-                rcd = rcd_map.get((song_title, difficulty, song_type)) or \
-                      rcd_map.get((normalize_text(song_title), difficulty, song_type))
-                if rcd:
-                    has_record = True
-                    score_str = rcd.get('score', '0.0000%')
-                    achievement_rate = float(score_str[:-1]) if score_str.endswith('%') else 0.0
-                    if rank is not None:
-                        user_icon = rcd.get(f'{target_type}_icon', "back")
-                        icon = user_icon
-                        if user_icon in target_icons:
-                            achieved = True
-                            achieved_count += 1
-                        else:
-                            unachieved_count += 1
-                    else:
-                        achieved = True
-                        achieved_count += 1
-
-                if not has_record:
-                    unplayed_count += 1
-
-                target_data.append({
-                    "img": generate_cover(song['cover_url'], song_type, icon if rank else None,
-                                          target_type if rank else None,
-                                          cover_name=song.get('cover_name'), difficulty=difficulty,
-                                          achieved=achieved if rank else None,
-                                          song_title=song_title),
-                    "level": sheet["level"],
-                    "internal_level": sheet['internalLevelValue'],
-                    "achieved": achieved,
-                    "difficulty": difficulty,
-                    "achievement_rate": achievement_rate
-                })
+        target_data, stats = build_progress_entries(
+            songs, song_record, level, None, rank, ver, PROGRESS_RANKS.get(rank))
 
         if not target_data:
             return jsonify({"error": "No matching data"}), 404
 
         level_display = level.replace("+", "⁺")
         rank_display = rank.upper().replace("+", "⁺") if rank else ""
-        stats = {
-            "achieved": achieved_count,
-            "unachieved": unachieved_count,
-            "unplayed": unplayed_count,
-            "total": total_charts
-        }
-
         try:
             record_img = generate_level_rank_progress_image(
                 target_data,
