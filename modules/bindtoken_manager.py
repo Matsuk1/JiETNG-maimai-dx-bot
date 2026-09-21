@@ -56,12 +56,8 @@ def generate_settings_token(user_id: str) -> str:
 
 
 def get_user_id_from_settings_token(token: str) -> str:
-    return _verify_token(
-        token,
-        purpose="settings",
-        expires=SETTINGS_TOKEN_EXPIRE_SECONDS,
-        error_label="settings token",
-    )
+    return _verify_token(token, purpose="settings", expires=SETTINGS_TOKEN_EXPIRE_SECONDS,
+                         error_label="settings token")
 
 
 def generate_unbind_token(user_id: str) -> str:
@@ -69,12 +65,8 @@ def generate_unbind_token(user_id: str) -> str:
 
 
 def get_user_id_from_unbind_token(token: str) -> str:
-    return _verify_token(
-        token,
-        purpose="unbind",
-        expires=UNBIND_TOKEN_EXPIRE_SECONDS,
-        error_label="unbind token",
-    )
+    return _verify_token(token, purpose="unbind", expires=UNBIND_TOKEN_EXPIRE_SECONDS,
+                         error_label="unbind token")
 
 
 def generate_perm_token(user_id: str) -> str:
@@ -82,9 +74,5 @@ def generate_perm_token(user_id: str) -> str:
 
 
 def get_user_id_from_perm_token(token: str) -> str:
-    return _verify_token(
-        token,
-        purpose="perm",
-        expires=PERM_TOKEN_EXPIRE_SECONDS,
-        error_label="perm token",
-    )
+    return _verify_token(token, purpose="perm", expires=PERM_TOKEN_EXPIRE_SECONDS,
+                         error_label="perm token")
