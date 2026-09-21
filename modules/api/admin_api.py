@@ -1009,31 +1009,23 @@ def admin_delete_tip_ads(tip_ad_id):
 
 @admin_api.route("/admin/backgrounds", methods=["GET", "POST"])
 @require_admin
+@_admin_error_boundary
 def admin_backgrounds():
-
     if request.method == "GET":
-        try:
-            files = []
-            for f in sorted(os.listdir(BG_DIR)):
-                if not f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')):
-                    continue
-                filepath = os.path.join(BG_DIR, f)
-                size_bytes = os.path.getsize(filepath)
-                if size_bytes < 1024:
-                    size_str = f"{size_bytes}B"
-                elif size_bytes < 1024 * 1024:
-                    size_str = f"{size_bytes / 1024:.1f}KB"
-                else:
-                    size_str = f"{size_bytes / (1024 * 1024):.1f}MB"
-                files.append({
-                    'name': f,
-                    'size': size_str,
-                    'is_user': f.startswith("jietnguser_"),
-                })
-            return jsonify({'success': True, 'files': files})
-        except Exception as e:
-            logger.error(f"[Admin] ✗ List backgrounds error: {e}")
-            return jsonify({'success': False, 'message': str(e)}), 500
+        files = []
+        for filename in sorted(os.listdir(BG_DIR)):
+            if not filename.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')):
+                continue
+            size_bytes = os.path.getsize(os.path.join(BG_DIR, filename))
+            if size_bytes < 1024:
+                size = f"{size_bytes}B"
+            elif size_bytes < 1024 * 1024:
+                size = f"{size_bytes / 1024:.1f}KB"
+            else:
+                size = f"{size_bytes / (1024 * 1024):.1f}MB"
+            files.append({'name': filename, 'size': size,
+                          'is_user': filename.startswith("jietnguser_")})
+        return jsonify({'success': True, 'files': files})
 
     uploaded = request.files.get('file')
     if not uploaded or not uploaded.filename:
@@ -1077,19 +1069,16 @@ def admin_backgrounds():
             return jsonify({'success': False, 'message': 'Failed to convert HEIC'}), 500
     else:
         save_path = os.path.join(BG_DIR, safe_name)
-        try:
-            with open(save_path, 'wb') as f:
-                f.write(file_data)
-        except Exception as e:
-            logger.error(f"[Admin] ✗ Upload background error: {e}")
-            return jsonify({'success': False, 'message': str(e)}), 500
+        with open(save_path, 'wb') as file:
+            file.write(file_data)
 
-    logger.info(f"[Admin] ✓ Uploaded background: {safe_name}")
+    logger.info("[Admin] Uploaded background: %s", safe_name)
     return jsonify({'success': True, 'filename': safe_name}), 201
 
 
 @admin_api.route("/admin/backgrounds/<filename>", methods=["DELETE"])
 @require_admin
+@_admin_error_boundary
 def admin_delete_background(filename):
 
     safe_name = os.path.basename(filename)
@@ -1098,20 +1087,14 @@ def admin_delete_background(filename):
     if not os.path.exists(filepath):
         return jsonify({'success': False, 'message': 'File not found'}), 404
 
-    try:
-        os.remove(filepath)
-        logger.info(f"[Admin] ✓ Deleted background: {safe_name}")
-
-        for uid, udata in load_all_users().items():
-            user_bg_list = udata.get('bg_files', [])
-            if safe_name in user_bg_list:
-                user_bg_list.remove(safe_name)
-                edit_user_value(uid, 'bg_files', user_bg_list)
-
-        return jsonify({'success': True})
-    except Exception as e:
-        logger.error(f"[Admin] ✗ Delete background error: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
+    os.remove(filepath)
+    logger.info("[Admin] Deleted background: %s", safe_name)
+    for user_id, user_data in load_all_users().items():
+        background_files = user_data.get('bg_files', [])
+        if safe_name in background_files:
+            background_files.remove(safe_name)
+            edit_user_value(user_id, 'bg_files', background_files)
+    return jsonify({'success': True})
 
 
 # ==================== 用户管理 API ====================
@@ -1126,6 +1109,7 @@ admin_api.add_url_rule("/admin/edit_user", view_func=admin_edit_user, methods=["
 
 @admin_api.route("/admin/delete_user", methods=["POST"])
 @require_admin
+@_admin_error_boundary
 def admin_delete_user():
 
     data = _json_body()
@@ -1137,29 +1121,12 @@ def admin_delete_user():
             'message': 'User ID required'
         }), 400
 
-    try:
-        if not user_exists(user_id):
-            return jsonify({
-                'success': False,
-                'message': f'User {user_id} not found'
-            }), 404
-
-        delete_user(user_id)
-        link_unbound_rich_menu(user_id)
-
-        logger.info(f"[Admin] ✓ User deleted: user_id={user_id}")
-
-        return jsonify({
-            'success': True,
-            'message': f'User {user_id} deleted successfully'
-        })
-
-    except Exception as e:
-        logger.error(f"[Admin] ✗ Delete user error: user_id={user_id}, error={e}", exc_info=True)
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        }), 500
+    if not user_exists(user_id):
+        return jsonify({'success': False, 'message': f'User {user_id} not found'}), 404
+    delete_user(user_id)
+    link_unbound_rich_menu(user_id)
+    logger.info("[Admin] User deleted: user_id=%s", user_id)
+    return jsonify({'success': True, 'message': f'User {user_id} deleted successfully'})
 
 @admin_api.route("/admin/clear_cache", methods=["POST"])
 @require_admin
