@@ -1150,29 +1150,17 @@ def admin_delete_user():
 
 @admin_api.route("/admin/clear_cache", methods=["POST"])
 @require_admin
+@_admin_error_boundary
 def admin_clear_cache():
-
-    try:
-        with nickname_cache_lock:
-            cache_size = len(nickname_cache)
-            nickname_cache.clear()
-
-        logger.info(f"[Admin] ✓ Nickname cache cleared: entries={cache_size}")
-
-        return jsonify({
-            'success': True,
-            'message': f'Cache cleared ({cache_size} entries)'
-        })
-
-    except Exception as e:
-        logger.error(f"[Admin] ✗ Clear cache error: error={e}", exc_info=True)
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        }), 500
+    with nickname_cache_lock:
+        cache_size = len(nickname_cache)
+        nickname_cache.clear()
+    logger.info("[Admin] Nickname cache cleared: entries=%s", cache_size)
+    return jsonify({'success': True, 'message': f'Cache cleared ({cache_size} entries)'})
 
 @admin_api.route("/admin/get_user_data", methods=["POST"])
 @require_admin
+@_admin_error_boundary
 def admin_get_user_data():
 
     data = _json_body()
@@ -1184,88 +1172,41 @@ def admin_get_user_data():
             'message': 'User ID required'
         }), 400
 
-    try:
-        user_info = get_user(user_id)
-        if not user_info:
-            return jsonify({
-                'success': False,
-                'message': f'User {user_id} not found'
-            }), 404
-
-        nickname = _services.nickname(user_id, use_cache=False)
-
-        json_str = json.dumps(user_info, indent=2, ensure_ascii=False)
-
-        return jsonify({
-            'success': True,
-            'nickname': nickname,
-            'json_str': json_str,
-            'user_data': user_info
-        })
-
-    except Exception as e:
-        logger.error(f"[Admin] ✗ Get user data error: user_id={user_id}, error={e}", exc_info=True)
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        }), 500
+    user_info = get_user(user_id)
+    if not user_info:
+        return jsonify({'success': False, 'message': f'User {user_id} not found'}), 404
+    return jsonify({
+        'success': True,
+        'nickname': _services.nickname(user_id, use_cache=False),
+        'json_str': json.dumps(user_info, indent=2, ensure_ascii=False),
+        'user_data': user_info,
+    })
 
 @admin_api.route("/admin/load_nicknames", methods=["POST"])
 @require_admin
+@_admin_error_boundary
 def admin_load_nicknames():
-
-    try:
-        data = _json_body()
-        refresh = bool(data.get('refresh'))
-
-        nicknames = {}
-        if refresh:
-            for user_id in get_all_user_ids():
-                nicknames[user_id] = _services.nickname(user_id, use_cache=False)
-        else:
-            for user_id, user_info in load_all_users().items():
-                nicknames[user_id] = user_info.get('nickname') or _services.fallback_nickname(user_id)
-
-        return jsonify({
-            'success': True,
-            'nicknames': nicknames,
-            'count': len(nicknames),
-            'refreshed': refresh
-        })
-
-    except Exception as e:
-        logger.error(f"[Admin] ✗ Load nicknames error: error={e}", exc_info=True)
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        }), 500
+    refresh = bool(_json_body().get('refresh'))
+    if refresh:
+        nicknames = {user_id: _services.nickname(user_id, use_cache=False)
+                     for user_id in get_all_user_ids()}
+    else:
+        nicknames = {user_id: data.get('nickname') or _services.fallback_nickname(user_id)
+                     for user_id, data in load_all_users().items()}
+    return jsonify({'success': True, 'nicknames': nicknames,
+                    'count': len(nicknames), 'refreshed': refresh})
 
 @admin_api.route("/admin/backups", methods=["POST"])
 @require_admin
+@_admin_error_boundary
 def admin_create_backup():
-
-    try:
-        db_config = {
-            'host': DB_HOST,
-            'user': DB_USER,
-            'password': DB_PASSWORD,
-            'database': DB_NAME
-        }
-
-        with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
-            config_data = json.load(f)
-
-        success, message, _ = create_backup(
-            users_data=load_all_users(),
-            config_data=config_data,
-            db_config=db_config,
-            backup_password=ADMIN_PASSWORD,
-        )
-
-        return jsonify({'success': success, 'message': message})
-    except Exception as e:
-        logger.error(f"[Admin] ✗ Create backup error: error={e}", exc_info=True)
-        return jsonify({'success': False, 'message': str(e)})
+    with open(CONFIG_PATH, encoding='utf-8') as file:
+        config_data = json.load(file)
+    db_config = {'host': DB_HOST, 'user': DB_USER,
+                 'password': DB_PASSWORD, 'database': DB_NAME}
+    success, message, _ = create_backup(
+        load_all_users(), config_data, db_config, ADMIN_PASSWORD)
+    return jsonify({'success': success, 'message': message})
 
 
 @admin_api.route("/admin/get_backups", methods=["GET"])
@@ -1452,22 +1393,16 @@ def admin_dxdata_status():
 
 @admin_api.route("/admin/update_dxdata", methods=["POST"])
 @require_admin
+@_admin_error_boundary
 def admin_update_dxdata():
-
-    try:
-        result = update_dxdata_with_comparison(DXDATA_URL, DXDATA_FILE)
-        message = build_dxdata_update_message(result, None)
-        success = bool(result.get('success'))
-        diff = result.get('diff') or {}
-        return jsonify({
-            'success': success,
-            'message': message,
-            'sheets_added': diff.get('sheets_added', 0),
-            'songs_added': diff.get('songs_added', 0)
-        })
-    except Exception as e:
-        logger.error(f"[Admin] ✗ Update DXData error: error={e}", exc_info=True)
-        return jsonify({'success': False, 'message': str(e)}), 500
+    result = update_dxdata_with_comparison(DXDATA_URL, DXDATA_FILE)
+    diff = result.get('diff') or {}
+    return jsonify({
+        'success': bool(result.get('success')),
+        'message': build_dxdata_update_message(result, None),
+        'sheets_added': diff.get('sheets_added', 0),
+        'songs_added': diff.get('songs_added', 0),
+    })
 
 @admin_api.route('/admin/dxdata_audit', methods=['GET', 'POST'])
 @require_admin
@@ -1566,17 +1501,13 @@ def admin_remove_push_subscription():
 
 @admin_api.route("/admin/devtokens", methods=["GET"])
 @require_admin
+@_admin_error_boundary
 def admin_list_devtokens():
-
-    try:
-        tokens = list_dev_tokens()
-        all_tokens = load_dev_tokens()
-        for t in tokens:
-            token_data = all_tokens.get(t['token_id'], {})
-            t['allowed_users_count'] = len(token_data.get('allowed_users', []))
-        return jsonify({'success': True, 'tokens': tokens})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
+    tokens = list_dev_tokens()
+    all_tokens = load_dev_tokens()
+    for token in tokens:
+        token['allowed_users_count'] = len(all_tokens.get(token['token_id'], {}).get('allowed_users', []))
+    return jsonify({'success': True, 'tokens': tokens})
 
 
 @admin_api.route("/admin/devtokens", methods=["POST"])
