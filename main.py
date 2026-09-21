@@ -3508,7 +3508,7 @@ def _score_recognition_queue_task(event, command: str, quoted_message_id: str, f
         else:
             ver = get_user_field(user_id, "version", "jp") or "jp"
             if command == "ai-rec":
-                result = recognize_score_with_ai(image_bytes, user_id=user_id, ver=ver)
+                result = recognize_score_with_ai(image_bytes, ver=ver)
             else:
                 result = recognize_score_image_bytes(image_bytes, ver=ver)
                 result = validate_recognized_judgement(result, ver=ver)
@@ -3659,16 +3659,15 @@ def _handle_recognize_command(event, cleaned_text: str) -> bool:
         )
         return True
 
-    if command == "ai-rec":
-        from modules.score_recognition.access import require_ai_recognition_access
-        try:
-            require_ai_recognition_access(user_id)
-        except PermissionError:
-            smart_reply(
-                user_id, event.reply_token, access_error(user_id), configuration,
-                addition=False, source_type=source_type,
-            )
-            return True
+    from modules.commands.command_access import require_command_access
+    try:
+        require_command_access(user_id, command)
+    except PermissionError:
+        smart_reply(
+            user_id, event.reply_token, access_error(user_id), configuration,
+            addition=False, source_type=source_type,
+        )
+        return True
 
     _enqueue_score_recognition_task(event, command, quoted_message_id, force_flex=force_flex)
     return True
@@ -3786,6 +3785,14 @@ def dispatch_command(ctx):
         if m is None:
             continue
         ctx.match = m
+
+        from modules.commands.command_access import require_command_access
+        try:
+            require_command_access(ctx.user_id, cmd.name)
+        except PermissionError:
+            smart_reply(ctx.user_id, ctx.reply_token, access_error(ctx.user_id),
+                        configuration, addition=False, source_type=ctx.source_type)
+            return True
 
         # 拦截 1：@ 别人但用了仅限本人的命令
         if cmd.self_only and ctx.has_other_mention:

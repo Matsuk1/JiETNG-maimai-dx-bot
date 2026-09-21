@@ -1657,11 +1657,8 @@ def validate_recognized_judgement(
     return result
 
 
-def recognize_score_with_ai(image_bytes: bytes, *, user_id: str, ver="jp"):
-    """Explicit ai-rec entry point; authorization precedes any paid/model work."""
-    from modules.score_recognition.access import require_ai_recognition_access
-
-    require_ai_recognition_access(user_id)
+def recognize_score_with_ai(image_bytes: bytes, *, ver="jp"):
+    """Recognize an image; caller command dispatch owns access control."""
     try:
         with Image.open(BytesIO(image_bytes)) as image:
             if str(image.format or "").upper() not in SUPPORTED_SCORE_IMAGE_FORMATS:

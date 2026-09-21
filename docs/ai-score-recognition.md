@@ -8,11 +8,15 @@
 
 AI 识别沿用现有 Codex 连接配置。普通 OCR API 不调用 Codex。
 
-权限入口位于 `modules/score_recognition/access.py`：
-`can_use_ai_recognition(user_id)` 判断使用权限，
-`require_ai_recognition_access(user_id)` 在无权限时抛出 `PermissionError`。
-命令入队前和实际 AI 识别前都会检查，用户 ID 来自 LINE 事件。
+权限入口位于 `modules/commands/command_access.py`：
+`can_use_command(user_id, command_name)` 判断使用权限，
+`require_command_access(user_id, command_name)` 在无权限时抛出 `PermissionError`。
+图片命令识别入口及通用命令分发器在执行或入队前检查发送者权限；识别模块不承担鉴权。
 
-当前免费阶段，未设置 `JIETNG_AI_REC_ALLOWED_USERS` 时允许有用户身份的请求。
+`COMMAND_ACCESS_POLICIES` 集中登记特殊权限命令，以标准命令名称为键
+（通用命令使用 `Command.name`，别名共享同一权限）。未登记的命令保持原有权限行为。
+以后添加特殊权限命令只需登记其名称及白名单环境变量，并可将统一判断函数改为查询付费订阅。
+
+目前 `ai-rec` 使用 `JIETNG_AI_REC_ALLOWED_USERS`：未设置时允许有用户身份的请求；
 设置后只允许逗号分隔的用户 ID；设为空字符串则全部拒绝。
-将来可在该权限函数中接入订阅状态、有效期等查询；当前尚未实现计费、扣费或额度管理。
+当前尚未实现计费、扣费或额度管理。

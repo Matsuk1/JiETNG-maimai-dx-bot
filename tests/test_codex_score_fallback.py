@@ -182,32 +182,13 @@ def test_correct_title_with_overfull_break_reports_row_mismatch(caplog):
     assert 'reason=chart_not_matched' not in caplog.text
 
 
-def test_explicit_ai_command_authorizes_and_uses_requested_version(monkeypatch):
+def test_explicit_ai_recognition_uses_requested_version(monkeypatch):
     monkeypatch.delenv('JIETNG_AI_REC_ALLOWED_USERS', raising=False)
     song, parsed = sample()
     raw = image_bytes()
     with patch.object(recognizer, 'read_dxdata', return_value=([song], None)) as read, patch.object(
         codex_agent, 'recognize_score_with_codex', return_value=parsed) as ask:
-        result = recognizer.recognize_score_with_ai(raw, user_id='user', ver='intl')
+        result = recognizer.recognize_score_with_ai(raw, ver='intl')
     ask.assert_called_once_with(raw)
     read.assert_called_with('intl')
     assert result['source'] == 'codex'
-
-
-@pytest.mark.parametrize('user_id,allowlist', [('', None), ('user', ''), ('user', 'someone-else')])
-def test_ai_denial_precedes_model_work(monkeypatch, user_id, allowlist):
-    if allowlist is None:
-        monkeypatch.delenv('JIETNG_AI_REC_ALLOWED_USERS', raising=False)
-    else:
-        monkeypatch.setenv('JIETNG_AI_REC_ALLOWED_USERS', allowlist)
-    with patch.object(codex_agent, 'recognize_score_with_codex') as ask:
-        with pytest.raises(PermissionError):
-            recognizer.recognize_score_with_ai(b'image', user_id=user_id)
-    ask.assert_not_called()
-
-
-def test_ai_allowlist(monkeypatch):
-    from modules.score_recognition.access import can_use_ai_recognition
-    monkeypatch.setenv('JIETNG_AI_REC_ALLOWED_USERS', ' user, another ')
-    assert can_use_ai_recognition('user')
-    assert not can_use_ai_recognition('other')
