@@ -5,7 +5,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from modules.commands import command_access as access
+from modules.commands import command_config as access
 from modules.commands.command_router import Command, Exact
 
 

@@ -15,11 +15,12 @@ from modules.images.skins import user_image
 from modules.images.composition import compose_generated_images
 from modules.task_runtime import check_rate_limit
 from modules.images.records import (
+    build_plate_entries,
+    build_progress_entries,
     generate_level_rank_progress_image,
     generate_plate_image,
     generate_records_picture,
 )
-from modules.images.progress import build_plate_entries, build_progress_entries
 from modules.record_manager import (
     PLATE_RULES,
     PROGRESS_RANKS,

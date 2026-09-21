@@ -69,12 +69,13 @@ from modules.images.songs import (
     song_info_generate,
 )
 from modules.images.records import (
+    build_plate_entries,
+    build_progress_entries,
     generate_level_rank_progress_image,
     generate_plate_image,
     generate_records_picture,
     generate_score_recognition_picture,
 )
-from modules.images.progress import build_plate_entries, build_progress_entries
 
 # User and data managers
 from modules.user_manager import (
@@ -244,6 +245,9 @@ from modules.commands.command_parsers import (
     parse_note_counts,
     parse_paginated_keyword,
     parse_plate_query,
+    PROGRESS_RANK_PATTERN,
+    parse_level_rank_progress as _parse_level_rank_progress_text,
+    resolve_progress_category as _resolve_progress_category,
 )
 from modules.dbpool_manager import close_pool
 from modules.image_button_once import PREFIX as IMAGE_BUTTON_PREFIX, consume_image_button
@@ -288,11 +292,6 @@ from modules.commands.command_help import (
     command_help_message as _command_help_message,
     detect_command_help_key,
     detect_missing_param_help_key as _detect_missing_param_help_key,
-)
-from modules.commands.progress_parser import (
-    PROGRESS_RANK_PATTERN,
-    parse_level_rank_progress as _parse_level_rank_progress_text,
-    resolve_progress_category as _resolve_progress_category,
 )
 from modules.task_runtime import (
     check_rate_limit,
@@ -3269,7 +3268,7 @@ def _handle_recognize_command(event, cleaned_text: str) -> bool:
         )
         return True
 
-    from modules.commands.command_access import require_command_access
+    from modules.commands.command_config import require_command_access
     try:
         require_command_access(user_id, command)
     except PermissionError:
@@ -3390,7 +3389,7 @@ def dispatch_command(ctx):
             continue
         ctx.match = m
 
-        from modules.commands.command_access import require_command_access
+        from modules.commands.command_config import require_command_access
         try:
             require_command_access(ctx.user_id, cmd.name)
         except PermissionError:

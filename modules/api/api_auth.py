@@ -1,5 +1,6 @@
 """Authentication and user-permission decorators for the developer API."""
 
+import logging
 from functools import wraps
 
 from flask import jsonify, request
@@ -16,6 +17,22 @@ MAIMAI_SESSION_CORS_ORIGINS = {
     "http://localhost:5173",
     "http://127.0.0.1:5173",
 }
+
+
+def api_error_boundary(view=None, *, cors=False):
+    """Convert unexpected endpoint failures to the shared JSON contract."""
+    if view is None:
+        return lambda function: api_error_boundary(function, cors=cors)
+    logger = logging.getLogger(view.__module__)
+
+    @wraps(view)
+    def decorated(*args, **kwargs):
+        try:
+            return view(*args, **kwargs)
+        except Exception as exc:
+            logger.exception("[API] %s failed: path=%s", view.__name__, request.path)
+            return _error("Internal server error", str(exc), 500, cors=cors)
+    return decorated
 
 
 def maimai_session_cors(response):

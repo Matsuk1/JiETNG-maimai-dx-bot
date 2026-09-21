@@ -5,12 +5,12 @@ import threading
 import time
 from dataclasses import dataclass
 from datetime import datetime
-from functools import wraps
 from typing import Callable
 
 from flask import Blueprint, Response, jsonify, request, stream_with_context
 
 from modules.api.api_auth import (
+    api_error_boundary,
     require_dev_token,
     require_owner_permission,
     require_user_permission,
@@ -56,18 +56,6 @@ _services: DeveloperApiServices | None = None
 def configure_developer_api(*, configuration, nickname, process_credentials, sync_user_data, sync_timeout):
     global _services
     _services = DeveloperApiServices(configuration, nickname, process_credentials, sync_user_data, sync_timeout)
-
-
-def api_error_boundary(function):
-    """Return a consistent JSON error without duplicating it in every endpoint."""
-    @wraps(function)
-    def guarded(*args, **kwargs):
-        try:
-            return function(*args, **kwargs)
-        except Exception as exc:
-            logger.exception("[API] %s failed: path=%s", function.__name__, request.path)
-            return jsonify({"error": "Internal server error", "message": str(exc)}), 500
-    return guarded
 
 
 @developer_api.route("/api/v2/users", methods=["GET"])

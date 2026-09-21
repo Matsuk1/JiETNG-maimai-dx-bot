@@ -14,6 +14,7 @@ from io import BytesIO
 from types import SimpleNamespace
 from typing import Callable
 
+from markdown_it import MarkdownIt
 from PIL import Image, UnidentifiedImageError
 from flask import (
     Blueprint,
@@ -72,7 +73,6 @@ from modules.monitoring.codex_agent import (
     verify_service_bridge_token,
 )
 from modules.monitoring.file_access import is_asset_image, resolve_allowed_path
-from modules.monitoring.markdown_renderer import render_markdown
 from modules.notice_manager import (
     calculate_notice_stats,
     get_all_notices_stats,
@@ -114,6 +114,14 @@ from modules.i18n import localized_payload
 
 logger = logging.getLogger(__name__)
 admin_api = Blueprint("admin_api", __name__)
+_markdown_renderer = (MarkdownIt("commonmark", {"breaks": True, "html": False, "linkify": False})
+                      .enable("table").enable("strikethrough"))
+
+
+def render_markdown(source: str) -> str:
+    return _markdown_renderer.render(source)
+
+
 CSRF_EXEMPT_ENDPOINTS = (
     "admin_trigger_update",
     "admin_create_notice",

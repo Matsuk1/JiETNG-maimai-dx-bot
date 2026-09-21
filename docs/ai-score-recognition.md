@@ -8,7 +8,7 @@
 
 AI 识别沿用现有 Codex 连接配置。普通 OCR API 不调用 Codex。
 
-权限入口位于 `modules/commands/command_access.py`：
+权限入口位于 `modules/commands/command_config.py`：
 `can_use_command(user_id, command_name)` 判断使用权限，
 `require_command_access(user_id, command_name)` 在无权限时抛出 `PermissionError`。
 图片命令识别入口及通用命令分发器在执行或入队前检查发送者权限；识别模块不承担鉴权。

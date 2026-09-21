@@ -24,6 +24,12 @@ FILTER_MODES: dict[str, FilterMode] = {
     "c": "cleared",
 }
 NOTE_NAMES = ("tap", "hold", "slide", "touch", "break")
+PROGRESS_RANK_PATTERN = r"(sss\+|ss\+|s\+|ap\+|fc\+|fdx\+|sss|ss|ap|fc|fdx|s)"
+PROGRESS_CATEGORY_ALIASES = {
+    "vocaloid": "niconico＆ボーカロイド", "popani": "POPS＆アニメ",
+    "touhou": "東方Project", "gekichu": "オンゲキ＆CHUNITHM",
+    "game": "ゲーム＆バラエティ", "maimai": "maimai",
+}
 
 
 def parse_paginated_keyword(text: str) -> tuple[str, int]:
@@ -124,6 +130,18 @@ def parse_bpm_number(value: object) -> Optional[float]:
 
 def format_bpm_number(value: float) -> str:
     return str(int(value)) if float(value).is_integer() else f"{value:g}"
+
+
+def resolve_progress_category(target):
+    return PROGRESS_CATEGORY_ALIASES.get(str(target or "").strip().lower())
+
+
+def parse_level_rank_progress(text):
+    body = re.sub(r"\s+", " ", text.strip().lower())
+    body = re.sub(r"\s*-(uc|up|c)\s*$", "", body).strip()
+    body = re.sub(r"\s*prog\s*$", "", body).strip()
+    match = re.search(fr"{PROGRESS_RANK_PATTERN}\s*$", body)
+    return (body[:match.start()].strip(), match.group(1)) if match else (None, None)
 
 
 def parse_fix_record_command(command_text):
