@@ -3,42 +3,35 @@ name: Deploy Docs
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
-# 防止并发运行，避免多个 artifact 冲突
 concurrency:
-  group: pages
-  cancel-in-progress: false
+  group: cloudflare-pages
+  cancel-in-progress: true
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
+  deployments: write
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: |
-          cd docs
+          cache: npm
+          cache-dependency-path: docs/package-lock.json
+      - name: Build docs
+        working-directory: docs
+        run: |
           npm ci
           npm run docs:build
-      - uses: actions/upload-pages-artifact@v3
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v4
         with:
-          path: docs/.vitepress/dist
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-        timeout-minutes: 5
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy docs/.vitepress/dist --project-name=jietng-docs
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
