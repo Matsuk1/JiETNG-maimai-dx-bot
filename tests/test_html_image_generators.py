@@ -1,10 +1,28 @@
 import unittest
+from io import BytesIO
 from unittest.mock import patch
-from PIL import Image
+from PIL import Image, JpegImagePlugin
 
 from modules.images import records as records
 from modules.images import composition as image_manager
 from modules.images.records import thumbnail_html
+from modules.images.upload import _encode_jpeg
+
+
+def test_jpeg_encoding_preserves_source_and_quality():
+    with Image.new('RGBA', (64, 32), (255, 0, 0, 255)) as image:
+        data = _encode_jpeg(image)
+        assert image.getpixel((0, 0)) == (255, 0, 0, 255)
+        with Image.open(BytesIO(data)) as encoded:
+            assert encoded.size == image.size
+            assert JpegImagePlugin.get_sampling(encoded) == 0
+            assert encoded.info.get('progressive')
+
+
+def test_jpeg_encoding_flattens_transparency_to_white():
+    with Image.new('RGBA', (16, 16), (0, 0, 0, 0)) as image:
+        with Image.open(BytesIO(_encode_jpeg(image))) as encoded:
+            assert encoded.convert('RGB').getpixel((8, 8)) == (255, 255, 255)
 
 
 class ImageDataTests(unittest.TestCase):

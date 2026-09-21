@@ -1,6 +1,61 @@
 import pytest
 
 from modules.images.records import _score_judgement_table
+from modules.messages.scores import generate_score_recognition_flex
+from modules.score_recognition.presentation import flex_combo_status, flex_score_rank
+from modules.score_rules import JUDGEMENT_ROWS, combo_status, score_rank
+
+
+def _nodes(value):
+    if isinstance(value, dict):
+        yield value
+        for child in value.values():
+            yield from _nodes(child)
+    elif isinstance(value, list):
+        for child in value:
+            yield from _nodes(child)
+
+
+def test_rank_boundaries():
+    boundaries = [(100.5, 'sss+'), (100, 'sss'), (99.5, 'ss+'), (99, 'ss'),
+                  (98, 's+'), (97, 's'), (94, 'aaa'), (90, 'aa'), (80, 'a'),
+                  (75, 'bbb'), (70, 'bb'), (60, 'b'), (50, 'c'), (0, 'd')]
+    for score, expected in boundaries:
+        assert score_rank(score) == expected
+        assert flex_score_rank(score) == expected.replace('+', 'p')
+        if score:
+            assert score_rank(score - 0.0001) != expected
+
+
+def test_missing_rank_and_combo_rows():
+    assert score_rank(None) is None
+    rows = {row: dict(great=0, good=0, miss=0) for row in JUDGEMENT_ROWS}
+    cases = [(None, 101, 'ap+'), (None, 100, 'ap'), ('great', 99, 'fc+'),
+             ('good', 98, 'fc'), ('miss', 97, None)]
+    for field, score, expected in cases:
+        if field:
+            rows['tap'][field] = 1
+        assert combo_status(score, rows) == expected
+        assert flex_combo_status(rows, score) == (expected.replace('+', 'p') if expected else 'dummy')
+    del rows['break']
+    assert combo_status(100, rows) is None
+    assert flex_combo_status(rows, 100) is None
+
+
+def test_flex_common_and_break_totals_keep_layout():
+    keys = ('perfect_high', 'perfect_low', 'great_high', 'great_middle', 'great_low', 'good', 'miss')
+    result = {'parsed': {'title': 'Test', 'achievement': 98,
+              'sub_judgement': {row: dict(critical_perfect=100, perfect=2, great=3, good=1, miss=0)
+                                for row in JUDGEMENT_ROWS}},
+              'validation': {'loss_percentages': {
+                  f'{row}_{field}': .01 for row in JUDGEMENT_ROWS for field in ('great', 'good', 'miss')},
+                  'break_detail': {**dict.fromkeys(keys, 2),
+                                   'loss_percentages': dict.fromkeys(keys, .002)}}}
+    totals = [node for node in _nodes(generate_score_recognition_flex(result).to_dict())
+              if node.get('backgroundColor') == '#FDEDEC']
+    assert [node['contents'][1]['text'] for node in totals] == ['-0.0400%'] * 4 + ['-0.0280%']
+    assert all(node['contents'][0]['text'] == 'TOTAL' and node['layout'] == 'horizontal'
+               for node in totals)
 
 
 def test_counts_and_loss_totals_remain_distinct():

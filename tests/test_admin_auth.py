@@ -1,9 +1,13 @@
+import re
+from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
-from flask import Flask
+from bs4 import BeautifulSoup
+from flask import Flask, render_template
 
 from modules.api import admin_api as admin
+from modules.notice_manager import summarize_notices
 
 
 # Every endpoint whose inline auth guard was consolidated.
@@ -160,3 +164,48 @@ def test_note_correction_uses_report_not_client_values(app):
             'field': 'noteCounts', 'value': -999})
     assert response.status_code == 200
     save.assert_called_once_with('r', 3, 'a', 'master')
+
+
+def test_notice_stats_share_one_user_snapshot():
+    users = {
+        'a': {'notice_interactions': {'n1': {'read': True, 'vote': 'support'}, 'n2': {'read': True}}},
+        'b': {'notice_interactions': {'n1': {'read': True, 'vote': 'oppose'}, 'deleted': {'read': True}}},
+        'c': {},
+    }
+    result = summarize_notices(['n1', 'n2', 'n3'], users)
+    assert result['n1'] == dict(total_users=3, read_count=2, support_count=1,
+                                oppose_count=1, read_percentage=66.67,
+                                vote_percentage=100.0, no_vote_count=0)
+    assert result['n2']['no_vote_count'] == 1
+    assert result['n3']['read_percentage'] == 0
+    assert summarize_notices(['n'], {})['n']['vote_percentage'] == 0
+
+
+def test_admin_template_renders_config_and_serves_assets():
+    root = Path(__file__).resolve().parents[1]
+    source = (root / 'templates/admin_panel.html').read_text()
+    stats = {key: 0 for key in re.findall(r'stats\.([a-zA-Z_0-9]+)', source)}
+    stats.update(dau_30d=[], image_command_breakdown=[], memory_components=[
+        dict(key='ocr', name='OCR', description='Table OCR', memory_mb=512, percent=50),
+        dict(key='playwright', name='Playwright', description='Browser', memory_mb=256, percent=25),
+    ])
+    application = Flask(__name__, template_folder=str(root / 'templates'),
+                        static_folder=str(root / 'assets'), static_url_path='/static')
+    with application.test_request_context():
+        html = render_template('admin_panel.html', stats=stats, total_users=0, logs='',
+                               language_options=[], default_language='ja',
+                               csrf_token=lambda: 'csrf-test-token')
+    page = BeautifulSoup(html, 'html.parser')
+    runtime = page.find('h2', string='Runtime Pressure').find_parent('section')
+    assert 'csrf-test-token' in html
+    assert len(runtime.select('[data-memory-component]')) == 2
+    assert '512 MiB' in runtime.get_text()
+    assert page.select_one('.process-memory-panel') is None
+    assert 'Process Memory' in page.select_one('.system-summary').get_text()
+    assert html.index('window.JIETNG_ADMIN_CONFIG') < html.index('src="/static/admin-panel.js?')
+    assert '/static/admin-panel.css?v=' in html
+    for name in ('admin-panel.css', 'admin-monitor.css', 'admin-panel.js', 'admin-user-editor.js'):
+        assert '/static/' + name in html
+        response = application.test_client().get('/static/' + name)
+        assert response.status_code == 200
+        response.close()
