@@ -1,11 +1,13 @@
 """Request throttling, bounded task execution, and admin tracking."""
 
 import logging
+import queue
 import threading
 import time
 import traceback
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any
 
 
 logger = logging.getLogger(__name__)
@@ -15,6 +17,7 @@ user_request_tracking = {}
 user_request_lock = threading.Lock()
 REQUEST_LIMIT_WINDOW = 20
 MAX_SAME_REQUESTS = 4
+
 
 @dataclass(frozen=True, slots=True)
 class TaskContext:
@@ -30,7 +33,7 @@ class TaskOutcome:
     error: str | None = None
 
 
-def task_context(args):
+def task_context(args: tuple[Any, ...]) -> TaskContext:
     if not args:
         return TaskContext()
     first = args[0]
@@ -49,12 +52,12 @@ def task_context(args):
     return TaskContext()
 
 
-def track_queued(tracking, lock, task):
+def track_queued(tracking: dict, lock: threading.Lock, task: dict) -> None:
     with lock:
         tracking["queued"].append(task)
 
 
-def discard_queued(tracking, lock, task_id):
+def discard_queued(tracking: dict, lock: threading.Lock, task_id: str) -> None:
     with lock:
         tracking["queued"] = [
             item for item in tracking["queued"] if item.get("id") != task_id
@@ -173,7 +176,7 @@ def execute_task(
     return outcome
 
 
-def queue_worker(task_queue, run_item):
+def queue_worker(task_queue: queue.Queue, run_item) -> None:
     while True:
         item = task_queue.get()
         try:
@@ -193,33 +196,30 @@ def check_rate_limit(user_id: str, task_type: str) -> bool:
     Returns:
         bool: True 表示超过限制（应该拒绝），False 表示可以继续
     """
-    current_time = time.time()
+    now = time.time()
 
     with user_request_lock:
-        # 初始化用户追踪
-        if user_id not in user_request_tracking:
-            user_request_tracking[user_id] = {}
-
-        if task_type not in user_request_tracking[user_id]:
-            user_request_tracking[user_id][task_type] = []
-
-        # 清理过期的请求记录
-        user_request_tracking[user_id][task_type] = [
-            ts for ts in user_request_tracking[user_id][task_type]
-            if current_time - ts < REQUEST_LIMIT_WINDOW
+        requests_by_type = user_request_tracking.setdefault(user_id, {})
+        timestamps = requests_by_type.setdefault(task_type, [])
+        timestamps[:] = [
+            timestamp
+            for timestamp in timestamps
+            if now - timestamp < REQUEST_LIMIT_WINDOW
         ]
 
-        # 检查是否超过限制
-        if len(user_request_tracking[user_id][task_type]) >= MAX_SAME_REQUESTS:
-            logger.warning(f"[RateLimit] ⚠ Limit exceeded: user_id={user_id}, task_type={task_type}")
-            return True  # 超过限制
+        if len(timestamps) >= MAX_SAME_REQUESTS:
+            logger.warning(
+                "[RateLimit] Limit exceeded: user_id=%s task_type=%s",
+                user_id,
+                task_type,
+            )
+            return True
 
-        # 记录本次请求
-        user_request_tracking[user_id][task_type].append(current_time)
-        return False  # 未超过限制
+        timestamps.append(now)
+        return False
 
 
-def cleanup_rate_limiter_tracking():
+def cleanup_rate_limiter_tracking() -> int:
     """Discard expired request timestamps and empty user entries."""
     now = time.time()
     tracking = user_request_tracking

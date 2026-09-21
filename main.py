@@ -17,6 +17,7 @@ import aiohttp
 import atexit
 import time
 import math
+import binascii
 import base64 as b64mod
 
 from datetime import datetime
@@ -332,6 +333,8 @@ TASK_TIMEOUT_SECONDS = 120
 SCORE_RECOGNITION_API_MAX_IMAGE_BYTES = int(
     os.getenv("SCORE_RECOGNITION_API_MAX_IMAGE_BYTES", 20 * 1024 * 1024)
 )
+ALLOWED_BACKGROUND_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".heic", ".heif"}
+MAX_BACKGROUND_BYTES = 5 * 1024 * 1024
 
 # ==================== 日志配置 ====================
 
@@ -423,8 +426,12 @@ def _handle_task_error(func, error, context, traceback_text):
                 configuration,
                 source_type=context.source_type,
             )
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning(
+                "[Task] Failed to notify user after task error: user_id=%s error=%s",
+                context.user_id,
+                exc,
+            )
 
 
 def _complete_task(func, outcome: TaskOutcome):
@@ -503,12 +510,12 @@ def linebot_reply():
         request.destination = destination
         handler.handle(body, signature)
         # 签名校验通过后再追踪（避免把无效请求计入指标）
-        try:
-            for _ev in json_data.get('events', []):
-                _uid = _ev.get('source', {}).get('userId')
-                track_event('line_webhook', user_id=_uid, metadata={'type': _ev.get('type')})
-        except Exception:
-            pass
+        for event_data in json_data.get("events", []):
+            track_event(
+                "line_webhook",
+                user_id=event_data.get("source", {}).get("userId"),
+                metadata={"type": event_data.get("type")},
+            )
 
     except Exception as e:
         is_bad_request = isinstance(e, (json.JSONDecodeError, InvalidSignatureError))
@@ -524,20 +531,23 @@ def linebot_reply():
                     uid = ev.get('source', {}).get('userId')
                     if reply_token and uid:
                         smart_reply(uid, reply_token, system_error(uid), configuration, addition=False)
-            except Exception:
-                pass
+            except Exception as reply_error:
+                logger.warning(
+                    "[Webhook] Failed to send error reply: error=%s",
+                    reply_error,
+                )
 
-        _notif_uid = None
-        if not is_bad_request:
-            try:
-                _notif_uid = json_data.get('events', [{}])[0].get('source', {}).get('userId')
-            except Exception:
-                pass
+        events = json_data.get("events", []) if not is_bad_request else []
+        first_event = events[0] if events and isinstance(events[0], dict) else {}
+        event_source = first_event.get("source", {})
+        notification_user_id = (
+            event_source.get("userId") if isinstance(event_source, dict) else None
+        )
         notify_admins_error(
             error_title="Webhook Error",
             error_details=f"{type(e).__name__}: {str(e)}\n\n{traceback.format_exc()}",
             context={"Error": type(e).__name__, "Detail": str(e)[:200]},
-            user_id=_notif_uid
+            user_id=notification_user_id,
         )
 
     return 'OK', 200
@@ -953,7 +963,8 @@ def website_settings():
             if os.path.exists(os.path.join(BG_DIR, filename))
         ]
         all_bg_files = existing_custom_bg_files + other_bg_files
-    except Exception:
+    except OSError:
+        logger.exception("[Settings] Failed to scan background directory")
         all_bg_files = []
         existing_custom_bg_files = []
 
@@ -1010,7 +1021,7 @@ def _settings_user_id_from_request():
     try:
         user_id = get_user_id_from_settings_token(token)
         return user_id if user_exists(user_id) else None
-    except Exception:
+    except ValueError:
         return None
 
 
@@ -1065,11 +1076,9 @@ def manage_custom_bg():
         user_id = get_user_id_from_settings_token(token)
         if not user_exists(user_id):
             return jsonify({"success": False, "message": "Invalid token"}), 400
-    except Exception:
+    except ValueError:
         return jsonify({"success": False, "message": "Invalid token"}), 400
 
-    ALLOWED_BG_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.webp', '.heic', '.heif'}
-    MAX_BG_SIZE = 5 * 1024 * 1024
     custom_bg_filenames = [
         f"jietnguser_{user_id}.webp",
         f"jietnguser_{user_id}_2.webp",
@@ -1089,11 +1098,11 @@ def manage_custom_bg():
         for custom_bg_filename in delete_filenames:
             try:
                 os.remove(os.path.join(BG_DIR, custom_bg_filename))
-                logger.info(f"[Settings] ✓ Deleted custom bg: user_id={user_id}")
+                logger.info("[Settings] Deleted custom bg: user_id=%s", user_id)
             except FileNotFoundError:
                 pass
-            except Exception as e:
-                logger.error(f"[Settings] ✗ Failed to delete custom bg: user_id={user_id}, error={e}")
+            except OSError:
+                logger.exception("[Settings] Failed to delete custom bg: user_id=%s", user_id)
                 return jsonify({"success": False, "message": "Failed to delete"}), 500
 
         bg_files = get_user_field(user_id, "bg_files", [])
@@ -1118,15 +1127,15 @@ def manage_custom_bg():
         return jsonify({"success": False, "message": "No file provided"}), 400
 
     original_ext = os.path.splitext(body['filename'])[1].lower()
-    if original_ext not in ALLOWED_BG_EXTENSIONS:
+    if original_ext not in ALLOWED_BACKGROUND_EXTENSIONS:
         return jsonify({"success": False, "message": "Unsupported format"}), 400
 
     try:
-        file_data = b64mod.b64decode(body['data'])
-    except Exception:
+        file_data = b64mod.b64decode(body["data"], validate=True)
+    except (ValueError, binascii.Error):
         return jsonify({"success": False, "message": "Invalid data"}), 400
 
-    if len(file_data) > MAX_BG_SIZE:
+    if len(file_data) > MAX_BACKGROUND_BYTES:
         return jsonify({"success": False, "message": "File too large"}), 400
 
     try:
@@ -1141,9 +1150,18 @@ def manage_custom_bg():
             source_img.load()
             img = ImageOps.exif_transpose(source_img).convert("RGB")
         img.save(custom_bg_path, "WEBP", quality=85)
-        logger.info(f"[Settings] ✓ Uploaded custom bg: user_id={user_id}, ext={original_ext}, size={len(file_data)}")
-    except Exception as e:
-        logger.error(f"[Settings] ✗ Failed to process uploaded bg: user_id={user_id}, ext={original_ext}, error={e}")
+        logger.info(
+            "[Settings] Uploaded custom bg: user_id=%s ext=%s size=%s",
+            user_id,
+            original_ext,
+            len(file_data),
+        )
+    except (OSError, ValueError):
+        logger.exception(
+            "[Settings] Failed to process uploaded bg: user_id=%s ext=%s",
+            user_id,
+            original_ext,
+        )
         return jsonify({"success": False, "message": "Invalid image"}), 400
 
     return jsonify({"success": True, "filename": custom_bg_filename}), 201
@@ -1611,9 +1629,11 @@ def async_generate_friend_record_task(ctx):
     # 获取用户版本
     ver = ctx.mai_ver
 
-    try:
-        track_event('image_gen', user_id=user_id, metadata={'command': 'friend-rcd', 'source': 'line'})
-    except Exception: pass
+    track_event(
+        "image_gen",
+        user_id=user_id,
+        metadata={"command": "friend-rcd", "source": "line"},
+    )
 
     # 直接通过网页爬取获取好友信息
     reply_msg = asyncio.run(generate_friend_record(user_id, friend_code, record_type, command, ver))
@@ -1623,10 +1643,11 @@ def async_generate_friend_record_task(ctx):
 def async_get_song_record_task(ctx):
     """Query using the command context resolved before queueing."""
     acronym = re.sub(r"\s+record$", "", ctx.text, flags=re.IGNORECASE).strip()
-    try:
-        track_event('image_gen', user_id=ctx.user_id, metadata={'command': 'record', 'source': 'line'})
-    except Exception:
-        pass
+    track_event(
+        "image_gen",
+        user_id=ctx.user_id,
+        metadata={"command": "record", "source": "line"},
+    )
     reply_msg = asyncio.run(get_song_record(ctx.user_id, ctx.id_use, acronym, ctx.mai_ver_use))
     smart_reply(ctx.user_id, ctx.reply_token, reply_msg, configuration, source_type=ctx.source_type)
 
@@ -2105,7 +2126,7 @@ def calc_by_id(user_id, song_id, ver="jp"):
     return calc_carousel
 
 def get_user_info(user_id, source_type):
-    if source_type != 'user':
+    if source_type != "user":
         return generate_status_flex(
             language_catalog("main.private_chat_title"),
             language_catalog("messages.private_info_group_warning_text"),
@@ -2124,7 +2145,7 @@ def get_bot_status(user_id):
     uptime_str = f"{days}d {hours}h {minutes}m"
 
     # 用户版本（影响读哪份 dxdata）
-    ver = get_user_field(user_id, 'version', 'jp') if user_id else 'jp'
+    ver = get_user_field(user_id, "version", "jp") if user_id else "jp"
 
     # 楽曲データ：曲数 + 文件 mtime
     try:
@@ -2133,13 +2154,15 @@ def get_bot_status(user_id):
     except Exception:
         song_count = 0
     try:
-        dxdata_date = datetime.fromtimestamp(os.path.getmtime(DXDATA_FILE)).strftime('%Y-%m-%d')
+        dxdata_date = datetime.fromtimestamp(os.path.getmtime(DXDATA_FILE)).strftime(
+            "%Y-%m-%d"
+        )
     except Exception:
         dxdata_date = "N/A"
 
     # 今日任务数 = image_gen + sync_cmd（复用 business_stats 30s 缓存）
     bs = get_business_stats()
-    tasks_today = bs.get('today_image_calls', 0) + bs.get('today_sync_cmd_calls', 0)
+    tasks_today = bs.get("today_image_calls", 0) + bs.get("today_sync_cmd_calls", 0)
 
     return generate_bot_status_flex(
         uptime_str=uptime_str,
@@ -2148,7 +2171,7 @@ def get_bot_status(user_id):
         tasks_today=tasks_today,
         song_count=song_count,
         dxdata_date=dxdata_date,
-        user_id=user_id
+        user_id=user_id,
     )
 
 @user_image
@@ -2162,38 +2185,41 @@ async def get_song_record(user_id, id_use, acronym, ver="jp"):
     
     song_record = read_record(id_use, ver=ver)
 
-    if not len(song_record):
+    if not song_record:
         return mention_record_error(user_id) if id_use != user_id else record_error(user_id)
-        
-    # 使用优化的歌曲匹配函数
+
     songs, _ = read_dxdata(ver)
-    matching_songs = find_matching_songs(acronym, songs, max_results=MAX_SEARCH_RESULTS, )
+    matching_songs = find_matching_songs(
+        acronym,
+        songs,
+        max_results=MAX_SEARCH_RESULTS,
+    )
 
     if not matching_songs:
         return song_error(user_id)
 
-    # 过滤出有游玩记录的歌曲
-    songs_with_records = []
-    for song in matching_songs:
-        has_record = False
-        for rcd in song_record:
-            if rcd['cover_name'] == song['cover_name'] and rcd['type'] == song['type']:
-                has_record = True
-                break
-        if has_record:
-            songs_with_records.append(song)
+    recorded_charts = {
+        (record["cover_name"], record["type"])
+        for record in song_record
+    }
+    songs_with_records = [
+        song
+        for song in matching_songs
+        if (song["cover_name"], song["type"]) in recorded_charts
+    ]
 
-    # 没有找到任何有记录的歌曲
-    if len(songs_with_records) == 0:
+    if not songs_with_records:
         return song_error(user_id)
 
-    # 返回搜索结果列表
     if len(songs_with_records) > 1:
-        return generate_search_results_flex(user_id, matching_songs, 'record', id_use)
+        return generate_search_results_flex(
+            user_id,
+            songs_with_records,
+            "record",
+            id_use,
+        )
 
-    # 单个结果，调用 get_song_record_by_id
-    song = songs_with_records[0]
-    song_id = song.get('id')
+    song_id = songs_with_records[0].get("id")
     return await get_song_record_by_id(user_id, id_use, song_id, ver)
 
 @user_image
@@ -2982,8 +3008,8 @@ def show_loading(user_id):
             MessagingApi(api_client).show_loading_animation(
                 ShowLoadingAnimationRequest(chatId=user_id, loadingSeconds=20)
             )
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("[LoadingAnimation] Request failed: user_id=%s error=%s", user_id, exc)
 
 
 def _build_command_context(event, cleaned_text):
@@ -3303,11 +3329,11 @@ def _bump_stats():
 
 def _run_sync_handler(cmd, ctx, *, count_completion=True):
     if cmd.queue == QUEUE_SYNC:
-        try:
-            track_event('sync_cmd', user_id=ctx.user_id,
-                        metadata={'command': cmd.name, 'source': 'line'})
-        except Exception as exc:
-            logger.debug("[EventTracker] sync_cmd tracking skipped: %s", exc)
+        track_event(
+            "sync_cmd",
+            user_id=ctx.user_id,
+            metadata={"command": cmd.name, "source": "line"},
+        )
     reply = cmd.handler(ctx)
     if reply is not None:
         if count_completion:
@@ -3323,11 +3349,11 @@ def _run_sync_handler(cmd, ctx, *, count_completion=True):
 
 
 def _image_worker_task(cmd, ctx):
-    try:
-        track_event('image_gen', user_id=ctx.user_id,
-                    metadata={'command': cmd.name, 'source': 'line'})
-    except Exception as exc:
-        logger.debug("[EventTracker] image_gen tracking skipped: %s", exc)
+    track_event(
+        "image_gen",
+        user_id=ctx.user_id,
+        metadata={"command": cmd.name, "source": "line"},
+    )
     _run_sync_handler(cmd, ctx, count_completion=False)
 
 
@@ -4011,9 +4037,7 @@ def handle_unfollow(event):
     user_id = event.source.user_id
     logger.info(f"[UnfollowEvent] {user_id} left")
     unlink_rich_menu(user_id)
-    try:
-        track_event('user_unbind', user_id=user_id, metadata={'source': 'line_unfollow'})
-    except Exception: pass
+    track_event("user_unbind", user_id=user_id, metadata={"source": "line_unfollow"})
     return delete_user(user_id)
 
 
