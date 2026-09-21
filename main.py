@@ -2217,53 +2217,40 @@ async def get_song_record_by_id(user_id, id_use, song_id, ver="jp"):
     if not matching_song:
         return song_error(user_id)
 
-    # 查找用户的游玩记录
-    played_data = []
-    for rcd in song_record:
-        if rcd['cover_name'] == matching_song['cover_name'] and rcd['type'] == matching_song['type']:
-            played_data.append(rcd)
-            song_name = rcd['name']
-
-    # 如果该歌曲没有游玩记录
+    played_data = [
+        record for record in song_record
+        if record['cover_name'] == matching_song['cover_name']
+        and record['type'] == matching_song['type']
+    ]
     if not played_data:
         return song_error(user_id)
 
-    # 尝试使用新函数获取更详细的成绩（包含游玩次数和最后游玩时间）
     try:
-        _id_use_data = get_user(id_use) if user_id == id_use else None
-        if _id_use_data and 'sega_id' in _id_use_data and 'sega_pwd' in _id_use_data:
-            sega_id = _id_use_data['sega_id']
-            sega_pwd = _id_use_data['sega_pwd']
-            aime = _id_use_data.get('aime', 0)
-            cookies = await login_to_maimai(sega_id, sega_pwd, ver=ver, aime=aime)
+        target_user = get_user(id_use) if user_id == id_use else None
+        if target_user and 'sega_id' in target_user and 'sega_pwd' in target_user:
+            cookies = await login_to_maimai(
+                target_user['sega_id'], target_user['sega_pwd'],
+                ver=ver, aime=target_user.get('aime', 0),
+            )
             if cookies == "RATE_LIMITED":
                 return login_rate_limit_message(user_id)
             if cookies is None:
-                logger.warning(f"[Song Record] ⚠ Login failed: user_id={user_id}")
+                logger.warning("[Song Record] Login failed: user_id=%s", user_id)
 
             if cookies:
-                detailed_records = await get_single_record(song_name, matching_song['type'], cookies, ver=ver)
-
+                detailed_records = await get_single_record(
+                    played_data[0]['name'], matching_song['type'], cookies, ver=ver)
                 if detailed_records and detailed_records != "MAINTENANCE":
-                    # 用详细成绩更新 played_data
-                    for rcd in played_data:
-                        # 找到对应难度的详细成绩
-                        for detail in detailed_records:
-                            if detail['difficulty'] == rcd['difficulty']:
-                                # 更新现有字段
-                                rcd['score'] = detail['score']
-                                rcd['dx_score'] = detail['dx_score']
-                                rcd['score_icon'] = detail['score_icon']
-                                rcd['combo_icon'] = detail['combo_icon']
-                                rcd['sync_icon'] = detail['sync_icon']
-                                # 添加新字段
-                                rcd['play_count'] = detail['play_count']
-                                rcd['last_play_time'] = detail['last_play_time']
-                                rcd = get_detailed_info([rcd], ver)[0]
-                                break
-    except Exception as e:
-        # 如果获取详细成绩失败，继续使用原成绩
-        logger.exception(f"[Song Record] Failed to get detailed record for {matching_song.get('title', 'unknown')}: {e}")
+                    details = {record['difficulty']: record for record in detailed_records}
+                    fields = ('score', 'dx_score', 'score_icon', 'combo_icon', 'sync_icon',
+                              'play_count', 'last_play_time')
+                    for record in played_data:
+                        detail = details.get(record['difficulty'])
+                        if detail:
+                            record.update({field: detail[field] for field in fields})
+                    get_detailed_info(played_data, ver)
+    except Exception:
+        logger.exception("[Song Record] Failed to get details for %s", matching_song.get('title', 'unknown'))
 
     # 生成歌曲信息图片
     user_tz = get_user_timezone(user_id)
@@ -2283,7 +2270,7 @@ async def generate_plate_rcd(user_id, id_use, title, ver="jp", filter_mode=None)
     if error:
         return error
 
-    if not (len(title) == 2 or len(title) == 3):
+    if len(title) not in (2, 3):
         return plate_error(user_id)
 
     song_record = read_record(id_use, ver=ver)
@@ -2298,25 +2285,17 @@ async def generate_plate_rcd(user_id, id_use, title, ver="jp", filter_mode=None)
 
     songs, versions = read_dxdata(ver)
 
-    target_version = []
-    target_icon = []
-    target_type = ""
-
+    target_version = [version['version'] for version in versions if version_name in version['abbr']]
     if version_name in TEMP_VERSION["abbr"]:
-        target_version.append(TEMP_VERSION["title"])
-
-    for version in versions:
-        if version_name in version['abbr']:
-            target_version.append(version['version'])
-
-    if not len(target_version):
+        target_version.insert(0, TEMP_VERSION["title"])
+    if not target_version:
         return version_error(user_id)
 
     if plate_type not in PLATE_RULES:
         return plate_error(user_id)
     target_type, target_icon = PLATE_RULES[plate_type]
 
-    version_rcd_data = list(filter(lambda x: x['version'] in target_version, song_record))
+    version_rcd_data = [record for record in song_record if record['version'] in target_version]
     if not version_rcd_data:
         return version_error(user_id)
 
