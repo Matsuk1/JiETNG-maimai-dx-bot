@@ -225,32 +225,52 @@ def api_delete_user(user_id):
         }), 500
 
 
+def _account_url_response(
+    user_id,
+    *,
+    action,
+    token_factory,
+    path,
+    response_key,
+    expires_in,
+):
+    try:
+        token_info = request.token_info
+        logger.info(
+            "[API] Create %s URL: user_id=%s token_id=%s note=%s",
+            action,
+            user_id,
+            token_info["token_id"],
+            token_info["note"],
+        )
+        url = f"https://{DOMAIN}{path.format(token=token_factory(user_id))}"
+        return jsonify(
+            {
+                "success": True,
+                "user_id": user_id,
+                response_key: url,
+                "expires_in": expires_in,
+                "message": f"{action.title()} URL generated successfully.",
+            }
+        ), 201
+    except Exception as exc:
+        logger.exception("[API] Create %s URL failed: user_id=%s", action, user_id)
+        return jsonify({"error": "Internal server error", "message": str(exc)}), 500
+
+
 @developer_api.route("/api/v2/users/<user_id>/bind-url", methods=["GET"])
 @developer_api.route("/api/v1/users/<user_id>/bind-url", methods=["GET"])
 @require_dev_token
 @require_user_permission
 def api_create_bind_url(user_id):
-    try:
-        token_info = request.token_info
-        logger.info(f"[API] Create bind URL: user_id={user_id}, token_id={token_info['token_id']}, note={token_info['note']}")
-
-        bind_token = generate_bind_token(user_id)
-        bind_url = f"https://{DOMAIN}/linebot/sega_bind?token={bind_token}"
-
-        return jsonify({
-            "success": True,
-            "user_id": user_id,
-            "bind_url": bind_url,
-            "expires_in": 120,
-            "message": "Bind URL generated successfully."
-        }), 201
-
-    except Exception as e:
-        logger.error(f"[API] ✗ Create bind URL error: user_id={user_id}, error={e}", exc_info=True)
-        return jsonify({
-            "error": "Internal server error",
-            "message": str(e)
-        }), 500
+    return _account_url_response(
+        user_id,
+        action="bind",
+        token_factory=generate_bind_token,
+        path="/linebot/sega_bind?token={token}",
+        response_key="bind_url",
+        expires_in=120,
+    )
 
 
 @developer_api.route("/api/v2/users/<user_id>/rebind-url", methods=["GET"])
@@ -258,27 +278,14 @@ def api_create_bind_url(user_id):
 @require_dev_token
 @require_user_permission
 def api_create_rebind_url(user_id):
-    try:
-        token_info = request.token_info
-        logger.info(f"[API] Create rebind URL: user_id={user_id}, token_id={token_info['token_id']}, note={token_info['note']}")
-
-        rebind_token = generate_bind_token(user_id)
-        rebind_url = f"https://{DOMAIN}/linebot/sega_bind?token={rebind_token}&mode=rebind"
-
-        return jsonify({
-            "success": True,
-            "user_id": user_id,
-            "rebind_url": rebind_url,
-            "expires_in": 120,
-            "message": "Rebind URL generated successfully."
-        }), 201
-
-    except Exception as e:
-        logger.error(f"[API] ✗ Create rebind URL error: user_id={user_id}, error={e}", exc_info=True)
-        return jsonify({
-            "error": "Internal server error",
-            "message": str(e)
-        }), 500
+    return _account_url_response(
+        user_id,
+        action="rebind",
+        token_factory=generate_bind_token,
+        path="/linebot/sega_bind?token={token}&mode=rebind",
+        response_key="rebind_url",
+        expires_in=120,
+    )
 
 
 @developer_api.route("/api/v2/users/<user_id>/settings-url", methods=["GET"])
@@ -286,27 +293,14 @@ def api_create_rebind_url(user_id):
 @require_dev_token
 @require_user_permission
 def api_create_settings_url(user_id):
-    try:
-        token_info = request.token_info
-        logger.info(f"[API] Create settings URL: user_id={user_id}, token_id={token_info['token_id']}, note={token_info['note']}")
-
-        settings_token = generate_settings_token(user_id)
-        settings_url = f"https://{DOMAIN}/linebot/settings?token={settings_token}"
-
-        return jsonify({
-            "success": True,
-            "user_id": user_id,
-            "settings_url": settings_url,
-            "expires_in": 1800,
-            "message": "Settings URL generated successfully."
-        }), 201
-
-    except Exception as e:
-        logger.error(f"[API] ✗ Create settings URL error: user_id={user_id}, error={e}", exc_info=True)
-        return jsonify({
-            "error": "Internal server error",
-            "message": str(e)
-        }), 500
+    return _account_url_response(
+        user_id,
+        action="settings",
+        token_factory=generate_settings_token,
+        path="/linebot/settings?token={token}",
+        response_key="settings_url",
+        expires_in=1800,
+    )
 
 
 @developer_api.route("/api/v2/users/<user_id>/bind", methods=["POST"])
