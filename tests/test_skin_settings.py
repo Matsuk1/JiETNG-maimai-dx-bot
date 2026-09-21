@@ -32,10 +32,12 @@ def settings_app(tmp_path):
                      link_bound_rich_menu=Mock(), load_dev_tokens=lambda: {},
                      generate_perm_token=lambda uid: 'permission', list_import_tokens=lambda uid: [],
                      language_catalog=lambda key: {}, _error_page=lambda *args: ('error',400))
-    node = next(node for node in ast.parse((ROOT/'main.py').read_text()).body
-                if isinstance(node,ast.FunctionDef) and node.name=='website_settings')
-    node.decorator_list=[]
-    exec(compile(ast.Module(body=[node],type_ignores=[]), str(ROOT/'main.py'), 'exec'), namespace)
+    nodes = [node for node in ast.parse((ROOT/'main.py').read_text()).body
+             if isinstance(node, ast.FunctionDef)
+             and node.name in {'_parse_int', 'website_settings'}]
+    for node in nodes:
+        node.decorator_list = []
+    exec(compile(ast.Module(body=nodes,type_ignores=[]), str(ROOT/'main.py'), 'exec'), namespace)
     app.add_url_rule('/linebot/settings',view_func=namespace['website_settings'],methods=['GET','POST'])
     return app,user
 

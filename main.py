@@ -611,6 +611,16 @@ def serve_export(file_id, friendly_name):
     )
 
 
+def _parse_int(value, default, minimum=None, maximum=None):
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return default
+    if minimum is not None:
+        parsed = max(minimum, parsed)
+    return min(maximum, parsed) if maximum is not None else parsed
+
+
 @app.route("/linebot/sega_bind", methods=["GET", "POST"])
 def website_segaid_bind():
     token = request.args.get("token")
@@ -662,10 +672,7 @@ def website_segaid_bind():
             return _error_page(error_messages, user_language)
 
         if mode == "bind" and bind_type == "import_token":
-            try:
-                timezone_int = int(user_timezone)
-            except (ValueError, TypeError):
-                timezone_int = 9
+            timezone_int = _parse_int(user_timezone, 9)
 
             if user_version not in ("jp", "intl"):
                 user_version = "jp"
@@ -765,17 +772,8 @@ def website_segaid_bind():
 
             return jsonify({"success": True, "candidates": candidates})
 
-        # 转换时区为整数
-        try:
-            timezone_int = int(user_timezone)
-        except (ValueError, TypeError):
-            timezone_int = 9  # 默认 UTC+9
-
-        # 转换 aime 为整数
-        try:
-            aime_int = int(aime)
-        except (ValueError, TypeError):
-            aime_int = 0  # 默认 0
+        timezone_int = _parse_int(user_timezone, 9)
+        aime_int = _parse_int(aime, 0)
 
         result = asyncio.run(process_sega_credentials(user_id, segaid, password, user_version, user_language, timezone_int, aime_int, (mode == "rebind")))
         if result == "RATE_LIMITED":
@@ -910,11 +908,7 @@ def website_settings():
         participate_global_ranking = request.form.get("participate_global_ranking") == "1"
         allow_mention_score_query = request.form.get("allow_mention_score_query") == "1"
 
-        # 转换时区为整数
-        try:
-            timezone_int = int(user_timezone)
-        except (ValueError, TypeError):
-            timezone_int = 9
+        timezone_int = _parse_int(user_timezone, 9)
 
         # 解析背景图列表
         if bg_files_str.strip():
@@ -925,17 +919,8 @@ def website_settings():
         # 处理背景图开关
         bg_enabled = request.form.get("bg_enabled_hidden", "0") == "1"
 
-        try:
-            bg_blur = int(bg_blur_raw)
-        except (ValueError, TypeError):
-            bg_blur = 20
-        bg_blur = max(0, min(40, bg_blur))
-
-        try:
-            bg_overlay = int(bg_overlay_raw)
-        except (ValueError, TypeError):
-            bg_overlay = 40
-        bg_overlay = max(0, min(120, bg_overlay))
+        bg_blur = _parse_int(bg_blur_raw, 20, 0, 40)
+        bg_overlay = _parse_int(bg_overlay_raw, 40, 0, 120)
 
         image_skin = normalize_skin(request.form.get("image_skin", user_data.get("image_skin", "default")))
 
@@ -974,16 +959,8 @@ def website_settings():
 
     user_bg_files = user_data.get("bg_files", [])
     bg_enabled = user_data.get("bg_enabled", False)
-    try:
-        bg_blur = int(user_data.get("bg_blur", 20))
-    except (ValueError, TypeError):
-        bg_blur = 20
-    bg_blur = max(0, min(40, bg_blur))
-    try:
-        bg_overlay = int(user_data.get("bg_overlay", 40))
-    except (ValueError, TypeError):
-        bg_overlay = 40
-    bg_overlay = max(0, min(120, bg_overlay))
+    bg_blur = _parse_int(user_data.get("bg_blur"), 20, 0, 40)
+    bg_overlay = _parse_int(user_data.get("bg_overlay"), 40, 0, 120)
 
     # 权限列表
     dev_tokens = load_dev_tokens()
