@@ -6,6 +6,7 @@ import re
 import secrets
 import threading
 import time
+from collections import Counter
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import wraps
@@ -220,6 +221,18 @@ def _admin_error_boundary(view):
 def _json_body():
     data = request.get_json(silent=True)
     return data if isinstance(data, dict) else {}
+
+
+def _resolve_backup(filename, missing_message):
+    if not filename:
+        return None, (jsonify({'success': False, 'message': missing_message}), 400)
+    if (not filename.startswith("backup_") or not filename.endswith(".zip")
+            or ".." in filename or "/" in filename or "\\" in filename):
+        return None, (jsonify({'success': False, 'message': 'Invalid backup filename'}), 400)
+    path = os.path.join(BACKUP_DIR, filename)
+    if not os.path.isfile(path):
+        return None, (jsonify({'success': False, 'message': 'Backup file not found'}), 404)
+    return path, None
 
 
 def _ai_monitor_session(conversation_id: str, *, register=False):
@@ -1211,185 +1224,62 @@ def admin_create_backup():
 
 @admin_api.route("/admin/get_backups", methods=["GET"])
 @require_admin
+@_admin_error_boundary
 def admin_get_backups():
-
-    try:
-        backup_files = []
-
-        if os.path.exists(BACKUP_DIR):
-            for filename in os.listdir(BACKUP_DIR):
-                if filename.startswith("backup_") and filename.endswith(".zip"):
-                    filepath = os.path.join(BACKUP_DIR, filename)
-                    stat = os.stat(filepath)
-
-                    backup_files.append({
-                        'filename': filename,
-                        'size': stat.st_size,
-                        'size_mb': round(stat.st_size / (1024 * 1024), 2),
-                        'created_at': datetime.fromtimestamp(stat.st_mtime).strftime('%Y-%m-%d %H:%M:%S'),
-                        'timestamp': stat.st_mtime
-                    })
-
-        backup_files.sort(key=lambda x: x['timestamp'], reverse=True)
-
-        return jsonify({
-            'success': True,
-            'backups': backup_files,
-            'count': len(backup_files)
+    backup_files = []
+    for filename in os.listdir(BACKUP_DIR) if os.path.isdir(BACKUP_DIR) else ():
+        if not (filename.startswith("backup_") and filename.endswith(".zip")):
+            continue
+        stat = os.stat(os.path.join(BACKUP_DIR, filename))
+        backup_files.append({
+            'filename': filename, 'size': stat.st_size,
+            'size_mb': round(stat.st_size / (1024 * 1024), 2),
+            'created_at': datetime.fromtimestamp(stat.st_mtime).strftime('%Y-%m-%d %H:%M:%S'),
+            'timestamp': stat.st_mtime,
         })
-
-    except Exception as e:
-        logger.error(f"[Admin] ✗ Get backups error: error={e}", exc_info=True)
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        }), 500
+    backup_files.sort(key=lambda item: item['timestamp'], reverse=True)
+    return jsonify({'success': True, 'backups': backup_files, 'count': len(backup_files)})
 
 @admin_api.route("/admin/download_backup", methods=["GET"])
 @require_admin
+@_admin_error_boundary
 def admin_download_backup():
-
-    filename = None
-    try:
-        filename = request.args.get('file')
-        if not filename:
-            return jsonify({
-                'success': False,
-                'message': 'Missing file parameter'
-            }), 400
-
-        if not filename.startswith("backup_") or not filename.endswith(".zip"):
-            return jsonify({
-                'success': False,
-                'message': 'Invalid backup filename'
-            }), 400
-
-        if ".." in filename or "/" in filename or "\\" in filename:
-            return jsonify({
-                'success': False,
-                'message': 'Invalid filename'
-            }), 400
-
-        backup_path = os.path.join(BACKUP_DIR, filename)
-
-        if not os.path.exists(backup_path):
-            return jsonify({
-                'success': False,
-                'message': 'Backup file not found'
-            }), 404
-
-        return send_file(
-            backup_path,
-            as_attachment=True,
-            download_name=filename,
-            mimetype='application/zip'
-        )
-
-    except Exception as e:
-        logger.error(f"[Admin] ✗ Download backup error: file={filename}, error={e}", exc_info=True)
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        }), 500
+    filename = request.args.get('file')
+    backup_path, error = _resolve_backup(filename, 'Missing file parameter')
+    if error:
+        return error
+    return send_file(backup_path, as_attachment=True, download_name=filename,
+                     mimetype='application/zip')
 
 @admin_api.route("/admin/delete_backup", methods=["POST"])
 @require_admin
+@_admin_error_boundary
 def admin_delete_backup():
-
-    try:
-        data = _json_body()
-        filename = data.get('filename')
-
-        if not filename:
-            return jsonify({
-                'success': False,
-                'message': 'Missing filename parameter'
-            }), 400
-
-        if not filename.startswith("backup_") or not filename.endswith(".zip"):
-            return jsonify({
-                'success': False,
-                'message': 'Invalid backup filename'
-            }), 400
-
-        if ".." in filename or "/" in filename or "\\" in filename:
-            return jsonify({
-                'success': False,
-                'message': 'Invalid filename'
-            }), 400
-
-        backup_path = os.path.join(BACKUP_DIR, filename)
-
-        if not os.path.exists(backup_path):
-            return jsonify({
-                'success': False,
-                'message': 'Backup file not found'
-            }), 404
-
-        os.remove(backup_path)
-        logger.info(f"[Admin] ✓ Backup deleted: file={filename}")
-
-        return jsonify({
-            'success': True,
-            'message': f'Backup {filename} deleted successfully'
-        })
-
-    except Exception as e:
-        logger.error(f"[Admin] ✗ Delete backup error: error={e}", exc_info=True)
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        }), 500
+    filename = _json_body().get('filename')
+    backup_path, error = _resolve_backup(filename, 'Missing filename parameter')
+    if error:
+        return error
+    os.remove(backup_path)
+    logger.info("[Admin] Backup deleted: file=%s", filename)
+    return jsonify({'success': True, 'message': f'Backup {filename} deleted successfully'})
 
 @admin_api.route("/admin/dxdata_status", methods=["GET"])
 @require_admin
+@_admin_error_boundary
 def admin_dxdata_status():
-
-    try:
-        songs, versions = read_dxdata()
-        total_songs = len(songs)
-        std_songs = len([s for s in songs if s['type'] == 'std'])
-        dx_songs = len([s for s in songs if s['type'] == 'dx'])
-        utage_songs = len([s for s in songs if s['type'] == 'utage'])
-
-        total_sheets = 0
-        jp_sheets = 0
-        intl_sheets = 0
-
-        for song in songs:
-            if song['type'] == 'utage':
-                continue
-            for sheet in song['sheets']:
-                total_sheets += 1
-                if sheet['regions'].get('jp', False):
-                    jp_sheets += 1
-                if sheet['regions'].get('intl', False):
-                    intl_sheets += 1
-
-        total_versions = len(versions)
-        version_names = [v.get('abbr', '') for v in versions]
-
-        return jsonify({
-            'songs': {
-                'total': total_songs,
-                'std': std_songs,
-                'dx': dx_songs,
-                'utage': utage_songs
-            },
-            'sheets': {
-                'total': total_sheets,
-                'jp': jp_sheets,
-                'intl': intl_sheets
-            },
-            'versions': total_versions,
-            'version_names': version_names
-        })
-
-    except Exception as e:
-        logger.error(f"[Admin] ✗ DXData status error: error={e}", exc_info=True)
-        return jsonify({
-            'error': str(e)
-        }), 500
+    songs, versions = read_dxdata()
+    song_types = Counter(song['type'] for song in songs)
+    sheets = [sheet for song in songs if song['type'] != 'utage' for sheet in song['sheets']]
+    return jsonify({
+        'songs': {'total': len(songs), **{kind: song_types[kind] for kind in ('std', 'dx', 'utage')}},
+        'sheets': {
+            'total': len(sheets),
+            'jp': sum(bool(sheet['regions'].get('jp')) for sheet in sheets),
+            'intl': sum(bool(sheet['regions'].get('intl')) for sheet in sheets),
+        },
+        'versions': len(versions),
+        'version_names': [version.get('abbr', '') for version in versions],
+    })
 
 @admin_api.route("/admin/update_dxdata", methods=["POST"])
 @require_admin
