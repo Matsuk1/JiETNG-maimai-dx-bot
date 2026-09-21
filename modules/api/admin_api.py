@@ -206,6 +206,17 @@ def require_admin(view):
     return authenticated_view
 
 
+def _admin_error_boundary(view):
+    @wraps(view)
+    def guarded_view(*args, **kwargs):
+        try:
+            return view(*args, **kwargs)
+        except Exception as exc:
+            logger.exception("[Admin] %s failed", view.__name__)
+            return jsonify({'success': False, 'message': str(exc)}), 500
+    return guarded_view
+
+
 def _json_body():
     data = request.get_json(silent=True)
     return data if isinstance(data, dict) else {}
@@ -705,17 +716,13 @@ def admin_ai_monitor_image():
 
 @admin_api.route("/admin/get_notices", methods=["GET"])
 @require_admin
+@_admin_error_boundary
 def admin_get_notices():
-
-    try:
-        notices = get_all_notices(include_drafts=True)
-        return jsonify({'success': True, 'notices': notices})
-    except Exception as e:
-        logger.error(f"[Admin] ✗ Get notices error: error={e}", exc_info=True)
-        return jsonify({'success': False, 'message': str(e)}), 500
+    return jsonify({'success': True, 'notices': get_all_notices(include_drafts=True)})
 
 @admin_api.route("/admin/create_notice", methods=["POST"])
 @require_admin
+@_admin_error_boundary
 def admin_create_notice():
 
     data = _json_body()
@@ -732,34 +739,23 @@ def admin_create_notice():
     button_value = data.get('button_value', '').strip()
     button_labels = localized_payload(data, "button_label")
 
-    try:
-        notice_id = upload_notice(
-            content=content,
-            status=status,
-            voting_enabled=voting_enabled,
-            created_by=created_by,
-            button_type=button_type,
-            button_label=button_labels if button_type and button_value else None,
-            button_value=button_value
-        )
-
-        if status == 'published':
-            clear_notice_read_status(notice_id)
-            logger.info(f"[Admin] ✓ Notice published: notice_id={notice_id}")
-        else:
-            logger.info(f"[Admin] ✓ Notice saved as draft: notice_id={notice_id}")
-
-        return jsonify({
-            'success': True,
-            'message': f'Notice {"published" if status == "published" else "saved as draft"} successfully',
-            'notice_id': notice_id
-        })
-    except Exception as e:
-        logger.error(f"[Admin] ✗ Create notice error: error={e}", exc_info=True)
-        return jsonify({'success': False, 'message': str(e)}), 500
+    notice_id = upload_notice(
+        content=content, status=status, voting_enabled=voting_enabled,
+        created_by=created_by, button_type=button_type,
+        button_label=button_labels if button_type and button_value else None,
+        button_value=button_value,
+    )
+    published = status == 'published'
+    if published:
+        clear_notice_read_status(notice_id)
+    logger.info("[Admin] Notice %s: notice_id=%s", "published" if published else "saved", notice_id)
+    action = "published" if published else "saved as draft"
+    return jsonify({'success': True, 'message': f'Notice {action} successfully',
+                    'notice_id': notice_id})
 
 @admin_api.route("/admin/update_notice", methods=["POST"])
 @require_admin
+@_admin_error_boundary
 def admin_update_notice():
 
     data = _json_body()
@@ -804,38 +800,23 @@ def admin_update_notice():
                 'message': 'Creating a button requires type, label, and value'
             }), 400
 
-    try:
-        success = update_notice(
-            notice_id,
-            content,
-            status=status,
-            voting_enabled=voting_enabled,
-            button_type=button_type,
-            button_label=button_labels,
-            button_value=button_value,
-            remove_button=remove_button
-        )
+    if not update_notice(
+        notice_id, content, status=status, voting_enabled=voting_enabled,
+        button_type=button_type, button_label=button_labels,
+        button_value=button_value, remove_button=remove_button,
+    ):
+        return jsonify({'success': False, 'message': 'Notice not found'}), 404
 
-        if success:
-            notice = get_notice_by_id(notice_id)
-            latest_notice = get_latest_published_notice()
-            is_latest = latest_notice and latest_notice.get('id') == notice_id
-            if notice.get('status') == 'published' and is_latest:
-                clear_notice_read_status(notice_id)
-                logger.info(f"[Admin] ✓ Updated latest published notice: notice_id={notice_id}")
-            else:
-                logger.info(f"[Admin] ✓ Updated notice: notice_id={notice_id}")
-
-            return jsonify({'success': True, 'message': 'Notice updated successfully'})
-        else:
-            return jsonify({'success': False, 'message': 'Notice not found'}), 404
-
-    except Exception as e:
-        logger.error(f"[Admin] ✗ Update notice error: error={e}", exc_info=True)
-        return jsonify({'success': False, 'message': str(e)}), 500
+    notice = get_notice_by_id(notice_id)
+    latest_notice = get_latest_published_notice()
+    if notice.get('status') == 'published' and latest_notice and latest_notice.get('id') == notice_id:
+        clear_notice_read_status(notice_id)
+    logger.info("[Admin] Updated notice: notice_id=%s", notice_id)
+    return jsonify({'success': True, 'message': 'Notice updated successfully'})
 
 @admin_api.route("/admin/delete_notice", methods=["POST"])
 @require_admin
+@_admin_error_boundary
 def admin_delete_notice():
 
     data = _json_body()
@@ -844,22 +825,15 @@ def admin_delete_notice():
     if not notice_id:
         return jsonify({'success': False, 'message': 'Notice ID is required'}), 400
 
-    try:
-        clear_notice_record(notice_id)
-        success = delete_notice(notice_id)
-
-        if success:
-            logger.info(f"[Admin] ✓ Notice deleted: notice_id={notice_id}")
-            return jsonify({'success': True, 'message': 'Notice deleted successfully'})
-        else:
-            return jsonify({'success': False, 'message': 'Notice not found'}), 404
-
-    except Exception as e:
-        logger.error(f"[Admin] ✗ Delete notice error: error={e}", exc_info=True)
-        return jsonify({'success': False, 'message': str(e)}), 500
+    clear_notice_record(notice_id)
+    if delete_notice(notice_id):
+        logger.info("[Admin] Notice deleted: notice_id=%s", notice_id)
+        return jsonify({'success': True, 'message': 'Notice deleted successfully'})
+    return jsonify({'success': False, 'message': 'Notice not found'}), 404
 
 @admin_api.route("/admin/publish_notice", methods=["POST"])
 @require_admin
+@_admin_error_boundary
 def admin_publish_notice():
 
     data = _json_body()
@@ -868,41 +842,24 @@ def admin_publish_notice():
     if not notice_id:
         return jsonify({'success': False, 'message': 'Notice ID is required'}), 400
 
-    try:
-        success = publish_notice(notice_id)
-
-        if success:
-            clear_notice_read_status(notice_id)
-            logger.info(f"[Admin] ✓ Published draft notice: notice_id={notice_id}")
-            return jsonify({'success': True, 'message': 'Notice published successfully'})
-        else:
-            return jsonify({'success': False, 'message': 'Notice not found or already published'}), 404
-
-    except Exception as e:
-        logger.error(f"[Admin] ✗ Publish notice error: error={e}", exc_info=True)
-        return jsonify({'success': False, 'message': str(e)}), 500
+    if publish_notice(notice_id):
+        clear_notice_read_status(notice_id)
+        logger.info("[Admin] Published draft notice: notice_id=%s", notice_id)
+        return jsonify({'success': True, 'message': 'Notice published successfully'})
+    return jsonify({'success': False, 'message': 'Notice not found or already published'}), 404
 
 @admin_api.route("/admin/get_notice_stats", methods=["GET"])
 @require_admin
+@_admin_error_boundary
 def admin_get_notice_stats():
-
     notice_id = request.args.get('notice_id')
-
-    try:
-        if notice_id:
-            stats = calculate_notice_stats(notice_id)
-            if stats is None:
-                return jsonify({'success': False, 'message': 'Notice not found'}), 404
-            return jsonify({'success': True, 'stats': stats})
-        else:
-            stats = get_all_notices_stats()
-            return jsonify({'success': True, 'stats': stats})
-
-    except Exception as e:
-        logger.error(f"[Admin] ✗ Get notice stats error: error={e}", exc_info=True)
-        return jsonify({'success': False, 'message': str(e)}), 500
+    stats = calculate_notice_stats(notice_id) if notice_id else get_all_notices_stats()
+    if stats is None:
+        return jsonify({'success': False, 'message': 'Notice not found'}), 404
+    return jsonify({'success': True, 'stats': stats})
 
 @admin_api.route("/linebot/notice_vote", methods=["POST"])
+@_admin_error_boundary
 def notice_vote():
     data = _json_body()
     user_id = data.get('user_id')
@@ -915,57 +872,35 @@ def notice_vote():
     if vote_type not in ['support', 'oppose']:
         return jsonify({'success': False, 'message': 'Invalid vote type'}), 400
 
-    try:
-        notice = get_notice_by_id(notice_id)
-        if not notice:
-            return jsonify({'success': False, 'message': 'Notice not found'}), 404
-
-        if not notice.get('voting_enabled'):
-            return jsonify({'success': False, 'message': 'Voting is not enabled for this notice'}), 400
-
-        success = record_notice_vote(user_id, notice_id, vote_type)
-
-        if success:
-            stats = calculate_notice_stats(notice_id)
-            logger.info(f"[Notice] ✓ User voted: user_id={user_id}, notice_id={notice_id}, vote={vote_type}")
-            return jsonify({
-                'success': True,
-                'message': 'Vote recorded successfully',
-                'stats': stats
-            })
-        else:
-            return jsonify({'success': False, 'message': 'Failed to record vote'}), 500
-
-    except Exception as e:
-        logger.error(f"[Notice] ✗ Vote error: error={e}", exc_info=True)
-        return jsonify({'success': False, 'message': str(e)}), 500
+    notice = get_notice_by_id(notice_id)
+    if not notice:
+        return jsonify({'success': False, 'message': 'Notice not found'}), 404
+    if not notice.get('voting_enabled'):
+        return jsonify({'success': False, 'message': 'Voting is not enabled for this notice'}), 400
+    if not record_notice_vote(user_id, notice_id, vote_type):
+        return jsonify({'success': False, 'message': 'Failed to record vote'}), 500
+    logger.info("[Notice] User voted: user_id=%s notice_id=%s vote=%s",
+                user_id, notice_id, vote_type)
+    return jsonify({'success': True, 'message': 'Vote recorded successfully',
+                    'stats': calculate_notice_stats(notice_id)})
 
 # ==================== Tip/Ad 管理 API ====================
 
 @admin_api.route("/admin/tip_ads", methods=["GET"])
 @require_admin
+@_admin_error_boundary
 def admin_get_tip_ads():
-
-    try:
-        tip_ads = get_all_tip_ads()
-        return jsonify({'success': True, 'tip_ads': tip_ads})
-    except Exception as e:
-        logger.error(f"[Admin] ✗ Get tip/ads error: error={e}", exc_info=True)
-        return jsonify({'success': False, 'message': str(e)}), 500
+    return jsonify({'success': True, 'tip_ads': get_all_tip_ads()})
 
 @admin_api.route("/admin/tip_ads/<tip_ad_id>", methods=["GET"])
 @require_admin
+@_admin_error_boundary
 def admin_get_tip_ad(tip_ad_id):
-
-    try:
-        tip_ad = get_tip_ad_by_id(tip_ad_id)
-        return jsonify({'success': True, 'tip_ad': tip_ad})
-    except Exception as e:
-        logger.error(f"[Admin] ✗ Get tip/ads by id error: error={e}", exc_info=True)
-        return jsonify({'success': False, 'message': str(e)}), 500
+    return jsonify({'success': True, 'tip_ad': get_tip_ad_by_id(tip_ad_id)})
 
 @admin_api.route("/admin/tip_ads", methods=["POST"])
 @require_admin
+@_admin_error_boundary
 def admin_create_tip_ads():
 
     data = _json_body()
@@ -982,23 +917,16 @@ def admin_create_tip_ads():
     if tip_type not in ['tip', 'ad']:
         return jsonify({'success': False, 'message': 'Invalid type'}), 400
 
-    try:
-        tip_ad = create_tip_ad(
-            tip_type=tip_type,
-            text=text,
-            button_type=button_type,
-            button_labels=button_labels,
-            button_value=button_value,
-            enabled=enabled
-        )
-        logger.info(f"[Admin] ✓ Created tip/ad: id={tip_ad['id']}, type={tip_type}")
-        return jsonify({'success': True, 'tip_ad': tip_ad})
-    except Exception as e:
-        logger.error(f"[Admin] ✗ Create tip/ad error: error={e}", exc_info=True)
-        return jsonify({'success': False, 'message': str(e)}), 500
+    tip_ad = create_tip_ad(
+        tip_type=tip_type, text=text, button_type=button_type,
+        button_labels=button_labels, button_value=button_value, enabled=enabled,
+    )
+    logger.info("[Admin] Created tip/ad: id=%s type=%s", tip_ad['id'], tip_type)
+    return jsonify({'success': True, 'tip_ad': tip_ad})
 
 @admin_api.route("/admin/tip_ads/<tip_ad_id>", methods=["PUT"])
 @require_admin
+@_admin_error_boundary
 def admin_put_tip_ads(tip_ad_id):
 
     data = _json_body()
@@ -1041,44 +969,28 @@ def admin_put_tip_ads(tip_ad_id):
                 'message': 'Creating a button requires type, label, and value'
             }), 400
 
-    try:
-        tip_ad = update_tip_ad(
-            tip_ad_id=tip_ad_id,
-            tip_type=tip_type,
-            text=text,
-            button_type=button_type,
-            button_labels=button_labels,
-            button_value=button_value,
-            enabled=enabled,
-            remove_button=remove_button
-        )
-
-        if tip_ad:
-            logger.info(f"[Admin] ✓ Updated tip/ad: id={tip_ad_id}")
-            return jsonify({'success': True, 'tip_ad': tip_ad})
-        else:
-            return jsonify({'success': False, 'message': 'Tip/ad not found'}), 404
-    except Exception as e:
-        logger.error(f"[Admin] ✗ Update tip/ad error: error={e}", exc_info=True)
-        return jsonify({'success': False, 'message': str(e)}), 500
+    tip_ad = update_tip_ad(
+        tip_ad_id=tip_ad_id, tip_type=tip_type, text=text,
+        button_type=button_type, button_labels=button_labels,
+        button_value=button_value, enabled=enabled, remove_button=remove_button,
+    )
+    if not tip_ad:
+        return jsonify({'success': False, 'message': 'Tip/ad not found'}), 404
+    logger.info("[Admin] Updated tip/ad: id=%s", tip_ad_id)
+    return jsonify({'success': True, 'tip_ad': tip_ad})
 
 @admin_api.route("/admin/tip_ads/<tip_ad_id>", methods=["DELETE"])
 @require_admin
+@_admin_error_boundary
 def admin_delete_tip_ads(tip_ad_id):
 
     if not tip_ad_id:
         return jsonify({'success': False, 'message': 'Missing id'}), 400
 
-    try:
-        success = delete_tip_ad(tip_ad_id)
-        if success:
-            logger.info(f"[Admin] ✓ Deleted tip/ad: id={tip_ad_id}")
-            return jsonify({'success': True})
-        else:
-            return jsonify({'success': False, 'message': 'Tip/ad not found'}), 404
-    except Exception as e:
-        logger.error(f"[Admin] ✗ Delete tip/ad error: error={e}", exc_info=True)
-        return jsonify({'success': False, 'message': str(e)}), 500
+    if delete_tip_ad(tip_ad_id):
+        logger.info("[Admin] Deleted tip/ad: id=%s", tip_ad_id)
+        return jsonify({'success': True})
+    return jsonify({'success': False, 'message': 'Tip/ad not found'}), 404
 
 # ==================== 背景图管理 API ====================
 
