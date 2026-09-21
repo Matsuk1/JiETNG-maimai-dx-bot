@@ -17,10 +17,6 @@ hero:
     - theme: alt
       text: 网页书签
       link: /zh/bookmarklet
-    - theme: alt
-      text: GitHub
-      link: https://github.com/Matsuk1/JiETNG
-
 ---
 
 <HomeContent />

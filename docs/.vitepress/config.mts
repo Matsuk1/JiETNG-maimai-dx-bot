@@ -89,11 +89,6 @@ export default withMermaid(defineConfig({
       }
     ],
 
-    // 社交链接
-    socialLinks: [
-      { icon: 'github', link: 'https://github.com/Matsuk1/JiETNG' }
-    ],
-
     // フッター
     footer: {
       message: 'すべてのプレイを記録に残そう',
@@ -103,12 +98,6 @@ export default withMermaid(defineConfig({
     // 搜索
     search: {
       provider: 'local'
-    },
-
-    // 编辑链接
-    editLink: {
-      pattern: 'https://github.com/Matsuk1/JiETNG/edit/main/docs/:path',
-      text: 'GitHub でこのページを編集'
     },
 
     // 最后更新时间
@@ -175,10 +164,6 @@ export default withMermaid(defineConfig({
             ]
           }
         ],
-        editLink: {
-          pattern: 'https://github.com/Matsuk1/JiETNG/edit/main/docs/:path',
-          text: '在 GitHub 上编辑此页'
-        },
         lastUpdated: {
           text: '最后更新',
           formatOptions: {
@@ -239,10 +224,6 @@ export default withMermaid(defineConfig({
             ]
           }
         ],
-        editLink: {
-          pattern: 'https://github.com/Matsuk1/JiETNG/edit/main/docs/:path',
-          text: 'Edit this page on GitHub'
-        },
         lastUpdated: {
           text: 'Updated at',
           formatOptions: {
