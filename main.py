@@ -1176,6 +1176,27 @@ def _compose_user_images(images, user_id):
     )
 
 
+def _record_user_or_error(user_id, target_user_id):
+    user_data = get_user(target_user_id)
+    if user_data and "personal_info" in user_data:
+        return user_data, None
+    if target_user_id != user_id:
+        return None, mention_error(user_id)
+    return None, segaid_error(user_id) if not user_data else info_error(user_id)
+
+
+def _missing_record_error(user_id, target_user_id):
+    return mention_record_error(user_id) if target_user_id != user_id else record_error(user_id)
+
+
+async def _upload_image_message(image, user_id):
+    original_url, preview_url = await upload_generated_image(image, user_id)
+    if original_url and preview_url:
+        return ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
+    logger.error("[Image] Upload failed")
+    return system_error(user_id)
+
+
 @app.route("/linebot/perms/revoke", methods=["POST"])
 @csrf.exempt
 def linebot_perms_revoke():
@@ -2148,17 +2169,14 @@ def get_bot_status(user_id):
 
 @user_image
 async def get_song_record(user_id, id_use, acronym, ver="jp"):
-    _id_use_data = get_user(id_use)
-    if not _id_use_data:
-        return mention_error(user_id) if id_use != user_id else segaid_error(user_id)
-
-    if "personal_info" not in _id_use_data:
-        return mention_error(user_id) if id_use != user_id else info_error(user_id)
+    _, error = _record_user_or_error(user_id, id_use)
+    if error:
+        return error
     
     song_record = read_record(id_use, ver=ver)
 
     if not song_record:
-        return mention_record_error(user_id) if id_use != user_id else record_error(user_id)
+        return _missing_record_error(user_id, id_use)
 
     songs, _ = read_dxdata(ver)
     matching_songs = find_matching_songs(acronym, songs, max_results=MAX_SEARCH_RESULTS)
@@ -2184,17 +2202,14 @@ async def get_song_record(user_id, id_use, acronym, ver="jp"):
 
 @user_image
 async def get_song_record_by_id(user_id, id_use, song_id, ver="jp"):
-    _id_use_data = get_user(id_use)
-    if not _id_use_data:
-        return mention_error(user_id) if id_use != user_id else segaid_error(user_id)
-
-    if "personal_info" not in _id_use_data:
-        return mention_error(user_id) if id_use != user_id else info_error(user_id)
+    _, error = _record_user_or_error(user_id, id_use)
+    if error:
+        return error
 
     song_record = read_record(id_use, ver=ver)
 
-    if not len(song_record):
-        return mention_record_error(user_id) if id_use != user_id else record_error(user_id)
+    if not song_record:
+        return _missing_record_error(user_id, id_use)
 
     songs, _ = read_dxdata(ver)
     matching_song = next((song for song in songs if song.get('id') == song_id), None)
@@ -2265,20 +2280,17 @@ async def get_song_record_by_id(user_id, id_use, song_id, ver="jp"):
 
 @user_image
 async def generate_plate_rcd(user_id, id_use, title, ver="jp", filter_mode=None):
-    _id_use_data = get_user(id_use)
-    if not _id_use_data:
-        return mention_error(user_id) if id_use != user_id else segaid_error(user_id)
-
-    if "personal_info" not in _id_use_data:
-        return mention_error(user_id) if id_use != user_id else info_error(user_id)
+    _id_use_data, error = _record_user_or_error(user_id, id_use)
+    if error:
+        return error
 
     if not (len(title) == 2 or len(title) == 3):
         return plate_error(user_id)
 
     song_record = read_record(id_use, ver=ver)
 
-    if not len(song_record):
-        return mention_record_error(user_id) if id_use != user_id else record_error(user_id)
+    if not song_record:
+        return _missing_record_error(user_id, id_use)
 
     title = title.replace("晓", "暁").replace("极", "極")
 
@@ -2328,27 +2340,14 @@ async def generate_plate_rcd(user_id, id_use, title, ver="jp", filter_mode=None)
     profile_img = generate_profile(user_info, user_id=id_use)
     img = _compose_user_images([profile_img, plate_img], user_id)
 
-    original_url, preview_url = await upload_generated_image(img, user_id)
-
-    # 检查上传是否成功
-    if not original_url or not preview_url:
-        logger.error(f"[Image] ✗ Upload failed")
-        return system_error(user_id)
-
-    message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
-
-    return message
+    return await _upload_image_message(img, user_id)
 
 
 @user_image
 async def generate_level_rank_progress(user_id, id_use, level, rank=None, ver="jp", filter_mode=None):
-
-    _id_use_data = get_user(id_use)
-    if not _id_use_data:
-        return mention_error(user_id) if id_use != user_id else segaid_error(user_id)
-
-    if "personal_info" not in _id_use_data:
-        return mention_error(user_id) if id_use != user_id else info_error(user_id)
+    _id_use_data, error = _record_user_or_error(user_id, id_use)
+    if error:
+        return error
 
     songs, _ = read_dxdata(ver)
     target_category = None
@@ -2363,8 +2362,8 @@ async def generate_level_rank_progress(user_id, id_use, level, rank=None, ver="j
 
     song_record = read_record(id_use, ver=ver)
 
-    if not len(song_record):
-        return mention_record_error(user_id) if id_use != user_id else record_error(user_id)
+    if not song_record:
+        return _missing_record_error(user_id, id_use)
 
     target_data, stats = build_progress_entries(
         songs, song_record, level if is_level_target else None, target_category,
@@ -2402,10 +2401,7 @@ async def generate_level_rank_progress(user_id, id_use, level, rank=None, ver="j
     profile_img = generate_profile(user_info, scale=1.5, user_id=id_use)
     img = _compose_user_images([profile_img, record_img], user_id)
 
-    original_url, preview_url = await upload_generated_image(img, user_id)
-    message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
-
-    return message
+    return await _upload_image_message(img, user_id)
 
 
 @user_image
@@ -2676,18 +2672,15 @@ def select_records(song_record, type="best50", command="", ver="jp"):
 
 @user_image
 async def generate_records(user_id, id_use, type="best50", command="", ver="jp"):
-    _id_use_data = get_user(id_use)
-    if not _id_use_data:
-        return mention_error(user_id) if id_use != user_id else segaid_error(user_id)
-
-    if "personal_info" not in _id_use_data:
-        return mention_error(user_id) if id_use != user_id else info_error(user_id)
+    _id_use_data, error = _record_user_or_error(user_id, id_use)
+    if error:
+        return error
 
     recent = (type == "rct50")
     recent_type = (type == "best40")
     song_record = read_record(id_use, recent, recent_type, ver=ver)
-    if not len(song_record):
-        return mention_record_error(user_id) if id_use != user_id else record_error(user_id)
+    if not song_record:
+        return _missing_record_error(user_id, id_use)
 
     up_songs, down_songs, details = select_records(song_record, type, command, ver)
     if not up_songs and not down_songs:
@@ -2709,16 +2702,7 @@ async def generate_records(user_id, id_use, type="best50", command="", ver="jp")
     profile_img = generate_profile(user_info, user_id=id_use)
     img = _compose_user_images([profile_img, record_img], user_id)
 
-    original_url, preview_url = await upload_generated_image(img, user_id)
-
-    # 检查上传是否成功
-    if not original_url or not preview_url:
-        logger.error(f"[Image] ✗ Upload failed")
-        return system_error(user_id)
-
-    message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
-
-    return message
+    return await _upload_image_message(img, user_id)
 
 @user_image
 async def generate_friend_record(user_id, friend_code, type="best50", cmd="", ver="jp"):
@@ -2789,17 +2773,14 @@ async def generate_friend_record(user_id, friend_code, type="best50", cmd="", ve
 
 @user_image
 async def generate_level_records(user_id, id_use, level, ver="jp", page=1):
-    _id_use_data = get_user(id_use)
-    if not _id_use_data:
-        return mention_error(user_id) if id_use != user_id else segaid_error(user_id)
-
-    if "personal_info" not in _id_use_data:
-        return mention_error(user_id) if id_use != user_id else info_error(user_id)
+    _id_use_data, error = _record_user_or_error(user_id, id_use)
+    if error:
+        return error
 
     song_record = read_record(id_use, ver=ver)
 
-    if not len(song_record):
-        return mention_record_error(user_id) if id_use != user_id else record_error(user_id)
+    if not song_record:
+        return _missing_record_error(user_id, id_use)
 
     level_values = parse_level_value(level)
     if not level_values:
@@ -2829,7 +2810,6 @@ async def generate_level_records(user_id, id_use, level, ver="jp", page=1):
     img = _compose_user_images([profile_img, record_img], user_id)
 
     original_url, preview_url = await upload_generated_image(img, user_id)
-
     message = [
         ImageMessage(original_content_url=original_url, preview_image_url=preview_url),
         level_record_page_hint(page, user_id) if page == 1 else None
@@ -2871,16 +2851,7 @@ async def generate_version_songs(user_id, version_title, ver="jp"):
         # Also release the image if resolving user options fails before composition.
         version_list_img.close()
 
-    original_url, preview_url = await upload_generated_image(img, user_id)
-
-    # 检查上传是否成功
-    if not original_url or not preview_url:
-        logger.error(f"[Image] ✗ Upload failed")
-        return system_error(user_id)
-
-    message = ImageMessage(original_content_url=original_url, preview_image_url=preview_url)
-
-    return message
+    return await _upload_image_message(img, user_id)
 
 # ==================== 消息处理 ====================
 

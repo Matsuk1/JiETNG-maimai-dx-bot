@@ -443,50 +443,24 @@ def api_sync_user_data_stream(user_id):
 @developer_api.route("/api/v2/users/<user_id>/permissions", methods=["POST"])
 @developer_api.route("/api/v1/users/<user_id>/permissions", methods=["POST"])
 @require_dev_token
+@api_error_boundary
 def api_request_user_permission(user_id):
+    data = request.form.to_dict() or request.get_json(force=True, silent=True) or {}
+    token_info = request.token_info
+    token_id = token_info['token_id']
+    requester_name = data.get('requester_name') or token_info.get('note', token_id)
+    result = send_perm_request(token_id, user_id, requester_name)
+    if not result['success']:
+        status = 404 if result['error'] == "User not found" else 400
+        return jsonify({"error": result['error'], "message": result['message']}), status
     try:
-        data = request.form.to_dict() or request.get_json(force=True, silent=True) or {}
-        requester_name = data.get('requester_name', '')
-
-        token_info = request.token_info
-        token_id = token_info['token_id']
-
-        if not requester_name:
-            requester_name = token_info.get('note', token_id)
-
-        logger.info(f"[API] Request permission: target_user_id={user_id}, token_id={token_id}, note={token_info['note']}")
-
-        result = send_perm_request(token_id, user_id, requester_name)
-
-        if result['success']:
-            try:
-                perm_requests = get_pending_perm_requests(user_id)
-                perm_msg = generate_perm_request_message(perm_requests, user_id)
-                if perm_msg:
-                    smart_push(user_id, [perm_msg], _services.configuration)
-            except Exception as e:
-                logger.warning(f"[API] ⚠ Failed to push permission request notification: user_id={user_id}, error={e}")
-
-            return jsonify({
-                "success": True,
-                "request_id": result['request_id'],
-                "user_id": user_id,
-                "message": result['message']
-            }), 201  # 201 Created for new permission request
-
-        else:
-            status_code = 404 if result['error'] == "User not found" else 400
-            return jsonify({
-                "error": result['error'],
-                "message": result['message']
-            }), status_code
-
-    except Exception as e:
-        logger.error(f"[API] ✗ Request permission error: user_id={user_id}, error={e}", exc_info=True)
-        return jsonify({
-            "error": "Internal server error",
-            "message": str(e)
-        }), 500
+        message = generate_perm_request_message(get_pending_perm_requests(user_id), user_id)
+        if message:
+            smart_push(user_id, [message], _services.configuration)
+    except Exception as exc:
+        logger.warning("[API] Permission notification failed: user_id=%s error=%s", user_id, exc)
+    return jsonify({"success": True, "request_id": result['request_id'],
+                    "user_id": user_id, "message": result['message']}), 201
 
 
 @developer_api.route("/api/v2/users/<user_id>/permissions/requests", methods=["GET"])
@@ -504,44 +478,21 @@ def api_get_user_permission_requests(user_id):
 @developer_api.route("/api/v2/users/<user_id>/permissions/requests/<request_id>", methods=["PATCH"])
 @require_dev_token
 @require_owner_permission
+@api_error_boundary
 def api_manage_user_permission(user_id, request_id):
-    action = ""
-    try:
-        data = request.form.to_dict() or request.get_json(force=True, silent=True) or {}
-        action = data.get('action', '')
-
-        if action not in ("accept", "reject"):
-            return jsonify({
-                "error": "Invalid parameter",
-                "message": "Parameter 'action' must be 'accept' or 'reject'"
-            }), 400
-
-        token_info = request.token_info
-        logger.info(f"[API] Manage permission: action={action}, request_id={request_id}, user_id={user_id}, token_id={token_info['token_id']}, note={token_info['note']}")
-
-        handler = accept_perm_request if action == "accept" else reject_perm_request
-        result = handler(user_id, request_id)
-        if result["success"]:
-            return jsonify({
-                "success": True,
-                "user_id": user_id,
-                "token_id": result["token_id"],
-                "token_note": result["token_note"],
-                "message": result["message"],
-            })
-
-        status_code = 404 if result['error'] in ["User not found", "Request not found", "Invalid token"] else 400
-        return jsonify({
-            "error": result['error'],
-            "message": result['message']
-        }), status_code
-
-    except Exception as e:
-        logger.error(f"[API] ✗ Manage permission error: user_id={user_id}, request_id={request_id}, action={action}, error={e}", exc_info=True)
-        return jsonify({
-            "error": "Internal server error",
-            "message": str(e)
-        }), 500
+    data = request.form.to_dict() or request.get_json(force=True, silent=True) or {}
+    action = data.get('action', '')
+    if action not in ("accept", "reject"):
+        return jsonify({"error": "Invalid parameter",
+                        "message": "Parameter 'action' must be 'accept' or 'reject'"}), 400
+    handler = accept_perm_request if action == "accept" else reject_perm_request
+    result = handler(user_id, request_id)
+    if result["success"]:
+        return jsonify({"success": True, "user_id": user_id,
+                        "token_id": result["token_id"], "token_note": result["token_note"],
+                        "message": result["message"]})
+    status = 404 if result['error'] in ("User not found", "Request not found", "Invalid token") else 400
+    return jsonify({"error": result['error'], "message": result['message']}), status
 
 
 @developer_api.route("/api/v1/users/<user_id>/permissions/self", methods=["DELETE"])
