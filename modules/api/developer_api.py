@@ -307,99 +307,74 @@ def api_create_settings_url(user_id):
 @require_dev_token
 @require_user_permission
 def api_bind_user(user_id):
-    try:
-        token_info = request.token_info
-        data = request.form.to_dict() or request.get_json(force=True, silent=True) or {}
-
-        sega_id = data.get('sega_id', '')
-        password = data.get('password', '')
-        ver = data.get('ver', 'jp').strip().lower()
-        aime = data.get('aime', '0')
-        timezone = data.get('timezone', '9')
-        language = normalize_language(data.get('language'), DEFAULT_LANGUAGE)
-
-        if not sega_id:
-            return jsonify({"error": "Missing parameter", "message": "Parameter 'sega_id' is required"}), 400
-        if not password:
-            return jsonify({"error": "Missing parameter", "message": "Parameter 'password' is required"}), 400
-        if ver not in ('jp', 'intl'):
-            return jsonify({"error": "Invalid parameter", "message": "Parameter 'ver' must be jp or intl"}), 400
-        try:
-            timezone_int = int(timezone)
-        except (ValueError, TypeError):
-            timezone_int = 9
-        try:
-            aime_int = int(aime)
-        except (ValueError, TypeError):
-            aime_int = 0
-
-        user_data = get_user(user_id) or {}
-        has_account = all(key in user_data for key in ['sega_id', 'sega_pwd', 'version'])
-        if has_account:
-            return jsonify({"error": "Already bound", "message": "User already has a SEGA account linked. Use PUT to rebind."}), 409
-
-        result = asyncio.run(_services.process_credentials(user_id, sega_id, password, ver, language, timezone_int, aime_int, False))
-        if result == "RATE_LIMITED":
-            return jsonify({"error": "Rate limited", "message": "The JP login rate limit was reached. Please try again later."}), 429
-        if result == "MAINTENANCE":
-            return jsonify({"error": "Maintenance", "message": "The official website is under maintenance. Please try again later."}), 503
-        elif result:
-            track_event('user_bind', user_id=user_id, metadata={'version': ver, 'via_token': True})
-            link_bound_rich_menu(user_id, get_user(user_id))
-            logger.info(f"[API] ✓ Bind success: user_id={user_id}, ver={ver}, token_id={token_info['token_id']}")
-            return jsonify({"success": True, "user_id": user_id, "message": "SEGA account bound successfully."})
-        else:
-            return jsonify({"error": "Authentication failed", "message": "Invalid SEGA ID or password."}), 401
-
-    except Exception as e:
-        logger.error(f"[API] ✗ Bind error: user_id={user_id}, error={e}", exc_info=True)
-        return jsonify({"error": "Internal server error", "message": str(e)}), 500
+    return _update_binding(user_id, rebind=False)
 
 
 @developer_api.route("/api/v2/users/<user_id>/bind", methods=["PUT"])
 @require_dev_token
 @require_user_permission
 def api_rebind_user(user_id):
+    return _update_binding(user_id, rebind=True)
+
+
+def _int_or(value, default):
     try:
-        token_info = request.token_info
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _update_binding(user_id, *, rebind):
+    action = "rebind" if rebind else "bind"
+    try:
         data = request.form.to_dict() or request.get_json(force=True, silent=True) or {}
-
         user_data = get_user(user_id) or {}
-        has_account = all(key in user_data for key in ['sega_id', 'sega_pwd', 'version'])
-        if not has_account:
+        has_account = all(key in user_data for key in ("sega_id", "sega_pwd", "version"))
+        if rebind and not has_account:
             return jsonify({"error": "Not bound", "message": "User has no SEGA account linked. Use POST to bind first."}), 404
+        if not rebind and has_account:
+            return jsonify({"error": "Already bound", "message": "User already has a SEGA account linked. Use PUT to rebind."}), 409
 
-        sega_id = data.get('sega_id', '') or user_data.get('sega_id', '')
-        password = data.get('password', '') or user_data.get('sega_pwd', '')
+        sega_id = data.get("sega_id") or (user_data.get("sega_id", "") if rebind else "")
+        password = data.get("password") or (user_data.get("sega_pwd", "") if rebind else "")
+        if not sega_id and not rebind:
+            return jsonify({"error": "Missing parameter", "message": "Parameter 'sega_id' is required"}), 400
+        if not password and not rebind:
+            return jsonify({"error": "Missing parameter", "message": "Parameter 'password' is required"}), 400
 
-        ver = data.get('ver', user_data.get('version', 'jp')).strip().lower()
-        aime = data.get('aime', str(user_data.get('aime', 0)))
-        language = normalize_language(user_data.get('language'), DEFAULT_LANGUAGE)
-        timezone_int = user_data.get('timezone', 9)
-
-        if ver not in ('jp', 'intl'):
+        ver = str(data.get("ver", user_data.get("version", "jp"))).strip().lower()
+        if ver not in ("jp", "intl"):
             return jsonify({"error": "Invalid parameter", "message": "Parameter 'ver' must be jp or intl"}), 400
 
-        try:
-            aime_int = int(aime)
-        except (ValueError, TypeError):
-            aime_int = user_data.get('aime', 0)
-
-        result = asyncio.run(_services.process_credentials(user_id, sega_id, password, ver, language, timezone_int, aime_int, True))
+        aime_default = user_data.get("aime", 0) if rebind else 0
+        aime = _int_or(data.get("aime", aime_default), aime_default)
+        timezone_default = user_data.get("timezone", 9) if rebind else 9
+        timezone_value = (timezone_default if rebind else
+                          _int_or(data.get("timezone", timezone_default), timezone_default))
+        language_source = user_data if rebind else data
+        language = normalize_language(language_source.get("language"), DEFAULT_LANGUAGE)
+        result = asyncio.run(_services.process_credentials(
+            user_id, sega_id, password, ver, language, timezone_value, aime, rebind,
+        ))
         if result == "RATE_LIMITED":
             return jsonify({"error": "Rate limited", "message": "The JP login rate limit was reached. Please try again later."}), 429
         if result == "MAINTENANCE":
             return jsonify({"error": "Maintenance", "message": "The official website is under maintenance. Please try again later."}), 503
-        elif result:
-            track_event('user_rebind', user_id=user_id, metadata={'version': ver, 'via_token': True})
-            logger.info(f"[API] ✓ Rebind success: user_id={user_id}, ver={ver}, token_id={token_info['token_id']}")
-            return jsonify({"success": True, "user_id": user_id, "message": "SEGA account rebound successfully."})
-        else:
+        if not result:
             return jsonify({"error": "Authentication failed", "message": "Invalid SEGA ID or password."}), 401
 
-    except Exception as e:
-        logger.error(f"[API] ✗ Rebind error: user_id={user_id}, error={e}", exc_info=True)
-        return jsonify({"error": "Internal server error", "message": str(e)}), 500
+        event_type = "user_rebind" if rebind else "user_bind"
+        track_event(event_type, user_id=user_id, metadata={"version": ver, "via_token": True})
+        if not rebind:
+            link_bound_rich_menu(user_id, get_user(user_id))
+        logger.info("[API] %s success: user_id=%s ver=%s token_id=%s",
+                    action, user_id, ver, request.token_info["token_id"])
+        verb = "rebound" if rebind else "bound"
+        return jsonify({"success": True, "user_id": user_id,
+                        "message": f"SEGA account {verb} successfully."})
+    except Exception as exc:
+        logger.exception("[API] %s failed: user_id=%s", action, user_id)
+        return jsonify({"error": "Internal server error", "message": str(exc)}), 500
 
 
 def _get_api_sync_lock(user_id):

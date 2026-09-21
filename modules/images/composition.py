@@ -1,4 +1,5 @@
-"""Shared image composition, profile cards and cached application icons."""
+"""Shared image composition, profile cards, and cached application icons."""
+
 import logging
 import os
 import random
@@ -10,19 +11,28 @@ from pathlib import Path
 import requests
 from PIL import Image
 
-from modules.config_loader import LOGO_FILE, QR_CODE_FILE, BG_DIR
-from modules.images.skins import skinnable, skin_config
+from modules.config_loader import BG_DIR, LOGO_FILE, QR_CODE_FILE
+from modules.images.skins import skin_config, skinnable
 
 logger = logging.getLogger(__name__)
+BACKGROUND_EXTENSIONS = (".png", ".jpg", ".jpeg", ".webp")
+PROFILE_ASSET_KEYS = (
+    "nameplate_url", "icon_url", "rating_block_url", "class_rank_url",
+    "cource_rank_url", "trophy_url",
+)
+ENGLISH_SITE_HEADERS = {
+    "Referer": "https://lng-tgk-aime-gw.am-all.net/common_auth/login?site_id=maimaidxex"
+               "&redirect_url=https://maimaidx-eng.com/maimai-mobile/"
+               "&back_url=https://maimai.sega.com/",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                  "(KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36",
+    "Host": "maimaidx-eng.com",
+}
 
 
-def resize_by_width(img, target_width):
-    original_width, original_height = img.size
-    ratio = target_width / original_width
-    target_height = int(original_height * ratio)
-
-    resized_img = img.resize((target_width, target_height), Image.Resampling.LANCZOS)
-    return resized_img
+def resize_by_width(image, target_width):
+    target_height = int(image.height * target_width / image.width)
+    return image.resize((target_width, target_height), Image.Resampling.LANCZOS)
 
 
 def _bounded_int(value, default, minimum, maximum):
@@ -36,16 +46,9 @@ def _select_background(selected):
     if selected is None:
         return ""
     try:
-        files = [
-            name
-            for name in os.listdir(BG_DIR)
-            if name.lower().endswith((".png", ".jpg", ".jpeg", ".webp"))
-        ]
-        candidates = (
-            [name for name in selected if name in files]
-            if selected
-            else [name for name in files if not name.startswith("jietnguser_")]
-        )
+        files = [name for name in os.listdir(BG_DIR) if name.lower().endswith(BACKGROUND_EXTENSIONS)]
+        candidates = ([name for name in selected if name in files] if selected else
+                      [name for name in files if not name.startswith("jietnguser_")])
         return os.path.join(BG_DIR, random.choice(candidates)) if candidates else ""
     except (OSError, TypeError, ValueError) as exc:
         logger.warning("[ImageManager] Background unavailable: %s", exc)
@@ -54,98 +57,63 @@ def _select_background(selected):
 
 @skinnable
 def compose_images(images, timezone_offset=9, bg_filter=None):
-    """Compose images, optional blurred background and footer with HTML/CSS.
-
-    Input images remain caller-owned. None selects white; [] selects a random
-    built-in background; a list or configuration dict selects allowed files.
-    """
+    """Compose caller-owned images with an optional background and footer."""
     from modules.images.renderer import file_uri, image_uri, render_template
+
     images = list(images)
     if not images:
         raise ValueError("图片列表不能为空")
+
     inner_width = max(image.width for image in images)
     factor = inner_width / 1700
-    font_size = max(24, min(40, int(28 * factor)))
     logo_size = max(100, min(180, int(130 * factor)))
-    footer_height = max(
-        max(150, min(250, int(150 * factor))),
-        30 + int(10 * factor) + logo_size,
-    )
+    footer_height = max(150, min(250, int(150 * factor)), 30 + int(10 * factor) + logo_size)
     content_height = sum(image.height for image in images) + 5 * (len(images) - 1)
-    width = inner_width + 80
-    height = content_height + 5 + footer_height + 80
-    entries = []
-    y = 50
+    entries, y = [], 50
     for image in images:
-        entries.append(
-            {
-                "src": image_uri(image),
-                "x": 40 + (inner_width - image.width) // 2,
-                "y": y,
-                "width": image.width,
-                "height": image.height,
-            }
-        )
+        entries.append({"src": image_uri(image), "x": 40 + (inner_width - image.width) // 2,
+                        "y": y, "width": image.width, "height": image.height})
         y += image.height + 5
 
+    selected, blur, overlay = bg_filter, 20, 40
     if not skin_config()["uses_background"]:
-        bg_filter = None
-    selected = bg_filter
-    blur, overlay = 20, 40
-    if isinstance(bg_filter, dict):
+        selected = None
+    elif isinstance(bg_filter, dict):
         selected = bg_filter.get("files", [])
         blur = _bounded_int(bg_filter.get("blur"), 20, 0, 40)
         overlay = _bounded_int(bg_filter.get("overlay"), 40, 0, 120)
-
     background_path = _select_background(selected)
-    background = file_uri(background_path) if background_path else ""
+
     now = datetime.now(timezone(timedelta(hours=timezone_offset)))
     sign = "+" if timezone_offset >= 0 else ""
-    texts = [
-        f"Generated by JiETNG at {now:%Y-%m-%d} (UTC{sign}{timezone_offset}).",
-        f"© 2025 - {now.year} Matsuki (Matsuk1).",
-        "All rights reserved.",
-    ]
-    left = 40 + max(40, min(80, int(50 * factor))) - 10
-    right = max(150, min(250, int(180 * factor))) - 10
-    logo_x = 40 + inner_width - right
+    texts = [f"Generated by JiETNG at {now:%Y-%m-%d} (UTC{sign}{timezone_offset}).",
+             f"© 2025 - {now.year} Matsuki (Matsuk1).", "All rights reserved."]
+    left = 30 + max(40, min(80, int(50 * factor)))
+    logo_x = 40 + inner_width - max(150, min(250, int(180 * factor))) + 10
     qr_x = logo_x - logo_size - int(20 * factor)
-    footer_y = 40 + content_height + 25
-    with render_template(
-        "composition.html",
-        width,
-        height,
-        entries=entries,
-        background=background,
-        blur=blur,
-        overlay=overlay / 255,
-        texts=texts,
-        left=left,
-        text_width=max(1, qr_x - left - 20),
-        text_y=footer_y + int(20 * factor),
-        font_size=font_size,
-        line_spacing=max(30, min(50, int(35 * factor))),
-        logo=file_uri(LOGO_FILE),
-        qr=file_uri(QR_CODE_FILE),
-        logo_size=logo_size,
-        logo_x=logo_x,
-        qr_x=qr_x,
-        logo_y=footer_y + int(10 * factor),
-    ) as rendered:
+    footer_y = 65 + content_height
+    options = {
+        "entries": entries, "background": file_uri(background_path) if background_path else "",
+        "blur": blur, "overlay": overlay / 255, "texts": texts, "left": left,
+        "text_width": max(1, qr_x - left - 20), "text_y": footer_y + int(20 * factor),
+        "font_size": max(24, min(40, int(28 * factor))),
+        "line_spacing": max(30, min(50, int(35 * factor))),
+        "logo": file_uri(LOGO_FILE), "qr": file_uri(QR_CODE_FILE), "logo_size": logo_size,
+        "logo_x": logo_x, "qr_x": qr_x, "logo_y": footer_y + int(10 * factor),
+    }
+    with render_template("composition.html", inner_width + 80,
+                         content_height + footer_height + 85, **options) as rendered:
         return rendered.convert("RGB")
 
 
 def compose_generated_images(images, **options):
-    """Compose owned source images and release them when composition finishes."""
+    """Compose owned source images and release them afterwards."""
     images = list(images)
     try:
         return compose_images(images, **options)
     finally:
-        closed = set()
-        for image in images:
-            if id(image) not in closed:
-                image.close()
-                closed.add(id(image))
+        for image in {id(image): image for image in images}.values():
+            image.close()
 
 
 @skinnable
@@ -153,66 +121,27 @@ def generate_profile_image(user_info, scale=1, rounded_icon=False):
     from modules.images.renderer import file_uri, image_uri, render_template
 
     assets = {}
-    asset_keys = (
-        "nameplate_url",
-        "icon_url",
-        "rating_block_url",
-        "class_rank_url",
-        "cource_rank_url",
-        "trophy_url",
-    )
-    for key in asset_keys:
+    for key in PROFILE_ASSET_KEYS:
         if key == "rating_block_url" and user_info.get("rating_block_path"):
             continue
         url = user_info.get(key)
         if not url:
             continue
-        headers = None
-        if url.startswith("https://maimaidx-eng.com"):
-            headers = {
-                "Referer": (
-                    "https://lng-tgk-aime-gw.am-all.net/common_auth/login"
-                    "?site_id=maimaidxex&redirect_url=https://maimaidx-eng.com/"
-                    "maimai-mobile/&back_url=https://maimai.sega.com/"
-                ),
-                "User-Agent": (
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/127.0.0.0 Safari/537.36"
-                ),
-                "Host": "maimaidx-eng.com",
-            }
+        headers = ENGLISH_SITE_HEADERS if url.startswith("https://maimaidx-eng.com") else None
         try:
-            with requests.get(
-                url,
-                headers=headers,
-                verify=False,
-                timeout=(5, 20),
-            ) as response:
+            with requests.get(url, headers=headers, verify=False, timeout=(5, 20)) as response:
                 response.raise_for_status()
                 with Image.open(BytesIO(response.content)) as source:
-                    mode = "RGB" if key == "nameplate_url" else "RGBA"
-                    with source.convert(mode) as image:
+                    with source.convert("RGB" if key == "nameplate_url" else "RGBA") as image:
                         assets[key] = image_uri(image)
         except (requests.RequestException, OSError, ValueError) as exc:
-            logger.warning(
-                "[Image] Failed to load profile asset: key=%s error=%s",
-                key,
-                exc,
-            )
-    rating_path = user_info.get("rating_block_path")
-    if rating_path:
+            logger.warning("[Image] Failed to load profile asset: key=%s error=%s", key, exc)
+
+    if rating_path := user_info.get("rating_block_path"):
         assets["rating_block_path"] = file_uri(rating_path)
-    return render_template(
-        "profile.html",
-        int(1363 * scale),
-        int(218 * scale),
-        user=user_info,
-        assets=assets,
-        scale=scale,
-        rounded_icon=rounded_icon,
-        rating=str(user_info["rating"]).rjust(5),
-    )
+    return render_template("profile.html", int(1363 * scale), int(218 * scale),
+                           user=user_info, assets=assets, scale=scale,
+                           rounded_icon=rounded_icon, rating=str(user_info["rating"]).rjust(5))
 
 
 def admin_icon_png(logo_path):

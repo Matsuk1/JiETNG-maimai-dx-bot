@@ -427,11 +427,7 @@ def _handle_task_error(func, error, context, traceback_text):
                 source_type=context.source_type,
             )
         except Exception as exc:
-            logger.warning(
-                "[Task] Failed to notify user after task error: user_id=%s error=%s",
-                context.user_id,
-                exc,
-            )
+            logger.warning("[Task] Error reply failed: user_id=%s error=%s", context.user_id, exc)
 
 
 def _complete_task(func, outcome: TaskOutcome):
@@ -511,11 +507,9 @@ def linebot_reply():
         handler.handle(body, signature)
         # 签名校验通过后再追踪（避免把无效请求计入指标）
         for event_data in json_data.get("events", []):
-            track_event(
-                "line_webhook",
-                user_id=event_data.get("source", {}).get("userId"),
-                metadata={"type": event_data.get("type")},
-            )
+            source = event_data.get("source", {})
+            track_event("line_webhook", user_id=source.get("userId"),
+                        metadata={"type": event_data.get("type")})
 
     except Exception as e:
         is_bad_request = isinstance(e, (json.JSONDecodeError, InvalidSignatureError))
@@ -532,17 +526,12 @@ def linebot_reply():
                     if reply_token and uid:
                         smart_reply(uid, reply_token, system_error(uid), configuration, addition=False)
             except Exception as reply_error:
-                logger.warning(
-                    "[Webhook] Failed to send error reply: error=%s",
-                    reply_error,
-                )
+                logger.warning("[Webhook] Error reply failed: %s", reply_error)
 
         events = json_data.get("events", []) if not is_bad_request else []
         first_event = events[0] if events and isinstance(events[0], dict) else {}
         event_source = first_event.get("source", {})
-        notification_user_id = (
-            event_source.get("userId") if isinstance(event_source, dict) else None
-        )
+        notification_user_id = event_source.get("userId") if isinstance(event_source, dict) else None
         notify_admins_error(
             error_title="Webhook Error",
             error_details=f"{type(e).__name__}: {str(e)}\n\n{traceback.format_exc()}",
@@ -1150,18 +1139,10 @@ def manage_custom_bg():
             source_img.load()
             img = ImageOps.exif_transpose(source_img).convert("RGB")
         img.save(custom_bg_path, "WEBP", quality=85)
-        logger.info(
-            "[Settings] Uploaded custom bg: user_id=%s ext=%s size=%s",
-            user_id,
-            original_ext,
-            len(file_data),
-        )
+        logger.info("[Settings] Uploaded custom bg: user_id=%s ext=%s size=%s",
+                    user_id, original_ext, len(file_data))
     except (OSError, ValueError):
-        logger.exception(
-            "[Settings] Failed to process uploaded bg: user_id=%s ext=%s",
-            user_id,
-            original_ext,
-        )
+        logger.exception("[Settings] Invalid custom bg: user_id=%s ext=%s", user_id, original_ext)
         return jsonify({"success": False, "message": "Invalid image"}), 400
 
     return jsonify({"success": True, "filename": custom_bg_filename}), 201
@@ -1629,11 +1610,8 @@ def async_generate_friend_record_task(ctx):
     # 获取用户版本
     ver = ctx.mai_ver
 
-    track_event(
-        "image_gen",
-        user_id=user_id,
-        metadata={"command": "friend-rcd", "source": "line"},
-    )
+    track_event("image_gen", user_id=user_id,
+                metadata={"command": "friend-rcd", "source": "line"})
 
     # 直接通过网页爬取获取好友信息
     reply_msg = asyncio.run(generate_friend_record(user_id, friend_code, record_type, command, ver))
@@ -1643,11 +1621,8 @@ def async_generate_friend_record_task(ctx):
 def async_get_song_record_task(ctx):
     """Query using the command context resolved before queueing."""
     acronym = re.sub(r"\s+record$", "", ctx.text, flags=re.IGNORECASE).strip()
-    track_event(
-        "image_gen",
-        user_id=ctx.user_id,
-        metadata={"command": "record", "source": "line"},
-    )
+    track_event("image_gen", user_id=ctx.user_id,
+                metadata={"command": "record", "source": "line"})
     reply_msg = asyncio.run(get_song_record(ctx.user_id, ctx.id_use, acronym, ctx.mai_ver_use))
     smart_reply(ctx.user_id, ctx.reply_token, reply_msg, configuration, source_type=ctx.source_type)
 
@@ -2154,9 +2129,7 @@ def get_bot_status(user_id):
     except Exception:
         song_count = 0
     try:
-        dxdata_date = datetime.fromtimestamp(os.path.getmtime(DXDATA_FILE)).strftime(
-            "%Y-%m-%d"
-        )
+        dxdata_date = datetime.fromtimestamp(os.path.getmtime(DXDATA_FILE)).strftime("%Y-%m-%d")
     except Exception:
         dxdata_date = "N/A"
 
@@ -2189,19 +2162,12 @@ async def get_song_record(user_id, id_use, acronym, ver="jp"):
         return mention_record_error(user_id) if id_use != user_id else record_error(user_id)
 
     songs, _ = read_dxdata(ver)
-    matching_songs = find_matching_songs(
-        acronym,
-        songs,
-        max_results=MAX_SEARCH_RESULTS,
-    )
+    matching_songs = find_matching_songs(acronym, songs, max_results=MAX_SEARCH_RESULTS)
 
     if not matching_songs:
         return song_error(user_id)
 
-    recorded_charts = {
-        (record["cover_name"], record["type"])
-        for record in song_record
-    }
+    recorded_charts = {(record["cover_name"], record["type"]) for record in song_record}
     songs_with_records = [
         song
         for song in matching_songs
@@ -2212,12 +2178,7 @@ async def get_song_record(user_id, id_use, acronym, ver="jp"):
         return song_error(user_id)
 
     if len(songs_with_records) > 1:
-        return generate_search_results_flex(
-            user_id,
-            songs_with_records,
-            "record",
-            id_use,
-        )
+        return generate_search_results_flex(user_id, songs_with_records, "record", id_use)
 
     song_id = songs_with_records[0].get("id")
     return await get_song_record_by_id(user_id, id_use, song_id, ver)
@@ -3329,11 +3290,8 @@ def _bump_stats():
 
 def _run_sync_handler(cmd, ctx, *, count_completion=True):
     if cmd.queue == QUEUE_SYNC:
-        track_event(
-            "sync_cmd",
-            user_id=ctx.user_id,
-            metadata={"command": cmd.name, "source": "line"},
-        )
+        track_event("sync_cmd", user_id=ctx.user_id,
+                    metadata={"command": cmd.name, "source": "line"})
     reply = cmd.handler(ctx)
     if reply is not None:
         if count_completion:
@@ -3349,11 +3307,8 @@ def _run_sync_handler(cmd, ctx, *, count_completion=True):
 
 
 def _image_worker_task(cmd, ctx):
-    track_event(
-        "image_gen",
-        user_id=ctx.user_id,
-        metadata={"command": cmd.name, "source": "line"},
-    )
+    track_event("image_gen", user_id=ctx.user_id,
+                metadata={"command": cmd.name, "source": "line"})
     _run_sync_handler(cmd, ctx, count_completion=False)
 
 
