@@ -591,6 +591,7 @@ MESSAGE_TEXTS = {'access_error_text': '🙇 今めっちゃアクセス多いん
 TEXTS["messages"] = MESSAGE_TEXTS
 
 TEXTS["images"] = {
+    "crop": {'title': '認識範囲のプレビュー', 'subtitle': '曲名・達成率・判定表', 'main_title': '曲名', 'main_achievement': '達成率', 'sub_judgement_table': '判定表'},
     "score": {
         "analysis_title": "スコア解析",
         "type": "種類",

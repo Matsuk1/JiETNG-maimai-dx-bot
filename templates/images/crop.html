@@ -1,0 +1,26 @@
+<style>
+  .crop-preview { padding: 28px; color: #29344b; }
+  .crop-heading { padding: 8px 8px 28px; }
+  .crop-heading h1 { margin: 0 0 8px; font-size: 42px; }
+  .crop-heading p { margin: 0; font-size: 23px; color: #78869a; }
+  .crop-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+  .crop-card { padding: 24px; border: 1px solid #dce2ec; border-radius: 26px; background: white; box-shadow: 0 8px 18px #24355512; }
+  .crop-card.is-table, .crop-card:only-child { grid-column: 1 / -1; }
+  .crop-card header { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
+  .crop-index { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 13px; background: #eaf0fa; color: #54729f; font-size: 20px; }
+  .crop-card h2 { margin: 0; font-size: 28px; }
+  .crop-content { min-height: 160px; display: flex; align-items: center; justify-content: center; padding: 14px; background: #f1f4f9; border: 1px solid #dce2ec; border-radius: 16px; overflow: hidden; }
+  .crop-content img { display: block; width: 100%; height: auto; max-height: 300px; object-fit: contain; }
+  .crop-card.is-table .crop-content img { max-height: 850px; }
+</style>
+<section class="crop-preview">
+  <header class="crop-heading"><h1>{{ title }}</h1><p>{{ subtitle }}</p></header>
+  <div class="crop-grid">
+    {% for card in cards %}
+      <article class="crop-card {{ 'is-table' if card.name == 'sub_judgement_table' else '' }}">
+        <header><span class="crop-index">{{ '%02d'|format(loop.index) }}</span><h2>{{ card.label }}</h2></header>
+        <div class="crop-content"><img src="{{ card.src }}" width="{{ card.width }}" height="{{ card.height }}"></div>
+      </article>
+    {% endfor %}
+  </div>
+</section>

@@ -17,7 +17,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import Any
 
-from PIL import Image, ImageDraw
+from PIL import Image
 from modules.score_recognition.results import (InvalidScoreImageError, UnsupportedScoreImageError)
 from PIL import UnidentifiedImageError
 
@@ -1854,7 +1854,7 @@ def initialize_score_recognizer() -> None:
         )
 
 
-def build_score_crop_preview_image(image_bytes: bytes) -> Image.Image:
+def build_score_crop_preview_image(image_bytes: bytes, *, skin=None, ver="jp", timezone_offset=9, bg_filter=None) -> Image.Image:
     try:
         with Image.open(BytesIO(image_bytes)) as source:
             image_format = str(source.format or "").upper()
@@ -1889,50 +1889,17 @@ def build_score_crop_preview_image(image_bytes: bytes) -> Image.Image:
     if not crops:
         raise InvalidScoreImageError("No score result crop fields were detected")
 
-    card_width = 640
-    card_header_height = 36
-    card_body_height = 260
-    card_padding = 14
-    gap = 20
-    columns = 2 if len(crops) > 1 else 1
-    rows = math.ceil(len(crops) / columns)
-    canvas_width = columns * card_width + (columns + 1) * gap
-    canvas_height = rows * (card_header_height + card_body_height) + (rows + 1) * gap
-    canvas = Image.new("RGB", (canvas_width, canvas_height), "#f2f4f8")
-    draw = ImageDraw.Draw(canvas)
-
-    for index, (field_name, crop) in enumerate(crops):
-        row, column = divmod(index, columns)
-        x = gap + column * (card_width + gap)
-        y = gap + row * (card_header_height + card_body_height + gap)
-        draw.rounded_rectangle(
-            (x, y, x + card_width, y + card_header_height),
-            radius=10,
-            fill="#111827",
-        )
-        draw.text((x + 14, y + 10), field_name, fill="#ffffff")
-
-        body_x = x
-        body_y = y + card_header_height
-        draw.rectangle(
-            (body_x, body_y, body_x + card_width, body_y + card_body_height),
-            fill="#ffffff",
-        )
-        max_width = card_width - card_padding * 2
-        max_height = card_body_height - card_padding * 2
-        scale = min(max_width / crop.width, max_height / crop.height)
-        resized = crop.resize(
-            (
-                max(1, int(round(crop.width * scale))),
-                max(1, int(round(crop.height * scale))),
-            ),
-            Image.Resampling.LANCZOS,
-        )
-        paste_x = body_x + (card_width - resized.width) // 2
-        paste_y = body_y + (card_body_height - resized.height) // 2
-        canvas.paste(resized, (paste_x, paste_y))
-
-    return canvas
+    from modules.images.records import generate_crop_preview_picture
+    try:
+        return generate_crop_preview_picture(crops, skin=skin, ver=ver,
+                                             timezone_offset=timezone_offset, bg_filter=bg_filter)
+    finally:
+        image.close()
+        for _, crop in crops:
+            crop.close()
+        for field in metadata.get("fields", {}).values():
+            if isinstance(field.get("image"), Image.Image):
+                field["image"].close()
 
 
 def recognize_score_image_bytes(

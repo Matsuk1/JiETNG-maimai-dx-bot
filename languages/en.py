@@ -658,6 +658,7 @@ MESSAGE_TEXTS = {'access_error_text': "🙇 There's a lot of traffic right now..
 TEXTS["messages"] = MESSAGE_TEXTS
 
 TEXTS["images"] = {
+    "crop": {'title': 'Recognition crop preview', 'subtitle': 'Song title · Achievement · Judgements', 'main_title': 'Song title', 'main_achievement': 'Achievement', 'sub_judgement_table': 'Judgement table'},
     "score": {
         "analysis_title": "Score analysis",
         "type": "Type",

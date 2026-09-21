@@ -534,3 +534,16 @@ def thumbnail_html(song, inline=False, skin=None, language="ja"):
                     color=difficulty_color(song.get('difficulty')),
                     text_color='#72148d' if song.get('difficulty') == 'remaster' else 'white',
                     version=str(song.get('version','')).replace(' PLUS','+').replace('でらっくす','DX'))
+
+
+@skinnable
+def generate_crop_preview_picture(crops, ver="jp", timezone_offset=9, bg_filter=None):
+    """Present detector crops without stretching or changing their content."""
+    from modules.images.renderer import image_uri, render_template
+    language = image_language(ver)
+    cards = [dict(name=name, src=image_uri(crop), width=crop.width, height=crop.height,
+                  label=_image_text(f"crop.{name}", language)) for name, crop in crops]
+    card = render_template("crop.html", 1600, cards=cards,
+                           title=_image_text("crop.title", language),
+                           subtitle=_image_text("crop.subtitle", language))
+    return compose_generated_images([card], timezone_offset=timezone_offset, bg_filter=bg_filter)

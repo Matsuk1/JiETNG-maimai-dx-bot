@@ -3479,7 +3479,12 @@ def _score_recognition_queue_task(event, command: str, quoted_message_id: str, f
         image_bytes = _download_line_message_content(quoted_message_id)
         download_seconds = time.perf_counter() - download_started_at
         if command == "crop":
-            crop_img = build_score_crop_preview_image(image_bytes)
+            crop_img = build_score_crop_preview_image(
+                image_bytes, skin=user_skin(user_id),
+                ver=get_user_field(user_id, 'version') or 'jp',
+                timezone_offset=get_user_timezone(user_id),
+                bg_filter=_get_user_bg_filter(user_id),
+            )
             original_url, preview_url = asyncio.run(
                 upload_generated_image(crop_img, user_id)
             )

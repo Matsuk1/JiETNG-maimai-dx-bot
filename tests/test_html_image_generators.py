@@ -136,3 +136,15 @@ class ImageDataTests(unittest.TestCase):
         self.assertEqual(cards[0]['breaks'][0], ('P1', expected['break_high_perfect']))
         self.assertEqual(cards[0]['break_count'], 10)
         self.assertEqual(cards[0]['tolerance'][0][1], int(.5 / expected['tap_great']))
+
+    def test_crop_preview_keeps_dimensions_and_localizes_labels(self):
+        with Image.new('RGB', (600, 80)) as title, Image.new('RGB', (600, 240)) as table:
+            crops = [('main_title', title), ('sub_judgement_table', table)]
+            for ver, label in [('jp', '曲名'), ('intl', 'Song title')]:
+                with patch('modules.images.renderer.render_template') as render, patch.object(records, 'compose_generated_images'):
+                    records.generate_crop_preview_picture(crops, ver=ver, skin='glass')
+                cards = render.call_args.kwargs['cards']
+                self.assertEqual(cards[0]['label'], label)
+                self.assertEqual([(c['width'], c['height']) for c in cards], [(600, 80), (600, 240)])
+                self.assertEqual(cards[1]['name'], 'sub_judgement_table')
+            self.assertEqual(title.getpixel((0, 0)), (0, 0, 0))
