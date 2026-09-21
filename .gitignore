@@ -96,3 +96,6 @@ artifacts/image-migration/
 
 # Local skin comparison previews
 artifacts/skin-preview/
+
+# Local simai converter
+/simai_muconvert/
