@@ -959,62 +959,48 @@ def save_music_version_corrections(revision, region):
     return get_music_level_report()
 
 
-def _note_correction(report, revision, issue_index, song_id, difficulty):
-    notes = report.get('notes', {})
-    if report.get('status') != 'complete' or report.get('revision') != revision:
-        raise ValueError('Report changed; refresh before saving')
-    if notes.get('status') != 'complete' or notes.get('fingerprint') != _note_fingerprint():
-        raise ValueError('DXData, overrides or charts changed; run the note check again')
-    if issue_index >= len(notes.get('issues', [])):
-        raise ValueError('Issue no longer available')
-
-    issue = notes['issues'][issue_index]
-    chart = issue.get('chart', {})
-    if (issue.get('kind') != 'note_mismatch' or not song_id or
-            chart.get('song_id') != song_id or chart.get('difficulty') != difficulty):
-        raise ValueError('Select an unambiguous note-count mismatch')
-
-    songs, _ = config.read_dxdata('jp', include_generated=False, include_manual=False)
-    candidates = [song for song in songs if song.get('id') == song_id]
-    if len(candidates) != 1:
-        raise ValueError('Chart is ambiguous')
-    song = candidates[0]
-    if sum(s['title'] == song['title'] and s['type'] == song['type'] for s in songs) != 1:
-        raise ValueError('Override format cannot distinguish these same-name songs')
-    indices = [i for i, sheet in enumerate(song['sheets']) if sheet['difficulty'] == difficulty]
-    if len(indices) != 1:
-        raise ValueError('Chart difficulty is ambiguous')
-    return notes, issue, song, indices[0]
-
-
-def _note_override_rows(issue, song, sheet_index):
-    replacements = {}
-    for field, values in issue['differences'].items():
-        value = values.get('simai')
-        if field not in FIELDS or type(value) is not int or value < 0:
-            raise ValueError('Invalid note count in report; run the check again')
-        key = (song['title'], song['type'], 'sheets', str(sheet_index), 'noteCounts', field)
-        replacements[key] = str(value)
-
-    path = Path(config.AUTO_OVERRIDE_FILE)
-    rows = []
-    if path.exists():
-        with path.open(encoding='utf-8', newline='') as stream:
-            rows = list(csv.reader(stream))
-    rows = [row for row in rows if tuple(row[:-1]) not in replacements]
-    rows.extend(list(key) + [value] for key, value in replacements.items())
-    return path, rows
-
-
 def save_note_count_correction(revision, issue_index, song_id, difficulty):
-    """Save only the selected chart's server-computed differences."""
+    """Save only the selected chart's server-computed differences, preserving other rows."""
     if isinstance(issue_index, bool) or not isinstance(issue_index, int) or issue_index < 0:
         raise ValueError('Invalid issue index')
     with _audit_lock():
         report = _load_audit_report()
-        notes, issue, song, sheet_index = _note_correction(
-            report, revision, issue_index, song_id, difficulty)
-        path, rows = _note_override_rows(issue, song, sheet_index)
+        notes = report.get('notes', {})
+        if report.get('status') != 'complete' or report.get('revision') != revision:
+            raise ValueError('Report changed; refresh before saving')
+        if notes.get('status') != 'complete' or notes.get('fingerprint') != _note_fingerprint():
+            raise ValueError('DXData, overrides or charts changed; run the note check again')
+        if issue_index >= len(notes.get('issues', [])):
+            raise ValueError('Issue no longer available')
+        issue = notes['issues'][issue_index]
+        chart = issue.get('chart', {})
+        if (issue.get('kind') != 'note_mismatch' or not song_id or
+                chart.get('song_id') != song_id or chart.get('difficulty') != difficulty):
+            raise ValueError('Select an unambiguous note-count mismatch')
+        songs, _ = config.read_dxdata('jp', include_generated=False, include_manual=False)
+        candidates = [song for song in songs if song.get('id') == song_id]
+        if len(candidates) != 1:
+            raise ValueError('Chart is ambiguous')
+        song = candidates[0]
+        if sum(s['title'] == song['title'] and s['type'] == song['type'] for s in songs) != 1:
+            raise ValueError('Override format cannot distinguish these same-name songs')
+        indices = [i for i, sheet in enumerate(song['sheets']) if sheet['difficulty'] == difficulty]
+        if len(indices) != 1:
+            raise ValueError('Chart difficulty is ambiguous')
+        replacements = {}
+        for field, values in issue['differences'].items():
+            value = values.get('simai')
+            if field not in FIELDS or type(value) is not int or value < 0:
+                raise ValueError('Invalid note count in report; run the check again')
+            key = (song['title'], song['type'], 'sheets', str(indices[0]), 'noteCounts', field)
+            replacements[key] = str(value)
+        path = Path(config.AUTO_OVERRIDE_FILE)
+        rows = []
+        if path.exists():
+            with path.open(encoding='utf-8', newline='') as stream:
+                rows = list(csv.reader(stream))
+        rows = [row for row in rows if tuple(row[:-1]) not in replacements]
+        rows.extend(list(key) + [value] for key, value in replacements.items())
         _audit_atomic_write(path, lambda stream: csv.writer(stream).writerows(rows))
         with config._dxdata_cache_lock:
             config._dxdata_cache.clear()
@@ -1024,7 +1010,8 @@ def save_note_count_correction(revision, issue_index, song_id, difficulty):
         notes['issues'].pop(issue_index)
         notes['summary']['mismatches'] -= 1
         notes['summary']['equal'] += 1
-        notes.update(saved_at=_audit_now(), fingerprint=_note_fingerprint())
+        notes['saved_at'] = _audit_now()
+        notes['fingerprint'] = _note_fingerprint()
         report['revision'] = secrets.token_urlsafe(18)
         _persist_audit(report)
     return get_music_level_report()

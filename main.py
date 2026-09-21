@@ -4,7 +4,6 @@ JiETNG Maimai DX LINE Bot 主程序
 
 import os
 import random
-import requests
 import json
 import re
 import traceback
@@ -17,14 +16,12 @@ import asyncio
 import aiohttp
 import atexit
 import time
-import gc
 import math
 import base64 as b64mod
 
 from datetime import datetime
 from types import SimpleNamespace
 
-from PIL import Image
 from io import BytesIO
 
 from flask import (
@@ -2378,6 +2375,25 @@ async def get_song_record_by_id(user_id, id_use, song_id, ver="jp"):
     original_url, preview_url = await upload_generated_image(song_img, user_id)
     return generate_song_image_message(song_id, original_url, preview_url, user_id, mode='record')
 
+def _index_records_by_chart(records):
+    index = {}
+    for record in records:
+        suffix = (record['difficulty'], record['type'])
+        index[(record['name'], *suffix)] = record
+        index[(normalize_text(record['name']), *suffix)] = record
+    return index
+
+
+def _find_chart_record(index, title, difficulty, chart_type):
+    suffix = (difficulty, chart_type)
+    return index.get((title, *suffix)) or index.get((normalize_text(title), *suffix))
+
+
+def _achievement_percent(record):
+    score = record.get('score', '0.0000%')
+    return float(score[:-1]) if score.endswith('%') else 0.0
+
+
 @user_image
 async def generate_plate_rcd(user_id, id_use, title, ver="jp", filter_mode=None):
     _id_use_data = get_user(id_use)
@@ -2447,22 +2463,7 @@ async def generate_plate_rcd(user_id, id_use, title, ver="jp", filter_mode=None)
         'master': {'all': 0, 'clear': 0}
     }
 
-    # 优化：构建用户记录的哈希表，避免嵌套循环 O(n*m*p) -> O(n*m)
-
-    rcd_map = {}
-    for rcd in version_rcd_data:
-        name = rcd['name']
-        difficulty = rcd['difficulty']
-        type = rcd['type']
-
-        # 策略1: 精确匹配
-        key1 = (name, difficulty, type)
-        rcd_map[key1] = rcd
-
-        # 策略2: 标准化匹配 (处理全角半角、特殊符号等)
-        normalized_name = normalize_text(name)
-        key2 = (normalized_name, difficulty, type)
-        rcd_map[key2] = rcd
+    rcd_map = _index_records_by_chart(version_rcd_data)
 
     for song in songs:
         if song['version'] not in target_version or song['type'] == 'utage':
@@ -2477,55 +2478,23 @@ async def generate_plate_rcd(user_id, id_use, title, ver="jp", filter_mode=None)
             achievement_rate = 0.0
             target_num[sheet['difficulty']]['all'] += 1
 
-            # O(1) 哈希查找，尝试多种匹配策略
             song_title = song['title']
             difficulty = sheet['difficulty']
             song_type = song['type']
-
-            # 尝试精确匹配
-            key1 = (song_title, difficulty, song_type)
-            if key1 in rcd_map:
-                rcd = rcd_map[key1]
+            rcd = _find_chart_record(rcd_map, song_title, difficulty, song_type)
+            if rcd:
                 icon = rcd[f'{target_type}_icon']
-                # 获取达成率
-                score_str = rcd.get('score', '0.0000%')
-                achievement_rate = float(score_str[:-1]) if score_str.endswith('%') else 0.0
-                if icon in target_icon:
+                achievement_rate = _achievement_percent(rcd)
+                achieved = icon in target_icon
+                if achieved:
                     target_num[difficulty]['clear'] += 1
-                    achieved = True
-            else:
-                # 尝试标准化匹配
-                normalized_title = normalize_text(song_title)
-                key2 = (normalized_title, difficulty, song_type)
-                if key2 in rcd_map:
-                    rcd = rcd_map[key2]
-                    icon = rcd[f'{target_type}_icon']
-                    # 获取达成率
-                    score_str = rcd.get('score', '0.0000%')
-                    achievement_rate = float(score_str[:-1]) if score_str.endswith('%') else 0.0
-                    if icon in target_icon:
-                        target_num[difficulty]['clear'] += 1
-                        achieved = True
 
             if sheet['difficulty'] == "master":
-                # 构建 complete_info：检查所有难度是否符合牌子条件
-                complete_info = {}
-                for diff in ["basic", "advanced", "expert", "master"]:
-                    # 尝试查找该难度的记录
-                    key_check = (song_title, diff, song_type)
-                    key_check_normalized = (normalize_text(song_title), diff, song_type)
-
-                    meets_condition = False
-                    if key_check in rcd_map:
-                        rcd = rcd_map[key_check]
-                        diff_icon = rcd[f'{target_type}_icon']
-                        meets_condition = diff_icon in target_icon
-                    elif key_check_normalized in rcd_map:
-                        rcd = rcd_map[key_check_normalized]
-                        diff_icon = rcd[f'{target_type}_icon']
-                        meets_condition = diff_icon in target_icon
-
-                    complete_info[diff] = meets_condition
+                complete_info = {
+                    diff: bool(record := _find_chart_record(rcd_map, song_title, diff, song_type))
+                    and record[f'{target_type}_icon'] in target_icon
+                    for diff in ("basic", "advanced", "expert", "master")
+                }
 
                 target_data.append({
                     "img": generate_cover(song['cover_url'], song_type, icon, target_type, cover_name=song.get('cover_name'), complete_info=complete_info, achieved=achieved),
@@ -2614,16 +2583,7 @@ async def generate_level_rank_progress(user_id, id_use, level, rank=None, ver="j
 
     region_key = ver
 
-    # 构建用户记录的哈希表
-    rcd_map = {}
-    for rcd in song_record:
-        name = rcd['name']
-        difficulty = rcd['difficulty']
-        type = rcd['type']
-
-        # 精确匹配
-        key1 = (name, difficulty, type)
-        rcd_map[key1] = rcd
+    rcd_map = _index_records_by_chart(song_record)
 
     # 收集数据并统计
     target_data = []
@@ -2654,64 +2614,24 @@ async def generate_level_rank_progress(user_id, id_use, level, rank=None, ver="j
             difficulty = sheet['difficulty']
             total_charts += 1
 
-            # 查找用户记录
             song_title = song['title']
             song_type = song['type']
             icon = "back"
             achieved = False
-            has_record = False
-            achievement_rate = 0.0  # 达成率
-
-            # 尝试精确匹配
-            key1 = (song_title, difficulty, song_type)
-            if key1 in rcd_map:
-                rcd = rcd_map[key1]
-                has_record = True
-                # 获取达成率
-                score_str = rcd.get('score', '0.0000%')
-                achievement_rate = float(score_str[:-1]) if score_str.endswith('%') else 0.0
-
-                if rank is not None:
-                    # 如果指定了评级，检查是否达成
-                    user_icon = rcd.get(f'{target_type}_icon', "back")
-                    icon = user_icon  # 始终显示用户实际达到的评级
-                    if user_icon in target_icons:
-                        achieved = True
-                        achieved_count += 1
-                    else:
-                        unachieved_count += 1
-                else:
-                    # 如果没有指定评级，所有有记录的都算已达成
-                    achieved = True
-                    achieved_count += 1
-            else:
-                # 尝试标准化匹配
-                normalized_title = normalize_text(song_title)
-                key2 = (normalized_title, difficulty, song_type)
-                if key2 in rcd_map:
-                    rcd = rcd_map[key2]
-                    has_record = True
-                    # 获取达成率
-                    score_str = rcd.get('score', '0.0000%')
-                    achievement_rate = float(score_str[:-1]) if score_str.endswith('%') else 0.0
-
-                    if rank is not None:
-                        # 如果指定了评级，检查是否达成
-                        user_icon = rcd.get(f'{target_type}_icon', "back")
-                        icon = user_icon  # 始终显示用户实际达到的评级
-                        if user_icon in target_icons:
-                            achieved = True
-                            achieved_count += 1
-                        else:
-                            unachieved_count += 1
-                    else:
-                        # 如果没有指定评级，所有有记录的都算已达成
-                        achieved = True
-                        achieved_count += 1
-
-            # 如果没有记录，算作未游玩
-            if not has_record:
+            record = _find_chart_record(rcd_map, song_title, difficulty, song_type)
+            achievement_rate = _achievement_percent(record) if record else 0.0
+            if not record:
                 unplayed_count += 1
+            elif rank is None:
+                achieved = True
+                achieved_count += 1
+            else:
+                icon = record.get(f'{target_type}_icon', "back")
+                achieved = icon in target_icons
+                if achieved:
+                    achieved_count += 1
+                else:
+                    unachieved_count += 1
 
             # 生成所有难度的封面
             target_data.append({
@@ -2851,33 +2771,21 @@ def select_records(song_record, type="best50", command="", ver="jp"):
     times = 1
     sort_rule = lambda x: (x["ra"], float(x["score"][:-1]))
     filter_rules = [
-        (lambda x: x['new_song'] == False),
-        (lambda x: x['new_song'] == True)
+        (lambda x: not x['new_song']),
+        (lambda x: x['new_song'])
     ]
     details = {}
-    if not command == "":
+    if command:
         cmds = re.findall(r"-(\w+)(?:\s+([^-]+))?", command)
         for cmd, cmd_num in cmds:
             if cmd in ["diff", "difficulty"]:
-                diff_map = {
-                    'bas': 'basic',
-                    'adv': 'advanced',
-                    'exp': 'expert',
-                    'mas': 'master',
-                    'rem': 'remaster'
-                }
-                raw_diffs = cmd_num.split()
-                difficulties = []
-                for d in raw_diffs:
-                    d_lower = d.strip().lower()
-                    if d_lower:
-                        if d_lower in diff_map:
-                            difficulties.append(diff_map[d_lower])
-                        elif d_lower in ['basic', 'advanced', 'expert', 'master', 'remaster']:
-                            difficulties.append(d_lower)
+                aliases = dict(bas='basic', adv='advanced', exp='expert', mas='master', rem='remaster')
+                valid = {'basic', 'advanced', 'expert', 'master', 'remaster'}
+                difficulties = [aliases.get(value, value) for value in cmd_num.lower().split()]
+                difficulties = [value for value in difficulties if value in valid]
                 if difficulties:
-                    song_record = list(filter(lambda x: x.get('difficulty', '').lower() in difficulties, song_record))
-                    details['Diff'] = ' '.join(d for d in difficulties)
+                    song_record = [x for x in song_record if x.get('difficulty', '').lower() in difficulties]
+                    details['Diff'] = ' '.join(difficulties)
             elif cmd in ["lv", "level"]:
                 parts = cmd_num.split()
                 filtered_records, detail = _filter_records_by_level(song_record, parts)
@@ -2937,34 +2845,18 @@ def select_records(song_record, type="best50", command="", ver="jp"):
                     song_record = list(filter(lambda x: scr_start <= float(x['score'].replace("%", "")) <= scr_stop, song_record))
                     details['Scr'] = f'{scr_start}% ~ {scr_stop}%'
             elif cmd in ["ver", "version"]:
-                # 处理版本筛选：-ver [version1] [version2] ...
-                raw_versions = cmd_num.split()
-                versions = []
-                for v in raw_versions:
-                    if v.strip():
-                        # 将 + 替换为 " PLUS"
-                        processed = v.strip().replace("+", " PLUS").lower().replace("dx", "maimaiでらっくす").replace("deluxe", "maimaiでらっくす")
-                        versions.append(processed)
-                # 筛选歌曲版本在指定列表中的记录（忽略大小写）
-                song_record = list(filter(lambda x: (x.get('version') or '').lower() in versions, song_record))
-                details['Ver'] = ""
-                for version in versions:
-                    plus = False
-                    if "plus" in version:
-                        plus = True
-                    details['Ver'] += version.lower().replace("maimaiでらっくす", "dx").replace("plus", "")[:3].strip()
-                    if plus:
-                        details['Ver'] += "+"
-                    details['Ver'] += " "
+                versions = [value.replace("+", " PLUS").lower()
+                            .replace("dx", "maimaiでらっくす")
+                            .replace("deluxe", "maimaiでらっくす")
+                            for value in cmd_num.split()]
+                song_record = [x for x in song_record if (x.get('version') or '').lower() in versions]
+                details['Ver'] = ' '.join(
+                    version.replace("maimaiでらっくす", "dx").replace("plus", "")[:3].strip()
+                    + ('+' if 'plus' in version else '') for version in versions)
             elif cmd in ["type", "tp"]:
-                # 处理谱面类型筛选：-type dx / -type std
-                raw_types = [t.strip().lower() for t in cmd_num.split() if t.strip()]
-                valid_types = []
-                for t in raw_types:
-                    if t in ('dx', 'std'):
-                        valid_types.append(t)
+                valid_types = [value for value in cmd_num.lower().split() if value in ('dx', 'std')]
                 if valid_types:
-                    song_record = list(filter(lambda x: x.get('type', '').lower() in valid_types, song_record))
+                    song_record = [x for x in song_record if x.get('type', '').lower() in valid_types]
                     details['Type'] = ' / '.join(t.upper() for t in valid_types)
             elif cmd in ["page", "pg"]:
                 try:

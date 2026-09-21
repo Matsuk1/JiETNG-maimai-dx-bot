@@ -81,80 +81,54 @@ def _expected_counts(sheet, chart_type):
     return counts
 
 
-def _chart_type(directory_name):
-    match = re.fullmatch(r'music(\d{6})(?:_[LR])?', directory_name)
-    if not match:
-        raise ValueError('无法确定目录的谱面类型')
-    music_id = int(match[1])
-    return 'utage' if music_id >= 100000 else 'dx' if music_id >= 10000 else 'std'
-
-
-def _read_chart_file(path):
-    content = path.read_text(encoding='utf-8-sig')
-    # Only a new field at the start of a line ends the previous value. Titles and
-    # artists may contain literal ampersands (for example, "あひる & KTA").
-    pairs = re.findall(
-        r'^&([^=\r\n]+)=(.*?)(?=^&[^=\r\n]+=|\Z)',
-        content,
-        re.M | re.S,
-    )
-    metadata = dict(pairs)
-    if len(pairs) != len(metadata) or 'title' not in metadata:
-        raise ValueError('缺少标题或存在重复字段')
-
-    blocks = [
-        (int(key[6:]), value)
-        for key, value in metadata.items()
-        if re.fullmatch(r'inote_\d+', key)
-    ]
-    if not blocks:
-        raise ValueError('没有谱面块')
-
-    chart_type = _chart_type(path.parent.name)
-    source = f'{path.parent.name}/maidata.txt'
-    return [
-        ({
-            'title': metadata['title'].strip(),
-            'type': chart_type,
-            'difficulty': DIFFICULTIES.get(slot, f'inote_{slot}'),
-            'source': source,
-            'slot': slot,
-        }, body)
-        for slot, body in blocks
-        if slot != 7
-    ]
-
-
 def _load_records(paths):
     records, issues = [], []
     for path in paths:
         try:
-            records.extend(_read_chart_file(path))
+            content = path.read_text(encoding='utf-8-sig')
+            # Only a field at the start of a line ends the previous value.
+            pairs = re.findall(r'^&([^=\r\n]+)=(.*?)(?=^&[^=\r\n]+=|\Z)',
+                               content, re.M | re.S)
+            metadata = dict(pairs)
+            if len(pairs) != len(metadata) or 'title' not in metadata:
+                raise ValueError('缺少标题或存在重复字段')
+            number = re.fullmatch(r'music(\d{6})(?:_[LR])?', path.parent.name)
+            if not number:
+                raise ValueError('无法确定目录的谱面类型')
+            music_id = int(number[1])
+            chart_type = 'utage' if music_id >= 100000 else 'dx' if music_id >= 10000 else 'std'
+            blocks = [(int(k[6:]), v) for k, v in metadata.items() if re.fullmatch(r'inote_\d+', k)]
+            if not blocks:
+                raise ValueError('没有谱面块')
+            for slot, body in blocks:
+                if slot != 7:
+                    records.append(({
+                        'title': metadata['title'].strip(), 'type': chart_type,
+                        'difficulty': DIFFICULTIES.get(slot, f'inote_{slot}'),
+                        'source': f'{path.parent.name}/maidata.txt', 'slot': slot,
+                    }, body))
         except (OSError, UnicodeError, ValueError) as exc:
-            issues.append({
-                'kind': 'note_parse_error',
-                'chart': {
-                    'title': path.parent.name,
-                    'source': f'{path.parent.name}/maidata.txt',
-                },
-                'message': str(exc),
-            })
+            issues.append({'kind': 'note_parse_error', 'chart': {'title': path.parent.name, 'source': f'{path.parent.name}/maidata.txt'}, 'message': str(exc)})
     return records, issues
 
 
-def _song_index(songs):
+def audit_note_counts(songs, directory=None):
+    root = Path(directory) if directory is not None else source_directory()
+    paths = sorted(root.glob('*/maidata.txt'))
+    if not paths:
+        return {'status': 'unavailable', 'message': '未找到 Simai 谱面库，请上传 simai_muconvert 或设置 SIMAI_CHART_DIR。', 'issues': [], 'summary': {}}
+    # Ignore banquet exports before reading them, including paired L/R files.
+    paths = [p for p in paths if not (
+        (number := re.fullmatch(r'music(\d{6})(?:_[LR])?', p.parent.name))
+        and int(number[1]) >= 100000)]
     index = defaultdict(list)
     for song in songs:
         for sheet in song.get('sheets', []):
-            chart_type = sheet.get('type', song.get('type'))
-            difficulty = sheet.get('difficulty')
-            if chart_type == 'utage' or difficulty == 'utage':
+            if sheet.get('type', song.get('type')) == 'utage' or sheet.get('difficulty') == 'utage':
                 continue
-            index[(_title(song['title']), chart_type, difficulty)].append((song, sheet))
-    return index
-
-
-def _link_record_matches(records, index):
+            index[(_title(song['title']), sheet.get('type', song.get('type')), sheet['difficulty'])].append((song, sheet))
+    records, issues = _load_records(paths)
+    identities = Counter((_title(c['title']), c['type'], c['difficulty']) for c, _ in records)
     # Link is the only special case: compare partial category agreement within
     # the same difficulty. Require a unique best match in both directions.
     link_scores, link_parsed = {}, {}
@@ -189,21 +163,10 @@ def _link_record_matches(records, index):
                   if k == key and i == candidate_index and r != record_index]
         if all(best > score for score in rivals):
             link_matches[record_index] = candidate_index
-    return link_matches, link_parsed
-
-
-def _record_key(chart):
-    return _title(chart['title']), chart['type'], chart['difficulty']
-
-
-def _compare_records(records, index, issues, file_count):
-    identities = Counter(_record_key(chart) for chart, _ in records)
-    link_matches, link_parsed = _link_record_matches(records, index)
-    summary = {'files': file_count, 'charts': len(records), 'matched': 0, 'equal': 0,
-               'mismatches': 0, 'unmatched': 0, 'parse_errors': len(issues)}
+    summary = {'files': len(paths), 'charts': len(records), 'matched': 0, 'equal': 0, 'mismatches': 0, 'unmatched': 0, 'parse_errors': len(issues)}
     covered = set()
     for record_index, (chart, body) in enumerate(records):
-        key = _record_key(chart)
+        key = (_title(chart['title']), chart['type'], chart['difficulty'])
         candidates = index.get(key, [])
         candidate_index = 0
         ambiguous = len(candidates) != 1 or identities[key] != 1
@@ -234,32 +197,6 @@ def _compare_records(records, index, issues, file_count):
         else:
             summary['equal'] += 1
     summary['dxdata_uncovered'] = sum((key, i) not in covered for key, candidates in index.items() for i in range(len(candidates)))
-    return summary
-
-
-def audit_note_counts(songs, directory=None):
-    root = Path(directory) if directory is not None else source_directory()
-    all_paths = sorted(root.glob('*/maidata.txt'))
-    if not all_paths:
-        return {
-            'status': 'unavailable',
-            'message': '未找到 Simai 谱面库，请上传 simai_muconvert 或设置 SIMAI_CHART_DIR。',
-            'issues': [],
-            'summary': {},
-        }
-
-    # Ignore banquet exports before reading them, including paired L/R files.
-    paths = []
-    for path in all_paths:
-        try:
-            if _chart_type(path.parent.name) == 'utage':
-                continue
-        except ValueError:
-            # Keep malformed directory names so the loader reports them.
-            pass
-        paths.append(path)
-    records, issues = _load_records(paths)
-    summary = _compare_records(records, _song_index(songs), issues, len(paths))
     priority = {'note_mismatch': 0, 'note_parse_error': 1, 'note_unmatched': 2}
     issues.sort(key=lambda issue: priority[issue['kind']])
     return {'status': 'complete', 'summary': summary, 'issues': issues}
