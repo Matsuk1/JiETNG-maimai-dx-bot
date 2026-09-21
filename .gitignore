@@ -84,8 +84,8 @@ assets/richmenu/_upload/
 # 临时产物：导出文件（30 分钟内自动清理）
 data/exports/
 
-# Panel music level audit runtime state
-data/dxdata/music_level_audit.json
+# Panel music level audit runtime state and accidental Finder copies
+data/dxdata/music_level_audit*.json
 data/dxdata/music_level_audit.lock
 
 # 成绩图裁切原型调试产物
@@ -99,3 +99,4 @@ artifacts/skin-preview/
 
 # Local simai converter
 /simai_muconvert/
+/simai_muconvert*.zip

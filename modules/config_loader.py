@@ -158,6 +158,7 @@ LOG_FILE = "./jietng.log"
 DXDATA_FILE = "./data/dxdata/dxdata.json"
 DXDATA_VERSION_FILE = "./data/dxdata/dxdata_version.json"
 OVERRIDE_FILE = "./data/dxdata/override.csv"
+AUTO_OVERRIDE_FILE = "./data/dxdata/auto_override.csv"
 INTL_OVERRIDE_FILE = "./data/dxdata/intl_override.csv"
 JP_OVERRIDE_FILE = "./data/dxdata/jp_override.csv"
 NOTICE_FILE = "./data/notice.json"
@@ -336,7 +337,7 @@ def read_dxdata(ver="jp", *, include_generated=True, include_manual=True):
     if include_manual:
         files.append(OVERRIDE_FILE)
     if include_generated:
-        files.append(generated_file)
+        files.extend([AUTO_OVERRIDE_FILE, generated_file])
     mtimes = []
     for path in files:
         try:
@@ -359,6 +360,7 @@ def read_dxdata(ver="jp", *, include_generated=True, include_manual=True):
 
     # Generated corrections are region-specific; hand-written overrides win.
     if include_generated:
+        apply_override(songs, AUTO_OVERRIDE_FILE)
         apply_override(songs, generated_file)
 
     # 通用 override（所有版本生效）

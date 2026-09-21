@@ -1813,6 +1813,7 @@ async def _sync_maimai_user_data(user_id, ver="jp"):
 
 
 async def maimai_update(user_id, ver="jp"):
+    previous_rating = ((get_user(user_id) or {}).get("personal_info") or {}).get("rating")
     result = await _sync_maimai_user_data(user_id, ver)
 
     if result.get("error") == "Account not bound" or result.get("error") == "Authentication failed":
@@ -1824,7 +1825,10 @@ async def maimai_update(user_id, ver="jp"):
 
     extra_messages = []
 
-    if result.get("func_status", {}).get("Best Records"):
+    if (result.get("func_status", {}).get("Best Records")
+            and result.get("func_status", {}).get("User Info")
+            and result.get("rating") is not None
+            and str(result["rating"]) != str(previous_rating)):
         b50_message = await generate_records(user_id, user_id, ver=ver)
         if b50_message is not None:
             extra_messages.append(b50_message)

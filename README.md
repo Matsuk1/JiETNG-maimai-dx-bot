@@ -132,6 +132,8 @@ AI 请求会先创建后台任务，再由页面轮询回答增量、可读的�
 
 文件维护统一由一个 MCP 工具处理，仅允许 `data/dxdata/`、`assets/` 和 `languages/`。它支持目录浏览、UTF-8 文本分段读取、搜索、整文件写入及精确替换；现有文件必须带读取时得到的 SHA-256 才能修改。二进制文件只返回元数据，不支持删除、移动或创建目录。
 
+DXData 检查支持使用本地 Simai 谱面库核对音符数量，详见 [部署与使用说明](docs/simai-note-audit.md)。
+
 ### 使用方法
 
 1. 访问 `https://your-domain.com/admin/panel`

@@ -137,3 +137,26 @@ def test_bulk_versions_passes_revision_and_region(app):
         response = client.post('/admin/dxdata_audit/versions', json={'revision': 'r', 'region': 'intl'})
     assert response.status_code == 200
     save.assert_called_once_with('r', 'intl')
+
+
+def test_dxdata_note_check_needs_no_sega_credentials(app):
+    client = app.test_client()
+    with client.session_transaction() as session:
+        session['admin_authenticated'] = True
+    with patch.object(admin, 'start_note_count_check', return_value='notes-job') as start:
+        response = client.post('/admin/dxdata_audit', json={'mode': 'notes'})
+    assert response.status_code == 202
+    assert response.json['id'] == 'notes-job'
+    start.assert_called_once_with()
+
+
+def test_note_correction_uses_report_not_client_values(app):
+    client = app.test_client()
+    with client.session_transaction() as session:
+        session['admin_authenticated'] = True
+    with patch.object(admin, 'save_note_count_correction', return_value={'status': 'complete'}) as save:
+        response = client.post('/admin/dxdata_audit/correction', json={
+            'revision': 'r', 'issue_index': 3, 'song_id': 'a', 'difficulty': 'master',
+            'field': 'noteCounts', 'value': -999})
+    assert response.status_code == 200
+    save.assert_called_once_with('r', 3, 'a', 'master')

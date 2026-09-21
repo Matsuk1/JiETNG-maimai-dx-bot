@@ -14,7 +14,7 @@
   <meta name="theme-color" content="#f5f5f5" media="(prefers-color-scheme: light)">
   {% include 'common_styles.html' %}
 
-  <link rel="stylesheet" href="/static/admin-panel.css?v=audit-20260917-10">
+  <link rel="stylesheet" href="/static/admin-panel.css?v=audit-20260920-11">
 </head>
 <body class="admin-mobile-nav-collapsed">
   <svg aria-hidden="true" width="0" height="0" style="position:absolute;overflow:hidden;">
@@ -382,9 +382,13 @@
             Loading DXData status...
           </div>
         </div>
-        <div id="dxdata-audit-panel" style="margin-top:24px;">
-          <div class="section-title">JP / INTL 定数与版本检查 · LEVEL ≥ 12</div>
-          <p class="audit-intro">仅检查 12、12+ 及以上谱面。对照当前值与官网结果，选择要修正的谱面后保存。</p>
+      </div>
+      <section id="dxdata-audit-panel" class="section audit-panel">
+          <div class="section-title audit-panel-header">
+            <span>官网检查 · 定数 / 版本</span>
+            <button type="button" class="btn btn-primary" onclick="loadDXDataAudit()">刷新结果</button>
+          </div>
+          <p class="audit-intro">使用 SEGA ID 获取 JP / INTL 官网数据；定数检查覆盖 12、12+ 及以上谱面。</p>
           <details id="dxdata-audit-setup" class="audit-setup">
             <summary>登录并重新检查</summary>
             <form class="audit-login-form" onsubmit="event.preventDefault();startDXDataAudit()">
@@ -404,23 +408,34 @@
                   <select class="form-input" id="dxdata-audit-aime"><option value="0">1</option><option value="1">2</option><option value="2">3</option></select>
                 </div>
                 <div class="audit-login-actions">
-                  <button type="button" class="btn" onclick="loadDXDataAudit()">刷新结果</button>
-                  <button type="submit" class="btn btn-primary" id="dxdata-audit-start">检查当前数据</button>
+                  <button type="submit" class="btn btn-success" id="dxdata-audit-start">检查当前数据</button>
                 </div>
               </div>
               <p class="audit-help">登录信息仅用于本次检查，不保存。</p>
             </form>
           </details>
-          <div id="dxdata-audit-status" role="status" aria-live="polite"></div>
-          <div style="display:flex;gap:10px;margin:12px 0;">
-            <label>版本 <select id="dxdata-audit-region" onchange="dxdataAuditPage=0;renderDXDataAudit()"><option value="jp">JP</option><option value="intl">INTL</option></select></label>
-            <label>问题 <select id="dxdata-audit-filter" onchange="dxdataAuditPage=0;renderDXDataAudit()"><option value="constant">定数</option><option value="version">版本</option></select></label>
+          <div id="dxdata-audit-status" class="audit-status" role="status" aria-live="polite"></div>
+          <div class="audit-toolbar">
+            <label class="audit-filter">版本 <select class="form-input" id="dxdata-audit-region" onchange="dxdataAuditPage=0;renderDXDataAudit()"><option value="jp">JP</option><option value="intl">INTL</option></select></label>
+            <label class="audit-filter">问题 <select class="form-input" id="dxdata-audit-filter" onchange="dxdataAuditPage=0;renderDXDataAudit()"><option value="constant">定数</option><option value="version">版本</option></select></label>
           </div>
           <button type="button" class="btn btn-success" id="dxdata-audit-approve-versions" hidden onclick="approveDXDataVersions()">一键通过全部版本修正</button>
-          <div id="dxdata-audit-results"></div>
-          <div id="dxdata-audit-pagination" style="display:flex;gap:10px;margin-top:12px;"></div>
-        </div>
-      </div>
+          <div id="dxdata-audit-results" class="audit-results"></div>
+          <div id="dxdata-audit-pagination" class="audit-pagination"></div>
+      </section>
+      <section id="dxdata-note-panel" class="section audit-panel">
+          <div class="section-title audit-panel-header">
+            <span>NOTE 检查 · 音符数量</span>
+            <div class="audit-panel-actions">
+              <button type="button" class="btn btn-primary" onclick="loadDXDataAudit()">刷新结果</button>
+              <button type="button" class="btn btn-success" id="dxdata-note-start" onclick="startDXDataNoteAudit()">检查音符数量</button>
+            </div>
+          </div>
+          <p class="audit-intro">对照 Simai 谱面与 DXData 的音符数量，覆盖所有难度，无需登录 SEGA ID。</p>
+          <div id="dxdata-note-status" class="audit-status" role="status" aria-live="polite"></div>
+          <div id="dxdata-note-results" class="audit-results"></div>
+          <div id="dxdata-note-pagination" class="audit-pagination"></div>
+      </section>
     </div>
 
     <!-- Tip/Ad Tab -->
@@ -850,6 +865,6 @@
     };
   </script>
   <script src="/static/admin-user-editor.js"></script>
-  <script src="/static/admin-panel.js?v=components-20260919"></script>
+  <script src="/static/admin-panel.js?v=audit-20260920-11"></script>
 </body>
 </html>

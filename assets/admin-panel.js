@@ -2879,7 +2879,37 @@
     let dxdataAuditReport = null;
     let dxdataAuditTimer = null;
     let dxdataAuditPage = 0;
+    let dxdataNotePage = 0;
+    let dxdataNoteSaving = false;
     const dxdataAuditNames = {order_conflict: '定数排序冲突', version_mismatch: '版本不符'};
+
+    function appendAuditText(parent, tag, value) {
+      const node = document.createElement(tag);
+      node.textContent = value;
+      parent.append(node);
+      return node;
+    }
+
+    async function postDXDataAudit(path, payload, fallbackMessage) {
+      const response = await fetch(path, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': window.JIETNG_ADMIN_CONFIG.csrfToken},
+        body: JSON.stringify(payload)
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || fallbackMessage);
+      return data;
+    }
+
+    function renderAuditPagination(container, page, pages, setPage) {
+      for (const [label, offset] of [['上一页', -1], ['下一页', 1]]) {
+        const button = appendAuditText(container, 'button', label);
+        button.className = 'btn';
+        button.disabled = page + offset < 0 || page + offset >= pages;
+        button.onclick = () => setPage(page + offset);
+      }
+      appendAuditText(container, 'span', `${page + 1} / ${pages} 页`);
+    }
 
     async function startDXDataAudit() {
       const id = document.getElementById('dxdata-audit-id');
@@ -2895,19 +2925,30 @@
       const button = document.getElementById('dxdata-audit-start');
       button.disabled = true;
       try {
-        const body = JSON.stringify({sega_id: id.value.trim(), password: password.value,
-          aime: Number(document.getElementById('dxdata-audit-aime').value)});
+        const payload = {sega_id: id.value.trim(), password: password.value,
+          aime: Number(document.getElementById('dxdata-audit-aime').value)};
         password.value = '';
-        const response = await fetch('/admin/dxdata_audit', {
-          method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': window.JIETNG_ADMIN_CONFIG.csrfToken}, body
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message || '无法开始检查');
+        await postDXDataAudit('/admin/dxdata_audit', payload, '无法开始检查');
         dxdataAuditPage = 0;
         await loadDXDataAudit();
       } catch (error) {
         status.textContent = error.message;
         button.disabled = false;
+      }
+    }
+
+    async function startDXDataNoteAudit() {
+      const button = document.getElementById('dxdata-note-start');
+      button.disabled = true;
+      document.getElementById('dxdata-note-status').textContent = '正在启动音符检查…';
+      try {
+        await postDXDataAudit('/admin/dxdata_audit', {mode: 'notes'}, '无法开始检查');
+        dxdataNotePage = 0;
+        await loadDXDataAudit();
+      } catch (error) {
+        document.getElementById('dxdata-note-status').textContent = error.message;
+      } finally {
+        button.disabled = dxdataAuditReport?.status === 'running';
       }
     }
 
@@ -2921,6 +2962,7 @@
         if (dxdataAuditReport.status === 'running') dxdataAuditTimer = setTimeout(loadDXDataAudit, 2500);
       } catch (error) {
         document.getElementById('dxdata-audit-status').textContent = error.message;
+        document.getElementById('dxdata-note-status').textContent = error.message;
       }
     }
 
@@ -2932,12 +2974,8 @@
       button.disabled = true;
       button.textContent = '保存中…';
       try {
-        const response = await fetch('/admin/dxdata_audit/versions', {
-          method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': window.JIETNG_ADMIN_CONFIG.csrfToken},
-          body: JSON.stringify({revision: report.revision, region})
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message || '保存失败');
+        const data = await postDXDataAudit(
+          '/admin/dxdata_audit/versions', {revision: report.revision, region}, '保存失败');
         dxdataAuditReport = data.report;
         dxdataAuditPage = 0;
         showToast(`${region.toUpperCase()} 版本修正已全部保存`, 'success');
@@ -2948,13 +2986,94 @@
       }
     }
 
+    function renderDXDataNoteAudit() {
+      const report = dxdataAuditReport;
+      if (!report) return;
+      document.getElementById('dxdata-note-start').disabled = report.status === 'running';
+      const stateNames = {running: '检查中', complete: '完成', failed: '失败', unavailable: '未找到谱面库'};
+      document.getElementById('dxdata-note-status').textContent =
+        (stateNames[report.notes?.status] || '尚未检查') +
+        (report.notes?.checked_at ? ` · 检查于 ${new Date(report.notes.checked_at).toLocaleString()}` : '') +
+        (report.notes?.stale ? ' · 结果已过期' : '');
+      const container = document.getElementById('dxdata-note-results');
+      const pagination = document.getElementById('dxdata-note-pagination');
+      container.replaceChildren(); pagination.replaceChildren();
+      const text = appendAuditText;
+      const notes = report.notes;
+      if (!notes || notes.status !== 'complete') {
+        text(container, 'p', notes?.message || (notes?.status === 'running' ? '正在解析 Simai 谱面…' : '尚未检查音符数量'));
+        return;
+      }
+      const n = notes.summary;
+      text(container, 'div', `${n.charts} 份来源谱面 · ${n.equal} 份一致 · ${n.mismatches} 份数量差异 · ${n.unmatched} 份未匹配 · ${n.parse_errors} 个解析错误 · ${n.dxdata_uncovered} 份 dxdata 谱面未覆盖`).className = 'audit-summary';
+      text(container, 'p', notes.stale ? '数据或谱面库已变化，请重新检查。' : '核对后点击「修改」，将该谱面的差异写入自动修正文件。');
+      const issues = notes.issues.map((issue, index) => ({issue, index}));
+      const pages = Math.max(1, Math.ceil(issues.length / 20));
+      dxdataNotePage = Math.min(dxdataNotePage, pages - 1);
+      const names = {note_mismatch: '数量差异', note_unmatched: '未匹配', note_parse_error: '解析失败'};
+      for (const {issue, index} of issues.slice(dxdataNotePage * 20, (dxdataNotePage + 1) * 20)) {
+        const card = document.createElement('article'); card.className = 'audit-compact-card'; container.append(card);
+        const chart = issue.chart;
+        text(card, 'strong', chart.title.trim() || '（全角空格曲名）').className = 'audit-compact-title';
+        text(card, 'small', `${(chart.type || '').toUpperCase()} · ${(chart.difficulty || '').toUpperCase()} · ${names[issue.kind]}`).className = 'audit-compact-meta';
+        text(card, 'small', `${chart.source} · inote_${chart.slot ?? '?'}`).className = 'audit-compact-meta';
+        if (issue.differences) {
+          for (const [key, values] of Object.entries(issue.differences)) {
+            const comparison = text(card, 'div', ''); comparison.className = 'audit-compact-values';
+            const oldValue = text(comparison, 'div', '');
+            text(oldValue, 'small', `DXData ${key.toUpperCase()}`); text(oldValue, 'strong', values.dxdata ?? '缺失');
+            text(comparison, 'span', '→').className = 'audit-compact-arrow';
+            const newValue = text(comparison, 'div', '');
+            text(newValue, 'small', `Simai ${key.toUpperCase()}`); text(newValue, 'strong', values.simai);
+          }
+          const form = document.createElement('form'); form.className = 'audit-compact-actions'; card.append(form);
+          const prompt = text(form, 'span', '是否修改？');
+          const savingThisChart = dxdataNoteSaving && dxdataNoteSaving.songId === chart.song_id && dxdataNoteSaving.difficulty === chart.difficulty;
+          const yes = text(form, 'button', savingThisChart ? '保存中…' : '修改'); yes.type = 'submit'; yes.className = 'btn btn-success';
+          const no = text(form, 'button', '不修改'); no.type = 'button'; no.className = 'btn btn-cancel';
+          yes.disabled = no.disabled = report.status !== 'complete' || notes.stale || dxdataNoteSaving || !chart.song_id;
+          no.onclick = () => {
+            const skipped = card.classList.toggle('audit-skipped');
+            prompt.textContent = skipped ? '已跳过' : '是否修改？';
+            yes.disabled = skipped;
+            no.textContent = skipped ? '重新选择' : '不修改';
+          };
+          form.onsubmit = async event => {
+            event.preventDefault();
+            if (dxdataNoteSaving || report.status !== 'complete' || notes.stale || yes.disabled) return;
+            dxdataNoteSaving = {songId: chart.song_id, difficulty: chart.difficulty};
+            renderDXDataNoteAudit();
+            try {
+              const data = await postDXDataAudit('/admin/dxdata_audit/correction', {
+                revision: report.revision, issue_index: index, song_id: chart.song_id,
+                difficulty: chart.difficulty, field: 'noteCounts'
+              }, '保存失败');
+              dxdataAuditReport = data.report;
+              showToast(`${chart.title} · ${chart.difficulty.toUpperCase()} 音符修正已保存`, 'success');
+            } catch (error) {
+              showToast(error.message, 'error');
+            } finally {
+              dxdataNoteSaving = false;
+              renderDXDataAudit();
+            }
+          };
+        } else text(card, 'p', issue.message);
+      }
+      if (!issues.length) text(container, 'p', '本次检查没有发现问题。');
+      renderAuditPagination(pagination, dxdataNotePage, pages, page => {
+        dxdataNotePage = page;
+        renderDXDataNoteAudit();
+      });
+    }
+
     function renderDXDataAudit() {
       const report = dxdataAuditReport;
       if (!report) return;
       const running = report.status === 'running';
       document.getElementById('dxdata-audit-start').disabled = running;
+      renderDXDataNoteAudit();
       document.getElementById('update-dxdata-btn').disabled = running;
-      const stateNames = {pending: '等待', running: '检查中', complete: '完成', failed: '失败'};
+      const stateNames = {unavailable: '未找到谱面库', pending: '等待', running: '检查中', complete: '完成', failed: '失败'};
       document.getElementById('dxdata-audit-status').textContent = report.status === 'idle' ? '尚未检查' :
         ['jp', 'intl'].map(r => `${r.toUpperCase()}: ${stateNames[report.regions?.[r]?.status] || '未检查'}`).join(' · ') +
         (report.stale ? ' · 数据已变化，请重新检查后保存。' : '');
@@ -2965,11 +3084,9 @@
       const container = document.getElementById('dxdata-audit-results');
       const pagination = document.getElementById('dxdata-audit-pagination');
       container.replaceChildren(); pagination.replaceChildren();
-      function text(parent, tag, value) {
-        const node = document.createElement(tag); node.textContent = value; parent.append(node); return node;
-      }
+      const text = appendAuditText;
       if (!result || result.status !== 'complete') {
-        text(container, 'p', result?.error || (running ? '正在抓取官网列表，请稍候…' : '此版本暂无结果'));
+        text(container, 'p', result?.error || (['pending', 'running'].includes(result?.status) ? '正在抓取官网列表，请稍候…' : '此版本暂无结果'));
         return;
       }
       const summary = text(container, 'div', `${result.summary.issues} 项待核对 · ${result.summary.charts} 个谱面 · 检查于 ${result.fetched_at ? new Date(result.fetched_at).toLocaleString() : '—'}`);
@@ -2992,7 +3109,7 @@
         const needsManualReview = !isVersion && !charts.length;
         if (needsManualReview) charts = [issue.before, issue.after];
         for (const chart of charts.filter(Boolean)) {
-          const card = document.createElement('article'); card.className = 'section audit-compact-card'; container.append(card);
+          const card = document.createElement('article'); card.className = 'audit-compact-card'; container.append(card);
           const title = chart.title.trim() || '（全角空格曲名）';
           text(card, 'strong', title).className = 'audit-compact-title';
           text(card, 'small', `${region.toUpperCase()} · ${chart.type.toUpperCase()} · ${chart.difficulty.toUpperCase()}`).className = 'audit-compact-meta';
@@ -3018,6 +3135,7 @@
             form.append(input);
           } else if (!isVersion && inference.min !== inference.max) {
             const select = document.createElement('select');
+            select.className = 'form-input';
             select.setAttribute('aria-label', `${title} 修正值`); select.required = true;
             select.add(new Option('选择区间内的值', ''));
             for (let value = Math.round(inference.min * 10); value <= Math.round(inference.max * 10); value++) {
@@ -3029,7 +3147,7 @@
           }
           const prompt = text(form, 'span', '是否修改？');
           const yes = document.createElement('button'); yes.type = 'submit'; yes.className = 'btn btn-success'; yes.textContent = '修改';
-          const no = document.createElement('button'); no.type = 'button'; no.className = 'btn'; no.textContent = '不修改';
+          const no = document.createElement('button'); no.type = 'button'; no.className = 'btn btn-cancel'; no.textContent = '不修改';
           yes.disabled = running || report.stale || !chart.song_id;
           form.append(yes, no);
           no.onclick = () => {
@@ -3043,13 +3161,11 @@
             if (!chosenValue) return;
             yes.disabled = true; no.disabled = true; yes.textContent = '保存中…';
             try {
-              const response = await fetch('/admin/dxdata_audit/correction', {
-                method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': window.JIETNG_ADMIN_CONFIG.csrfToken},
-                body: JSON.stringify({revision: report.revision, region, issue_index: index, song_id: chart.song_id,
-                  difficulty: chart.difficulty, field: isVersion ? 'version' : 'internalLevelValue', value: chosenValue})
-              });
-              const data = await response.json();
-              if (!response.ok) throw new Error(data.message || '保存失败');
+              const data = await postDXDataAudit('/admin/dxdata_audit/correction', {
+                revision: report.revision, region, issue_index: index, song_id: chart.song_id,
+                difficulty: chart.difficulty, field: isVersion ? 'version' : 'internalLevelValue',
+                value: chosenValue
+              }, '保存失败');
               dxdataAuditReport = data.report; renderDXDataAudit(); showToast('已修改', 'success');
             } catch (error) {
               showToast(error.message, 'error'); yes.disabled = false; no.disabled = false; yes.textContent = '修改';
@@ -3057,11 +3173,8 @@
           };
         }
       }
-      for (const [label, step] of [['上一页', -1], ['下一页', 1]]) {
-        const button = document.createElement('button'); button.className = 'btn'; button.textContent = label;
-        button.disabled = dxdataAuditPage + step < 0 || dxdataAuditPage + step >= pages;
-        button.onclick = () => { dxdataAuditPage += step; renderDXDataAudit(); };
-        pagination.append(button);
-      }
-      text(pagination, 'span', `${dxdataAuditPage + 1} / ${pages} 页`);
+      renderAuditPagination(pagination, dxdataAuditPage, pages, page => {
+        dxdataAuditPage = page;
+        renderDXDataAudit();
+      });
     }

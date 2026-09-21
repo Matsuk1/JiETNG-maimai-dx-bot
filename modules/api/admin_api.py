@@ -49,9 +49,14 @@ from modules.devtoken_manager import (
     revoke_dev_token,
     save_dev_tokens,
 )
-from modules.dxdata_manager import update_dxdata_with_comparison
 from modules.dxdata_manager import (
-    start_music_level_check, get_music_level_report, save_music_level_correction, save_music_version_corrections,
+    get_music_level_report,
+    save_music_level_correction,
+    save_music_version_corrections,
+    save_note_count_correction,
+    start_music_level_check,
+    start_note_count_check,
+    update_dxdata_with_comparison,
 )
 from modules.event_tracker import get_hourly_stats
 from modules.messages.service import build_dxdata_update_message
@@ -1553,7 +1558,12 @@ def admin_dxdata_audit():
         if request.method == 'GET':
             return jsonify(get_music_level_report())
         body = _json_body()
-        job_id = start_music_level_check(body.get('sega_id'), body.get('password'), body.get('aime', 0))
+        if body.get('mode') == 'notes':
+            job_id = start_note_count_check()
+        elif body.get('mode', 'all') == 'all':
+            job_id = start_music_level_check(body.get('sega_id'), body.get('password'), body.get('aime', 0))
+        else:
+            raise ValueError('Invalid check mode')
         return jsonify({'success': True, 'id': job_id}), 202
     except ValueError as exc:
         return jsonify({'success': False, 'message': str(exc)}), 409
@@ -1564,9 +1574,13 @@ def admin_dxdata_audit():
 def admin_dxdata_audit_correction():
     body = _json_body()
     try:
-        report = save_music_level_correction(
-            body.get('revision'), body.get('region'), body.get('issue_index'),
-            body.get('song_id'), body.get('difficulty'), body.get('field'), body.get('value'))
+        if body.get('field') == 'noteCounts':
+            report = save_note_count_correction(body.get('revision'), body.get('issue_index'),
+                                                body.get('song_id'), body.get('difficulty'))
+        else:
+            report = save_music_level_correction(
+                body.get('revision'), body.get('region'), body.get('issue_index'),
+                body.get('song_id'), body.get('difficulty'), body.get('field'), body.get('value'))
         return jsonify({'success': True, 'report': report})
     except ValueError as exc:
         return jsonify({'success': False, 'message': str(exc)}), 409

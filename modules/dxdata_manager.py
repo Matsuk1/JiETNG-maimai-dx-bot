@@ -8,6 +8,7 @@ from pathlib import Path
 from contextlib import contextmanager
 from collections import Counter, defaultdict
 from modules import config_loader as config
+from modules.simai_audit import FIELDS, audit_note_counts, source_signature
 from modules.maimai_manager import normalize, login_to_maimai, get_music_level_lists, get_music_version_lists
 
 import requests
@@ -655,6 +656,15 @@ def _audit_fingerprint():
     return digest.hexdigest()
 
 
+def _note_fingerprint():
+    digest = hashlib.sha256(b'simai-note-counts-v6-ignore-utage')
+    digest.update(json.dumps(source_signature()).encode())
+    digest.update(Path(config.DXDATA_FILE).read_bytes())
+    auto_path = Path(config.AUTO_OVERRIDE_FILE)
+    digest.update(auto_path.read_bytes() if auto_path.exists() else b'<missing>')
+    return digest.hexdigest()
+
+
 def _persist_audit(report):
     _audit_atomic_write(_AUDIT_REPORT_PATH, lambda stream: json.dump(report, stream, ensure_ascii=False))
 
@@ -677,6 +687,8 @@ def get_music_level_report():
                         if result.get('status') in ('pending', 'running'):
                             result.update(status='failed', error='Check interrupted; please run it again')
                     report['status'] = 'complete'
+                    if report.get('notes', {}).get('status') == 'running':
+                        report['notes'] = {'status': 'failed', 'message': '检查被中断，请重新运行'}
                     _persist_audit(report)
         except ValueError:
             pass
@@ -697,6 +709,8 @@ def get_music_level_report():
         except ValueError:
             pass
     report['stale'] = bool(report.get('fingerprint') and report['fingerprint'] != _audit_fingerprint())
+    notes = report.get('notes', {})
+    notes['stale'] = bool(notes.get('fingerprint') and notes['fingerprint'] != _note_fingerprint())
     for result in report.get('regions', {}).values():
         result.pop('levels', None)
         result.pop('version_lists', None)
@@ -716,6 +730,55 @@ def _recheck_music_levels(region, levels, corrections=(), version_lists=None):
     result['summary']['version_mismatches'] = len(version_issues)
     result['summary']['issues'] = len(result['issues'])
     return result
+
+
+def _check_notes():
+    songs, _ = config.read_dxdata('jp', include_generated=False, include_manual=False)
+    songs = copy.deepcopy(songs)
+    config.apply_override(songs, config.AUTO_OVERRIDE_FILE)
+    result = audit_note_counts(songs)
+    result['checked_at'] = _audit_now()
+    return result
+
+
+def _check_and_persist_notes(report):
+    report['notes'] = {'status': 'running'}
+    _persist_audit(report)
+    try:
+        fingerprint = _note_fingerprint()
+        report['notes'] = _check_notes()
+        report['notes']['fingerprint'] = fingerprint
+    except Exception:
+        logger.exception('Simai note audit failed')
+        report['notes'] = {'status': 'failed', 'message': '音符检查失败，请查看服务器日志'}
+    _persist_audit(report)
+
+
+def start_note_count_check():
+    """Run the local check through the same report/lock without SEGA credentials."""
+    guard = _audit_lock()
+    guard.__enter__()
+    try:
+        report = _load_audit_report()
+        report.update(status='running', revision=secrets.token_urlsafe(18),
+                      notes={'status': 'running'})
+        # Do not mark old regional evidence fresh when only notes are rechecked.
+        _persist_audit(report)
+        thread = threading.Thread(target=_run_note_check, args=(report, guard), daemon=True)
+        thread.start()
+    except BaseException:
+        guard.__exit__(None, None, None)
+        raise
+    return report['revision']
+
+
+def _run_note_check(report, guard):
+    try:
+        _check_and_persist_notes(report)
+        report['status'] = 'complete'
+        _persist_audit(report)
+    finally:
+        guard.__exit__(None, None, None)
 
 
 def start_music_level_check(sega_id, password, aime=0):
@@ -770,6 +833,7 @@ def _run_check(report, sega_id, password, aime, guard):
                 report['regions'][region] = {'status': 'failed', 'error': message}
             _persist_audit(report)
     try:
+        _check_and_persist_notes(report)
         asyncio.run(run())
         report['status'] = 'complete'
         report['finished_at'] = _audit_now()
@@ -892,4 +956,75 @@ def save_music_version_corrections(revision, region):
                 if tuple(row[:-1]) not in replacements]
         rows.extend(list(key) + [value] for key, value in replacements.items())
         _save_audit_selection(report, region, rows)
+    return get_music_level_report()
+
+
+def _note_correction(report, revision, issue_index, song_id, difficulty):
+    notes = report.get('notes', {})
+    if report.get('status') != 'complete' or report.get('revision') != revision:
+        raise ValueError('Report changed; refresh before saving')
+    if notes.get('status') != 'complete' or notes.get('fingerprint') != _note_fingerprint():
+        raise ValueError('DXData, overrides or charts changed; run the note check again')
+    if issue_index >= len(notes.get('issues', [])):
+        raise ValueError('Issue no longer available')
+
+    issue = notes['issues'][issue_index]
+    chart = issue.get('chart', {})
+    if (issue.get('kind') != 'note_mismatch' or not song_id or
+            chart.get('song_id') != song_id or chart.get('difficulty') != difficulty):
+        raise ValueError('Select an unambiguous note-count mismatch')
+
+    songs, _ = config.read_dxdata('jp', include_generated=False, include_manual=False)
+    candidates = [song for song in songs if song.get('id') == song_id]
+    if len(candidates) != 1:
+        raise ValueError('Chart is ambiguous')
+    song = candidates[0]
+    if sum(s['title'] == song['title'] and s['type'] == song['type'] for s in songs) != 1:
+        raise ValueError('Override format cannot distinguish these same-name songs')
+    indices = [i for i, sheet in enumerate(song['sheets']) if sheet['difficulty'] == difficulty]
+    if len(indices) != 1:
+        raise ValueError('Chart difficulty is ambiguous')
+    return notes, issue, song, indices[0]
+
+
+def _note_override_rows(issue, song, sheet_index):
+    replacements = {}
+    for field, values in issue['differences'].items():
+        value = values.get('simai')
+        if field not in FIELDS or type(value) is not int or value < 0:
+            raise ValueError('Invalid note count in report; run the check again')
+        key = (song['title'], song['type'], 'sheets', str(sheet_index), 'noteCounts', field)
+        replacements[key] = str(value)
+
+    path = Path(config.AUTO_OVERRIDE_FILE)
+    rows = []
+    if path.exists():
+        with path.open(encoding='utf-8', newline='') as stream:
+            rows = list(csv.reader(stream))
+    rows = [row for row in rows if tuple(row[:-1]) not in replacements]
+    rows.extend(list(key) + [value] for key, value in replacements.items())
+    return path, rows
+
+
+def save_note_count_correction(revision, issue_index, song_id, difficulty):
+    """Save only the selected chart's server-computed differences."""
+    if isinstance(issue_index, bool) or not isinstance(issue_index, int) or issue_index < 0:
+        raise ValueError('Invalid issue index')
+    with _audit_lock():
+        report = _load_audit_report()
+        notes, issue, song, sheet_index = _note_correction(
+            report, revision, issue_index, song_id, difficulty)
+        path, rows = _note_override_rows(issue, song, sheet_index)
+        _audit_atomic_write(path, lambda stream: csv.writer(stream).writerows(rows))
+        with config._dxdata_cache_lock:
+            config._dxdata_cache.clear()
+
+        # The validated report already contains the accepted counts. Saving must not
+        # parse the library again; only remove this selection from the current report.
+        notes['issues'].pop(issue_index)
+        notes['summary']['mismatches'] -= 1
+        notes['summary']['equal'] += 1
+        notes.update(saved_at=_audit_now(), fingerprint=_note_fingerprint())
+        report['revision'] = secrets.token_urlsafe(18)
+        _persist_audit(report)
     return get_music_level_report()
