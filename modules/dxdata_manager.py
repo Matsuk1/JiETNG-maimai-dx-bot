@@ -863,16 +863,7 @@ def save_music_level_correction(revision, region, issue_index, song_id, difficul
         if not song_id or not any(row.get('song_id') == song_id and row.get('difficulty') == difficulty for row in allowed):
             raise ValueError('Select an unambiguous chart from this issue')
         songs, _ = config.read_dxdata(region, include_generated=False, include_manual=False)
-        candidates = [song for song in songs if song.get('id') == song_id]
-        if len(candidates) != 1:
-            raise ValueError('Chart is ambiguous')
-        song = candidates[0]
-        # CSV schema addresses title/type, so same-name songs cannot safely be edited.
-        if sum(s['title'] == song['title'] and s['type'] == song['type'] for s in songs) != 1:
-            raise ValueError('Override format cannot distinguish these same-name songs')
-        indices = [i for i, sheet in enumerate(song['sheets']) if sheet['difficulty'] == difficulty]
-        if len(indices) != 1:
-            raise ValueError('Chart difficulty is ambiguous')
+        song, sheet_index = _resolve_audit_chart(songs, song_id, difficulty)
         if field == 'internalLevelValue':
             if isinstance(value, bool):
                 raise ValueError('Invalid constant')
@@ -891,7 +882,7 @@ def save_music_level_correction(revision, region, issue_index, song_id, difficul
         selected = report.setdefault('corrections', {'jp': [], 'intl': []})
         rows = selected.get(region, [])
         key = ([song['title'], song['type'], 'version'] if field == 'version' else
-               [song['title'], song['type'], 'sheets', str(indices[0]), field])
+               [song['title'], song['type'], 'sheets', str(sheet_index), field])
         rows = [row for row in rows if row[:-1] != key]
         rows.append(key + [value])
         _save_audit_selection(report, region, rows)
@@ -917,6 +908,19 @@ def _save_audit_selection(report, region, rows):
     _persist_audit(report)
 
 
+def _resolve_audit_chart(songs, song_id, difficulty):
+    candidates = [song for song in songs if song.get('id') == song_id]
+    if not song_id or len(candidates) != 1:
+        raise ValueError('Chart is ambiguous')
+    song = candidates[0]
+    if sum(item['title'] == song['title'] and item['type'] == song['type'] for item in songs) != 1:
+        raise ValueError('Override format cannot distinguish these same-name songs')
+    indices = [i for i, sheet in enumerate(song['sheets']) if sheet['difficulty'] == difficulty]
+    if len(indices) != 1:
+        raise ValueError('Chart difficulty is ambiguous')
+    return song, indices[0]
+
+
 def save_music_version_corrections(revision, region):
     """Approve all version mismatches for one region in a single CSV rewrite."""
     if region not in ('jp', 'intl'):
@@ -937,14 +941,7 @@ def save_music_version_corrections(revision, region):
         replacements = {}
         for issue in issues:
             chart = issue['chart']
-            candidates = [song for song in songs if song.get('id') == chart.get('song_id')]
-            if not chart.get('song_id') or len(candidates) != 1:
-                raise ValueError('Chart is ambiguous')
-            song = candidates[0]
-            if sum(s['title'] == song['title'] and s['type'] == song['type'] for s in songs) != 1:
-                raise ValueError('Override format cannot distinguish these same-name songs')
-            if sum(sheet['difficulty'] == chart.get('difficulty') for sheet in song['sheets']) != 1:
-                raise ValueError('Chart difficulty is ambiguous')
+            song, _ = _resolve_audit_chart(songs, chart.get('song_id'), chart.get('difficulty'))
             value = issue.get('official_version')
             if not isinstance(value, str) or not value:
                 raise ValueError('Official version is missing')
@@ -978,21 +975,13 @@ def save_note_count_correction(revision, issue_index, song_id, difficulty):
                 chart.get('song_id') != song_id or chart.get('difficulty') != difficulty):
             raise ValueError('Select an unambiguous note-count mismatch')
         songs, _ = config.read_dxdata('jp', include_generated=False, include_manual=False)
-        candidates = [song for song in songs if song.get('id') == song_id]
-        if len(candidates) != 1:
-            raise ValueError('Chart is ambiguous')
-        song = candidates[0]
-        if sum(s['title'] == song['title'] and s['type'] == song['type'] for s in songs) != 1:
-            raise ValueError('Override format cannot distinguish these same-name songs')
-        indices = [i for i, sheet in enumerate(song['sheets']) if sheet['difficulty'] == difficulty]
-        if len(indices) != 1:
-            raise ValueError('Chart difficulty is ambiguous')
+        song, sheet_index = _resolve_audit_chart(songs, song_id, difficulty)
         replacements = {}
         for field, values in issue['differences'].items():
             value = values.get('simai')
             if field not in FIELDS or type(value) is not int or value < 0:
                 raise ValueError('Invalid note count in report; run the check again')
-            key = (song['title'], song['type'], 'sheets', str(indices[0]), 'noteCounts', field)
+            key = (song['title'], song['type'], 'sheets', str(sheet_index), 'noteCounts', field)
             replacements[key] = str(value)
         path = Path(config.AUTO_OVERRIDE_FILE)
         rows = []

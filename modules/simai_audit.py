@@ -12,6 +12,12 @@ from pathlib import Path
 
 FIELDS = ('tap', 'hold', 'slide', 'touch', 'break', 'total')
 DIFFICULTIES = {2: 'basic', 3: 'advanced', 4: 'expert', 5: 'master', 6: 'remaster', 7: 'utage'}
+COMMENT_RE, SPACE_RE = re.compile(r'>>[^\n]*'), re.compile(r'\s+')
+TIMING_RE, DURATION_RE = re.compile(r'\([^()]+\)|\{[^{}]+\}'), re.compile(r'\[[0-9.:#+\-]+\]')
+MULTI_TAP_RE, TOUCH_RE = re.compile(r'[1-8]{2,}'), re.compile(r'(?:[ABDE][1-8]|C[12]?)(h?f?)(~?)')
+HEAD_RE, HOLD_RE = re.compile(r'[1-8]([bx$@?!]*)(.*)'), re.compile(r'h[bx]*~?[bx]*')
+SLIDE_RE = re.compile(r'(?:(?:pp|qq|[-^<>vpqszw])[1-8]|V[1-8]{2})(?:~?)(?:(?:(?:pp|qq|[-^<>vpqszw])[1-8]|V[1-8]{2})~?)*b?')
+DIRECTORY_RE, NOTE_FIELD_RE = re.compile(r'music(\d{6})(?:_[LR])?'), re.compile(r'inote_\d+')
 
 
 def source_directory():
@@ -20,34 +26,36 @@ def source_directory():
 
 def source_signature():
     root = source_directory()
-    return [(str(root), root.is_dir())] + [
-        (str(p), p.stat().st_size, p.stat().st_mtime_ns)
-        for p in sorted(root.glob('*/maidata.txt'))]
+    signatures = [(str(root), root.is_dir())]
+    for path in sorted(root.glob('*/maidata.txt')):
+        stat = path.stat()
+        signatures.append((str(path), stat.st_size, stat.st_mtime_ns))
+    return signatures
 
 
 def count_notes(chart):
-    chart = re.sub(r'>>[^\n]*', '', chart)
-    chart = re.sub(r'\s+', '', chart)
+    chart = COMMENT_RE.sub('', chart)
+    chart = SPACE_RE.sub('', chart)
     if not chart.endswith('E'):
         raise ValueError('缺少谱面结束标记 E')
     chart = chart[:-1]
-    chart = re.sub(r'\([^()]+\)|\{[^{}]+\}', '', chart)
-    chart = re.sub(r'\[[0-9.:#+\-]+\]', '~', chart)
+    chart = TIMING_RE.sub('', chart)
+    chart = DURATION_RE.sub('~', chart)
     counts = dict.fromkeys(FIELDS[:-1], 0)
     for token in re.split(r'[,/`]', chart):
         if not token or token == '0':
             continue
-        if re.fullmatch(r'[1-8]{2,}', token):
+        if MULTI_TAP_RE.fullmatch(token):
             counts['tap'] += len(token)
             continue
-        touch = re.fullmatch(r'(?:[ABDE][1-8]|C[12]?)(h?f?)(~?)', token)
+        touch = TOUCH_RE.fullmatch(token)
         if touch:
             flags, duration = touch.groups()
             if duration and 'h' not in flags:
                 raise ValueError(f'无效 TOUCH: {token}')
             counts['hold' if 'h' in flags else 'touch'] += 1
             continue
-        head = re.match(r'[1-8]([bx$@?!]*)(.*)', token)
+        head = HEAD_RE.match(token)
         if not head:
             raise ValueError(f'不支持的音符: {token[:100]}')
         flags, tail = head.groups()
@@ -55,13 +63,13 @@ def count_notes(chart):
             if '?' in flags or '!' in flags:
                 raise ValueError(f'无效 TAP: {token}')
             counts['break' if 'b' in flags else 'tap'] += 1
-        elif re.fullmatch(r'h[bx]*~?[bx]*', tail):
+        elif HOLD_RE.fullmatch(tail):
             counts['break' if 'b' in flags + tail else 'hold'] += 1
         else:
             branches = tail.split('*')
             for branch in branches:
                 # One connected chain is one judged slide, even with per-segment durations.
-                if not re.fullmatch(r'(?:(?:pp|qq|[-^<>vpqszw])[1-8]|V[1-8]{2})(?:~?)(?:(?:(?:pp|qq|[-^<>vpqszw])[1-8]|V[1-8]{2})~?)*b?', branch) or '~' not in branch:
+                if not SLIDE_RE.fullmatch(branch) or '~' not in branch:
                     raise ValueError(f'不支持的 SLIDE: {token[:100]}')
                 counts['break' if branch.endswith('b') else 'slide'] += 1
             if '?' not in flags and '!' not in flags:
@@ -92,12 +100,12 @@ def _load_records(paths):
             metadata = dict(pairs)
             if len(pairs) != len(metadata) or 'title' not in metadata:
                 raise ValueError('缺少标题或存在重复字段')
-            number = re.fullmatch(r'music(\d{6})(?:_[LR])?', path.parent.name)
+            number = DIRECTORY_RE.fullmatch(path.parent.name)
             if not number:
                 raise ValueError('无法确定目录的谱面类型')
             music_id = int(number[1])
             chart_type = 'utage' if music_id >= 100000 else 'dx' if music_id >= 10000 else 'std'
-            blocks = [(int(k[6:]), v) for k, v in metadata.items() if re.fullmatch(r'inote_\d+', k)]
+            blocks = [(int(k[6:]), v) for k, v in metadata.items() if NOTE_FIELD_RE.fullmatch(k)]
             if not blocks:
                 raise ValueError('没有谱面块')
             for slot, body in blocks:
@@ -119,7 +127,7 @@ def audit_note_counts(songs, directory=None):
         return {'status': 'unavailable', 'message': '未找到 Simai 谱面库，请上传 simai_muconvert 或设置 SIMAI_CHART_DIR。', 'issues': [], 'summary': {}}
     # Ignore banquet exports before reading them, including paired L/R files.
     paths = [p for p in paths if not (
-        (number := re.fullmatch(r'music(\d{6})(?:_[LR])?', p.parent.name))
+        (number := DIRECTORY_RE.fullmatch(p.parent.name))
         and int(number[1]) >= 100000)]
     index = defaultdict(list)
     for song in songs:

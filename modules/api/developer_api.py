@@ -5,6 +5,7 @@ import threading
 import time
 from dataclasses import dataclass
 from datetime import datetime
+from functools import wraps
 from typing import Callable
 
 from flask import Blueprint, Response, jsonify, request, stream_with_context
@@ -57,172 +58,96 @@ def configure_developer_api(*, configuration, nickname, process_credentials, syn
     _services = DeveloperApiServices(configuration, nickname, process_credentials, sync_user_data, sync_timeout)
 
 
+def api_error_boundary(function):
+    """Return a consistent JSON error without duplicating it in every endpoint."""
+    @wraps(function)
+    def guarded(*args, **kwargs):
+        try:
+            return function(*args, **kwargs)
+        except Exception as exc:
+            logger.exception("[API] %s failed: path=%s", function.__name__, request.path)
+            return jsonify({"error": "Internal server error", "message": str(exc)}), 500
+    return guarded
+
+
 @developer_api.route("/api/v2/users", methods=["GET"])
 @developer_api.route("/api/v1/users", methods=["GET"])
 @require_dev_token
+@api_error_boundary
 def api_list_users():
-    try:
-        token_info = request.token_info
-        token_id = token_info['token_id']
-
-        dev_tokens = load_dev_tokens()
-        allowed_users = dev_tokens.get(token_id, {}).get('allowed_users', [])
-
-        users_list = []
-        for user_id in get_all_user_ids():
-            has_access = False
-            access_type = None
-
-            if get_user_field(user_id, 'registered_via_token') == token_id:
-                has_access = True
-                access_type = "owner"
-            elif user_id in allowed_users:
-                has_access = True
-                access_type = "granted"
-
-            if has_access:
-                nickname = _services.nickname(user_id, use_cache=True)
-                users_list.append({
-                    "user_id": user_id,
-                    "nickname": nickname,
-                    "access_type": access_type
-                })
-
-        logger.debug(f"[API] List users: token_id={token_id}, note={token_info['note']}, count={len(users_list)}")
-
-        return jsonify({
-            "success": True,
-            "count": len(users_list),
-            "users": users_list
-        })
-
-    except Exception as e:
-        logger.error(f"[API] ✗ List users error: error={e}", exc_info=True)
-        return jsonify({
-            "error": "Internal server error",
-            "message": str(e)
-        }), 500
+    token_info = request.token_info
+    token_id = token_info["token_id"]
+    allowed_users = load_dev_tokens().get(token_id, {}).get("allowed_users", [])
+    users = []
+    for user_id in get_all_user_ids():
+        owner = get_user_field(user_id, "registered_via_token") == token_id
+        if not owner and user_id not in allowed_users:
+            continue
+        users.append({"user_id": user_id,
+                      "nickname": _services.nickname(user_id, use_cache=True),
+                      "access_type": "owner" if owner else "granted"})
+    logger.debug("[API] List users: token_id=%s count=%s", token_id, len(users))
+    return jsonify({"success": True, "count": len(users), "users": users})
 
 
 @developer_api.route("/api/v2/users", methods=["POST"])
 @developer_api.route("/api/v1/users", methods=["POST"])
 @require_dev_token
+@api_error_boundary
 def api_create_user():
-    user_id = ''
-    try:
-        data = request.form.to_dict() or request.get_json(force=True, silent=True) or {}
-        user_id = data.get('user_id', '')
-        nickname = data.get('nickname', '')
+    data = request.form.to_dict() or request.get_json(force=True, silent=True) or {}
+    user_id, nickname = data.get("user_id", ""), data.get("nickname", "")
+    if not user_id:
+        return jsonify({"error": "Missing parameter", "message": "Parameter 'user_id' is required"}), 400
+    if not nickname:
+        return jsonify({"error": "Missing parameter", "message": "Parameter 'nickname' is required"}), 400
+    if user_exists(user_id):
+        return jsonify({"error": "User already exists",
+                        "message": f"User {user_id} was created already."}), 409
 
-        if not user_id:
-            return jsonify({
-                "error": "Missing parameter",
-                "message": "Parameter 'user_id' is required"
-            }), 400
-
-        if not nickname:
-            return jsonify({
-                "error": "Missing parameter",
-                "message": "Parameter 'nickname' is required"
-            }), 400
-
-        token_info = request.token_info
-        logger.info(f"[API] Create user: user_id={user_id}, nickname={nickname}, token_id={token_info['token_id']}, note={token_info['note']}")
-
-        if user_exists(user_id):
-            return jsonify({
-                "error": "User already exists",
-                "message": f"User {user_id} was created already."
-            }), 409
-
-        bind_token = generate_bind_token(user_id)
-
-        bind_url = f"https://{DOMAIN}/linebot/sega_bind?token={bind_token}"
-
-        add_user(user_id)
-        edit_user_value(user_id, "nickname", nickname)
-        edit_user_value(user_id, "registered_via_token", token_info['token_id'])
-        edit_user_value(user_id, "registered_at", datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-        logger.info(f"[API] ✓ User created: user_id={user_id}, token_id={token_info['token_id']}")
-
-        return jsonify({
-            "success": True,
-            "user_id": user_id,
-            "nickname": nickname,
-            "bind_url": bind_url,
-            "token": bind_token,
-            "expires_in": 120,
-            "message": "Bind URL generated successfully."
-        }), 201
-
-    except Exception as e:
-        logger.error(f"[API] ✗ Create user error: user_id={user_id}, error={e}", exc_info=True)
-        return jsonify({
-            "error": "Internal server error",
-            "message": str(e)
-        }), 500
+    token_id = request.token_info["token_id"]
+    bind_token = generate_bind_token(user_id)
+    add_user(user_id)
+    edit_user_value(user_id, "nickname", nickname)
+    edit_user_value(user_id, "registered_via_token", token_id)
+    edit_user_value(user_id, "registered_at", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    logger.info("[API] User created: user_id=%s token_id=%s", user_id, token_id)
+    return jsonify({"success": True, "user_id": user_id, "nickname": nickname,
+                    "bind_url": f"https://{DOMAIN}/linebot/sega_bind?token={bind_token}",
+                    "token": bind_token, "expires_in": 120,
+                    "message": "Bind URL generated successfully."}), 201
 
 
 @developer_api.route("/api/v2/users/<user_id>", methods=["GET"])
 @developer_api.route("/api/v1/users/<user_id>", methods=["GET"])
 @require_dev_token
 @require_user_permission
+@api_error_boundary
 def api_get_user(user_id):
-    try:
-        user_data = get_user(user_id)
-        if not user_data:
-            return jsonify({"error": "User not found"}), 404
-
-        nickname = _services.nickname(user_id, use_cache=True)
-
-        token_info = request.token_info
-        logger.debug(f"[API] Get user: user_id={user_id}, token_id={token_info['token_id']}, note={token_info['note']}")
-
-        sensitive_keys = {'sega_id', 'sega_pwd', 'perm_requests', 'registered_via_token'}
-        safe_data = {k: v for k, v in user_data.items() if k not in sensitive_keys}
-
-        return jsonify({
-            "success": True,
-            "user_id": user_id,
-            "nickname": nickname,
-            "data": safe_data
-        })
-
-    except Exception as e:
-        logger.error(f"[API] ✗ Get user error: user_id={user_id}, error={e}", exc_info=True)
-        return jsonify({
-            "error": "Internal server error",
-            "message": str(e)
-        }), 500
+    user_data = get_user(user_id)
+    if not user_data:
+        return jsonify({"error": "User not found"}), 404
+    sensitive = {"sega_id", "sega_pwd", "perm_requests", "registered_via_token"}
+    safe_data = {key: value for key, value in user_data.items() if key not in sensitive}
+    return jsonify({"success": True, "user_id": user_id,
+                    "nickname": _services.nickname(user_id, use_cache=True), "data": safe_data})
 
 
 @developer_api.route("/api/v2/users/<user_id>", methods=["DELETE"])
 @developer_api.route("/api/v1/users/<user_id>", methods=["DELETE"])
 @require_dev_token
 @require_owner_permission
+@api_error_boundary
 def api_delete_user(user_id):
-    try:
-        nickname = _services.nickname(user_id, use_cache=True)
-
-        delete_user(user_id)
-        link_unbound_rich_menu(user_id)
-
-        token_info = request.token_info
-        logger.info(f"[API] Delete user: user_id={user_id}, nickname={nickname}, token_id={token_info['token_id']}, note={token_info['note']}")
-        track_event('user_unbind', user_id=user_id, metadata={'token_id': token_info['token_id']})
-
-        return jsonify({
-            "success": True,
-            "user_id": user_id,
-            "message": f"User {user_id} has been deleted successfully"
-        })
-
-    except Exception as e:
-        logger.error(f"[API] ✗ Delete user error: user_id={user_id}, error={e}", exc_info=True)
-        return jsonify({
-            "error": "Internal server error",
-            "message": str(e)
-        }), 500
+    nickname = _services.nickname(user_id, use_cache=True)
+    delete_user(user_id)
+    link_unbound_rich_menu(user_id)
+    token_id = request.token_info["token_id"]
+    logger.info("[API] User deleted: user_id=%s nickname=%s token_id=%s",
+                user_id, nickname, token_id)
+    track_event("user_unbind", user_id=user_id, metadata={"token_id": token_id})
+    return jsonify({"success": True, "user_id": user_id,
+                    "message": f"User {user_id} has been deleted successfully"})
 
 
 def _account_url_response(
@@ -580,26 +505,11 @@ def api_request_user_permission(user_id):
 @developer_api.route("/api/v1/users/<user_id>/permissions/requests", methods=["GET"])
 @require_dev_token
 @require_owner_permission
+@api_error_boundary
 def api_get_user_permission_requests(user_id):
-    try:
-        requests = get_pending_perm_requests(user_id)
-
-        token_info = request.token_info
-        logger.info(f"[API] Get permission requests: user_id={user_id}, token_id={token_info['token_id']}, note={token_info['note']}")
-
-        return jsonify({
-            "success": True,
-            "user_id": user_id,
-            "count": len(requests),
-            "requests": requests
-        })
-
-    except Exception as e:
-        logger.error(f"[API] ✗ Get permission requests error: user_id={user_id}, error={e}", exc_info=True)
-        return jsonify({
-            "error": "Internal server error",
-            "message": str(e)
-        }), 500
+    pending = get_pending_perm_requests(user_id)
+    return jsonify({"success": True, "user_id": user_id,
+                    "count": len(pending), "requests": pending})
 
 
 @developer_api.route("/api/v1/users/<user_id>/permissions/requests/<request_id>", methods=["PATCH"])
@@ -649,73 +559,41 @@ def api_manage_user_permission(user_id, request_id):
 @developer_api.route("/api/v1/users/<user_id>/permissions/self", methods=["DELETE"])
 @developer_api.route("/api/v2/users/<user_id>/permissions/self", methods=["DELETE"])
 @require_dev_token
+@api_error_boundary
 def api_revoke_own_permission(user_id):
-    try:
-        _udata = get_user(user_id)
-        if not _udata:
-            return jsonify({"error": "User not found", "message": f"User {user_id} does not exist"}), 404
-
-        token_info = request.token_info
-        token_id = token_info['token_id']
-
-        if _udata.get('registered_via_token') == token_id:
-            return jsonify({"error": "Forbidden", "message": "Owner permission cannot be self-revoked"}), 403
-
-        dev_tokens = load_dev_tokens()
-        allowed_users = dev_tokens.get(token_id, {}).get('allowed_users', [])
-        if user_id not in allowed_users:
-            return jsonify({"error": "Permission not found", "message": f"Token does not have granted permission for user {user_id}"}), 404
-
-        allowed_users.remove(user_id)
-        dev_tokens[token_id]['allowed_users'] = allowed_users
-        save_dev_tokens(dev_tokens)
-
-        logger.info(f"[API] Self-revoke permission: token_id={token_id}, user_id={user_id}")
-        return jsonify({"success": True, "user_id": user_id, "message": "Permission revoked"})
-
-    except Exception as e:
-        logger.error(f"[API] ✗ Self-revoke permission error: user_id={user_id}, error={e}", exc_info=True)
-        return jsonify({"error": "Internal server error", "message": str(e)}), 500
+    user_data = get_user(user_id)
+    if not user_data:
+        return jsonify({"error": "User not found", "message": f"User {user_id} does not exist"}), 404
+    token_id = request.token_info["token_id"]
+    if user_data.get("registered_via_token") == token_id:
+        return jsonify({"error": "Forbidden", "message": "Owner permission cannot be self-revoked"}), 403
+    dev_tokens = load_dev_tokens()
+    allowed_users = dev_tokens.get(token_id, {}).get("allowed_users", [])
+    if user_id not in allowed_users:
+        return jsonify({"error": "Permission not found",
+                        "message": f"Token does not have granted permission for user {user_id}"}), 404
+    allowed_users.remove(user_id)
+    dev_tokens[token_id]["allowed_users"] = allowed_users
+    save_dev_tokens(dev_tokens)
+    return jsonify({"success": True, "user_id": user_id, "message": "Permission revoked"})
 
 
 @developer_api.route("/api/v1/users/<user_id>/permissions/<token_id>", methods=["DELETE"])
 @developer_api.route("/api/v2/users/<user_id>/permissions/<token_id>", methods=["DELETE"])
 @require_dev_token
 @require_owner_permission
+@api_error_boundary
 def api_revoke_user_permission(user_id, token_id):
-    try:
-        token_info = request.token_info
-        logger.info(f"[API] Revoke permission: target_token_id={token_id}, user_id={user_id}, token_id={token_info['token_id']}, note={token_info['note']}")
-
-        dev_tokens = load_dev_tokens()
-
-        if token_id not in dev_tokens:
-            return jsonify({
-                "error": "Token not found",
-                "message": f"Token {token_id} does not exist"
-            }), 404
-
-        allowed_users = dev_tokens[token_id].get('allowed_users', [])
-        if user_id in allowed_users:
-            allowed_users.remove(user_id)
-            dev_tokens[token_id]['allowed_users'] = allowed_users
-            save_dev_tokens(dev_tokens)
-
-            return jsonify({
-                "success": True,
-                "user_id": user_id,
-                "token_id": token_id,
-                "message": f"Permission revoked for token {token_id}"
-            })
-        else:
-            return jsonify({
-                "error": "Permission not found",
-                "message": f"Token {token_id} does not have permission to access user {user_id}"
-            }), 404
-
-    except Exception as e:
-        logger.error(f"[API] ✗ Revoke permission error: user_id={user_id}, target_token_id={token_id}, error={e}", exc_info=True)
-        return jsonify({
-            "error": "Internal server error",
-            "message": str(e)
-        }), 500
+    dev_tokens = load_dev_tokens()
+    if token_id not in dev_tokens:
+        return jsonify({"error": "Token not found",
+                        "message": f"Token {token_id} does not exist"}), 404
+    allowed_users = dev_tokens[token_id].get("allowed_users", [])
+    if user_id not in allowed_users:
+        return jsonify({"error": "Permission not found",
+                        "message": f"Token {token_id} does not have permission to access user {user_id}"}), 404
+    allowed_users.remove(user_id)
+    dev_tokens[token_id]["allowed_users"] = allowed_users
+    save_dev_tokens(dev_tokens)
+    return jsonify({"success": True, "user_id": user_id, "token_id": token_id,
+                    "message": f"Permission revoked for token {token_id}"})
