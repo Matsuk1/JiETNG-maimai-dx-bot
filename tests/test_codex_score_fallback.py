@@ -21,7 +21,7 @@ def test_fallback_revalidates_image_result_and_does_not_mutate_raw_rows():
     original = {'parsed': {'title': 'Unreadable', 'sub_judgement': {}}}
     with patch.object(recognizer, 'read_dxdata', return_value=([song], None)), patch.object(
         codex_agent, 'recognize_score_with_codex', return_value=parsed) as ask:
-        result = recognizer.validate_recognized_judgement(original, image_bytes=b'image')
+        result = recognizer._recognize_ai_result(b'image')
     ask.assert_called_once_with(b'image')
     assert result['source'] == 'codex'
     assert result['validation']['achievement_calc']['consistent'] is True
@@ -40,10 +40,10 @@ def test_fallback_failure_keeps_original(mode):
     with patch.object(recognizer, 'read_dxdata', return_value=([song], None)), patch.object(
         codex_agent, 'recognize_score_with_codex', return_value=response,
         side_effect=TimeoutError if mode == 'timeout' else None):
-        assert recognizer.validate_recognized_judgement(original, image_bytes=b'image') is original
+        assert recognizer._recognize_ai_result(b'image') == {'parsed': {}}
 
 
-@pytest.mark.parametrize('mode', ['valid', 'manual', 'no_image', 'completion'])
+@pytest.mark.parametrize('mode', ['valid', 'manual', 'no_image', 'completion', 'failed'])
 def test_local_success_or_manual_input_never_calls_codex(mode):
     song, parsed = sample()
     result = {'parsed': parsed if mode == 'valid' else {}}
@@ -80,17 +80,12 @@ def image_bytes():
         return output.getvalue()
 
 
-def test_four_point_detection_failure_uses_original_image_and_requested_version():
-    song, parsed = sample()
-    raw = image_bytes()
-    with patch.object(recognizer, '_load_ocr_module', return_value=((), None, None)), patch.object(
-        recognizer, '_engine', side_effect=ValueError('Could not confirm four corners')), patch.object(
-        recognizer, 'read_dxdata', return_value=([song], None)) as read, patch.object(
-        codex_agent, 'recognize_score_with_codex', return_value=parsed) as ask:
-        result = recognizer.recognize_score_image_bytes(raw, ver='intl')
-    ask.assert_called_once_with(raw)
-    read.assert_called_with('intl')
-    assert result['source'] == 'codex'
+def test_four_point_detection_failure_never_calls_codex():
+    with patch.object(recognizer, '_load_ocr_module', side_effect=ValueError('four corners')), patch.object(
+        codex_agent, 'recognize_score_with_codex') as ask:
+        with pytest.raises(ValueError, match='four corners'):
+            recognizer.recognize_score_image_bytes(image_bytes(), ver='intl')
+    ask.assert_not_called()
 
 
 def test_local_ocr_success_does_not_call_codex():
@@ -146,7 +141,7 @@ def test_rejected_vision_logs_its_own_values_and_failure_reason(caplog, title, a
     original = {'parsed': {'title': 'Original OCR title'}}
     with patch.object(recognizer, 'read_dxdata', return_value=([song], None)), patch.object(
         codex_agent, 'recognize_score_with_codex', return_value=parsed):
-        assert recognizer.validate_recognized_judgement(original, image_bytes=b'image') is original
+        assert recognizer._recognize_ai_result(b'image') == {'parsed': {}}
     assert f'reason={reason}' in caplog.text
     assert repr(title) in caplog.text
     assert 'rows=' in caplog.text
@@ -157,7 +152,7 @@ def test_main_screen_totals_reject_skipped_or_shifted_rows(caplog):
     parsed['judgement_totals'] = {'critical_perfect': 999}
     original = {'parsed': {}}
     with patch.object(codex_agent, 'recognize_score_with_codex', return_value=parsed):
-        assert recognizer.validate_recognized_judgement(original, image_bytes=b'image') is original
+        assert recognizer._recognize_ai_result(b'image') == {'parsed': {}}
     assert 'column_total_mismatch' in caplog.text
 
 
@@ -181,7 +176,38 @@ def test_correct_title_with_overfull_break_reports_row_mismatch(caplog):
     original = {'parsed': {}}
     with patch.object(recognizer, 'read_dxdata', return_value=([song], None)), patch.object(
         codex_agent, 'recognize_score_with_codex', return_value=parsed):
-        assert recognizer.validate_recognized_judgement(original, image_bytes=b'image') is original
+        assert recognizer._recognize_ai_result(b'image') == {'parsed': {}}
     assert 'reason=chart_judgement_mismatch' in caplog.text
     assert "'break': 1" in caplog.text
     assert 'reason=chart_not_matched' not in caplog.text
+
+
+def test_explicit_ai_command_authorizes_and_uses_requested_version(monkeypatch):
+    monkeypatch.delenv('JIETNG_AI_REC_ALLOWED_USERS', raising=False)
+    song, parsed = sample()
+    raw = image_bytes()
+    with patch.object(recognizer, 'read_dxdata', return_value=([song], None)) as read, patch.object(
+        codex_agent, 'recognize_score_with_codex', return_value=parsed) as ask:
+        result = recognizer.recognize_score_with_ai(raw, user_id='user', ver='intl')
+    ask.assert_called_once_with(raw)
+    read.assert_called_with('intl')
+    assert result['source'] == 'codex'
+
+
+@pytest.mark.parametrize('user_id,allowlist', [('', None), ('user', ''), ('user', 'someone-else')])
+def test_ai_denial_precedes_model_work(monkeypatch, user_id, allowlist):
+    if allowlist is None:
+        monkeypatch.delenv('JIETNG_AI_REC_ALLOWED_USERS', raising=False)
+    else:
+        monkeypatch.setenv('JIETNG_AI_REC_ALLOWED_USERS', allowlist)
+    with patch.object(codex_agent, 'recognize_score_with_codex') as ask:
+        with pytest.raises(PermissionError):
+            recognizer.recognize_score_with_ai(b'image', user_id=user_id)
+    ask.assert_not_called()
+
+
+def test_ai_allowlist(monkeypatch):
+    from modules.score_recognition.access import can_use_ai_recognition
+    monkeypatch.setenv('JIETNG_AI_REC_ALLOWED_USERS', ' user, another ')
+    assert can_use_ai_recognition('user')
+    assert not can_use_ai_recognition('other')

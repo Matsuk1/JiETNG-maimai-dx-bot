@@ -34,6 +34,7 @@ EXACT_HELP_ALIASES = {
     "ranking": "ranking",
     "random": "random_song",
     "rec": "score_recognition",
+    "ai-rec": "ai_score_recognition",
 }
 
 FIRST_WORD_HELP_ALIASES = {
@@ -422,12 +423,13 @@ HELP_DIRECTORY_CATEGORIES = [
     {
         "key": "songs",
         "title_key": "songs_and_records",
-        "commands": "info / rec / record",
+        "commands": "info / rec / ai-rec / record",
         "desc_key": "song_details_score_image_recognition_single_song_records_and_son",
         "color": "#267D8B",
         "items": [
             ("info", "song_info"),
             ("rec", "score_recognition"),
+            ("ai-rec", "ai_score_recognition"),
             ("record", "song_record"),
         ],
     },

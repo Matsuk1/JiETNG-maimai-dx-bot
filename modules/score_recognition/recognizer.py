@@ -7,6 +7,7 @@ without shelling out.
 from __future__ import annotations
 
 import math
+from copy import deepcopy
 import logging
 import gc
 import os
@@ -1649,13 +1650,35 @@ def _validate_recognized_judgement(
 def validate_recognized_judgement(
     result, ver="jp", allow_ocr_alignment=True, preserve_input=False, *, image_bytes=None,
 ):
+    # Keep OCR output intact for failed-validation UI and manual correction.
+    raw_parsed = deepcopy(result.get("raw_parsed", result.get("parsed") or {}))
     result = _validate_recognized_judgement(result, ver, allow_ocr_alignment, preserve_input)
-    validation = result.get("validation") or {}
-    if (
-        image_bytes is None or preserve_input or _score_is_validated(result)
-        or validation.get("calc_completion_candidates")
-    ):
-        return result
+    result["raw_parsed"] = raw_parsed
+    return result
+
+
+def recognize_score_with_ai(image_bytes: bytes, *, user_id: str, ver="jp"):
+    """Explicit ai-rec entry point; authorization precedes any paid/model work."""
+    from modules.score_recognition.access import require_ai_recognition_access
+
+    require_ai_recognition_access(user_id)
+    try:
+        with Image.open(BytesIO(image_bytes)) as image:
+            if str(image.format or "").upper() not in SUPPORTED_SCORE_IMAGE_FORMATS:
+                raise UnsupportedScoreImageError("Supported image formats are JPEG, PNG, and WebP")
+            if image.width * image.height > MAX_SCORE_IMAGE_PIXELS:
+                raise InvalidScoreImageError("Image dimensions exceed the pixel limit")
+            image.verify()
+    except (UnidentifiedImageError, OSError) as exc:
+        raise InvalidScoreImageError("Uploaded data is not a valid image") from exc
+    result = _recognize_ai_result(image_bytes, ver=ver)
+    if not _score_is_validated(result):
+        raise ValueError("AI recognition did not produce a validated score")
+    return result
+
+
+def _recognize_ai_result(image_bytes, ver="jp"):
+    result = {"parsed": {}}
     try:
         from modules.monitoring.codex_agent import recognize_score_with_codex
 
@@ -1665,10 +1688,10 @@ def validate_recognized_judgement(
         title, achievement = parsed.get("title"), parsed.get("achievement")
         judgement = parsed.get("sub_judgement")
         if not isinstance(title, str) or len(title) > 500:
-            logger.warning("[Recognize] Codex fallback rejected: invalid title")
+            logger.warning("[Recognize] AI recognition rejected: invalid title")
             return result
         if type(achievement) not in (int, float) or not 0 <= achievement <= 101:
-            logger.warning("[Recognize] Codex fallback rejected: invalid achievement=%r", achievement)
+            logger.warning("[Recognize] AI recognition rejected: invalid achievement=%r", achievement)
             return result
         if not isinstance(judgement, dict):
             return result
@@ -1676,11 +1699,11 @@ def validate_recognized_judgement(
         for name in JUDGEMENT_ROW_NAMES:
             row = judgement.get(name)
             if not isinstance(row, dict):
-                logger.warning("[Recognize] Codex fallback rejected: missing row=%s", name)
+                logger.warning("[Recognize] AI recognition rejected: missing row=%s", name)
                 return result
             if any(type(row.get(field)) is not int or not 0 <= row[field] <= 100000
                    for field in ALL_JUDGEMENT_VALUE_NAMES):
-                logger.warning("[Recognize] Codex fallback rejected: invalid cells row=%s values=%s", name, row)
+                logger.warning("[Recognize] AI recognition rejected: invalid cells row=%s values=%s", name, row)
                 return result
             clean_rows[name] = {field: row[field] for field in ALL_JUDGEMENT_VALUE_NAMES}
         totals = parsed.get("judgement_totals")
@@ -1692,7 +1715,7 @@ def validate_recognized_judgement(
                 observed = sum(row[field] for row in clean_rows.values())
                 if type(expected) is not int or expected != observed:
                     logger.warning(
-                        "[Recognize] Codex fallback rejected: column_total_mismatch "
+                        "[Recognize] AI recognition rejected: column_total_mismatch "
                         "field=%s table=%s main_screen=%r title=%r",
                         field, observed, expected, title,
                     )
@@ -1703,7 +1726,7 @@ def validate_recognized_judgement(
             ver=ver, allow_ocr_alignment=False, preserve_input=True,
         )
         if _score_is_validated(candidate):
-            logger.info("[Recognize] Codex fallback passed chart and achievement validation")
+            logger.info("[Recognize] AI recognition passed chart and achievement validation")
             return candidate
         checked = candidate.get("validation") or {}
         calc = checked.get("achievement_calc") or {}
@@ -1734,14 +1757,14 @@ def validate_recognized_judgement(
                     match_type, observed, charts[:3],
                 )
         logger.warning(
-            "[Recognize] Codex fallback rejected: reason=%s title=%r achievement=%s "
+            "[Recognize] AI recognition rejected: reason=%s title=%r achievement=%s "
             "ver=%s song_id=%s difficulty=%s calc=%s unmatched=%s uncertain=%s rows=%s",
             reason, title, achievement, ver, checked.get("song_id"), checked.get("difficulty"),
             calc, checked.get("unmatched_notes"), checked.get("uncertain_cells"), clean_rows,
         )
     except Exception as exc:
-        # Optional vision must never prevent delivery of the original correction UI.
-        logger.warning("[Recognize] Codex fallback unavailable: %s", type(exc).__name__)
+        # Report model failure through the explicit AI entry point.
+        logger.warning("[Recognize] AI recognition unavailable: %s", type(exc).__name__)
     return result
 
 
@@ -1970,15 +1993,5 @@ def recognize_score_image_bytes(
                 _reset_ocr_engine("rss_threshold", rss_after)
             return result
 
-    except Exception:
-        if fields is not None:
-            raise
-        logger.warning("[Recognize] Local OCR failed before validation; trying Codex image fallback")
-        recovered = validate_recognized_judgement(
-            {"parsed": {}}, ver=ver, image_bytes=image_bytes,
-        )
-        if _score_is_validated(recovered):
-            return recovered
-        raise
     finally:
         image.close()

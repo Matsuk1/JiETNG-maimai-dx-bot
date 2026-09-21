@@ -286,10 +286,8 @@ TEXTS["command_help"] = {'bind': '命令: bind\n'
                 '参数: 无需参数: 直接发送 refreshmenu。\n'
                 '限制: 仅影响发送者自己的 Rich Menu。\n'
                 '示例: refreshmenu',
- 'score_recognition': '命令: rec\n'
-                      '说明: 识别完整成绩；能完全校验时返回成绩图片，需要修正时返回可复制的修正卡片。\n'
-                      '参数: 必须回复一张成绩图，不接受其他参数。\n'
-                      '示例: rec',
+ 'score_recognition': '命令: rec [-flex]\n说明: 使用本地 OCR 识别完整成绩；校验通过后返回成绩图片，矫正失败时显示原始识别数据和可复制的修正命令。不会自动调用 AI；AI 识别请使用 ai-rec。\n参数: 必须回复一张成绩图；可选 -flex，使用 Flex 卡片输出。\n示例: rec\nrec -flex',
+ 'ai_score_recognition': '命令: ai-rec [-flex]\n说明: 使用 Codex AI 识别成绩原图，校验通过后返回成绩图片。\n参数: 必须回复一张成绩图；可选 -flex，使用 Flex 卡片输出。\n限制: 需要 AI 识别权限。普通 rec 不会调用 AI。\n示例: ai-rec\nai-rec -flex',
  'search_by_artist': '命令: artist <关键词> [页码]\n'
                      '说明: 按艺术家名搜索歌曲。\n'
                      '参数: 必填: <关键词>，artist 后面的文本会作为艺术家名进行不区分大小写的包含匹配。\n'

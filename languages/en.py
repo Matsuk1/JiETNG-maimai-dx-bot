@@ -333,11 +333,8 @@ TEXTS["command_help"] = {'bind': '命令: bind\n'
                 '参数: No arguments: send refreshmenu as-is.\n'
                 "Restriction: only affects the sender's Rich Menu.\n"
                 '示例: refreshmenu',
- 'score_recognition': '命令: rec\n'
-                      '说明: Recognizes the full score; returns a generated result image when '
-                      'validation is complete, or a correction card when manual fixes are needed.\n'
-                      '参数: Must reply to a score image and accepts no other arguments.\n'
-                      '示例: rec',
+ 'score_recognition': '命令: rec [-flex]\n说明: Uses local OCR to recognize scores. Returns a result image after validation, or the original OCR data and a copyable correction command if correction fails. Never calls AI automatically; use ai-rec for AI recognition.\n参数: Reply to a score image. Optional: -flex to return a Flex card.\n示例: rec\nrec -flex',
+ 'ai_score_recognition': '命令: ai-rec [-flex]\n说明: Uses Codex AI to recognize the original score image and returns a result image after validation.\n参数: Reply to a score image. Optional: -flex to return a Flex card.\nRestriction: requires AI recognition access. Regular rec does not call AI.\n示例: ai-rec\nai-rec -flex',
  'search_by_artist': '命令: artist <keyword> [page]\n'
                      '说明: Search songs by artist name.\n'
                      '参数: Required: <keyword>; text after artist is matched against artist names, '

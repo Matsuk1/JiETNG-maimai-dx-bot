@@ -71,3 +71,41 @@ def test_candidate_carousel_keeps_order_and_labels():
     message = generate_score_recognition_flex(results)
     assert message.alt_text == 'Alpha Beta #1/2 / Alpha Beta #2/2'
     assert len(message.contents.to_dict()['contents']) == 2
+
+
+def test_failed_correction_displays_and_copies_original_ocr():
+    from modules.messages.scores import _prepare_score
+    from modules.score_recognition import recognizer
+    result = result_fixture()
+    raw = copy.deepcopy(result['parsed'])
+    raw['title'] = 'Raw OCR title'
+    raw['sub_judgement']['tap']['great'] = 37
+    result = {'parsed': raw}
+
+    def failed_validation(value, *args):
+        value['parsed']['title'] = 'Corrected title'
+        value['parsed']['sub_judgement']['tap']['great'] = 1
+        value['validation'] = result_fixture()['validation']
+        value['validation']['achievement_calc']['consistent'] = False
+        value['validation']['calc_corrections'] = [{'inferred_row': True}]
+        return value
+
+    expected = copy.deepcopy(raw)
+    with patch.object(recognizer, '_validate_recognized_judgement', side_effect=failed_validation):
+        result = recognizer.validate_recognized_judgement(result)
+    data = _prepare_score(result)
+    assert data.judgement == expected['sub_judgement']
+    assert data.song_title == expected['title']
+    assert not data.validation.get('calc_corrections')
+    payload = generate_score_recognition_flex(result).to_dict()
+    clipboard = next(node['clipboardText'] for node in nodes(payload) if node.get('type') == 'clipboard')
+    assert parse_fix_record_command(clipboard) == (
+        expected['title'], expected['achievement'], expected['sub_judgement'])
+    assert 'Corrected title' not in str(payload)
+
+
+def test_successful_correction_still_displays_validated_data():
+    from modules.messages.scores import _prepare_score
+    result = result_fixture()
+    result['raw_parsed'] = {'title': 'Raw title', 'sub_judgement': {}}
+    assert _prepare_score(result).song_title == 'Alpha Beta'

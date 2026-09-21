@@ -154,6 +154,19 @@ class _ScoreData:
 def _prepare_score(result: dict) -> _ScoreData:
     parsed = result.get("parsed") or {}
     validation = result.get("validation") or {}
+    calculation = validation.get("achievement_calc") or {}
+    fully_validated = (
+        bool(validation.get("song_id"))
+        and calculation.get("consistent") is True
+        and calculation.get("complete") is True
+        and not validation.get("uncertain_cells")
+    )
+    if not fully_validated and "raw_parsed" in result:
+        parsed = result["raw_parsed"]
+        # Inferred chart details and cell coordinates describe corrected data,
+        # so none of them belong in the raw OCR correction form.
+        validation = {"achievement_calc": {"consistent": False, "complete": False}}
+
     judgement = parsed.get("sub_judgement") or {}
     canonical_title = parsed.get("title")
     if canonical_title is None:

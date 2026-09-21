@@ -271,6 +271,7 @@ from modules.score_recognition.recognizer import (
     cleanup_score_recognizer_memory,
     initialize_score_recognizer,
     recognize_score_image_bytes,
+    recognize_score_with_ai,
     score_recognition_needs_manual_fix,
     validate_recognized_judgement,
 )
@@ -3506,8 +3507,11 @@ def _score_recognition_queue_task(event, command: str, quoted_message_id: str, f
             )
         else:
             ver = get_user_field(user_id, "version", "jp") or "jp"
-            result = recognize_score_image_bytes(image_bytes, ver=ver)
-            result = validate_recognized_judgement(result, ver=ver, image_bytes=image_bytes)
+            if command == "ai-rec":
+                result = recognize_score_with_ai(image_bytes, user_id=user_id, ver=ver)
+            else:
+                result = recognize_score_image_bytes(image_bytes, ver=ver)
+                result = validate_recognized_judgement(result, ver=ver)
             result_variants = expand_score_recognition_calc_variants(result)
             if force_flex or (
                 len(result_variants) == 1
@@ -3624,12 +3628,12 @@ def _enqueue_score_recognition_task(event, command: str, quoted_message_id: str,
 
 def _handle_recognize_command(event, cleaned_text: str) -> bool:
     command_text = cleaned_text.strip().lower()
-    command_match = re.fullmatch(r"(?P<command>rec|crop)(?:\s+(?P<suffix>-flex))?", command_text)
+    command_match = re.fullmatch(r"(?P<command>ai-rec|rec|crop)(?:\s+(?P<suffix>-flex))?", command_text)
     if not command_match:
         return False
     command = command_match.group("command")
     force_flex = bool(command_match.group("suffix"))
-    if force_flex and command != "rec":
+    if force_flex and command not in {"rec", "ai-rec"}:
         return False
 
     user_id = event.source.user_id
@@ -3654,6 +3658,17 @@ def _handle_recognize_command(event, cleaned_text: str) -> bool:
             source_type=source_type,
         )
         return True
+
+    if command == "ai-rec":
+        from modules.score_recognition.access import require_ai_recognition_access
+        try:
+            require_ai_recognition_access(user_id)
+        except PermissionError:
+            smart_reply(
+                user_id, event.reply_token, access_error(user_id), configuration,
+                addition=False, source_type=source_type,
+            )
+            return True
 
     _enqueue_score_recognition_task(event, command, quoted_message_id, force_flex=force_flex)
     return True
