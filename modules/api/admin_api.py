@@ -75,12 +75,17 @@ from modules.monitoring.codex_agent import (
 from modules.monitoring.file_access import is_asset_image, resolve_allowed_path
 from modules.notice_manager import (
     calculate_notice_stats,
+    create_tip_ad,
+    delete_tip_ad,
+    get_all_tip_ads,
     get_all_notices_stats,
     delete_notice,
     get_all_notices,
     get_latest_published_notice,
     get_notice_by_id,
+    get_tip_ad_by_id,
     publish_notice,
+    update_tip_ad,
     update_notice,
     upload_notice,
 )
@@ -92,13 +97,6 @@ from modules.notification_manager import (
 )
 from modules.rich_menu_manager import link_unbound_rich_menu
 from modules.task_runtime import discard_queued, track_queued
-from modules.tip_ad_manager import (
-    create_tip_ad,
-    delete_tip_ad,
-    get_all_tip_ads,
-    get_tip_ad_by_id,
-    update_tip_ad,
-)
 from modules.user_db import get_all_user_ids, get_user, load_all_users, update_user_fields, user_exists
 from modules.user_manager import (
     clear_notice_read_status,

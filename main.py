@@ -96,8 +96,7 @@ from modules.bindtoken_manager import (
     generate_settings_token, get_user_id_from_settings_token,
     generate_unbind_token, get_user_id_from_unbind_token,
 )
-from modules.notice_manager import get_notice_by_id, calculate_notice_stats
-from modules.tip_ad_manager import load_tip_ad_data
+from modules.notice_manager import calculate_notice_stats, get_notice_by_id, load_tip_ad_data
 from modules.maimai_manager import (
     fetch_dom,
     get_aime_candidates,

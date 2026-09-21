@@ -38,7 +38,7 @@ from modules.image_button_once import image_button_data
 from modules.config_loader import LINE_ACCOUNT_ID
 from modules.user_db import get_user
 from modules.user_manager import get_user_timezone
-from modules.tip_ad_manager import get_random_tip, get_random_ad
+from modules.notice_manager import get_random_ad, get_random_tip
 from linebot.v3.messaging import (
     TextMessage,
     ImageMessage,
