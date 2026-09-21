@@ -527,6 +527,8 @@ def thumbnail_html(song, inline=False, skin=None, language="ja"):
         ('dx_star', ICON_DX_STAR_DIR, lambda v: 'music_icon_dxstar_detail_' + v),
     ):
         value = song.get(key)
+        if key == 'sync_icon' and value == 'back' and not inline:
+            directory = ICON_COMBO_DIR
         icons[key] = icon_uri(value, directory, f'https://maimaidx.jp/maimai-mobile/img/{name(str(value))}.png') if value else ''
     cover = '' if inline else cover_html(song.get('cover_url'), song.get('type'), cover_name=song.get('cover_name'), skin=skin)
     return template('thumbnail.html', skin=skin, song=song, inline=inline, icons=icons, cover=cover,

@@ -8,7 +8,7 @@ hero:
   text: "maimai DX<br>Score Tracker"
   tagline: LINE bot for JP and INTL maimai DX · B50 / Best 50 / Recent 50 / DX Rating / rating breakdown / bookmarklet import
   image:
-    src: /hero-image.svg
+    src: /logo.svg
     alt: JiETNG Logo
   actions:
     - theme: brand

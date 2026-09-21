@@ -80,7 +80,7 @@ def render_case(kind, data, skin="default", background=False):
             if not .25 <= scale <= 3:
                 raise ValueError('资料卡 scale 范围为 0.25–3')
             assets = {key:file_uri(path) for key,path in {
-                'nameplate_url': ASSETS/'nameplate.png', 'icon_url': ASSETS/'cover.png',
+                'nameplate_url': ROOT/'data/images/keep_nameplate.png', 'icon_url': ASSETS/'cover.png',
                 'class_rank_url': ASSETS/'class.png', 'cource_rank_url': ASSETS/'course.png',
                 'trophy_url': ASSETS/'trophy.png',
                 'rating_block_path': ROOT/'assets/pics/rating/gold_2.png',
@@ -163,7 +163,8 @@ def create_app():
     def example(kind):
         if kind not in CASES:
             abort(404)
-        return jsonify(json.loads((FIXTURES/f'{kind}.json').read_text()))
+        fixture = 'thumbnail' if kind == 'inline' else kind
+        return jsonify(json.loads((FIXTURES/f'{fixture}.json').read_text()))
 
     @app.get('/api/revision')
     def get_revision():

@@ -11,7 +11,8 @@ def test_all_fixture_cases_load_without_database_or_network():
         response = client.get('/api/examples/' + case['id'])
         assert response.status_code == 200
         assert isinstance(response.get_json(), dict)
-        assert (FIXTURES / (case['id'] + '.json')).is_file()
+        fixture = 'thumbnail' if case['id'] == 'inline' else case['id']
+        assert (FIXTURES / (fixture + '.json')).is_file()
 
 
 def test_invalid_data_and_cross_origin_requests_are_rejected():
