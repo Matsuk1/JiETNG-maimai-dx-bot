@@ -150,7 +150,6 @@ from modules.config_loader import (
     LIFF_CHANNEL_ID,
     LIFF_ENABLED,
     LIFF_ID,
-    LOGO_FILE,
     LOG_FILE,
     MAIMAI_VERSION,
     PLUGIN_CONFIG,
@@ -558,7 +557,8 @@ def linebot_reply():
 def admin_pwa_icon():
     """Serve the cached HTML-rendered PWA icon."""
     from modules.images.composition import admin_icon_png
-    return send_file(BytesIO(admin_icon_png(LOGO_FILE)), mimetype='image/png')
+    website_logo = os.path.join(app.root_path, "assets", "pics", "logo-padded.png")
+    return send_file(BytesIO(admin_icon_png(website_logo)), mimetype='image/png')
 
 
 @app.route("/sw.js")
