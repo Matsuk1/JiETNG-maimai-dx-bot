@@ -341,7 +341,7 @@ def generate_records_picture(up_songs=None, down_songs=None, title="RECORD", ver
     detail_rows = [(key, [(token, difficulty_color(token.lower()) if token.lower() in DIFFICULTY_STYLES else None)
                           for token in str(value).split()]) for key, value in (details or {}).items()]
     return render_template("records.html", 1580, skin=skin, title=title, stats=stats,
-                           texts={key: _image_text(f"records.{key}", language) for key in ("heading", "tracks")},
+                           texts={key: _image_text(f"records.{key}", language) for key in ("heading", "tracks", "best_slot")},
                            rating=str(int(all_ra)).rjust(5), rating_src=file_uri(get_rating_image_path(int(all_ra))),
                            equation=f"= {_format_rating_value(up_ra)} + {_format_rating_value(down_ra)}" if up_ra and down_ra else "",
                            details=detail_rows, up=[thumbnail_html(song, skin=skin, language=language) for song in up_songs],

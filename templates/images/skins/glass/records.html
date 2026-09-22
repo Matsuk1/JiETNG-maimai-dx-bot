@@ -119,7 +119,7 @@
     gap: 16px 10px;
   }
 
-  .glass-records-grid + .glass-records-grid { margin-top: 26px; }
+  .glass-records-section { display: flex; align-items: center; justify-content: space-between; margin: 22px 8px 14px; font-size: 18px; letter-spacing: 2px; color: #586b89; }
 
   .glass-records-footer {
     margin: 28px 8px 0;
@@ -132,7 +132,7 @@
 <section class="glass-records">
   <header class="glass-records-header">
     <div class="glass-records-identity">
-      <div class="glass-records-kicker">MAIMAI / {{ texts.heading }}</div>
+      <div class="glass-records-kicker">MAIMAI / {{ texts.best_slot }}</div>
       <h1 class="glass-records-title" data-fit="38">{{ title }}</h1>
     </div>
     <div class="glass-records-rating">
@@ -168,6 +168,10 @@
   {% endif %}
   {% for cards in [up, down] %}
     {% if cards %}
+      <div class="glass-records-section">
+        <span>{{ '01' if loop.first else '02' }} / {{ 'B35' if title == 'B50' and loop.first else 'B15' if title == 'B50' else texts.heading }}</span>
+        <span>{{ cards|length }} {{ texts.tracks }}</span>
+      </div>
       <div class="glass-records-grid">
         {% for card in cards %}
           {{ card|safe }}

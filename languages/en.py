@@ -673,6 +673,7 @@ TEXTS["images"] = {
         "break_total": "BREAK TOTAL",
     },
     "records": {
+        "best_slot": 'Best slots',
         "heading": "Play records",
         "tracks": "tracks",
         "play_count": "Plays",

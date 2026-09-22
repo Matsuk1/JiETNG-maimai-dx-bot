@@ -607,6 +607,7 @@ TEXTS["images"] = {
         "break_total": "BREAK 合計",
     },
     "records": {
+        "best_slot": 'ベスト枠',
         "heading": "プレイ記録",
         "tracks": "曲",
         "play_count": "プレイ回数",
