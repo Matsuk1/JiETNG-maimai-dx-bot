@@ -42,7 +42,7 @@ export default withMermaid(defineConfig({
 
   // 主题配置
   themeConfig: {
-    logo: '/logo.png',
+    logo: '/logo.svg',
 
     // ナビゲーション
     nav: [
@@ -241,8 +241,9 @@ export default withMermaid(defineConfig({
 
   // 头部meta标签
   head: [
-    ['link', { rel: 'icon', type: 'image/png', href: '/logo.png' }],
-    ['link', { rel: 'apple-touch-icon', href: '/logo.png' }],
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }],
+    ['link', { rel: 'icon', type: 'image/png', href: '/favicon.ico' }],
+    ['link', { rel: 'apple-touch-icon', href: '/logo.svg' }],
     ['meta', { name: 'theme-color', content: '#2563eb' }],
     ['meta', { name: 'application-name', content: 'JiETNG' }],
     ['meta', { name: 'apple-mobile-web-app-title', content: 'JiETNG' }],

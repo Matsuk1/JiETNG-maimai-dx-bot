@@ -5,7 +5,7 @@ description: JiETNG maimai DX B50, Best 50, Recent 50, DX Rating, rating breakdo
 
 # Record Commands
 
-<img src="/b50_example.jpg" alt="Best 50" style="max-width: 280px; width: 100%; margin: 24px auto;" />
+<img src="/b50_example.png" alt="Best 50" style="max-width: 280px; width: 100%; margin: 24px auto;" />
 
 ## B-series images
 

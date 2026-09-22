@@ -39,8 +39,8 @@ const copy = computed(() => ({
         <p>{{ copy.intro }}</p>
       </div>
       <figure>
-        <a :href="withBase('/b50_example.jpg')" target="_blank" rel="noopener noreferrer">
-          <img :src="withBase('/b50_example.jpg')" :alt="copy.preview" loading="lazy" width="1660" height="2618">
+        <a :href="withBase('/b50_example.png')" target="_blank" rel="noopener noreferrer">
+          <img :src="withBase('/b50_example.png')" :alt="copy.preview" loading="lazy" width="1680" height="2406">
         </a>
         <figcaption>{{ copy.preview }}</figcaption>
       </figure>

@@ -9,7 +9,7 @@ description: JiETNG maimai DX 网页书签工具，使用当前 maimai 官方网
 
 <div class="bookmarklet-installer">
   <div class="bookmarklet-card">
-    <img src="/logo.png" alt="JiETNG" class="bookmarklet-logo">
+    <img src="/logo.svg" alt="JiETNG" class="bookmarklet-logo">
     <div>
       <p class="bookmarklet-eyebrow">Bookmarklet</p>
       <h2>JiETNG 工具包</h2>
@@ -190,7 +190,7 @@ onMounted(async () => {
   width: 18px;
   height: 18px;
   margin-right: 8px;
-  background: url('/logo.png') center / contain no-repeat;
+  background: url('/logo.svg') center / contain no-repeat;
   filter: drop-shadow(0 1px 1px rgba(0,0,0,.18));
 }
 

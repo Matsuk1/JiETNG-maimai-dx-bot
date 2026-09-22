@@ -9,7 +9,7 @@ This bookmarklet runs on the official maimai DX mobile website. It uses your cur
 
 <div class="bookmarklet-installer">
   <div class="bookmarklet-card">
-    <img src="/logo.png" alt="JiETNG" class="bookmarklet-logo">
+    <img src="/logo.svg" alt="JiETNG" class="bookmarklet-logo">
     <div>
       <p class="bookmarklet-eyebrow">Bookmarklet</p>
       <h2>JiETNG Toolkit</h2>
@@ -184,7 +184,7 @@ onMounted(async () => {
   width: 18px;
   height: 18px;
   margin-right: 8px;
-  background: url('/logo.png') center / contain no-repeat;
+  background: url('/logo.svg') center / contain no-repeat;
   filter: drop-shadow(0 1px 1px rgba(0,0,0,.18));
 }
 

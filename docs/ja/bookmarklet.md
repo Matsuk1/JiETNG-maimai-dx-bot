@@ -9,7 +9,7 @@ description: maimai 公式サイトの現在のログイン状態を使って B5
 
 <div class="bookmarklet-installer">
   <div class="bookmarklet-card">
-    <img src="/logo.png" alt="JiETNG" class="bookmarklet-logo">
+    <img src="/logo.svg" alt="JiETNG" class="bookmarklet-logo">
     <div>
       <p class="bookmarklet-eyebrow">Bookmarklet</p>
       <h2>JiETNG ツールキット</h2>
@@ -184,7 +184,7 @@ onMounted(async () => {
   width: 18px;
   height: 18px;
   margin-right: 8px;
-  background: url('/logo.png') center / contain no-repeat;
+  background: url('/logo.svg') center / contain no-repeat;
   filter: drop-shadow(0 1px 1px rgba(0,0,0,.18));
 }
 

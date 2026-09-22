@@ -8,7 +8,7 @@ hero:
   text: "maimai DX<br>スコア管理"
   tagline: 国内版 JP と海外版 INTL に対応 · B50 / Best 50 / Recent 50 / DX Rating / レート内訳 / ブックマークレット取り込み
   image:
-    src: /logo.png
+    src: /logo.svg
     alt: JiETNG Logo
   actions:
     - theme: brand

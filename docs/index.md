@@ -8,7 +8,7 @@ hero:
   text: "舞萌DX 查分器<br>maimai でらっくす"
   tagline: 支持日服 JP 与国际服 INTL · B50 / Best 50 / Recent 50 / DX Rating / レート内訳 / 网页书签导入
   image:
-    src: /logo.png
+    src: /logo.svg
     alt: JiETNG Logo
   actions:
     - theme: brand
