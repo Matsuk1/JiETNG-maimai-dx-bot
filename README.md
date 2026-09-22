@@ -196,6 +196,11 @@ mysql -u jietng -p maimai_records < records_db.sql
 4. 设置 Webhook URL：`https://your-domain.com/linebot/webhook`
 5. 启用 **Use webhook**
 
+可选启用 LIFF：在同一 Provider 下创建 LINE Login Channel 和 LIFF App，将 Endpoint URL
+设置为 `https://your-domain.com/linebot/liff`，然后把 LIFF ID 写入下方配置。
+启用后，Bot 消息里的 `bind`、`rebind`、`settings`、`unbind` 使用 LIFF；Developer API 和旧 HTTPS
+token 链接保持不变。LIFF 未配置或初始化失败时会自动回退旧页面。
+
 #### 5. 配置 config.json
 
 后台会话签名密钥默认保存在 `data/session.key`（首次启动自动生成，文件权限为 `0600`）。请持久保留该文件，避免重启后登录失效。可通过 `JIETNG_SESSION_KEY_FILE` 指定文件路径，或通过 `JIETNG_SESSION_SECRET` 设置固定密钥；多实例部署应使用相同密钥。更换密钥会使已有登录和 CSRF Token 失效。
@@ -212,6 +217,10 @@ mysql -u jietng -p maimai_records < records_db.sql
         "account_id": "@yourlineid",
         "access_token": "YOUR_CHANNEL_ACCESS_TOKEN",
         "secret": "YOUR_CHANNEL_SECRET"
+    },
+    "liff": {
+        "enabled": false,
+        "id": "YOUR_LIFF_ID"
     },
     "record_database": {
         "host": "localhost",
@@ -605,6 +614,10 @@ GET      /admin/api/ai-monitor/image         # 读取诊断图片
         "account_id": "@yourlineid",
         "access_token": "YOUR_TOKEN",
         "secret": "YOUR_SECRET"
+    },
+    "liff": {
+        "enabled": false,                       // 启用后 Bot 内的 bind/rebind/settings/unbind 使用 LIFF
+        "id": "YOUR_LIFF_ID"                  // Endpoint URL 必须设为 https://your-domain.com/linebot/liff
     },
     "keys": {
         "bind_token": "AUTO_GENERATED_TOKEN"  // 自动生成的绑定令牌

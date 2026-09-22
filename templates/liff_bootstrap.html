@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="referrer" content="no-referrer">
+  <title>JiETNG</title>
+  <link rel="icon" type="image/png" href="/static/pics/logo.png">
+  {% include 'common_styles.html' %}
+  <style>
+    body {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      margin: 0;
+      padding: 24px;
+      text-align: center;
+    }
+    .liff-loading { color: var(--text-secondary); }
+    .liff-spinner {
+      width: 42px;
+      height: 42px;
+      margin: 0 auto 18px;
+      border: 4px solid var(--border-color);
+      border-top-color: var(--accent-color);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #liff-error { display: none; }
+  </style>
+</head>
+<body>
+  <main class="liff-loading">
+    <div id="liff-progress">
+      <div class="liff-spinner" aria-hidden="true"></div>
+      <p>Opening JiETNG…</p>
+    </div>
+    <div id="liff-error">
+      <p id="liff-error-message">Unable to open LIFF.</p>
+    </div>
+  </main>
+  <script
+    src="https://static.line-scdn.net/liff/edge/2/sdk.js"
+    onerror="window.__liffSdkLoadFailed = true"
+  ></script>
+  <script>
+    function targetFromParams(params) {
+      const action = params.get('action');
+      const token = params.get('token');
+      if (!token || !['bind', 'rebind', 'settings', 'unbind'].includes(action)) return null;
+
+      const target = new URL(
+        action === 'settings'
+          ? '/linebot/settings'
+          : action === 'unbind'
+            ? '/linebot/unbind'
+            : '/linebot/sega_bind',
+        window.location.origin,
+      );
+      target.searchParams.set('token', token);
+      if (action === 'rebind') target.searchParams.set('mode', 'rebind');
+      return target.href;
+    }
+
+    function paramsFromLiffState() {
+      const state = new URLSearchParams(window.location.search).get('liff.state');
+      if (!state) return new URLSearchParams();
+      try {
+        return new URL(state, window.location.origin).searchParams;
+      } catch (_) {
+        return new URLSearchParams();
+      }
+    }
+
+    function showError(code) {
+      document.getElementById('liff-progress').style.display = 'none';
+      document.getElementById('liff-error').style.display = 'block';
+      document.getElementById('liff-error-message').textContent =
+        `Unable to open LIFF. [${code || 'UNKNOWN'}]`;
+    }
+
+    function reportClientError(stage, error) {
+      const code = String(error && error.code || stage || 'UNKNOWN');
+      const message = String(error && error.message || error || '').slice(0, 300);
+      console.error('[LIFF]', stage, code, message, error);
+      fetch('/linebot/liff/client-log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stage, code, message }),
+        keepalive: true,
+      }).catch(() => {});
+      return code;
+    }
+
+    (async function initializeLiff() {
+      const stateParams = paramsFromLiffState();
+      const fallback = targetFromParams(stateParams);
+      let stage = 'LIFF_INIT';
+      try {
+        if (window.__liffSdkLoadFailed || typeof window.liff === 'undefined') {
+          const error = new Error('LIFF SDK did not load');
+          error.code = 'SDK_LOAD';
+          throw error;
+        }
+        await liff.init({
+          liffId: {{ liff_id | tojson }},
+          withLoginOnExternalBrowser: true,
+        });
+        stage = 'ACTION_PARAMS';
+        const currentParams = new URLSearchParams(window.location.search);
+        const target = targetFromParams(currentParams) || fallback;
+        if (target) {
+          window.location.replace(target);
+          return;
+        }
+
+        const action = currentParams.get('action') || stateParams.get('action');
+        const idToken = liff.getIDToken();
+        if (!idToken || !['bind', 'rebind', 'settings', 'unbind'].includes(action)) {
+          const error = new Error('Missing LIFF identity or action');
+          error.code = !idToken ? 'NO_ID_TOKEN' : 'INVALID_ACTION';
+          throw error;
+        }
+
+        stage = 'SESSION_REQUEST';
+        const response = await fetch('/linebot/liff/session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ action, id_token: idToken }),
+        });
+        const result = await response.json();
+        if (!response.ok || !result.redirect) {
+          const error = new Error(result.error || 'LIFF session failed');
+          error.code = result.code || `SESSION_HTTP_${response.status}`;
+          throw error;
+        }
+        stage = 'REDIRECT';
+        window.location.replace(result.redirect);
+      } catch (error) {
+        const code = reportClientError(stage, error);
+        if (fallback) {
+          window.location.replace(fallback);
+          return;
+        }
+        showError(`${stage}:${code}`);
+      }
+    })();
+  </script>
+</body>
+</html>

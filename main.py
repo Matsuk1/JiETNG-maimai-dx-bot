@@ -19,6 +19,8 @@ import time
 import math
 import binascii
 import base64 as b64mod
+import secrets
+from urllib.parse import urlencode
 
 from datetime import datetime
 from types import SimpleNamespace
@@ -145,6 +147,9 @@ from modules.config_loader import (
     LINE_ADDING_URL,
     LINE_CHANNEL_ACCESS_TOKEN,
     LINE_CHANNEL_SECRET,
+    LIFF_CHANNEL_ID,
+    LIFF_ENABLED,
+    LIFF_ID,
     LOGO_FILE,
     LOG_FILE,
     MAIMAI_VERSION,
@@ -154,6 +159,8 @@ from modules.config_loader import (
     load_user,
     read_dxdata,
 )
+from modules.liff_urls import build_account_action_url
+from modules.liff_auth import verify_liff_id_token
 
 from modules.messages.service import (
     access_error,
@@ -368,11 +375,19 @@ def set_security_headers(response):
     response.headers['X-Frame-Options'] = 'DENY'
     response.headers['X-XSS-Protection'] = '1; mode=block'
 
-    # Content Security Policy
+    # Content Security Policy. The LIFF bootstrap alone may load LINE's SDK
+    # and contact LINE endpoints; keep every other page on the stricter policy.
+    if request.path.rstrip('/') == '/linebot/liff':
+        script_src = "'self' 'unsafe-inline' https://static.line-scdn.net"
+        connect_src = "'self' https://*.line.me https://*.line-scdn.net"
+    else:
+        script_src = "'self' 'unsafe-inline'"
+        connect_src = "'self'"
     response.headers['Content-Security-Policy'] = (
         "default-src 'self'; "
         "style-src 'self' 'unsafe-inline'; "
-        "script-src 'self' 'unsafe-inline'; "
+        f"script-src {script_src}; "
+        f"connect-src {connect_src}; "
         "img-src 'self' data: blob: https:; "
         "font-src 'self' data:;"
     )
@@ -616,6 +631,104 @@ def _parse_int(value, default, minimum=None, maximum=None):
     if minimum is not None:
         parsed = max(minimum, parsed)
     return min(maximum, parsed) if maximum is not None else parsed
+
+
+def _account_action_url(action, path, **params):
+    return build_account_action_url(
+        DOMAIN,
+        action,
+        path,
+        params,
+        liff_enabled=LIFF_ENABLED,
+        liff_id=LIFF_ID,
+    )
+
+
+@app.route("/linebot/liff", methods=["GET"])
+def website_liff_entry():
+    """LIFF primary redirect endpoint; existing handlers remain secondary URLs."""
+    if not LIFF_ENABLED:
+        return ("LIFF is not configured", 404)
+    return render_template("liff_bootstrap.html", liff_id=LIFF_ID)
+
+
+@app.route("/linebot/liff/session", methods=["POST"])
+@csrf.exempt
+def website_liff_session():
+    """Exchange a verified LIFF identity for the existing short-lived action URL."""
+    trace_id = secrets.token_hex(4)
+    data = request.get_json(silent=True) or {}
+    action = str(data.get("action", ""))
+    logger.info(
+        "[LIFF] session start trace=%s action=%s has_id_token=%s",
+        trace_id,
+        action or "-",
+        bool(data.get("id_token")),
+    )
+
+    if not LIFF_ENABLED or not LIFF_CHANNEL_ID:
+        logger.error("[LIFF] session config missing trace=%s", trace_id)
+        return jsonify({"error": "LIFF is not configured", "code": "SERVER_CONFIG"}), 503
+
+    if action not in {"bind", "rebind", "settings", "unbind"}:
+        logger.warning("[LIFF] invalid action trace=%s action=%s", trace_id, action or "-")
+        return jsonify({"error": "Invalid action", "code": "INVALID_ACTION"}), 400
+
+    try:
+        user_id = verify_liff_id_token(str(data.get("id_token", "")), LIFF_CHANNEL_ID)
+    except (ValueError, OSError) as error:
+        logger.warning("[LIFF] verification failed trace=%s error=%s", trace_id, error)
+        return jsonify({"error": "LIFF authentication failed", "code": "TOKEN_VERIFY"}), 401
+
+    logger.info("[LIFF] identity verified trace=%s user_suffix=%s", trace_id, user_id[-6:])
+
+    if action == "bind":
+        if not user_exists(user_id):
+            add_user(user_id)
+        path = "/linebot/sega_bind"
+        params = {"token": generate_bind_token(user_id)}
+    else:
+        user_data = get_user(user_id) or {}
+        if action == "rebind":
+            if not _has_full_account(user_data):
+                logger.warning("[LIFF] rebind denied trace=%s reason=not_bound", trace_id)
+                return jsonify({"error": "No linked SEGA account", "code": "NOT_BOUND"}), 403
+            path = "/linebot/sega_bind"
+            params = {"token": generate_bind_token(user_id), "mode": "rebind"}
+        elif action == "settings":
+            if not _can_open_settings(user_data):
+                logger.warning("[LIFF] settings denied trace=%s reason=not_bound", trace_id)
+                return jsonify({"error": "No linked account", "code": "NOT_BOUND"}), 403
+            path = "/linebot/settings"
+            params = {"token": generate_settings_token(user_id)}
+        else:
+            if not _can_open_settings(user_data):
+                logger.warning("[LIFF] unbind denied trace=%s reason=not_bound", trace_id)
+                return jsonify({"error": "No linked account", "code": "NOT_BOUND"}), 403
+            path = "/linebot/unbind"
+            params = {"token": generate_unbind_token(user_id)}
+
+    redirect_url = f"{path}?{urlencode(params)}"
+    logger.info("[LIFF] session issued trace=%s action=%s path=%s", trace_id, action, path)
+    return jsonify({"redirect": redirect_url})
+
+
+@app.route("/linebot/liff/client-log", methods=["POST"])
+@csrf.exempt
+def website_liff_client_log():
+    """Record LIFF bootstrap failures that happen before session exchange."""
+    data = request.get_json(silent=True) or {}
+    stage = str(data.get("stage", "UNKNOWN"))[:40]
+    code = str(data.get("code", "UNKNOWN"))[:80]
+    message = str(data.get("message", ""))[:300].replace("\n", " ")
+    logger.warning(
+        "[LIFF] client failure stage=%s code=%s message=%s ua=%s",
+        stage,
+        code,
+        message or "-",
+        request.user_agent.string[:200],
+    )
+    return ("", 204)
 
 
 @app.route("/linebot/sega_bind", methods=["GET", "POST"])
@@ -3412,7 +3525,11 @@ def cmd_unbind_prompt(ctx):
             ctx.user_id,
             tone="warning",
         )
-    url = f"https://{DOMAIN}/linebot/unbind?token={generate_unbind_token(ctx.user_id)}"
+    url = _account_action_url(
+        "unbind",
+        "unbind",
+        token=generate_unbind_token(ctx.user_id),
+    )
     return generate_account_action_flex("unbind", url, ctx.user_id)
 
 def cmd_ranking(ctx):
@@ -3632,7 +3749,7 @@ def cmd_bind(ctx):
             ctx.user_id,
             tone="warning",
         )
-    url = f"https://{DOMAIN}/linebot/sega_bind?token={generate_bind_token(ctx.user_id)}"
+    url = _account_action_url("bind", "sega_bind", token=generate_bind_token(ctx.user_id))
     return generate_account_action_flex("bind", url, ctx.user_id)
 
 def cmd_rebind(ctx):
@@ -3646,7 +3763,12 @@ def cmd_rebind(ctx):
             ctx.user_id,
             tone="warning",
         )
-    url = f"https://{DOMAIN}/linebot/sega_bind?token={generate_bind_token(ctx.user_id)}&mode=rebind"
+    url = _account_action_url(
+        "rebind",
+        "sega_bind",
+        token=generate_bind_token(ctx.user_id),
+        mode="rebind",
+    )
     return generate_account_action_flex("rebind", url, ctx.user_id)
 
 def cmd_settings(ctx):
@@ -3660,7 +3782,11 @@ def cmd_settings(ctx):
             ctx.user_id,
             tone="warning",
         )
-    url = f"https://{DOMAIN}/linebot/settings?token={generate_settings_token(ctx.user_id)}"
+    url = _account_action_url(
+        "settings",
+        "settings",
+        token=generate_settings_token(ctx.user_id),
+    )
     return generate_account_action_flex("settings", url, ctx.user_id)
 
 
@@ -3919,7 +4045,11 @@ def handle_follow(event):
     add_user(user_id)
     link_rich_menu_for_state(user_id, get_user(user_id))
         
-    bind_url = f"https://{DOMAIN}/linebot/sega_bind?token={generate_bind_token(user_id)}"
+    bind_url = _account_action_url(
+        "bind",
+        "sega_bind",
+        token=generate_bind_token(user_id),
+    )
     reply_message = generate_welcome_flex(user_id, bind_url=bind_url)
 
     return smart_reply(user_id, reply_token, reply_message, configuration, False)

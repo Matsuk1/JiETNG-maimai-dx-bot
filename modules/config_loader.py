@@ -41,6 +41,10 @@ DEFAULT_CONFIG = {
         "access_token": "",
         "secret": ""
     },
+    "liff": {
+        "enabled": False,
+        "id": ""
+    },
     "rich_menu": {
         "enabled": False,
         "unbound_id": "",
@@ -202,6 +206,13 @@ LINE_CHANNEL = _config["line_channel"]
 LINE_ACCOUNT_ID = LINE_CHANNEL["account_id"]
 LINE_CHANNEL_ACCESS_TOKEN = LINE_CHANNEL["access_token"]
 LINE_CHANNEL_SECRET = LINE_CHANNEL["secret"]
+
+LIFF_CONFIG = _config.get("liff", {})
+LIFF_ID = str(LIFF_CONFIG.get("id", "")).strip()
+LIFF_ENABLED = bool(LIFF_CONFIG.get("enabled", False) and LIFF_ID)
+LIFF_CHANNEL_ID = str(LIFF_CONFIG.get("channel_id", "")).strip()
+if not LIFF_CHANNEL_ID and "-" in LIFF_ID:
+    LIFF_CHANNEL_ID = LIFF_ID.split("-", 1)[0]
 
 RICH_MENU = _config.get("rich_menu", {})
 RICH_MENU_ENABLED = bool(RICH_MENU.get("enabled", False))

@@ -168,6 +168,11 @@ mysql -u jietng -p maimai_records < records_db.sql
 4. Webhook URL を設定：`https://your-domain.com/linebot/webhook`
 5. **Use webhook** を有効化
 
+LIFF は任意で有効化できます。同じ Provider 配下に LINE Login Channel と LIFF App を作成し、
+Endpoint URL を `https://your-domain.com/linebot/liff` に設定して、下記設定に
+LIFF ID を追加してください。有効化後も Developer API と従来の HTTPS token URL は変更されず、
+LIFF が未設定または初期化に失敗した場合は従来ページへフォールバックします。
+
 #### 5. config.json を設定
 
 `config.json` ファイルを編集（完全な構造は[設定リファレンス](#完全な-configjson)を参照）：
@@ -182,6 +187,10 @@ mysql -u jietng -p maimai_records < records_db.sql
         "account_id": "@yourlineid",
         "access_token": "YOUR_CHANNEL_ACCESS_TOKEN",
         "secret": "YOUR_CHANNEL_SECRET"
+    },
+    "liff": {
+        "enabled": false,
+        "id": "YOUR_LIFF_ID"
     },
     "record_database": {
         "host": "localhost",
@@ -565,6 +574,10 @@ GET      /admin/get_logs           # ログ取得
         "account_id": "@yourlineid",
         "access_token": "YOUR_TOKEN",
         "secret": "YOUR_SECRET"
+    },
+    "liff": {
+        "enabled": false,                       // Bot 内の bind/rebind/settings/unbind で LIFF を使用
+        "id": "YOUR_LIFF_ID"                  // Endpoint URL: https://your-domain.com/linebot/liff
     },
     "keys": {
         "bind_token": "AUTO_GENERATED_TOKEN"  // 自動生成バインドトークン

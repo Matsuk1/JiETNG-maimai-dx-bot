@@ -2,10 +2,15 @@
 import subprocess
 import sys
 
-from flask import Flask
+from pathlib import Path
+
+from flask import Flask, render_template
 from jinja2 import DictLoader
 
 from modules.i18n import error_page, language_codes, localized_payload, register_web_i18n
+
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_plain_translation_import_does_not_load_flask():
@@ -32,3 +37,19 @@ def test_web_context_and_error_translation():
     with app.test_request_context():
         assert error_page({'en': 'Failure', 'ja': '失敗'}, 'ja', 403) == ('ja|失敗|ja', 403)
         assert error_page('Failure', 'unknown') == ('ja|Failure|ja', 400)
+
+
+def test_import_token_copy_button_uses_translation_not_dict_method():
+    app = Flask(__name__, template_folder=str(ROOT / "templates"))
+    register_web_i18n(app)
+
+    with app.test_request_context():
+        html = render_template(
+            "success.html",
+            language="zh",
+            mode="import_token",
+            import_token="secret-token",
+        )
+
+    assert '<button type="button" class="copy-btn" id="copy-token-btn">\n        复制 Token\n      </button>' in html
+    assert "built-in method copy" not in html

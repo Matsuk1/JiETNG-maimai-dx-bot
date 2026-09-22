@@ -57,9 +57,9 @@ def action_label(action: dict) -> str:
     return action.get("label") or action_type
 
 
-def draw_preview(setup, lang: str, page: str) -> Path:
+def draw_preview(setup, lang: str, page: str, liff_id: str) -> Path:
     source = setup.image_path(lang, page)
-    payload = setup.menu_payload(lang, page)
+    payload = setup.menu_payload(lang, page, liff_id)
     image = Image.open(source).convert("RGBA")
 
     overlay = Image.new("RGBA", image.size, (0, 0, 0, 0))
@@ -124,9 +124,11 @@ def build_contact_sheet(paths: list[tuple[str, str, Path]]) -> Path:
 
 def main() -> int:
     setup = load_setup_module()
+    config = setup.load_config()
+    liff_id = str((config.get("liff", {}) or {}).get("id", "")).strip() or "preview-liff-id"
     rendered = []
     for lang, page in setup.MENU_KEYS:
-        out = draw_preview(setup, lang, page)
+        out = draw_preview(setup, lang, page, liff_id)
         rendered.append((lang, page, out))
         print(out)
     contact = build_contact_sheet(rendered)

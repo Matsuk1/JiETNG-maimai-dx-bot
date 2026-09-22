@@ -202,13 +202,19 @@ def message_action(label: str, text: str) -> dict:
     return {"type": "message", "label": label, "text": text}
 
 
+def liff_uri_action(label: str, liff_id: str, action: str) -> dict:
+    return {
+        "type": "uri",
+        "label": label,
+        "uri": f"https://liff.line.me/{liff_id}/?action={action}",
+    }
 
 
-def page_actions(lang: str, page: str) -> list[dict]:
+def page_actions(lang: str, page: str, liff_id: str) -> list[dict]:
     t = LABELS[lang]
     if page == "start":
         return [
-            message_action(t["bind"], "bind"),
+            liff_uri_action(t["bind"], liff_id, "bind"),
             message_action(t["help"], "help"),
         ]
     if page == "main":
@@ -231,9 +237,9 @@ def page_actions(lang: str, page: str) -> list[dict]:
             message_action(t["profile"], "profile"),
             message_action(t["status"], "status"),
             message_action(t["export"], "export json"),
-            message_action(t["settings"], "settings"),
-            message_action(t["rebind"], "rebind"),
-            message_action(t["unbind"], "unbind"),
+            liff_uri_action(t["settings"], liff_id, "settings"),
+            liff_uri_action(t["rebind"], liff_id, "rebind"),
+            liff_uri_action(t["unbind"], liff_id, "unbind"),
         ]
     raise ValueError(page)
 
@@ -290,14 +296,14 @@ def request_json(method: str, url: str, token: str, **kwargs) -> dict:
     return resp.json()
 
 
-def menu_payload(lang: str, page: str) -> dict:
+def menu_payload(lang: str, page: str, liff_id: str) -> dict:
     areas = []
     if page in SWITCH_PAGES:
         for box, switch_page in zip(SWITCH_BOXES, SWITCH_PAGES):
             x0, y0, x1, y1 = box
             areas.append({"bounds": {"x": x0, "y": y0, "width": x1 - x0, "height": y1 - y0}, "action": switch_action(lang, switch_page)})
 
-    actions = page_actions(lang, page)
+    actions = page_actions(lang, page, liff_id)
     for box, action in zip(content_boxes(page), actions):
         x0, y0, x1, y1 = box
         areas.append({"bounds": {"x": x0, "y": y0, "width": x1 - x0, "height": y1 - y0}, "action": action})
@@ -430,6 +436,9 @@ def main() -> int:
     os.chdir(ROOT)
     config = load_config()
     token = config.get("line_channel", {}).get("access_token", "")
+    liff_id = str((config.get("liff", {}) or {}).get("id", "")).strip()
+    if not liff_id:
+        raise SystemExit("liff.id is empty in config.json; rich menu account links require LIFF")
     domain = config.get("domain", "").rstrip("/")
     urls = config.get("urls", {})
     support_url = (config.get("rich_menu", {}) or {}).get("support_url") or urls.get("support_page") or f"https://{domain}/"
@@ -437,7 +446,7 @@ def main() -> int:
     images = ensure_images()
     payloads = {}
     for lang, page in MENU_KEYS:
-        payloads.setdefault(lang, {})[page] = menu_payload(lang, page)
+        payloads.setdefault(lang, {})[page] = menu_payload(lang, page, liff_id)
 
     if args.dry_run:
         print(json.dumps(payloads, indent=2, ensure_ascii=False))
