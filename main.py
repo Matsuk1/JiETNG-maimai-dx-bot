@@ -2502,6 +2502,7 @@ def generate_profile(user_info, scale=1, user_id=None):
     default_icon = [
         "https://maimaidx.jp/maimai-mobile/img/Icon/",
         "https://maimaidx.jp/maimai-mobile/img/Icon/c22d52b387e3f829.png",
+        "https://maimaidx.jp/maimai-mobile/img/Icon/80e228baead19c06.png",
         "https://maimaidx-eng.com/maimai-mobile/img/Icon/",
         "https://maimaidx-eng.com/maimai-mobile/img/Icon/c22d52b387e3f829.png"
     ]
