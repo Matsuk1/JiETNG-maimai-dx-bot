@@ -2498,17 +2498,9 @@ async def generate_level_rank_progress(user_id, id_use, level, rank=None, ver="j
 @user_image
 def generate_profile(user_info, scale=1, user_id=None):
     from modules.images.composition import generate_profile_image
-    # icon_url 为默认值时，尝试使用 LINE 头像
-    default_icon = [
-        "https://maimaidx.jp/maimai-mobile/img/Icon/",
-        "https://maimaidx.jp/maimai-mobile/img/Icon/c22d52b387e3f829.png",
-        "https://maimaidx.jp/maimai-mobile/img/Icon/80e228baead19c06.png",
-        "https://maimaidx-eng.com/maimai-mobile/img/Icon/",
-        "https://maimaidx-eng.com/maimai-mobile/img/Icon/c22d52b387e3f829.png"
-    ]
-    icon_url = user_info.get("icon_url", "")
+    icon_url = user_info.get("icon_url") or ""
     rounded_icon = False
-    if icon_url in default_icon and user_id:
+    if user_id and any(name in icon_url for name in ("80e228baead19c06.png", "c22d52b387e3f829.png")):
         try:
             with ApiClient(configuration) as api_client:
                 profile = MessagingApi(api_client).get_profile(user_id)
