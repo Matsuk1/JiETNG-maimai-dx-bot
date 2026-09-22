@@ -5,7 +5,7 @@ description: JiETNG の maimai B50、Best 50、Recent 50、DX Rating、レート
 
 # レコードコマンド
 
-<img src="/b50_example.png" alt="Best 50" style="max-width: 280px; width: 100%; margin: 24px auto;" />
+<img src="/b50_example.jpg" alt="Best 50" style="max-width: 280px; width: 100%; margin: 24px auto;" />
 
 ## B 系スコア画像
 

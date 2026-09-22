@@ -5,7 +5,7 @@ description: JiETNG 舞萌DX 查分器的 B50、Best 50、Recent 50、DX Rating�
 
 # 成绩命令
 
-<img src="/b50_example.png" alt="Best 50" style="max-width: 280px; width: 100%; margin: 24px auto;" />
+<img src="/b50_example.jpg" alt="Best 50" style="max-width: 280px; width: 100%; margin: 24px auto;" />
 
 ## B 系列成绩图
 
