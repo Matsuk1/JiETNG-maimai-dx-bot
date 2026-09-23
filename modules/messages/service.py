@@ -34,7 +34,6 @@ from modules.i18n import (
     select_text,
 )
 from urllib.parse import quote
-from modules.image_button_once import image_button_data
 from modules.config_loader import LINE_ACCOUNT_ID
 from modules.user_db import get_user
 from modules.user_manager import get_user_timezone
@@ -453,7 +452,7 @@ def get_nearby_stores_alt_text(user_id=None):
 
 
 def generate_song_image_message(song_id, image_url, preview_url=None, user_id=None, mode='info'):
-    """Attach localized, single-use song actions to a native image message."""
+    """Attach localized song actions to a native image message."""
     actions = (
         [('view_record_button_text', 'search-record')]
         if mode == 'info' else [('view_info_button_text', 'search-song')]
@@ -464,7 +463,7 @@ def generate_song_image_message(song_id, image_url, preview_url=None, user_id=No
         quick_reply=QuickReply(items=[
             QuickReplyItem(action=PostbackAction(
                 label=get_multilingual_text(_message_texts[label_key], user_id),
-                data=image_button_data(f"{command} {song_id}"),
+                data=f"{command} {song_id}",
             ))
             for label_key, command in actions
         ]),
@@ -1135,7 +1134,7 @@ def _song_row(song, subtitle, command, *, first):
                 {
                     "type": "postback",
                     "label": "→",
-                    "data": image_button_data(command)
+                    "data": command
                 }
             )
         ]

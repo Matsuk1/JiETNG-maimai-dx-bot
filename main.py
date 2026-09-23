@@ -255,7 +255,6 @@ from modules.commands.command_parsers import (
     resolve_progress_category as _resolve_progress_category,
 )
 from modules.dbpool_manager import close_pool
-from modules.image_button_once import PREFIX as IMAGE_BUTTON_PREFIX, consume_image_button
 from modules.images.skins import available_skins, normalize_skin, user_image, user_skin
 from modules.images.composition import compose_generated_images
 
@@ -3537,10 +3536,6 @@ def handle_postback_command(event, text):
     user_id = event.source.user_id
     source_type = getattr(event.source, 'type', 'user')
     cleaned = re.sub(r"\s+", " ", text.strip())
-    if cleaned.startswith(IMAGE_BUTTON_PREFIX):
-        cleaned = consume_image_button(cleaned)
-        if cleaned is None:
-            return True
 
     help_match = re.fullmatch(r"help\s+([A-Za-z0-9_]+)", cleaned, re.IGNORECASE)
     if help_match:
