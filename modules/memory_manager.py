@@ -35,9 +35,7 @@ def get_process_memory_stats():
             complete = False
         try:
             argv = process.cmdline()
-            if any(arg.replace(chr(92), '/').split('/')[-1] == 'table_model.py' for arg in argv):
-                component = 'ocr'
-            elif any('playwright' in arg.lower() for arg in argv[:2]):
+            if any('playwright' in arg.lower() for arg in argv[:2]):
                 component = 'playwright'
             elif argv and any(name in argv[0].lower() for name in ('chrome', 'chromium')):
                 component = 'playwright'
@@ -49,7 +47,6 @@ def get_process_memory_stats():
         key: dict(key=key, name=name, description=description, rss=0, complete=complete)
         for key, name, description in [
             ('service', 'Service', 'Main service including in-process OCR and YOLO; their RSS cannot be separated.'),
-            ('ocr', 'OCR', 'Dedicated table OCR process. Main OCR and YOLO are included in Service.'),
             ('playwright', 'Playwright', 'Playwright driver and all browser processes.'),
             ('other', 'Other', 'Other service subprocesses.'),
         ]

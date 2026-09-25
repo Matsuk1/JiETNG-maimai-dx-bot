@@ -22,7 +22,7 @@ class CropAdapterTests(unittest.TestCase):
             self.assertTrue((Path(directory)/'debug/source/debug_overlay.png').exists())
 
 class OcrAdapterTests(unittest.TestCase):
-    def test_partial_table_fallback_matches_in_debug_and_memory(self):
+    def test_incomplete_full_table_ocr_retries_only_missing_rows(self):
         from modules.score_recognition import ocr
         from unittest.mock import Mock
         image=Image.new('RGB',(300,100),'blue')
@@ -30,12 +30,12 @@ class OcrAdapterTests(unittest.TestCase):
         metadata={'screen':dict(left=0,top=0,right=300,bottom=100),'fields':{
             'main_title':dict(image=image,left=0,top=0,right=300,bottom=20),
             'sub_judgement_table':dict(image=image,left=0,top=20,right=300,bottom=100,layout_hint='dxnet')}}
-        def partial(image,partial_out):
-            partial_out['tap']=dict(row)
-            return None
         engine=Mock()
         engine.read.return_value=[{'text':'Test song','score':0.99}]
-        with tempfile.TemporaryDirectory() as directory, patch.object(ocr,'crop_result_fields_in_memory',return_value=metadata), patch.object(ocr,'recognize_judgement_with_table_model',side_effect=partial), patch.object(ocr,'recognize_judgement_by_columns',return_value={name:dict(row) for name in ('hold','slide','touch','break')}) as fallback:
+        def recognize_full_table(*args, **kwargs):
+            kwargs['confidence_out']['tap'] = dict.fromkeys(ocr.JUDGEMENT_VALUE_NAMES, 0.99)
+            return {'tap': dict(row)}
+        with tempfile.TemporaryDirectory() as directory, patch.object(ocr,'crop_result_fields_in_memory',return_value=metadata), patch.object(ocr,'recognize_judgement_from_table',side_effect=recognize_full_table), patch.object(ocr,'recognize_judgement_by_columns',return_value={name:dict(row) for name in ('hold','slide','touch','break')}) as fallback:
             path=Path(directory)/'source.png'; image.save(path)
             memory=ocr.process_image_data(image,ocr.OCR_FIELDS,engine)
             debug=ocr.process_image(path,Path(directory)/'debug',ocr.OCR_FIELDS,engine)
@@ -45,6 +45,62 @@ class OcrAdapterTests(unittest.TestCase):
                 self.assertEqual(call.kwargs['target_rows'],('hold','slide','touch','break'))
             self.assertTrue(Path(debug['ocr_fields']['main_title']['prepared']).exists())
             self.assertTrue(Path(debug['ocr_fields']['sub_judgement_table']['crop']).exists())
+
+    def test_full_table_ocr_maps_boxes_to_known_grid(self):
+        from unittest.mock import Mock
+        from modules.score_recognition import ocr
+
+        engine = Mock()
+        engine.read.return_value = [
+            {'text': '123', 'score': 0.98, 'box': [600, 750, 900, 870]},
+            {'text': '4', 'score': 0.97, 'box': [1140, 750, 1350, 870]},
+            {'text': '9', 'score': 0.40, 'box': [1140, 750, 1350, 870]},
+            {'text': '2', 'score': 0.96, 'box': [2460, 2700, 2700, 2820]},
+            {'text': 'TAP', 'score': 0.99, 'box': [0, 750, 300, 870]},
+        ]
+        confidences = {}
+        result = ocr.recognize_judgement_from_table(
+            Image.new('RGB', (1000, 1000), 'white'),
+            engine,
+            layout_hint='dxnet',
+            confidence_out=confidences,
+        )
+        self.assertEqual(result, {
+            'tap': {'critical_perfect': 123, 'perfect': 4},
+            'break': {'miss': 2},
+        })
+        self.assertEqual(confidences['tap']['perfect'], 0.97)
+
+    def test_complete_full_table_ocr_skips_column_and_cell_retry(self):
+        from unittest.mock import Mock
+        from modules.score_recognition import ocr
+
+        image = Image.new('RGB', (300, 100), 'blue')
+        row = dict(critical_perfect=1, perfect=0, great=0, good=0, miss=0)
+        metadata = {'screen': dict(left=0, top=0, right=300, bottom=100), 'fields': {
+            'sub_judgement_table': dict(image=image, layout_hint='dxnet'),
+        }}
+        engine = Mock()
+        full_table = {name: dict(row) for name in ocr.JUDGEMENT_ROW_NAMES}
+        def recognize_full_table(*args, **kwargs):
+            kwargs['confidence_out'].update({
+                name: dict.fromkeys(ocr.JUDGEMENT_VALUE_NAMES, 0.99)
+                for name in ocr.JUDGEMENT_ROW_NAMES
+            })
+            return full_table
+        with patch.object(ocr, 'crop_result_fields_in_memory', return_value=metadata), \
+             patch.object(ocr, 'recognize_judgement_from_table', side_effect=recognize_full_table), \
+             patch.object(ocr, 'recognize_judgement_by_columns') as retry:
+            result = ocr.process_image_data(
+                image,
+                ('sub_judgement_table',),
+                engine,
+            )
+        retry.assert_not_called()
+        self.assertEqual(
+            result['parsed']['sub_judgement'],
+            full_table,
+        )
 
 class EngineFailureTests(unittest.TestCase):
     def test_detector_limit_preserves_recognition_input_and_coordinates(self):
@@ -138,44 +194,3 @@ assert os.environ['PADDLE_PDX_ENABLE_MKLDNN_BYDEFAULT'] == '1'
             self.assertEqual(recognize.call_args.kwargs, {'fields': ocr.OCR_FIELDS})
             self.assertEqual(validate.call_args.kwargs, {'ver': 'jp'})
             self.assertEqual(len(json.loads(output.read_text())), 2)
-
-class TableWorkerLifetimeTests(unittest.TestCase):
-    def test_reuse_and_memory_protection_preserve_results(self):
-        import json
-        from contextlib import ExitStack
-        from types import SimpleNamespace
-        from unittest.mock import Mock
-        from modules.score_recognition import ocr
-
-        for rss, available, count, should_stop in (
-            (2172, 1024, 0, False),  # Normal measured production footprint.
-            (2600, 1024, 0, True),  # Worker exceeds its own limit.
-            (2172, 400, 0, True),   # Host needs memory even below worker limit.
-            (2172, 1024, 49, True), # Periodic recycling remains in place.
-        ):
-            with self.subTest(rss=rss, available=available, count=count), ExitStack() as stack:
-                worker = Mock(pid=123)
-                worker.poll.return_value = None
-                result = {name: {'critical_perfect': 1} for name in ocr.JUDGEMENT_ROW_NAMES}
-                stack.enter_context(patch.object(ocr, '_TABLE_MODEL_PROCESS', worker))
-                stack.enter_context(patch.object(ocr, '_TABLE_MODEL_REQUEST_COUNT', count))
-                stack.enter_context(patch.object(ocr, 'TABLE_MODEL_MAX_RSS_MB', 2560))
-                stack.enter_context(patch.object(ocr, 'TABLE_MODEL_MIN_AVAILABLE_MB', 512))
-                stack.enter_context(patch.object(ocr, 'TABLE_MODEL_MAX_REQUESTS', 50))
-                stack.enter_context(patch.object(ocr, '_start_table_model_process', return_value=worker))
-                stop = stack.enter_context(patch.object(ocr, '_stop_table_model_process'))
-                stack.enter_context(patch.object(ocr.psutil, 'Process', return_value=Mock(
-                    memory_info=Mock(return_value=SimpleNamespace(rss=rss * 1024**2)))))
-                stack.enter_context(patch.object(ocr.psutil, 'virtual_memory', return_value=SimpleNamespace(
-                    available=available * 1024**2)))
-                def response(*args):
-                    request = json.loads(worker.stdin.write.call_args.args[0])
-                    return ocr.TABLE_MODEL_RESULT_MARKER + json.dumps({'id': request['id'], 'result': result})
-                stack.enter_context(patch.object(ocr, '_read_table_model_line', side_effect=response))
-                image = Image.new('RGB', (10, 10))
-                self.assertEqual(ocr.recognize_judgement_with_table_model(image), result)
-                self.assertEqual(stop.called, should_stop)
-                if not should_stop:
-                    self.assertEqual(ocr.recognize_judgement_with_table_model(image), result)
-                    self.assertEqual(ocr._TABLE_MODEL_REQUEST_COUNT, 2)
-                    stop.assert_not_called()

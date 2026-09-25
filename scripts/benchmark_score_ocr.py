@@ -77,11 +77,10 @@ def main():
         for threads in (4, 8):
             name = f"onednn-{enabled}-threads-{threads}"
             env = os.environ.copy()
-            for key in ("JIETNG_OCR_CPU_THREADS", "JIETNG_TABLE_OCR_CPU_THREADS",
-                        "PADDLE_PDX_CPU_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
+            for key in ("JIETNG_OCR_CPU_THREADS", "PADDLE_PDX_CPU_NUM_THREADS",
+                        "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
                 env[key] = str(threads)
-            for key in ("JIETNG_OCR_ENABLE_MKLDNN", "JIETNG_TABLE_OCR_ENABLE_MKLDNN"):
-                env[key] = str(enabled)
+            env["JIETNG_OCR_ENABLE_MKLDNN"] = str(enabled)
             command = [sys.executable, str(Path(__file__).resolve()), "--worker",
                        "--runs", str(args.runs), "--version", args.version,
                        "--output", str((args.output / f"{name}.json").resolve()),
@@ -89,7 +88,7 @@ def main():
             # Remove old results so a startup failure cannot reuse stale measurements.
             (args.output / f"{name}.json").unlink(missing_ok=True)
             print(f"Running {name}", flush=True)
-            # Separate process groups let a timeout stop Paddle table workers too.
+            # Separate process groups make timed-out benchmark workers easy to stop.
             with (args.output / f"{name}.log").open("w") as log:
                 process = subprocess.Popen(command, env=env, stdout=log, stderr=log,
                                            start_new_session=True)

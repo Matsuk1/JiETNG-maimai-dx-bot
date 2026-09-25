@@ -21,7 +21,7 @@
 - `recognizer.py`：识别入口和 OCR 引擎生命周期。判定验证分为候选谱面枚举、单次行列对齐校验、超额判定修复和结果应用；修复仅修改候选副本。
 - `presentation.py`：API 返回值和 Flex 展示数据转换；不加载配置或启动 OCR。
 - `results.py`：结果变体和图片错误类型；不依赖模型初始化。
-- `ocr.py`、`cropper.py`、`table_model.py`：OCR、图片裁切和表格模型。
+- `ocr.py`、`cropper.py`：OCR、图片裁切和判定表网格定位。判定表先整表识别，再仅对缺失行执行分列/单元格重试，不加载独立表格结构模型。
 
 HTTP 路由仍在 `api/score_api.py`。通用评分规则和计算继续由 `score_rules.py`、`score_calculator.py` 负责。
 
@@ -53,8 +53,6 @@ HTTP 路由仍在 `api/score_api.py`。通用评分规则和计算继续由 `sco
 
 `JIETNG_OCR_ENABLE_MKLDNN=1` enables oneDNN (default: disabled).
 `JIETNG_OCR_CPU_THREADS` controls main OCR threads (default: 4).
-The table worker inherits both settings unless overridden by
-`JIETNG_TABLE_OCR_ENABLE_MKLDNN` / `JIETNG_TABLE_OCR_CPU_THREADS`.
 Restart the service after changing these environment variables.
 
 On the server, run a representative set of local photos through all four
@@ -66,52 +64,38 @@ python3 scripts/benchmark_score_ocr.py /path/to/photo1.jpg /path/to/photo2.jpg -
 
 This uses production OCR and local validation, never Codex. Each configuration
 has a fresh process; later iterations show warm performance unless production
-memory/request limits reset the engine. Logs include worker startup, field
-recognition and reset events. JSON includes parsed results, validation, elapsed
-time and post-request parent/child RSS (not peak memory). Compare accuracy as
-well as latency; a faster failed recognition is not a successful optimization.
-Run during a quiet period: this loads additional models alongside the service.
-Production reset thresholds and model choices are unchanged.
-
-The table worker is retained between requests while its RSS is below
-`JIETNG_TABLE_OCR_MAX_RSS_MB` (default 2560 MiB). The previous 1536 MiB limit
-was below the measured normal footprint and caused repeated cold starts.
-It is recycled after 50 requests (`JIETNG_TABLE_OCR_MAX_REQUESTS`) or when
-host available memory falls below 512 MiB (`JIETNG_TABLE_OCR_MIN_AVAILABLE_MB`).
-Memory checks happen after inference; these are recycling policies, not hard
-peak-memory limits. Explicit environment settings override the defaults.
-Keep oneDNN disabled on the tested server: its table pipeline failed with
-`ReduceMeanCheckIfOneDNNSupport`. Confirm `reused=True` and near-zero startup
-in subsequent table request logs after deploying this change.
+memory/request limits reset the engine. JSON includes parsed results,
+validation, elapsed time and post-request parent/child RSS (not peak memory).
+Compare accuracy as well as latency; a faster failed recognition is not a
+successful optimization. Run during a quiet period: this loads another OCR
+engine alongside the service.
 
 
 ## 空闲内存回收
 
-服务启动时预热主 OCR、表格 OCR、两套 YOLO 和 Playwright。YOLO 执行一次空白图片推理，Playwright 在自己的渲染线程执行一次微型截图，使模型预测器、浏览器和页面在接收业务任务前就绪。
+服务启动时预热主 OCR、两套 YOLO 和 Playwright。YOLO 执行一次空白图片推理，Playwright 在自己的渲染线程执行一次微型截图，使模型预测器、浏览器和页面在接收业务任务前就绪。
 
 以下组件默认空闲 300 秒后回收，并立即重建已加载的组件，无需等待下一次请求。重建完成后重新计时；启动失败、未加载的组件由后续请求按需重试。设置对应环境变量为 `0` 可关闭空闲回收；修改后重启服务生效。
 
 | 环境变量 | 回收内容 |
 | --- | --- |
-| `JIETNG_TABLE_OCR_IDLE_SECONDS` | 终止并等待独立表格 OCR 子进程退出、关闭通信管道，立即启动新模型进程 |
 | `JIETNG_OCR_IDLE_SECONDS` | 释放主 OCR 引擎引用、执行垃圾回收并立即重建 |
 | `JIETNG_CROPPER_IDLE_SECONDS` | 释放已加载的 YOLO 裁切模型引用、执行垃圾回收并立即重新加载，包含裁切预览使用的模型 |
 | `JIETNG_RENDERER_IDLE_SECONDS` | 在渲染线程内关闭 Chromium 和 Playwright、清空 Base64 素材缓存并立即重建浏览器与页面 |
 
 OCR/YOLO 由现有 120 秒周期清理触发，因此通常在空闲 300–420 秒后回收；模型锁被占用时跳过。Playwright 在渲染队列等待超时后自行回收，正在执行的渲染不会中断。识别或渲染失败也会更新空闲计时。渲染线程等待期间不保留上一次任务的 HTML 和截图 Future。
 
-表格 OCR 的现有 RSS、请求次数及系统可用内存保护仍然生效。主 OCR/YOLO 的 Python 引用释放不保证底层推理库立即归还全部 RSS；独立 OCR 与浏览器进程退出会释放其进程资源。重建期间到达的请求会等待对应组件锁或渲染队列；重建失败会记录日志，并由后续请求重试。重建会恢复模型和浏览器的基础内存占用。
+主 OCR/YOLO 的 Python 引用释放不保证底层推理库立即归还全部 RSS；浏览器进程退出会释放其进程资源。重建期间到达的请求会等待对应组件锁或渲染队列；重建失败会记录日志，并由后续请求重试。重建会恢复模型和浏览器的基础内存占用。
 
 ## OCR 检测尺寸与日志
 
 文字检测默认将长边限制为 1280 像素，避免判定表先放大 3 倍、列图再放大 5 倍后，以最高 4000 像素运行检测。PaddleOCR 仍使用传入的原图裁出文字供识别，坐标也返回原图坐标。
 
-可在服务环境中设置 `JIETNG_OCR_DET_MAX_SIDE`（整数，至少 32），重启服务生效。默认 `1280`；如特定图片出现漏检，可设为 `4000` 对比。这个选项控制普通文字和列补识别的检测器，不修改独立表格模型。
+可在服务环境中设置 `JIETNG_OCR_DET_MAX_SIDE`（整数，至少 32），重启服务生效。默认 `1280`；如特定图片出现漏检，可设为 `4000` 对比。这个选项控制普通文字、整表和列补识别的检测器。
 
 常规 INFO 日志包含：
 
 - `Score OCR timing`：裁切、曲名、达成率、判定表分别耗时。判定表耗时包括必要的列/单元格补识别，不含请求排队、模型首次加载和后续成绩校验。
-- `Table OCR request`：是否复用表格模型、加载和推理耗时、内存、完整/部分结果模式。
 - `OCR lock wait`：等待共享 OCR 锁超过 1 秒时记录，区分排队与计算。
 
 比较优化前后时，使用相同图片、相同服务器配置，先预热模型，再串行重复请求。比较判定数字和最终成绩校验结果，不能只看耗时。不要并行运行两组模型基准，以免 CPU 和内存争用干扰结果。

@@ -7,53 +7,6 @@ from queue import Empty
 from unittest.mock import Mock, patch
 
 
-class TableIdleTests(unittest.TestCase):
-    def test_idle_threshold_disabled_and_busy_worker(self):
-        from modules.score_recognition import ocr
-        with ExitStack() as stack:
-            stack.enter_context(patch.object(ocr, '_TABLE_MODEL_PROCESS', Mock()))
-            stack.enter_context(patch.object(ocr, '_TABLE_MODEL_LAST_USED', 100))
-            stack.enter_context(patch.object(ocr, 'TABLE_MODEL_IDLE_SECONDS', 300))
-            clock = stack.enter_context(patch.object(ocr.time, 'monotonic', return_value=399))
-            stop = stack.enter_context(patch.object(ocr, '_stop_table_model_process'))
-            start = stack.enter_context(patch.object(ocr, '_start_table_model_process'))
-            self.assertFalse(ocr.cleanup_table_model_memory())
-            clock.return_value = 400
-            with ocr._TABLE_MODEL_LOCK:
-                self.assertFalse(ocr.cleanup_table_model_memory())
-            self.assertTrue(ocr.cleanup_table_model_memory())
-            stop.assert_called_once()
-            start.assert_called_once()
-            self.assertEqual(ocr._TABLE_MODEL_LAST_USED, 400)
-            self.assertFalse(ocr.cleanup_table_model_memory())
-            with patch.object(ocr, 'TABLE_MODEL_IDLE_SECONDS', 0):
-                self.assertFalse(ocr.cleanup_table_model_memory())
-
-    def test_stop_reaps_worker_and_closes_pipes(self):
-        import subprocess
-        from modules.score_recognition import ocr
-        worker = Mock()
-        worker.poll.return_value = None
-        worker.wait.side_effect = [subprocess.TimeoutExpired('worker', 5), 0]
-        with patch.object(ocr, '_TABLE_MODEL_PROCESS', worker), \
-             patch.object(ocr, '_TABLE_MODEL_REQUEST_COUNT', 10):
-            ocr._stop_table_model_process()
-            self.assertIsNone(ocr._TABLE_MODEL_PROCESS)
-            self.assertEqual(ocr._TABLE_MODEL_REQUEST_COUNT, 0)
-        worker.terminate.assert_called_once()
-        worker.kill.assert_called_once()
-        worker.stdin.close.assert_called_once()
-        worker.stdout.close.assert_called_once()
-
-    def test_warmup_updates_idle_deadline(self):
-        from modules.score_recognition import ocr
-        with patch.object(ocr, '_start_table_model_process'), \
-             patch.object(ocr, '_TABLE_MODEL_LAST_USED', 0), \
-             patch.object(ocr.time, 'monotonic', return_value=123):
-            ocr.warm_table_model()
-            self.assertEqual(ocr._TABLE_MODEL_LAST_USED, 123)
-
-
 class ModelIdleTests(unittest.TestCase):
     def test_yolo_idle_release_and_busy_protection(self):
         from modules.score_recognition import cropper
@@ -173,21 +126,6 @@ class StartupWarmupTests(unittest.TestCase):
             render.assert_called_once_with('', 1, 1)
             close.assert_called_once()
 
-    def test_table_rebuild_failure_releases_failed_worker(self):
-        from modules.score_recognition import ocr
-        with patch.object(ocr, '_TABLE_MODEL_PROCESS', Mock()), \
-             patch.object(ocr, '_TABLE_MODEL_LAST_USED', 0), \
-             patch.object(ocr, 'TABLE_MODEL_IDLE_SECONDS', 300), \
-             patch.object(ocr.time, 'monotonic', return_value=400), \
-             patch.object(ocr, '_stop_table_model_process') as stop, \
-             patch.object(ocr, '_start_table_model_process', side_effect=RuntimeError('startup failed')):
-            self.assertTrue(ocr.cleanup_table_model_memory())
-            self.assertEqual(stop.call_count, 2)
-            self.assertEqual(ocr._TABLE_MODEL_LAST_USED, 400)
-            self.assertTrue(ocr._TABLE_MODEL_LOCK.acquire(blocking=False))
-            ocr._TABLE_MODEL_LOCK.release()
-
-
 class ProcessMemoryTests(unittest.TestCase):
     def test_one_full_collection_and_cache_callbacks(self):
         from modules.memory_manager import MemoryManager
@@ -214,12 +152,12 @@ class ProcessMemoryTests(unittest.TestCase):
         root = process(1, 0, 100, ['python', 'main.py'])
         driver = process(2, 1, 20, ['/app/playwright/node'])
         browser = process(3, 2, 30, ['utility'])
-        ocr = process(4, 1, 200, ['python', '/app/table_model.py'])
-        root.children.return_value = [browser, ocr, driver]
+        worker = process(4, 1, 200, ['python', '/app/worker.py'])
+        root.children.return_value = [browser, worker, driver]
         with patch('modules.memory_manager.psutil.Process', return_value=root):
             stats = get_process_memory_stats()
         groups = {row['key']: row for row in stats['memory_components']}
         self.assertEqual(groups['playwright']['memory_mb'], 50)
-        self.assertEqual(groups['ocr']['memory_mb'], 200)
+        self.assertEqual(groups['other']['memory_mb'], 200)
         self.assertEqual(stats['process_memory_mb'], 100)
         self.assertEqual(stats['process_tree_memory_mb'], 350)

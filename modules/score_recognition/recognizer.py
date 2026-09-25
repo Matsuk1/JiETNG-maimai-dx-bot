@@ -1835,7 +1835,6 @@ def cleanup_score_recognizer_memory() -> bool:
     """Recycle only loaded components; never import models just to clean up."""
     cleaned = False
     for module_name, callback in (
-        ('modules.score_recognition.ocr', 'cleanup_table_model_memory'),
         ('modules.score_recognition.cropper', 'cleanup_cropper_memory'),
     ):
         module = sys.modules.get(module_name)
@@ -1863,15 +1862,6 @@ def cleanup_score_recognizer_memory() -> bool:
 
 def initialize_score_recognizer() -> None:
     _engine()
-    try:
-        from modules.score_recognition.ocr import warm_table_model
-
-        warm_table_model()
-    except Exception as exc:
-        logger.warning(
-            "[Recognize] Table OCR warmup failed; column OCR fallback remains available: %s",
-            exc,
-        )
 
 
 def build_score_crop_preview_image(image_bytes: bytes, *, skin=None, ver="jp", timezone_offset=9, bg_filter=None) -> Image.Image:
