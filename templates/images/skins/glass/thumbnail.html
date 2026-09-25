@@ -31,9 +31,7 @@
       top: 12px;
       width: 73px;
       height: 73px;
-      /* Keep the artwork flush with its box. A rounded transparent clip lets
-         the white glass card show through as four white cover corners. */
-      border-radius: 0;
+      border-radius: 15px;
       overflow: hidden;
       box-shadow: 0 4px 10px #28345c20;
     }
@@ -41,24 +39,6 @@
     .glass-card-cover-content {
       transform: scale(.486667);
       transform-origin: top left;
-    }
-
-    /* Covers inside score cards use only the card's outer difficulty frame. */
-    .glass-card-cover .glass-cover {
-      border: 0;
-      border-radius: 0;
-      box-shadow: none;
-    }
-
-    .glass-card-cover .glass-cover .glass-cover-art {
-      width: 150px;
-      height: 150px;
-      border-radius: 0;
-    }
-
-    .glass-card-cover .glass-cover .glass-cover-type {
-      top: 128px;
-      right: 3px;
     }
 
     .glass-card-info {

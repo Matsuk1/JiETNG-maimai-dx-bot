@@ -50,8 +50,10 @@ class ImageDataTests(unittest.TestCase):
         record = dict(name='<img src=x>', version='test', score='100.0000%', dx_score='1500',
                       difficulty='master', internalLevelValue=14.1, ra=315,
                       combo_icon='fcp', sync_icon='fdx', dx_star='5')
-        with patch('modules.images.records.icon_uri', side_effect=lambda v,*_: 'data:' + v), patch('modules.images.records.cover_html', return_value=''):
+        with patch('modules.images.records.icon_uri', side_effect=lambda v,*_: 'data:' + v), \
+             patch('modules.images.records.cover_html', return_value='') as cover:
             html = thumbnail_html(record)
+        self.assertEqual(cover.call_args.kwargs['skin'], 'default')
         self.assertIn('data:fcp', html)
         self.assertIn('data:fdx', html)
         self.assertIn('&lt;img src=x&gt;', html)

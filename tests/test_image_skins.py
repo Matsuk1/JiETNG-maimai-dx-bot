@@ -41,10 +41,13 @@ def test_glass_thumbnail_cover_does_not_expose_white_card_corners():
     html = template('thumbnail.html', skin='glass', song={
         'name': 'Sample', 'score': '100.0000%', 'dx_score': '1000 / 1000',
         'difficulty': 'master', 'internalLevelValue': 14.0, 'ra': 300,
-    }, inline=False, icons={}, cover='<div class="glass-cover"></div>',
+    }, inline=False, icons={}, cover='<div class="plain-cover"></div>',
                     color='#9f51dc', text_color='white', version='Sample')
     assert '.glass-card-cover {' in html
-    assert 'border-radius: 0;' in html
+    assert 'border-radius: 15px;' in html
+    assert 'class="glass-card-cover-content"' in html
+    assert 'class="plain-cover"' in html
+    assert 'class="glass-cover"' not in html
 
 
 def test_nested_skin_scope_is_isolated_and_restored_on_error():

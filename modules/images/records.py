@@ -532,7 +532,10 @@ def thumbnail_html(song, inline=False, skin=None, language="ja"):
         if key == 'sync_icon' and value == 'back' and not inline:
             directory = ICON_COMBO_DIR
         icons[key] = icon_uri(value, directory, f'https://maimaidx.jp/maimai-mobile/img/{name(str(value))}.png') if value else ''
-    cover = '' if inline else cover_html(song.get('cover_url'), song.get('type'), cover_name=song.get('cover_name'), skin=skin)
+    # Thumbnail owns the rounded crop. Use the plain generated cover so its
+    # artwork and built-in type badge fill that crop without a second glass frame.
+    cover = '' if inline else cover_html(song.get('cover_url'), song.get('type'),
+                                         cover_name=song.get('cover_name'), skin='default')
     return template('thumbnail.html', skin=skin, song=song, inline=inline, icons=icons, cover=cover,
                     play_count_label=_image_text('records.play_count', language),
                     color=difficulty_color(song.get('difficulty')),
