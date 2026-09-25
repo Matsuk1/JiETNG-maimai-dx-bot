@@ -69,7 +69,25 @@ class TaskTests(unittest.TestCase):
         semaphore.release()
         self.assertEqual(len(completed), 1)
         self.assertEqual(len(errors), 1)
+        self.assertIsInstance(errors[0][1], TimeoutError)
+        self.assertIn("Stack snapshot at timeout", errors[0][3])
+        self.assertIn("blocking", errors[0][3])
         self.assertEqual(self.run_task(lambda: None, semaphore, timeout=1).status, "completed")
+
+    def test_capacity_timeout_explains_that_task_did_not_start(self):
+        semaphore = threading.Semaphore(0)
+        errors = []
+
+        result = self.run_task(
+            lambda: None,
+            semaphore,
+            timeout=0.01,
+            on_error=lambda *args: errors.append(args),
+        )
+
+        self.assertEqual(result.status, "timed_out")
+        self.assertEqual(len(errors), 1)
+        self.assertIn("did not start", errors[0][3])
 
     def test_failure_releases_capacity_and_reports_once(self):
         semaphore = threading.Semaphore(1)

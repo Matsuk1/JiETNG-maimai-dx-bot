@@ -2,6 +2,7 @@
 
 import logging
 import queue
+import sys
 import threading
 import time
 import traceback
@@ -17,6 +18,20 @@ user_request_tracking = {}
 user_request_lock = threading.Lock()
 REQUEST_LIMIT_WINDOW = 20
 MAX_SAME_REQUESTS = 4
+
+
+def _format_thread_stack(thread: threading.Thread | None) -> str:
+    """Capture where a still-running task was blocked when it timed out."""
+    if thread is None or thread.ident is None:
+        return "Task timed out before its execution thread could be inspected."
+    frame = sys._current_frames().get(thread.ident)
+    if frame is None:
+        return "Task execution thread exited before its stack could be inspected."
+    return (
+        "Task timed out while its execution thread was still running.\n"
+        "Stack snapshot at timeout (most recent call last):\n"
+        + "".join(traceback.format_stack(frame))
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -126,6 +141,7 @@ def execute_task(
     deadline = started + max(0, timeout)
     errors = []
     done = threading.Event()
+    thread = None
 
     def target():
         try:
@@ -157,6 +173,13 @@ def execute_task(
         status = "timed_out"
         phase = "execution" if acquired else "capacity wait"
         error = TimeoutError(f"Task {phase} exceeded {timeout}s")
+        if acquired:
+            error_traceback = _format_thread_stack(thread)
+        else:
+            error_traceback = (
+                "Task timed out waiting for worker capacity; its function did not start.\n"
+                "Another task is still holding this queue's concurrency slot."
+            )
         logger.warning("[Task] %s: function=%s", error, func.__name__)
     elif errors:
         status = "failed"
