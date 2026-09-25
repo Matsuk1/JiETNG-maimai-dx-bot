@@ -16,6 +16,10 @@ logger = logging.getLogger(__name__)
 MAIMAI_LOGIN_TIMEOUT_SECONDS = 10
 
 
+class MaimaiServiceTimeout(TimeoutError):
+    """The official maimai service did not finish within our request budget."""
+
+
 def limit_maimai_operation_duration(operation):
     def decorator(func):
         @wraps(func)
@@ -26,7 +30,7 @@ def limit_maimai_operation_duration(operation):
                     timeout=MAIMAI_LOGIN_TIMEOUT_SECONDS,
                 )
             except asyncio.TimeoutError as exc:
-                raise TimeoutError(
+                raise MaimaiServiceTimeout(
                     f"Maimai {operation} exceeded {MAIMAI_LOGIN_TIMEOUT_SECONDS}s"
                 ) from exc
 

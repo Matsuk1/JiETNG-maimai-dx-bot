@@ -102,6 +102,60 @@ class TaskTests(unittest.TestCase):
         self.assertTrue(semaphore.acquire(blocking=False))
 
 
+def test_maimai_service_timeout_uses_query_failure_without_admin_notification():
+    import ast
+    from pathlib import Path
+
+    from modules.maimai_manager import MaimaiServiceTimeout
+
+    source = Path(__file__).resolve().parents[1] / "main.py"
+    handler_node = next(
+        node for node in ast.parse(source.read_text()).body
+        if isinstance(node, ast.FunctionDef) and node.name == "_handle_task_error"
+    )
+    notifications = []
+    replies = []
+    namespace = {
+        "MaimaiServiceTimeout": MaimaiServiceTimeout,
+        "notify_admins_error": lambda **kwargs: notifications.append(kwargs),
+        "generate_status_flex": lambda *args, **kwargs: (args, kwargs),
+        "language_catalog": lambda key: key,
+        "system_error": lambda user_id: ("system_error", user_id),
+        "smart_reply": lambda *args, **kwargs: replies.append((args, kwargs)),
+        "configuration": object(),
+        "logger": SimpleNamespace(warning=lambda *args, **kwargs: None),
+    }
+    exec(compile(ast.Module(body=[handler_node], type_ignores=[]), str(source), "exec"), namespace)
+
+    context = SimpleNamespace(user_id="U-test", reply_token="reply", source_type="user")
+    namespace["_handle_task_error"](
+        lambda: None,
+        MaimaiServiceTimeout("Maimai login and score fetch operation exceeded 10s"),
+        context,
+        "traceback",
+    )
+
+    assert notifications == []
+    assert len(replies) == 1
+    message = replies[0][0][2]
+    assert message[0][:2] == (
+        "main.query_failed_title",
+        "main.maimai_service_busy_body",
+    )
+    assert message[1]["tone"] == "danger"
+    assert replies[0][1]["addition"] is False
+
+    replies.clear()
+    namespace["_handle_task_error"](
+        lambda: None,
+        RuntimeError("real application failure"),
+        context,
+        "traceback",
+    )
+    assert len(notifications) == 1
+    assert replies[0][0][2] == ("system_error", "U-test")
+
+
 class ResponseTests(unittest.TestCase):
     def test_rejects_failed_or_incomplete_validation(self):
         for key in ("consistent", "complete"):

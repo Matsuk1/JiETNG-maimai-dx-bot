@@ -113,6 +113,7 @@ from modules.maimai_manager import (
     get_single_record,
     limit_maimai_operation_duration,
     login_to_maimai,
+    MaimaiServiceTimeout,
     parse_level_value,
 )
 from modules.score_calculator import get_note_score
@@ -423,19 +424,32 @@ webtask_concurrency_limit = threading.Semaphore(WEB_MAX_CONCURRENT_TASKS)
 
 
 def _handle_task_error(func, error, context, traceback_text):
-    notify_admins_error(
-        error_title=f"Task Execution Failed: {func.__name__}",
-        error_details=f"{type(error).__name__}: {error}\n\n{traceback_text}",
-        context={"Task": func.__name__, "Error Type": type(error).__name__},
-        user_id=context.user_id,
-    )
+    is_maimai_service_timeout = isinstance(error, MaimaiServiceTimeout)
+    if not is_maimai_service_timeout:
+        notify_admins_error(
+            error_title=f"Task Execution Failed: {func.__name__}",
+            error_details=f"{type(error).__name__}: {error}\n\n{traceback_text}",
+            context={"Task": func.__name__, "Error Type": type(error).__name__},
+            user_id=context.user_id,
+        )
     if context.user_id and context.reply_token:
         try:
+            reply = (
+                generate_status_flex(
+                    language_catalog("main.query_failed_title"),
+                    language_catalog("main.maimai_service_busy_body"),
+                    context.user_id,
+                    tone="danger",
+                )
+                if is_maimai_service_timeout
+                else system_error(context.user_id)
+            )
             smart_reply(
                 context.user_id,
                 context.reply_token,
-                system_error(context.user_id),
+                reply,
                 configuration,
+                addition=False,
                 source_type=context.source_type,
             )
         except Exception as exc:

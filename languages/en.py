@@ -207,9 +207,11 @@ TEXTS["main"] = {'account_already_bound': 'A SEGA account is already linked. To 
  'invalid_constant': 'Invalid constant. Please enter a value between 1.0 and 15.0.',
  'invalid_credentials': 'Invalid SEGA ID or password. Please check and try again.',
  'maintenance': 'The official website is under maintenance. Please try again later.',
+ 'maimai_service_busy_body': 'The official maimai service is responding slowly or has rate-limited access. Please try again later.',
  'no_linked_account': 'No account is linked.',
  'not_linked_title': 'Not Linked',
  'private_chat_title': 'Use Private Chat',
+ 'query_failed_title': 'Query Failed',
  'recognition_failed_body': 'This score image could not be read. Check that the result screen is '
                             'fully visible and try again.',
  'recognition_failed_title': 'Recognition Failed',

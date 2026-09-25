@@ -128,7 +128,7 @@ def test_login_operations_have_ten_second_total_timeout(monkeypatch, entrypoint)
     sessions = install_sessions(monkeypatch, [HangingResponse()])
     monkeypatch.setattr(maimai, 'MAIMAI_LOGIN_TIMEOUT_SECONDS', 0.01)
 
-    with pytest.raises(TimeoutError, match=r'Maimai login operation exceeded 0\.01s'):
+    with pytest.raises(maimai.MaimaiServiceTimeout, match=r'Maimai login operation exceeded 0\.01s'):
         asyncio.run(entrypoint('test-id', 'test-password'))
 
     assert len(sessions) == 1
