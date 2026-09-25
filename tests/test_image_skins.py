@@ -44,7 +44,7 @@ def test_glass_thumbnail_cover_does_not_expose_white_card_corners():
     }, inline=False, icons={}, cover='<div class="plain-cover"></div>',
                     color='#9f51dc', text_color='white', version='Sample')
     assert '.glass-card-cover {' in html
-    assert 'border-radius: 12px;' in html
+    assert 'border-radius: 8px;' in html
     assert 'class="glass-card-cover-content"' in html
     assert 'class="plain-cover"' in html
     assert 'class="glass-cover"' not in html
