@@ -111,6 +111,7 @@ from modules.maimai_manager import (
     get_rating_image_path,
     get_recent_records,
     get_single_record,
+    limit_maimai_operation_duration,
     login_to_maimai,
     parse_level_value,
 )
@@ -1776,6 +1777,7 @@ def async_admin_maimai_update_task(event):
 
 # ==================== 主程序入口 ====================
 
+@limit_maimai_operation_duration("login and score fetch operation")
 async def _sync_maimai_user_data(user_id, ver="jp"):
     start_time = time.time()
     func_status = {

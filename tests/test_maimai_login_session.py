@@ -26,6 +26,11 @@ class Response:
         return self.html
 
 
+class HangingResponse(Response):
+    async def __aenter__(self):
+        await asyncio.Event().wait()
+
+
 class Session:
     def __init__(self, response):
         self.response = response
@@ -45,8 +50,7 @@ class Session:
     def get(self, url, **kwargs):
         self.requests.append(('get', url, kwargs))
         if url.endswith('/login/'):
-            assert kwargs['timeout'].total == 15
-            assert kwargs['timeout'].connect == 5
+            assert 'timeout' not in kwargs
             return self.response
         return Response('<html></html>')
 
@@ -60,8 +64,6 @@ def install_sessions(monkeypatch, responses):
     sessions = []
 
     def create(*args, **kwargs):
-        assert kwargs["timeout"].total == 15
-        assert kwargs["timeout"].connect == 5
         assert all(session.closed for session in sessions)
         session = Session(responses[len(sessions)])
         sessions.append(session)
@@ -121,6 +123,18 @@ def test_cancelled_token_fetch_closes_session_without_retry(monkeypatch):
     assert len(sessions) == 1 and sessions[0].closed
 
 
+@pytest.mark.parametrize('entrypoint', [maimai.login_to_maimai, maimai.get_aime_candidates])
+def test_login_operations_have_ten_second_total_timeout(monkeypatch, entrypoint):
+    sessions = install_sessions(monkeypatch, [HangingResponse()])
+    monkeypatch.setattr(maimai, 'MAIMAI_LOGIN_TIMEOUT_SECONDS', 0.01)
+
+    with pytest.raises(TimeoutError, match=r'Maimai login operation exceeded 0\.01s'):
+        asyncio.run(entrypoint('test-id', 'test-password'))
+
+    assert len(sessions) == 1
+    assert sessions[0].closed
+
+
 @pytest.mark.parametrize('ver', ['jp', 'intl'])
 @pytest.mark.parametrize('failed_page', [None, 'MAINTENANCE'])
 def test_friend_records_reject_partial_results(monkeypatch, ver, failed_page):
@@ -173,6 +187,7 @@ def test_rate_limit_reaches_binding_and_sync_user_message():
     login = AsyncMock(return_value='RATE_LIMITED')
     namespace = dict(
         DEFAULT_WEB_LANGUAGE='zh', login_to_maimai=login, time=time,
+        limit_maimai_operation_duration=lambda *_: lambda func: func,
         get_user=lambda uid: {'sega_id': 'test', 'sega_pwd': 'test'},
         language_catalog=language_catalog,
         get_multilingual_text=lambda texts, uid: texts['zh'], TextMessage=SimpleNamespace,
@@ -183,3 +198,18 @@ def test_rate_limit_reaches_binding_and_sync_user_message():
     assert result['success'] is False and result['status_code'] == 429
     message = asyncio.run(namespace['maimai_update']('user'))
     assert '触发了日服登录速率限制' in message.text
+
+
+def test_score_sync_has_shared_login_and_fetch_timeout():
+    import ast
+    from pathlib import Path
+
+    source = Path(__file__).resolve().parents[1] / 'main.py'
+    sync_function = next(
+        node for node in ast.parse(source.read_text()).body
+        if isinstance(node, ast.AsyncFunctionDef) and node.name == '_sync_maimai_user_data'
+    )
+    decorator = sync_function.decorator_list[0]
+    assert isinstance(decorator, ast.Call)
+    assert decorator.func.id == 'limit_maimai_operation_duration'
+    assert decorator.args[0].value == 'login and score fetch operation'

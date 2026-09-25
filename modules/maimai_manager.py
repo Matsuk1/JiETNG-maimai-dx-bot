@@ -1,5 +1,6 @@
 import random
 from contextlib import asynccontextmanager
+from functools import wraps
 import logging
 import asyncio
 import aiohttp
@@ -11,6 +12,27 @@ import os
 from modules.config_loader import DOMAIN, RATING_DIR
 
 logger = logging.getLogger(__name__)
+
+MAIMAI_LOGIN_TIMEOUT_SECONDS = 10
+
+
+def limit_maimai_operation_duration(operation):
+    def decorator(func):
+        @wraps(func)
+        async def wrapped(*args, **kwargs):
+            try:
+                return await asyncio.wait_for(
+                    func(*args, **kwargs),
+                    timeout=MAIMAI_LOGIN_TIMEOUT_SECONDS,
+                )
+            except asyncio.TimeoutError as exc:
+                raise TimeoutError(
+                    f"Maimai {operation} exceeded {MAIMAI_LOGIN_TIMEOUT_SECONDS}s"
+                ) from exc
+
+        return wrapped
+
+    return decorator
 
 
 def _mobile_base(version):
@@ -165,13 +187,12 @@ async def _jp_login_session(headers):
     last_status = None
     last_page = "unknown"
     for attempt in range(3):
-        async with _create_session(timeout=aiohttp.ClientTimeout(total=15, connect=5)) as session:
+        async with _create_session() as session:
             token = None
             try:
                 async with session.get(
                     "https://maimaidx.jp/maimai-mobile/login/",
                     headers=headers,
-                    timeout=aiohttp.ClientTimeout(total=15, connect=5),
                 ) as response:
                     last_status = response.status
                     if response.status == 503:
@@ -297,6 +318,7 @@ async def fetch_dom(session: aiohttp.ClientSession, url: str, ver="jp") -> etree
         return None
 
 
+@limit_maimai_operation_duration("login operation")
 async def login_to_maimai(sega_id: str, password: str, ver="jp", aime=0):
     """异步版本的 login_to_maimai
 
@@ -474,6 +496,7 @@ def _parse_aime_candidates(dom):
     return candidates
 
 
+@limit_maimai_operation_duration("login operation")
 async def get_aime_candidates(sega_id: str, password: str, ver="jp"):
     """Return selectable Aime/account candidates after validating SEGA login."""
     if ver == "intl":
