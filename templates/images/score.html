@@ -39,6 +39,8 @@
   .ocr-title { font-size: 32px; line-height: 1.4; margin: 3px 0 8px; }
   .ocr-meta { display: flex; align-items: center; gap: 18px; font-size: 17px; }
   .ocr-type { width: 66px; height: 22px; object-fit: contain; }
+  .ocr-difficulty { padding: 3px 10px; border-radius: 999px; }
+  .ocr-difficulty.undetermined { border: 1px dashed #78849a; color: #68758a; background: transparent; }
   .ocr-state { font-size: 14px; color: #846746; white-space: nowrap; }
   .ocr-state.valid { color: #28754d; }
 
@@ -210,7 +212,8 @@
   {% endfor %}
   {% set table_rows = legacy.rows %}
 {% endif %}
-{% set verified = validation.get('song_id') and (validation.get('achievement_calc') or {}).get('consistent') == true and (validation.get('achievement_calc') or {}).get('complete') == true and not validation.get('uncertain_cells') %}
+{% set chart_metadata_confirmed = payload.get('chart_metadata_confirmed', true) %}
+{% set verified = chart_metadata_confirmed and validation.get('song_id') and (validation.get('achievement_calc') or {}).get('consistent') == true and (validation.get('achievement_calc') or {}).get('complete') == true and not validation.get('uncertain_cells') %}
 {% set headings = ['CRITICAL', 'PERFECT', 'GREAT', 'GOOD', 'MISS'] %}
 <article class="ocr-page">
   <div class="ocr-shell">
@@ -223,18 +226,13 @@
         <div class="ocr-title ellipsis" data-fit="19">{{ payload.title }}</div>
         <div class="ocr-meta">
           {% if type_src %}<img class="ocr-type" src="{{ type_src }}">{% endif %}
-          <span style="
-            background: {{ color }};
-            color: {{ '#72148d' if payload.difficulty == 'remaster' else 'white' }};
-            padding: 3px 10px;
-            border-radius: 999px;
-          ">{{ payload.difficulty_label }} {{ validation.get('level') or '' }}</span>
+          <span class="ocr-difficulty {{ 'undetermined' if not chart_metadata_confirmed else '' }}"{% if chart_metadata_confirmed %} style="background: {{ color }}; color: {{ '#72148d' if payload.difficulty == 'remaster' else 'white' }};"{% endif %}>{{ payload.difficulty_label }} {{ payload.level or '' }}</span>
           <span>{{ '%.1f'|format(payload.internal_level) if payload.internal_level is number else '—' }}</span>
           {% if validation.get('song_id') %}<span>#{{ validation.song_id }}</span>{% endif %}
         </div>
       </div>
       <div class="ocr-state {{ 'valid' if verified else '' }}">
-        {{ '✓ ' ~ texts.verified if verified else texts.check_required|default('CHECK REQUIRED') }}
+        {{ '✓ ' ~ texts.verified if verified else (texts.metadata_undetermined if not chart_metadata_confirmed else texts.check_required|default('CHECK REQUIRED')) }}
       </div>
     </header>
 

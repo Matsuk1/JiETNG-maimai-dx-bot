@@ -109,3 +109,41 @@ def test_successful_correction_still_displays_validated_data():
     result = result_fixture()
     result['raw_parsed'] = {'title': 'Raw title', 'sub_judgement': {}}
     assert _prepare_score(result).song_title == 'Alpha Beta'
+
+
+def test_inferred_note_counts_show_undetermined_chart_without_manual_fix():
+    result = result_fixture()
+    result['validation'].update(
+        level='14+',
+        internal_level=14.8,
+        chart_metadata_confirmed=False,
+        inferred_note_count_rows=list(JUDGEMENT_ROWS),
+    )
+    with patch('modules.messages.scores.get_user_language', return_value='ja'):
+        payload = generate_score_recognition_flex(result).to_dict()
+
+    displayed = [node.get('text') for node in nodes(payload)]
+    catalog = localized_catalog('message_manager.score_recognition')
+    text = lambda key: select_text(catalog[key], language='ja')
+    assert text('difficulty_undetermined') in displayed
+    assert text('calc_consistent_unverified') in displayed
+    assert text('calc_validated') not in displayed
+    assert text('manual_fix') not in displayed
+    assert 'MASTER' not in displayed
+    constant_card = next(
+        node for node in nodes(payload)
+        if node.get('text') == text('constant')
+    )
+    assert constant_card['text'] == '定数'
+    assert any(
+        node.get('text') == '-'
+        for node in nodes(payload)
+    )
+    undetermined = next(
+        node for node in nodes(payload)
+        if node.get('type') == 'box'
+        and any(child.get('text') == text('difficulty_undetermined')
+                for child in node.get('contents', []))
+    )
+    assert undetermined['cornerRadius'] == '12px'
+    assert undetermined['borderWidth'] == '1px'

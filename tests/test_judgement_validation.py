@@ -81,7 +81,8 @@ def test_std_zero_touch_does_not_block_overfull_break_recovery(touch):
     assert output['parsed']['sub_judgement']['break'] == dict(
         critical_perfect=14, perfect=4, great=0, good=0, miss=0)
     validation = output['validation']
-    assert validation['difficulty'] == 'master'
+    assert validation['difficulty'] == ('master' if touch == 0 else None)
+    assert validation['chart_metadata_confirmed'] is (touch == 0)
     assert validation['achievement_calc']['consistent'] is True
     assert validation['achievement_calc']['complete'] is True
     assert validation['calc_corrections'][0]['inferred_row'] is True
@@ -108,7 +109,8 @@ def test_missing_dxdata_note_counts_are_derived_from_complete_ocr_rows():
     rows = {name: dict(zip(fields, counts)) for name, counts in values.items()}
     original = copy.deepcopy(rows)
     song = dict(id='happycore', title='The Happycore Idol', type='dx', sheets=[dict(
-        difficulty='master', noteCounts={name: None for name in values},
+        difficulty='master', level='14+', internalLevelValue=14.8,
+        noteCounts={name: None for name in values},
     )])
     result = dict(parsed=dict(
         title='The Happycore Idol', achievement=100.3551, sub_judgement=rows,
@@ -123,6 +125,10 @@ def test_missing_dxdata_note_counts_are_derived_from_complete_ocr_rows():
     assert validation['achievement_calc']['complete'] is True
     assert validation['matching_rows'] == 5
     assert validation['inferred_note_count_rows'] == list(values)
+    assert validation['chart_metadata_confirmed'] is False
+    assert validation['difficulty'] is None
+    assert validation['level'] is None
+    assert validation['internal_level'] is None
     assert not validation['uncertain_cells']
     assert not validation['calc_corrections']
 

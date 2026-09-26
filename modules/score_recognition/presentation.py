@@ -196,9 +196,19 @@ def _build_break_detail(value: Any) -> dict[str, Any]:
     return detail
 
 
+def _chart_metadata_confirmed(validation: dict[str, Any]) -> bool:
+    return bool(validation.get(
+        "chart_metadata_confirmed",
+        not validation.get("inferred_note_count_rows"),
+    ))
+
+
 def _build_display_metadata(validation: dict[str, Any]) -> dict[str, Any]:
+    chart_metadata_confirmed = _chart_metadata_confirmed(validation)
     chart_type = str(validation.get("type") or "").lower()
-    difficulty = str(validation.get("difficulty") or "").lower()
+    difficulty = str(
+        validation.get("difficulty") if chart_metadata_confirmed else ""
+    ).lower()
     type_label = {"dx": "DX", "std": "STD", "utage": "UTAGE"}.get(chart_type)
     title = validation.get("title")
     display_title = '""' if title == "" else str(title or "")
@@ -215,6 +225,7 @@ def _build_display_metadata(validation: dict[str, Any]) -> dict[str, Any]:
         "type_icon_url": SONG_TYPE_ICON_URLS.get(chart_type),
         "difficulty_label": DIFFICULTY_LABELS.get(difficulty, difficulty.upper() if difficulty else None),
         "difficulty_style": difficulty_style,
+        "chart_metadata_confirmed": chart_metadata_confirmed,
     }
 
 
@@ -280,6 +291,7 @@ def build_score_recognition_response(result: Any) -> dict[str, Any]:
     combo = _combo_status(achievement, judgements)
     break_detail = _build_break_detail(validation.get("break_detail"))
     loss_detail = _build_loss_detail(judgements, validation.get("loss_percentages"))
+    chart_metadata_confirmed = _chart_metadata_confirmed(validation)
     return {
         "success": True,
         "song": {
@@ -288,9 +300,11 @@ def build_score_recognition_response(result: Any) -> dict[str, Any]:
             "type": validation.get("type"),
         },
         "chart": {
-            "difficulty": validation.get("difficulty"),
-            "level": validation.get("level"),
-            "internal_level": validation.get("internal_level"),
+            "difficulty": validation.get("difficulty") if chart_metadata_confirmed else None,
+            "level": validation.get("level") if chart_metadata_confirmed else None,
+            "internal_level": (
+                validation.get("internal_level") if chart_metadata_confirmed else None
+            ),
         },
         "score": {
             "achievement": float(achievement),
@@ -308,6 +322,8 @@ def build_score_recognition_response(result: Any) -> dict[str, Any]:
         },
         "metadata": _build_display_metadata(validation),
         "validation": {
+            "chart_metadata_confirmed": chart_metadata_confirmed,
+            "inferred_note_count_rows": list(validation.get("inferred_note_count_rows") or ()),
             "title_match_type": validation.get("title_match_type"),
             "exact_title_match": bool(validation.get("exact_title_match")),
             "compared_rows": validation.get("compared_rows"),
@@ -419,7 +435,11 @@ def calc_status(validation, uncertain_cells, translate):
     elif consistent and uncertain_cells:
         text = translate("calc_incomplete")
     elif consistent:
-        text = translate("calc_validated")
+        text = translate(
+            "calc_consistent_unverified"
+            if validation.get("inferred_note_count_rows")
+            else "calc_validated"
+        )
     else:
         text = translate("calc_uncertain" if uncertain_cells else "calc_mismatch")
         values = (calculation.get("minimum"), calculation.get("maximum"), calculation.get("observed"))

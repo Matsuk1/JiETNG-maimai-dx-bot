@@ -140,6 +140,7 @@ class _ScoreData:
     difficulty_style: dict
     difficulty_label: str
     chart_type: object
+    chart_metadata_confirmed: bool
 
 
 def _prepare_score(result: dict) -> _ScoreData:
@@ -172,8 +173,14 @@ def _prepare_score(result: dict) -> _ScoreData:
     achievement = parsed.get("achievement")
     achievement_text = f"{achievement:.4f}%" if isinstance(achievement, (int, float)) else "-"
 
-    difficulty = validation.get("difficulty")
-    internal_level = validation.get("internal_level")
+    chart_metadata_confirmed = bool(
+        validation.get(
+            "chart_metadata_confirmed",
+            not validation.get("inferred_note_count_rows"),
+        )
+    )
+    difficulty = validation.get("difficulty") if chart_metadata_confirmed else None
+    internal_level = validation.get("internal_level") if chart_metadata_confirmed else None
     chart_type = validation.get("type")
     chart_type_label = {
         "dx": "DX",
@@ -201,13 +208,18 @@ def _prepare_score(result: dict) -> _ScoreData:
         difficulty_style=difficulty_style,
         difficulty_label=difficulty_label,
         chart_type=chart_type,
+        chart_metadata_confirmed=chart_metadata_confirmed,
     )
 
 
 def _score_header(data: _ScoreData, tr):
     song_title = data.song_title
     difficulty_style = data.difficulty_style
-    difficulty_label = data.difficulty_label
+    difficulty_label = (
+        data.difficulty_label
+        if data.chart_metadata_confirmed
+        else tr("difficulty_undetermined")
+    )
     chart_type = data.chart_type
     type_icon = song_type_icon(chart_type, width="50px", height="14px")
     subtitle_contents = [
@@ -221,16 +233,40 @@ def _score_header(data: _ScoreData, tr):
             "align": "start",
             "flex": 1,
         },
-        {
-            "type": "text",
-            "text": difficulty_label,
-            "size": "xs",
-            "color": difficulty_style["text"],
-            "weight": "bold",
-            "wrap": False,
-            "align": "center",
-            "flex": 1,
-        },
+        (
+            {
+                "type": "text",
+                "text": difficulty_label,
+                "size": "xs",
+                "color": difficulty_style["text"],
+                "weight": "bold",
+                "wrap": False,
+                "align": "center",
+                "flex": 1,
+            }
+            if data.chart_metadata_confirmed
+            else {
+                "type": "box",
+                "layout": "vertical",
+                "cornerRadius": "12px",
+                "borderWidth": "1px",
+                "borderColor": "#FFFFFF99",
+                "paddingTop": "2px",
+                "paddingBottom": "2px",
+                "paddingStart": "8px",
+                "paddingEnd": "8px",
+                "flex": 1,
+                "contents": [{
+                    "type": "text",
+                    "text": difficulty_label,
+                    "size": "xxs",
+                    "color": difficulty_style["text"],
+                    "weight": "bold",
+                    "wrap": False,
+                    "align": "center",
+                }],
+            }
+        ),
         {
             "type": "box",
             "layout": "horizontal",

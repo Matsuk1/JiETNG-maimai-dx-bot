@@ -1609,15 +1609,22 @@ def _apply_judgement_validation(result, best, title_match_type, *, preserve_inpu
     )
     canonical_title = song.get("title")
     parsed["title"] = canonical_title if canonical_title is not None else title
+    inferred_note_count_rows = list(best.get("inferred_note_count_rows") or ())
+    chart_metadata_confirmed = not inferred_note_count_rows
     result["validation"] = {
         "song_id": song.get("id"),
         "title": song.get("title"),
         "type": song.get("type"),
         "cover_url": song.get("cover_url"),
         "cover_name": song.get("cover_name"),
-        "difficulty": sheet.get("difficulty"),
-        "level": sheet.get("level"),
-        "internal_level": sheet.get("internalLevelValue"),
+        # When note totals came from the OCR rows, the matching sheet is only a
+        # vehicle for Calc and must not be presented as an identified chart.
+        "difficulty": sheet.get("difficulty") if chart_metadata_confirmed else None,
+        "level": sheet.get("level") if chart_metadata_confirmed else None,
+        "internal_level": (
+            sheet.get("internalLevelValue") if chart_metadata_confirmed else None
+        ),
+        "chart_metadata_confirmed": chart_metadata_confirmed,
         "title_match_type": title_match_type,
         "exact_title_match": title_match_type in {"exact", "blank"},
         "compared_rows": best["compared_rows"],
@@ -1625,7 +1632,7 @@ def _apply_judgement_validation(result, best, title_match_type, *, preserve_inpu
         "row_offset": best["row_offset"],
         "column_offset": best["column_offset"],
         "dxnet_fixed_note_counts": best.get("dxnet_fixed_note_counts", False),
-        "inferred_note_count_rows": list(best.get("inferred_note_count_rows") or ()),
+        "inferred_note_count_rows": inferred_note_count_rows,
         "miss_corrections": {},  # Retained for the public response contract.
         "unmatched_notes": unmatched_notes,
         "achievement_calc": {

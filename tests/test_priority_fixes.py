@@ -178,6 +178,25 @@ class ResponseTests(unittest.TestCase):
             with self.subTest(value=value), self.assertRaises(ScoreRecognitionResultError):
                 build_score_recognition_response(result)
 
+    def test_inferred_note_counts_do_not_publish_candidate_chart_metadata(self):
+        result = valid_result()
+        result["validation"].update(
+            difficulty="master",
+            level="14+",
+            internal_level=14.8,
+            inferred_note_count_rows=["tap", "hold", "slide", "touch", "break"],
+        )
+
+        response = build_score_recognition_response(result)
+
+        self.assertEqual(response["chart"], {
+            "difficulty": None,
+            "level": None,
+            "internal_level": None,
+        })
+        self.assertFalse(response["metadata"]["chart_metadata_confirmed"])
+        self.assertFalse(response["validation"]["chart_metadata_confirmed"])
+
     def test_admin_save_failure_and_success(self):
         for saved in (False, True):
             handler = create_edit_user_handler(

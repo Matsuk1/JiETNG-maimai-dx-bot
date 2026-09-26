@@ -127,3 +127,32 @@ def test_legacy_worker_context_keeps_counts_and_totals(skin, validation_context)
     assert '-0.25000%' in html
     assert 'data:image/png;base64,test' in html
     assert 'CHECK REQUIRED' in html
+
+
+@pytest.mark.parametrize('skin', ['default', 'glass'])
+def test_undetermined_chart_uses_dashed_difficulty_pill_and_is_not_verified(skin):
+    from modules.images.renderer import template
+
+    html = template('score.html', skin=skin,
+        payload={'title': 'The Happycore Idol', 'difficulty_label': '未定',
+                 'chart_metadata_confirmed': False, 'level': None},
+        texts={'metadata_undetermined': '譜面未定', 'verified': '検証済み'},
+        validation={'song_id': 'happycore',
+                    'achievement_calc': {'consistent': True, 'complete': True}},
+        table_rows=[], panels=[])
+    assert 'ocr-difficulty undetermined' in html
+    assert 'border: 1px dashed' in html
+    assert '>未定 </span>' in html
+    assert '譜面未定' in html
+    assert '検証済み' not in html
+
+
+def test_ocr_image_language_is_version_based_while_flex_has_four_languages():
+    from modules.i18n import image_language, language_catalog, localized_catalog
+
+    assert image_language('jp') == 'ja'
+    assert image_language('intl') == 'en'
+    assert set(language_catalog('images.score.difficulty_undetermined')) == {'ja', 'en'}
+    assert set(localized_catalog(
+        'message_manager.score_recognition.difficulty_undetermined'
+    )) == {'ja', 'zh', 'zh-tw', 'en'}

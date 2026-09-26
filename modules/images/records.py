@@ -60,7 +60,13 @@ def _score_recognition_payload(result):
         title = "-"
     achievement = parsed.get("achievement")
     judgement = parsed.get("sub_judgement") or {}
-    difficulty = validation.get("difficulty")
+    chart_metadata_confirmed = bool(
+        validation.get(
+            "chart_metadata_confirmed",
+            not validation.get("inferred_note_count_rows"),
+        )
+    )
+    difficulty = validation.get("difficulty") if chart_metadata_confirmed else None
     difficulty_label = DIFFICULTY_LABELS.get(str(difficulty or "").lower(), str(difficulty or "").upper() or "-")
     chart_type = validation.get("type")
     return {
@@ -70,7 +76,11 @@ def _score_recognition_payload(result):
         "type": chart_type,
         "cover_url": validation.get("cover_url"),
         "cover_name": validation.get("cover_name"),
-        "internal_level": validation.get("internal_level"),
+        "internal_level": (
+            validation.get("internal_level") if chart_metadata_confirmed else None
+        ),
+        "level": validation.get("level") if chart_metadata_confirmed else None,
+        "chart_metadata_confirmed": chart_metadata_confirmed,
         "achievement": achievement,
         "judgement": judgement,
         "rank_icon": _score_rank_name(achievement),
@@ -264,7 +274,9 @@ def generate_score_recognition_picture(result, ver="jp", img_width=1100, timezon
     payload = _score_recognition_payload(result)
     language = image_language(ver)
     texts = {key: _image_text(f"score.{key}", language)
-             for key in ("analysis_title", "type", "subtitle", "judgement", "loss", "break", "empty", "common_total", "break_total", "distribution", "cell_legend", "verified", "check_required", "validation_note")}
+             for key in ("analysis_title", "type", "subtitle", "judgement", "loss", "break", "empty", "common_total", "break_total", "distribution", "cell_legend", "verified", "check_required", "validation_note", "difficulty_undetermined", "metadata_undetermined")}
+    if not payload["chart_metadata_confirmed"]:
+        payload["difficulty_label"] = texts["difficulty_undetermined"]
     judgement = payload['judgement']
     fields = ('critical_perfect', 'perfect', 'great', 'good', 'miss')
     rows = [(key.upper(), [judgement[key].get(field, 0) for field in fields])
