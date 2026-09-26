@@ -81,7 +81,12 @@
     </div>
   {% endif %}
   {% if footer %}
-    <div class="glass-cover-footer">
+    <div class="glass-cover-footer" style="
+      {% if achieved and not plate %}
+      background: {{ color }};
+      color: {{ text_color }};
+      {% endif %}
+    ">
       {% if plate %}
         {% for block in blocks %}
           <span class="glass-cover-block" style="background: {{ block }};"></span>
