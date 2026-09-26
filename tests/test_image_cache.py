@@ -26,16 +26,3 @@ def test_downloaded_cover_is_cached_as_webp(tmp_path, monkeypatch):
         assert stored.format == "WEBP"
         assert stored.size == (16, 12)
     downloaded.close()
-
-
-def test_legacy_cover_is_read_and_migrated_to_webp(tmp_path, monkeypatch):
-    monkeypatch.setattr(cache, "COVERS_DIR", str(tmp_path))
-    legacy = tmp_path / "legacy.png"
-    legacy.write_bytes(_png_bytes())
-
-    image = cache.get_cover_image(None, "legacy.png")
-    assert image.size == (16, 12)
-    image.close()
-
-    with Image.open(tmp_path / "legacy.webp") as stored:
-        assert stored.format == "WEBP"

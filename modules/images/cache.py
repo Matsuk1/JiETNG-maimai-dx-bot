@@ -62,15 +62,6 @@ def _encode_cover_webp(image):
         return buffer.getvalue()
 
 
-def _open_cached_image(path):
-    try:
-        with Image.open(path) as image:
-            return image.convert("RGBA")
-    except (OSError, UnidentifiedImageError) as exc:
-        logger.warning("[ImageCache] Replacing invalid cache: path=%s, error=%s", path, exc)
-        return None
-
-
 def _download_rgba(url, *, timeout, label):
     for attempt in range(1, DOWNLOAD_ATTEMPTS + 1):
         try:
@@ -103,7 +94,7 @@ def _download_rgba(url, *, timeout, label):
     return None, None
 
 
-def _cached_or_downloaded_image(url, path, *, timeout, label):
+def _cached_or_downloaded_image(url, path, *, timeout, label, encoder=None):
     if path and os.path.isfile(path):
         try:
             with Image.open(path) as image:
@@ -118,7 +109,7 @@ def _cached_or_downloaded_image(url, path, *, timeout, label):
         return None
     if path:
         try:
-            _write_cache(path, content)
+            _write_cache(path, encoder(image) if encoder else content)
         except OSError:
             logger.exception("[ImageCache] Failed to cache asset: path=%s", path)
     return image
@@ -141,21 +132,13 @@ def download_and_cache_icon(url, save_path):
 def get_cover_image(cover_url, cover_name=None):
     path = cover_cache_path(cover_name)
     try:
-        if path and os.path.isfile(path):
-            image = _open_cached_image(path)
-            if image is not None:
-                return image
-
-        # Transparently migrate a legacy cache entry on first use.
-        legacy_path = os.path.join(COVERS_DIR, os.path.basename(cover_name)) if cover_name else None
-        image = _open_cached_image(legacy_path) if legacy_path and os.path.isfile(legacy_path) else None
-        if image is None and cover_url:
-            image, _ = _download_rgba(cover_url, timeout=30, label=cover_name or cover_url)
-        if image is not None and path:
-            try:
-                _write_cache(path, _encode_cover_webp(image))
-            except OSError:
-                logger.exception("[ImageCache] Failed to cache WebP cover: path=%s", path)
+        image = _cached_or_downloaded_image(
+            cover_url,
+            path,
+            timeout=30,
+            label=cover_name or cover_url,
+            encoder=_encode_cover_webp,
+        )
         if image is None and not cover_url:
             logger.warning("[ImageCache] Missing cover URL: cover_name=%s", cover_name)
         return image

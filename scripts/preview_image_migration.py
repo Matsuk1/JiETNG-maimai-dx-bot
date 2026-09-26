@@ -63,7 +63,7 @@ if args.ref:
         elif name == 'song_generator':
             s = module
 from modules.config_loader import read_dxdata
-cover_path = next(iter(sorted(Path('assets/covers').glob('*.png'))), Path('assets/pics/404.png'))
+cover_path = next(iter(sorted(Path('assets/covers').glob('*.webp'))), Path('assets/pics/404.png'))
 cover = Image.open(cover_path).convert('RGBA')
 songs = copy.deepcopy(read_dxdata('jp')[0][:18])
 for song in songs:
