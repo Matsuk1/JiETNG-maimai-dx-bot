@@ -19,12 +19,10 @@
     display: grid;
     grid-template-columns: repeat(4,minmax(0,1fr));
     gap: 26px;
-    margin: 0 {{ margin }}px 54px;
+    margin: 0 {{ margin }}px 24px;
   }
 
   .summary {
-    position: relative;
-    overflow: hidden;
     border-radius: 22px;
     border-left: 14px solid var(--accent);
     background: color-mix(in srgb,var(--accent) 15%,white);
@@ -36,17 +34,7 @@
     min-width: 0;
   }
 
-  .summary-fill {
-    position: absolute;
-    inset: 0 auto 0 0;
-    width: var(--progress);
-    border-radius: inherit;
-    background: color-mix(in srgb,var(--accent) 30%,transparent);
-  }
-
   .summary-header {
-    position: relative;
-    z-index: 1;
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
@@ -59,12 +47,34 @@
     color: #484848;
   }
 
+  .summary-percent {
+    flex-shrink: 0;
+    color: #484848;
+    font-size: 42px;
+    line-height: 1.15;
+    text-align: right;
+  }
+
   .summary-value {
-    position: relative;
-    z-index: 1;
     align-self: end;
     font-size: 76px;
     line-height: 1;
+  }
+
+  .summary-progress {
+    height: 38px;
+    display: flex;
+    overflow: hidden;
+    border: 3px solid #c8d2e1;
+    border-radius: 19px;
+    background: #ffffffc7;
+    box-shadow: 3px 3px #0002;
+    margin: 0 {{ margin }}px 54px;
+  }
+
+  .summary-progress-segment {
+    height: 100%;
+    min-width: 0;
   }
 
   .plate-heading {
@@ -198,14 +208,19 @@
   {% else %}
     <div class="progress-heading outlined" data-fit="92">{{ title }}</div>
     <div class="summary-grid">
-      {% for label, value, fill, color in cards %}
-        <div class="summary" style="--accent: {{ color }}; --progress: {{ fill }};">
-          <div class="summary-fill"></div>
+      {% for label, value, percentage, color in cards %}
+        <div class="summary" style="--accent: {{ color }};">
           <div class="summary-header">
             <div class="summary-label ellipsis" data-fit="28">{{ label }}</div>
+            {% if percentage %}<div class="summary-percent">{{ percentage }}</div>{% endif %}
           </div>
           <div class="summary-value ellipsis" data-fit="36">{{ value }}</div>
         </div>
+      {% endfor %}
+    </div>
+    <div class="summary-progress">
+      {% for value, color in segments %}
+        <div class="summary-progress-segment" style="flex: {{ value }} 1 0; background: {{ color }};"></div>
       {% endfor %}
     </div>
   {% endif %}

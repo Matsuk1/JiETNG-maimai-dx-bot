@@ -472,10 +472,17 @@ def generate_level_rank_progress_image(
         ("unplayed", stats["unplayed"], "#9e9e9e"),
         ("total", stats["total"], "#4285f4"),
     ):
-        fill = f"{count / stats['total'] * 100:.1f}%" if stats['total'] > 0 else "0%"
-        cards.append((_image_text(f"progress.{key}", language), str(count), fill, color))
+        percentage = (f"{count / stats['total'] * 100:.1f}%"
+                      if key != "total" and stats['total'] > 0 else "")
+        cards.append((_image_text(f"progress.{key}", language), str(count), percentage, color))
+    segments = [
+        (stats["achieved"], "#4caf50"),
+        (stats["unachieved"], "#ff9800"),
+        (stats["unplayed"], "#9e9e9e"),
+    ]
     return render_template("progress.html", img_width, mode="progress", title=title_text,
                            margin=margin, max_per_row=max_per_row, cards=cards,
+                           segments=segments,
                            rows=[(label, [entry['cover'] for entry in entries])
                                  for label, entries in rows], markup=True,
                            logical_width=2700, render_scale=img_width / 2700)
