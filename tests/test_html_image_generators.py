@@ -78,6 +78,16 @@ class ImageDataTests(unittest.TestCase):
         self.assertEqual(panels[0]['total'], '-0.04000%')
         self.assertEqual(panels[1]['total'], '-0.00600%')
 
+    def test_score_picture_uses_combo_placeholder_when_combo_status_is_missing(self):
+        result = dict(parsed=dict(achievement=100, sub_judgement={}), validation={})
+        with patch('modules.images.renderer.file_uri', side_effect=lambda path: f'asset:{path}'), \
+             patch('modules.images.renderer.render_template') as render, \
+             patch.object(records, 'compose_generated_images'):
+            records.generate_score_recognition_picture(result)
+
+        combo_src = render.call_args.kwargs['combo_src']
+        self.assertTrue(combo_src.endswith('assets/icon/combo_rcd/back.png'))
+
     def test_invalid_columns_rejected_before_grouping(self):
         for columns in (0, -1):
             with self.subTest(columns=columns), self.assertRaisesRegex(ValueError, 'max_per_row'):

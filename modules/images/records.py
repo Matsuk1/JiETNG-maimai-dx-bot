@@ -286,7 +286,10 @@ def generate_score_recognition_picture(result, ver="jp", img_width=1100, timezon
     constant = payload['internal_level']
     constant_text = f"{constant:.1f} → {get_single_ra(constant, achievement, 'ap' in str(payload['combo_icon'] or ''))}" if isinstance(constant, (int, float)) else "-"
     rank = {'sssplus':'sssp', 'ssplus':'ssp', 'splus':'sp'}.get(payload['rank_icon'], payload['rank_icon'])
-    combo = {'fc':'fc', 'fcplus':'fcp', 'ap':'ap', 'applus':'app', 'dummy':'back'}.get(payload['combo_icon'])
+    combo = {
+        'fc': 'fc', 'fcplus': 'fcp', 'ap': 'ap', 'applus': 'app',
+        'dummy': 'back',
+    }.get(payload['combo_icon']) or 'back'
     icons = [(file_uri(os.path.join(directory, f"{name}.png")), width)
              for directory, name, width in ((ICON_SCORE_DIR, rank, 130), (ICON_COMBO_RCD_DIR, combo, 112)) if name]
     progress = _score_dx_progress(judgement)
@@ -331,7 +334,7 @@ def generate_score_recognition_picture(result, ver="jp", img_width=1100, timezon
                            progress=progress, panels=panels, table_rows=_score_judgement_table(payload),
                            validation=(result or {}).get('validation') or {},
                            rank_src=file_uri(os.path.join(ICON_SCORE_DIR, f"{rank}.png")) if rank else '',
-                           combo_src=file_uri(os.path.join(ICON_COMBO_RCD_DIR, f"{combo}.png")) if combo and combo != 'back' else '')
+                           combo_src=file_uri(os.path.join(ICON_COMBO_RCD_DIR, f"{combo}.png")))
     return compose_generated_images([card], timezone_offset=timezone_offset, bg_filter=bg_filter)
 
 
