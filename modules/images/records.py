@@ -6,7 +6,7 @@ import os
 import re
 from modules.score_rules import DIFFICULTY_STYLES, DIFFICULTY_LABELS, JUDGEMENT_ROWS, score_rank as canonical_rank, combo_status as canonical_combo
 
-from modules.config_loader import (PLATES_DIR, COVERS_DIR, ICON_TYPE_DIR, ICON_BASE_DIR, ICON_SCORE_DIR,
+from modules.config_loader import (PLATES_DIR, ICON_TYPE_DIR, ICON_BASE_DIR, ICON_SCORE_DIR,
     ICON_COMBO_DIR, ICON_SYNC_DIR, ICON_COMBO_RCD_DIR, ICON_SYNC_RCD_DIR, ICON_DX_STAR_DIR)
 from modules.images import cache as image_cache
 from modules.images.composition import compose_generated_images
@@ -509,7 +509,7 @@ def cover_html(cover_url, type, icon=None, icon_type=None, cover_name=None,
                show_type=True):
     from modules.images.renderer import file_uri, image_uri, template
 
-    path = Path(COVERS_DIR) / Path(cover_name).name if cover_name else None
+    path = Path(image_cache.cover_cache_path(cover_name)) if cover_name else None
     cover_src = file_uri(path) if path else ''
     if not cover_src:
         cover = image_cache.get_cover_image(cover_url, cover_name)

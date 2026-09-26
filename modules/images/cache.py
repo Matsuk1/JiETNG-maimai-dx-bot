@@ -4,6 +4,7 @@ import logging
 import os
 import tempfile
 from io import BytesIO
+from pathlib import Path
 
 import requests
 from PIL import Image, UnidentifiedImageError
@@ -14,6 +15,7 @@ from modules.config_loader import COVERS_DIR
 
 logger = logging.getLogger(__name__)
 DOWNLOAD_ATTEMPTS = 3
+COVER_WEBP_QUALITY = 90
 
 
 def _build_session() -> requests.Session:
@@ -44,6 +46,29 @@ def _write_cache(path, content):
     finally:
         if temp_path and os.path.exists(temp_path):
             os.remove(temp_path)
+
+
+def cover_cache_path(cover_name):
+    """Map source cover names to the canonical WebP cache path."""
+    if not cover_name:
+        return None
+    name = Path(os.path.basename(cover_name)).with_suffix(".webp").name
+    return os.path.join(COVERS_DIR, name)
+
+
+def _encode_cover_webp(image):
+    with BytesIO() as buffer:
+        image.save(buffer, format="WEBP", quality=COVER_WEBP_QUALITY, method=4)
+        return buffer.getvalue()
+
+
+def _open_cached_image(path):
+    try:
+        with Image.open(path) as image:
+            return image.convert("RGBA")
+    except (OSError, UnidentifiedImageError) as exc:
+        logger.warning("[ImageCache] Replacing invalid cache: path=%s, error=%s", path, exc)
+        return None
 
 
 def _download_rgba(url, *, timeout, label):
@@ -114,16 +139,23 @@ def download_and_cache_icon(url, save_path):
 
 
 def get_cover_image(cover_url, cover_name=None):
-    path = None
-    if cover_name:
-        path = os.path.join(COVERS_DIR, os.path.basename(cover_name))
+    path = cover_cache_path(cover_name)
     try:
-        image = _cached_or_downloaded_image(
-            cover_url,
-            path,
-            timeout=30,
-            label=cover_name or cover_url,
-        )
+        if path and os.path.isfile(path):
+            image = _open_cached_image(path)
+            if image is not None:
+                return image
+
+        # Transparently migrate a legacy cache entry on first use.
+        legacy_path = os.path.join(COVERS_DIR, os.path.basename(cover_name)) if cover_name else None
+        image = _open_cached_image(legacy_path) if legacy_path and os.path.isfile(legacy_path) else None
+        if image is None and cover_url:
+            image, _ = _download_rgba(cover_url, timeout=30, label=cover_name or cover_url)
+        if image is not None and path:
+            try:
+                _write_cache(path, _encode_cover_webp(image))
+            except OSError:
+                logger.exception("[ImageCache] Failed to cache WebP cover: path=%s", path)
         if image is None and not cover_url:
             logger.warning("[ImageCache] Missing cover URL: cover_name=%s", cover_name)
         return image
