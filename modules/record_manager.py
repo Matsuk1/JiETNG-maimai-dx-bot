@@ -261,18 +261,16 @@ def achievement_value(value: Any) -> float:
         return 0.0
 
 
-def index_records_by_chart(records, normalize):
-    index = {}
-    for record in records:
-        suffix = (record['difficulty'], record['type'])
-        index[(record['name'], *suffix)] = record
-        index[(normalize(record['name']), *suffix)] = record
-    return index
+def index_records_by_chart(records):
+    """Index records by the exact chart identity used by the score database."""
+    return {
+        (record['name'], record['difficulty'], record['type']): record
+        for record in records
+    }
 
 
-def find_chart_record(index, title, difficulty, chart_type, normalize):
-    suffix = (difficulty, chart_type)
-    return index.get((title, *suffix)) or index.get((normalize(title), *suffix))
+def find_chart_record(index, title, difficulty, chart_type):
+    return index.get((title, difficulty, chart_type))
 
 
 def filter_progress_entries(entries, mode):

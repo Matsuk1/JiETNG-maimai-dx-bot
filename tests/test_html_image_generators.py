@@ -66,6 +66,24 @@ class ImageDataTests(unittest.TestCase):
         self.assertEqual(stats, {'achieved': 0, 'unachieved': 0, 'unplayed': 1, 'total': 1})
         self.assertEqual(cover.call_count, 1)
 
+    def test_progress_entries_require_exact_song_title(self):
+        songs = [{
+            'title': 'Song Name', 'type': 'std', 'category': 'maimai',
+            'cover_url': '', 'cover_name': 'cover.png',
+            'sheets': [{'difficulty': 'master', 'level': '14',
+                        'internalLevelValue': 14.0, 'regions': {'jp': True}}],
+        }]
+        near_match = [{
+            'name': 'SongName', 'type': 'std', 'difficulty': 'master',
+            'score': '100.0000%', 'score_icon': 'sss',
+        }]
+        with patch.object(records, 'cover_html', return_value='<div>cover</div>'):
+            entries, stats = records.build_progress_entries(
+                songs, near_match, '14', None, 'sss', 'jp', ('score', {'sss'}))
+
+        self.assertFalse(entries[0]['achieved'])
+        self.assertEqual(stats, {'achieved': 0, 'unachieved': 0, 'unplayed': 1, 'total': 1})
+
     def test_plate_entries_keep_cover_markup_for_single_final_render(self):
         songs = [{
             'title': 'Song', 'type': 'std', 'version': 'maimai',
@@ -81,6 +99,24 @@ class ImageDataTests(unittest.TestCase):
         self.assertNotIn('img', entries[0])
         self.assertEqual(headers['master'], {'all': 1, 'clear': 0})
         self.assertEqual(cover.call_count, 1)
+
+    def test_plate_entries_require_exact_song_title(self):
+        songs = [{
+            'title': 'Ａ Song', 'type': 'std', 'version': 'maimai',
+            'cover_url': '', 'cover_name': 'cover.png',
+            'sheets': [{'difficulty': 'master', 'level': '14',
+                        'internalLevelValue': 14.0, 'regions': {'jp': True}}],
+        }]
+        near_match = [{
+            'name': 'A Song', 'type': 'std', 'difficulty': 'master',
+            'score': '100.0000%', 'combo_icon': 'ap',
+        }]
+        with patch.object(records, 'cover_html', return_value='<div>cover</div>'):
+            entries, headers = records.build_plate_entries(
+                songs, near_match, {'maimai'}, 'combo', {'ap'}, 'jp')
+
+        self.assertFalse(entries[0]['achieved'])
+        self.assertEqual(headers['master'], {'all': 1, 'clear': 0})
 
     def test_two_icons_and_user_text_are_safe(self):
         record = dict(name='<img src=x>', version='test', score='100.0000%', dx_score='1500',

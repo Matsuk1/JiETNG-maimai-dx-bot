@@ -13,7 +13,6 @@ from modules.images.composition import compose_generated_images
 from modules.i18n import image_language, language_catalog, select_text
 from modules.maimai_manager import get_rating_image_path
 from modules.record_manager import achievement_value, find_chart_record, get_single_ra, index_records_by_chart
-from modules.song_matcher import normalize_text
 
 logger = logging.getLogger(__name__)
 PLATE_DIFFICULTIES = ("basic", "advanced", "expert", "master")
@@ -580,7 +579,7 @@ def generate_crop_preview_picture(crops, ver="jp", timezone_offset=9, bg_filter=
 
 
 def build_plate_entries(songs, records, versions, target_type, target_icons, region):
-    record_index = index_records_by_chart(records, normalize_text)
+    record_index = index_records_by_chart(records)
     headers = {difficulty: {'all': 0, 'clear': 0} for difficulty in PLATE_DIFFICULTIES}
     entries = []
     for song in songs:
@@ -592,14 +591,14 @@ def build_plate_entries(songs, records, versions, target_type, target_icons, reg
             if not sheet['regions'].get(region, False) or difficulty not in headers:
                 continue
             headers[difficulty]['all'] += 1
-            record = find_chart_record(record_index, title, difficulty, chart_type, normalize_text)
+            record = find_chart_record(record_index, title, difficulty, chart_type)
             icon = record[f'{target_type}_icon'] if record else 'back'
             achieved = icon in target_icons
             headers[difficulty]['clear'] += achieved
             if difficulty != 'master':
                 continue
             complete_info = {
-                diff: bool(item := find_chart_record(record_index, title, diff, chart_type, normalize_text))
+                diff: bool(item := find_chart_record(record_index, title, diff, chart_type))
                 and item[f'{target_type}_icon'] in target_icons for diff in PLATE_DIFFICULTIES
             }
             entries.append({
@@ -613,7 +612,7 @@ def build_plate_entries(songs, records, versions, target_type, target_icons, reg
 
 
 def build_progress_entries(songs, records, level, category, rank, region, rank_rule):
-    record_index = index_records_by_chart(records, normalize_text)
+    record_index = index_records_by_chart(records)
     target_type, target_icons = rank_rule if rank_rule else (None, ())
     entries = []
     stats = {'achieved': 0, 'unachieved': 0, 'unplayed': 0, 'total': 0}
@@ -628,7 +627,7 @@ def build_progress_entries(songs, records, level, category, rank, region, rank_r
                 continue
             difficulty = sheet['difficulty']
             stats['total'] += 1
-            record = find_chart_record(record_index, title, difficulty, chart_type, normalize_text)
+            record = find_chart_record(record_index, title, difficulty, chart_type)
             icon = record.get(f'{target_type}_icon', 'back') if record and rank else 'back'
             achieved = bool(record) and (not rank or icon in target_icons)
             status = 'unplayed' if not record else 'achieved' if achieved else 'unachieved'
