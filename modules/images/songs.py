@@ -5,7 +5,7 @@ import re
 from modules.images.composition import compose_generated_images, resize_by_width
 from modules.config_loader import PLATES_DIR, VERSIONS_DIR
 from modules.i18n import image_language, language_catalog, select_text
-from modules.images.records import difficulty_color, generate_cover
+from modules.images.records import cover_html, difficulty_color
 
 
 def _song_text(key, language):
@@ -30,14 +30,13 @@ def song_info_generate(
 
 
 def _render_basic_info_image(song_json, language="en"):
-    from modules.images.renderer import image_uri, render_template
-    with generate_cover(song_json.get("cover_url"), song_json.get("type"),
-                        cover_name=song_json.get("cover_name")) as cover:
-        cover_src = image_uri(cover)
+    from modules.images.renderer import render_template
+    cover = cover_html(song_json.get("cover_url"), song_json.get("type"),
+                       cover_name=song_json.get("cover_name"), skin="default")
     info = [(_song_text(key, language), song_json.get(key, default))
             for key, default in (("artist", "UNKNOWN"), ("category", "UNKNOWN"),
                                  ("bpm", "-"), ("version", "UNKNOWN"))]
-    return render_template("song.html", 1000, 265, mode="basic", cover=cover_src,
+    return render_template("song.html", 1000, 265, mode="basic", cover=cover,
                            title=song_json.get("title", "UNKNOWN"), info=info)
 
 

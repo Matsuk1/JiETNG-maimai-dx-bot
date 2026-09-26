@@ -16,6 +16,13 @@
     width: 200px;
     height: 200px;
     border-radius: 20px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .song-cover-content {
+    transform: scale(1.333334);
+    transform-origin: top left;
   }
 
   .song-info {
@@ -39,9 +46,9 @@
   .song dd {
     margin: 0;
   }
-</style>
+  </style>
   <section class="song">
-    <img class="song-cover" src="{{ cover }}">
+    <div class="song-cover"><div class="song-cover-content">{{ cover|safe }}</div></div>
     <div class="song-info">
       <div class="song-title ellipsis">{{ title }}</div>
       <dl>

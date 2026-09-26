@@ -70,13 +70,6 @@ def _png_buffer(image):
         image.close()
 
 
-def _close_entry_images(entries):
-    for entry in entries:
-        image = entry.pop("img", None)
-        if image:
-            image.close()
-
-
 def _find_song(song_id, version):
     return next((song for song in read_dxdata(version)[0] if song.get("id") == song_id), None)
 
@@ -249,10 +242,7 @@ def api_v2_generate_plate(user_id):
     target_type, target_icon = PLATE_RULES[plate_type]
     target_data, target_num = build_plate_entries(
         songs, version_records, target_version, target_type, target_icon, ver)
-    try:
-        plate_img = generate_plate_image(target_data, title, headers=target_num)
-    finally:
-        _close_entry_images(target_data)
+    plate_img = generate_plate_image(target_data, title, headers=target_num)
 
     profile_img = _services.generate_profile(_udata['personal_info'], user_id=user_id)
     img = compose_generated_images(
@@ -299,16 +289,13 @@ def api_v2_generate_achievement(user_id):
     if not target_data:
         return jsonify({"error": "No matching data"}), 404
 
-    try:
-        record_img = generate_level_rank_progress_image(
-            target_data,
-            level.replace("+", "⁺"),
-            rank.upper().replace("+", "⁺") if rank else "",
-            stats,
-            ver=ver,
-        )
-    finally:
-        _close_entry_images(target_data)
+    record_img = generate_level_rank_progress_image(
+        target_data,
+        level.replace("+", "⁺"),
+        rank.upper().replace("+", "⁺") if rank else "",
+        stats,
+        ver=ver,
+    )
 
     profile_img = _services.generate_profile(_udata['personal_info'], scale=1.5, user_id=user_id)
     img = compose_generated_images(

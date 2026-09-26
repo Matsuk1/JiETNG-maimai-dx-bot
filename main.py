@@ -2437,10 +2437,6 @@ async def generate_plate_rcd(user_id, id_use, title, ver="jp", filter_mode=None)
 
     plate_img = generate_plate_image(target_data, title, headers = target_num)
 
-    # 清理 target_data 中的封面图片对象
-    for entry in target_data:
-        entry.pop("img").close()
-
     # 获取用户信息并创建用户信息图片
     user_info = _id_use_data.get('personal_info')
     profile_img = generate_profile(user_info, user_id=id_use)
@@ -2497,10 +2493,6 @@ async def generate_level_rank_progress(user_id, id_use, level, rank=None, ver="j
         show_progress_suffix=is_level_target,
         ver=ver,
     )
-
-    # 清理 target_data 中的封面图片对象
-    for entry in target_data:
-        entry.pop("img").close()
 
     # 获取用户信息并创建用户信息图片
     user_info = _id_use_data.get('personal_info')

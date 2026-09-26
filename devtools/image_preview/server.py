@@ -91,11 +91,11 @@ def render_case(kind, data, skin="default", background=False):
         elif kind in ('progress', 'plate'):
             targets = []
             for item in data.pop('targets'):
-                cover = records.generate_cover(None, item.get('type', 'dx'), cover_name='cover.png',
+                cover = records.cover_html(None, item.get('type', 'dx'), cover_name='cover.png',
                     difficulty=item.get('difficulty'), achieved=item.get('achieved'),
-                    song_title=item.get('song_title'), complete_info=item.get('complete_info'))
-                stack.callback(cover.close)
-                targets.append(dict(item, img=cover))
+                    song_title=item.get('song_title'), complete_info=item.get('complete_info'),
+                    skin=skin)
+                targets.append(dict(item, cover=cover))
             # Keep debug output bounded while preserving production defaults.
             for key in ('img_width', 'max_per_row', 'margin', 'img_height'):
                 data.pop(key, None)

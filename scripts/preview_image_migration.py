@@ -86,7 +86,7 @@ with patch('modules.images.cache.download_and_cache_icon', side_effect=cached), 
     save('song_played', s.song_info_generate(songs[0], records[:3]))
     save('records', r.generate_records_picture(records[:10], records[10:15], title='B50'))
     save('records_details', r.generate_records_picture(records[:5], title='LIST', details={'Difficulty':'master remaster','Level':'13+', 'Played':'Yes'}))
-    targets = [dict(img=r.generate_cover(None,'dx',cover_name=cover_path.name,difficulty=rec['difficulty'],achieved=i%2==0,song_title=rec['name']),level='14' if i<9 else '13+', internal_level=14.1 if i<9 else 13.8,achieved=i%2==0,achievement_rate=100-i/100) for i,rec in enumerate(records)]
+    targets = [dict(cover=r.cover_html(None,'dx',cover_name=cover_path.name,difficulty=rec['difficulty'],achieved=i%2==0,song_title=rec['name']),level='14' if i<9 else '13+', internal_level=14.1 if i<9 else 13.8,achieved=i%2==0,achievement_rate=100-i/100) for i,rec in enumerate(records)]
     save('progress', r.generate_level_rank_progress_image(targets,'13+ / 14','SSS',dict(achieved=9,unachieved=7,unplayed=2,total=18)))
     save('plate',r.generate_plate_image(targets,'舞神',headers={key:dict(clear=12,all=18) for key in ['basic','advanced','expert','master']}))
     save('version',s.generate_version_list(songs,{'version':'maimai', 'abbr':'真'}))
@@ -100,7 +100,6 @@ with patch('modules.images.cache.download_and_cache_icon', side_effect=cached), 
     long_song['artist'] = '<script>alert(1)</script> & Artist'
     save('song_long_title',s.song_info_generate(long_song, ver='intl'))
     save('score_empty',r.generate_score_recognition_picture({}, ver='intl'))
-    for item in targets: item['img'].close()
 # Isolate profile rendering from main.py application startup.
 source = subprocess.check_output(['git','show',f'{revision}:main.py'], text=True) if revision else Path('main.py').read_text()
 fn=next(n for n in ast.parse(source).body if isinstance(n,ast.FunctionDef) and n.name=='generate_profile')

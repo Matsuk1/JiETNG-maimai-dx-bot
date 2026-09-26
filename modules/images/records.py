@@ -374,7 +374,7 @@ def generate_cover(cover_url, type, icon=None, icon_type=None, cover_name=None, 
 @skinnable
 def generate_plate_image(target_data, title, img_width=1820,
                          max_per_row=10, margin=20, headers=None):
-    from modules.images.renderer import image_uri, file_uri, render_template
+    from modules.images.renderer import file_uri, render_template
     if max_per_row < 1:
         raise ValueError("max_per_row must be positive")
     rows = []
@@ -382,14 +382,14 @@ def generate_plate_image(target_data, title, img_width=1820,
         entries = sorted((entry for entry in target_data if entry['level'] == level),
                          key=lambda x: (not x.get('achieved', False), -x.get('achievement_rate', 0.0)))
         if entries:
-            rows.append((level, [image_uri(entry['img']) for entry in entries]))
+            rows.append((level, [entry['cover'] for entry in entries]))
     cards = [(key.upper(), "✓" if value['clear'] == value['all'] and value['all'] > 0
               else f"{value['clear']} / {value['all']}", difficulty_color(key))
              for key, value in (headers or {}).items()]
     return render_template("progress.html", img_width, mode="plate", margin=margin,
                            max_per_row=max_per_row, title=title,
                            title_src=file_uri(os.path.join(PLATES_DIR, f"{title}.webp")),
-                           cards=cards, rows=rows)
+                           cards=cards, rows=rows, markup=True)
 
 
 def _level_group_sort_key(level):
@@ -425,7 +425,7 @@ def generate_level_rank_progress_image(
     生成难度评级进度图片，顶部显示总体统计卡片，下方显示分组封面列表
 
     参数:
-        target_data: 歌曲数据列表，每个元素为 {"img": PIL.Image, "level": str, "internal_level": float, "achieved": bool, "difficulty": str, "achievement_rate": float}
+        target_data: 歌曲数据列表，每个元素为 {"cover": str, "level": str, "internal_level": float, "achieved": bool, "difficulty": str, "achievement_rate": float}
         level_name: 难度名称（如 "13", "13+", "14", "14+"）
         rank_name: 评级名称（如 "SSS⁺", "AP", "FDX"）
         stats: 统计信息字典 {"achieved": int, "unachieved": int, "unplayed": int, "total": int}
@@ -464,7 +464,7 @@ def generate_level_rank_progress_image(
     else:
         title_text = f"{level_name} {_image_text('progress.level_list_suffix', language)}"
 
-    from modules.images.renderer import image_uri, render_template
+    from modules.images.renderer import render_template
     cards = []
     for key, count, color in (
         ("completed", stats["achieved"], "#4caf50"),
@@ -476,8 +476,8 @@ def generate_level_rank_progress_image(
         cards.append((_image_text(f"progress.{key}", language), value, color))
     return render_template("progress.html", img_width, mode="progress", title=title_text,
                            margin=margin, max_per_row=max_per_row, cards=cards,
-                           rows=[(label, [image_uri(entry['img']) for entry in entries])
-                                 for label, entries in rows])
+                           rows=[(label, [entry['cover'] for entry in entries])
+                                 for label, entries in rows], markup=True)
 
 
 def difficulty_color(difficulty):
@@ -595,9 +595,9 @@ def build_plate_entries(songs, records, versions, target_type, target_icons, reg
                 and item[f'{target_type}_icon'] in target_icons for diff in PLATE_DIFFICULTIES
             }
             entries.append({
-                'img': generate_cover(song['cover_url'], chart_type, icon, target_type,
-                                      cover_name=song.get('cover_name'),
-                                      complete_info=complete_info, achieved=achieved),
+                'cover': cover_html(song['cover_url'], chart_type, icon, target_type,
+                                    cover_name=song.get('cover_name'),
+                                    complete_info=complete_info, achieved=achieved),
                 'level': sheet['level'], 'achieved': achieved,
                 'achievement_rate': achievement_value(record.get('score')) if record else 0.0,
             })
@@ -626,10 +626,10 @@ def build_progress_entries(songs, records, level, category, rank, region, rank_r
             status = 'unplayed' if not record else 'achieved' if achieved else 'unachieved'
             stats[status] += 1
             entries.append({
-                'img': generate_cover(song['cover_url'], chart_type, icon if rank else None,
-                                      target_type if rank else None, cover_name=song.get('cover_name'),
-                                      difficulty=difficulty, achieved=achieved if rank else None,
-                                      song_title=title),
+                'cover': cover_html(song['cover_url'], chart_type, icon if rank else None,
+                                    target_type if rank else None, cover_name=song.get('cover_name'),
+                                    difficulty=difficulty, achieved=achieved if rank else None,
+                                    song_title=title),
                 'level': sheet['level'], 'internal_level': sheet['internalLevelValue'],
                 'achieved': achieved, 'difficulty': difficulty,
                 'achievement_rate': achievement_value(record.get('score')) if record else 0.0,

@@ -37,14 +37,46 @@ class ImageDataTests(unittest.TestCase):
         self.assertIsNone(records.generate_records_picture())
 
     def test_group_order_and_completed_first(self):
-        with Image.new('RGBA', (150, 180)) as im:
-            data = [dict(img=im, level='13+', internal_level=13.8, achieved=False, achievement_rate=100),
-                    dict(img=im, level='14', internal_level=14.2, achieved=True, achievement_rate=99)]
-            with patch('modules.images.renderer.render_template') as render:
-                records.generate_level_rank_progress_image(data, '13–14', 'SSS',
-                    dict(achieved=1, unachieved=1, unplayed=0, total=2))
-            self.assertEqual([label for label, _ in render.call_args.kwargs['rows']], ['14.2', '13.8'])
-            self.assertEqual(render.call_args.kwargs['cards'][0][1], '1 (50.0%)')
+        data = [dict(cover='a', level='13+', internal_level=13.8, achieved=False, achievement_rate=100),
+                dict(cover='b', level='14', internal_level=14.2, achieved=True, achievement_rate=99)]
+        with patch('modules.images.renderer.render_template') as render:
+            records.generate_level_rank_progress_image(data, '13–14', 'SSS',
+                dict(achieved=1, unachieved=1, unplayed=0, total=2))
+        self.assertEqual([label for label, _ in render.call_args.kwargs['rows']], ['14.2', '13.8'])
+        self.assertEqual(render.call_args.kwargs['cards'][0][1], '1 (50.0%)')
+        self.assertTrue(render.call_args.kwargs['markup'])
+
+    def test_progress_entries_keep_cover_markup_for_single_final_render(self):
+        songs = [{
+            'title': 'Song', 'type': 'std', 'category': 'maimai',
+            'cover_url': 'https://example.test/cover.png', 'cover_name': 'cover.png',
+            'sheets': [{'difficulty': 'master', 'level': '14',
+                        'internalLevelValue': 14.0, 'regions': {'jp': True}}],
+        }]
+        with patch.object(records, 'cover_html', return_value='<div>cover</div>') as cover:
+            entries, stats = records.build_progress_entries(
+                songs, [], '14', None, None, 'jp', None)
+
+        self.assertEqual(entries[0]['cover'], '<div>cover</div>')
+        self.assertNotIn('img', entries[0])
+        self.assertEqual(stats, {'achieved': 0, 'unachieved': 0, 'unplayed': 1, 'total': 1})
+        self.assertEqual(cover.call_count, 1)
+
+    def test_plate_entries_keep_cover_markup_for_single_final_render(self):
+        songs = [{
+            'title': 'Song', 'type': 'std', 'version': 'maimai',
+            'cover_url': 'https://example.test/cover.png', 'cover_name': 'cover.png',
+            'sheets': [{'difficulty': 'master', 'level': '14',
+                        'internalLevelValue': 14.0, 'regions': {'jp': True}}],
+        }]
+        with patch.object(records, 'cover_html', return_value='<div>cover</div>') as cover:
+            entries, headers = records.build_plate_entries(
+                songs, [], {'maimai'}, 'combo', {'ap'}, 'jp')
+
+        self.assertEqual(entries[0]['cover'], '<div>cover</div>')
+        self.assertNotIn('img', entries[0])
+        self.assertEqual(headers['master'], {'all': 1, 'clear': 0})
+        self.assertEqual(cover.call_count, 1)
 
     def test_two_icons_and_user_text_are_safe(self):
         record = dict(name='<img src=x>', version='test', score='100.0000%', dx_score='1500',
@@ -95,16 +127,15 @@ class ImageDataTests(unittest.TestCase):
                     [{}], '14', 'SSS', {}, max_per_row=columns)
 
     def test_low_levels_grouped_by_constant_without_mutating_input(self):
-        data = [dict(img='a', level='9', internal_level=9.1, achieved=True, achievement_rate=100),
-                dict(img='b', level='9+', internal_level=9.8, achieved=False, achievement_rate=99),
-                dict(img='c', level='10', internal_level=10.0, achieved=True, achievement_rate=100),
-                dict(img='d', level='9+', internal_level=9.8, achieved=True, achievement_rate=98)]
-        with patch('modules.images.renderer.image_uri', side_effect=lambda image: image), \
-             patch('modules.images.renderer.render_template') as render:
+        data = [dict(cover='a', level='9', internal_level=9.1, achieved=True, achievement_rate=100),
+                dict(cover='b', level='9+', internal_level=9.8, achieved=False, achievement_rate=99),
+                dict(cover='c', level='10', internal_level=10.0, achieved=True, achievement_rate=100),
+                dict(cover='d', level='9+', internal_level=9.8, achieved=True, achievement_rate=98)]
+        with patch('modules.images.renderer.render_template') as render:
             records.generate_level_rank_progress_image(
                 data, 'ALL', '', dict(achieved=3, unachieved=1, unplayed=0, total=4), group_by='level')
         self.assertEqual(render.call_args.kwargs['rows'], [('10', ['c']), ('10-', ['d', 'b', 'a'])])
-        self.assertEqual([entry['img'] for entry in data], ['a', 'b', 'c', 'd'])
+        self.assertEqual([entry['cover'] for entry in data], ['a', 'b', 'c', 'd'])
 
     def test_version_rows_sorted_by_level_constant_and_title(self):
         from modules.images import songs
