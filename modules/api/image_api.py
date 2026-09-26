@@ -297,7 +297,7 @@ def api_v2_generate_achievement(user_id):
         ver=ver,
     )
 
-    profile_img = _services.generate_profile(_udata['personal_info'], scale=1.3, user_id=user_id)
+    profile_img = _services.generate_profile(_udata['personal_info'], user_id=user_id)
     img = compose_generated_images(
         [profile_img, record_img],
         timezone_offset=get_user_timezone(user_id),
