@@ -942,6 +942,46 @@ def _fixed_dxnet_note_counts(
     return {**chart_note_counts, **observed, "total": sum(observed.values())}, True
 
 
+def _fill_missing_note_counts_from_judgement(
+    chart_note_counts,
+    judgement,
+    title_match_type,
+):
+    """Use a complete OCR row when dxdata has no total for that note type.
+
+    A missing dxdata value is unknown, not zero.  The result screen contains all
+    five judgement buckets, so their sum is the chart's note count when the
+    title match is trusted and every cell in that row was read successfully.
+    Explicit zeroes in dxdata remain authoritative.
+    """
+    note_counts = dict(chart_note_counts or {})
+    if title_match_type not in TRUSTED_TITLE_MATCH_TYPES:
+        return note_counts, ()
+
+    inferred_rows = []
+    for row_name in JUDGEMENT_ROW_NAMES:
+        if note_counts.get(row_name) is not None:
+            continue
+        row = judgement.get(row_name)
+        if not isinstance(row, dict) or any(
+            field_name not in row or row.get(field_name) is None
+            for field_name in ALL_JUDGEMENT_VALUE_NAMES
+        ):
+            continue
+        try:
+            values = [int(row[field_name]) for field_name in ALL_JUDGEMENT_VALUE_NAMES]
+        except (TypeError, ValueError):
+            continue
+        if any(value < 0 for value in values):
+            continue
+        note_counts[row_name] = sum(values)
+        inferred_rows.append(row_name)
+
+    if inferred_rows and all(note_counts.get(row) is not None for row in JUDGEMENT_ROW_NAMES):
+        note_counts["total"] = sum(int(note_counts[row]) for row in JUDGEMENT_ROW_NAMES)
+    return note_counts, tuple(inferred_rows)
+
+
 def _select_validation_candidate(candidates, title_match_type, achievement):
     if not candidates:
         return None
@@ -1401,6 +1441,11 @@ def _judgement_validation_candidates(
     for song in matching_songs:
         for sheet in song.get("sheets", []):
             chart_note_counts = sheet.get("noteCounts") or {}
+            note_counts, inferred_note_count_rows = _fill_missing_note_counts_from_judgement(
+                chart_note_counts,
+                judgement,
+                title_match_type,
+            )
             raw_overfull_rows = 0
             raw_matching_rows = 0
             for row_name in row_names:
@@ -1408,7 +1453,7 @@ def _judgement_validation_candidates(
                 if not isinstance(row, dict):
                     continue
                 try:
-                    expected = max(0, int(chart_note_counts.get(row_name, 0) or 0))
+                    expected = max(0, int(note_counts.get(row_name, 0) or 0))
                     observed = sum(
                         max(0, int(row.get(name, 0) or 0))
                         for name in all_value_names
@@ -1420,7 +1465,7 @@ def _judgement_validation_candidates(
                 elif observed == expected:
                     raw_matching_rows += 1
             note_counts, dxnet_fixed_note_counts = _fixed_dxnet_note_counts(
-                chart_note_counts,
+                note_counts,
                 judgement,
                 source_layout,
                 title_match_type,
@@ -1463,6 +1508,7 @@ def _judgement_validation_candidates(
                         "raw_overfull_rows": raw_overfull_rows,
                         "raw_matching_rows": raw_matching_rows,
                         "dxnet_fixed_note_counts": dxnet_fixed_note_counts,
+                        "inferred_note_count_rows": inferred_note_count_rows,
                         "title_candidate_rank": title_candidate_ranks.get(
                             song_identity_key(song), len(title_candidate_ranks),
                         ),
@@ -1579,6 +1625,7 @@ def _apply_judgement_validation(result, best, title_match_type, *, preserve_inpu
         "row_offset": best["row_offset"],
         "column_offset": best["column_offset"],
         "dxnet_fixed_note_counts": best.get("dxnet_fixed_note_counts", False),
+        "inferred_note_count_rows": list(best.get("inferred_note_count_rows") or ()),
         "miss_corrections": {},  # Retained for the public response contract.
         "unmatched_notes": unmatched_notes,
         "achievement_calc": {

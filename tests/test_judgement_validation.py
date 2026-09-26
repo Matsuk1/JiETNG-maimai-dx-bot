@@ -94,3 +94,50 @@ def test_break_recovery_respects_manual_input_and_missing_required_touch(preserv
     with patch.object(recognizer, 'read_dxdata', return_value=([song], None)):
         output = recognizer.validate_recognized_judgement(white_snow_result(), preserve_input=preserve)
     assert not any(item.get('inferred_row') for item in output.get('validation', {}).get('calc_corrections', []))
+
+
+def test_missing_dxdata_note_counts_are_derived_from_complete_ocr_rows():
+    fields = ('critical_perfect', 'perfect', 'great', 'good', 'miss')
+    values = {
+        'tap': [373, 155, 13, 3, 3],
+        'hold': [38, 16, 1, 0, 0],
+        'slide': [91, 0, 1, 0, 0],
+        'touch': [20, 0, 0, 0, 0],
+        'break': [63, 5, 0, 0, 0],
+    }
+    rows = {name: dict(zip(fields, counts)) for name, counts in values.items()}
+    original = copy.deepcopy(rows)
+    song = dict(id='happycore', title='The Happycore Idol', type='dx', sheets=[dict(
+        difficulty='master', noteCounts={name: None for name in values},
+    )])
+    result = dict(parsed=dict(
+        title='The Happycore Idol', achievement=100.3551, sub_judgement=rows,
+    ))
+
+    with patch.object(recognizer, 'read_dxdata', return_value=([song], None)):
+        output = recognizer.validate_recognized_judgement(result)
+
+    assert rows == original
+    validation = output['validation']
+    assert validation['achievement_calc']['consistent'] is True
+    assert validation['achievement_calc']['complete'] is True
+    assert validation['matching_rows'] == 5
+    assert validation['inferred_note_count_rows'] == list(values)
+    assert not validation['uncertain_cells']
+    assert not validation['calc_corrections']
+
+
+def test_explicit_zero_note_count_is_not_replaced_by_ocr_total(chart):
+    song, rows = chart
+    song['sheets'][0]['noteCounts']['touch'] = 0
+    rows['touch']['critical_perfect'] = 5
+    result = dict(parsed=dict(
+        title='Test Song', achievement=101.0, sub_judgement=rows,
+    ))
+
+    with patch.object(recognizer, 'read_dxdata', return_value=([song], None)):
+        output = recognizer.validate_recognized_judgement(
+            result, allow_ocr_alignment=False, preserve_input=True,
+        )
+
+    assert 'validation' not in output
