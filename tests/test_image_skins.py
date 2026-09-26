@@ -51,13 +51,20 @@ def test_glass_thumbnail_cover_does_not_expose_white_card_corners():
 
 
 def test_glass_plate_and_progress_covers_only_round_art_top_corners():
-    for plate in (False, True):
+    cases = [
+        (False, False, '#ffffffc7'),
+        (False, True, '#9f51dc'),
+        (True, False, '#ffffffc7'),
+    ]
+    for plate, achieved, expected_background in cases:
         html = template('cover.html', skin='glass', cover='cover.webp', type_src='',
                         status='status.webp', difficulty='master', color='#9f51dc',
-                        footer=True, title='Sample', achieved=False, plate=plate,
+                        footer=True, title='Sample', achieved=achieved, plate=plate,
                         blocks=['#9f51dc'])
         assert html.count('border-radius: 13px 13px 0 0;') == 2
         assert 'border-radius: 13px;' not in html
+        assert 'inset 0 1px 2px #ffffff' not in html
+        assert f'--footer-background: {expected_background};' in html
 
 
 def test_nested_skin_scope_is_isolated_and_restored_on_error():
