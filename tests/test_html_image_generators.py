@@ -43,7 +43,7 @@ class ImageDataTests(unittest.TestCase):
             records.generate_level_rank_progress_image(data, '13–14', 'SSS',
                 dict(achieved=1, unachieved=1, unplayed=0, total=2))
         self.assertEqual([label for label, _ in render.call_args.kwargs['rows']], ['14.2', '13.8'])
-        self.assertEqual(render.call_args.kwargs['cards'][0][1], '1 (50.0%)')
+        self.assertEqual(render.call_args.kwargs['cards'][0][1:3], ('1', '50.0%'))
         self.assertTrue(render.call_args.kwargs['markup'])
         self.assertEqual(render.call_args.args[1], 1800)
         self.assertAlmostEqual(render.call_args.kwargs['render_scale'], 2 / 3)

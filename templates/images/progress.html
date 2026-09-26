@@ -23,15 +23,34 @@
   }
 
   .summary {
+    position: relative;
+    overflow: hidden;
     border-radius: 22px;
     border-left: 14px solid var(--accent);
     background: color-mix(in srgb,var(--accent) 15%,white);
     box-shadow: 3px 3px #0002;
     padding: 20px 28px;
-    height: 170px;
+    height: 210px;
+    display: grid;
+    grid-template-rows: auto 1fr;
+    min-width: 0;
+  }
+
+  .summary-fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: var(--progress);
+    border-radius: inherit;
+    background: color-mix(in srgb,var(--accent) 30%,transparent);
+  }
+
+  .summary-header {
+    position: relative;
+    z-index: 1;
     display: flex;
-    flex-direction: column;
-    justify-content: center;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
     min-width: 0;
   }
 
@@ -41,7 +60,11 @@
   }
 
   .summary-value {
-    font-size: 66px;
+    position: relative;
+    z-index: 1;
+    align-self: end;
+    font-size: 76px;
+    line-height: 1;
   }
 
   .plate-heading {
@@ -175,10 +198,13 @@
   {% else %}
     <div class="progress-heading outlined" data-fit="92">{{ title }}</div>
     <div class="summary-grid">
-      {% for label, value, color in cards %}
-        <div class="summary" style="--accent: {{ color }};">
-          <div class="summary-label ellipsis" data-fit="28">{{ label }}</div>
-          <div class="summary-value ellipsis" data-fit="32">{{ value }}</div>
+      {% for label, value, fill, color in cards %}
+        <div class="summary" style="--accent: {{ color }}; --progress: {{ fill }};">
+          <div class="summary-fill"></div>
+          <div class="summary-header">
+            <div class="summary-label ellipsis" data-fit="28">{{ label }}</div>
+          </div>
+          <div class="summary-value ellipsis" data-fit="36">{{ value }}</div>
         </div>
       {% endfor %}
     </div>
