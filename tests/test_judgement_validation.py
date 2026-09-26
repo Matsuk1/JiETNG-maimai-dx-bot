@@ -81,8 +81,8 @@ def test_std_zero_touch_does_not_block_overfull_break_recovery(touch):
     assert output['parsed']['sub_judgement']['break'] == dict(
         critical_perfect=14, perfect=4, great=0, good=0, miss=0)
     validation = output['validation']
-    assert validation['difficulty'] == ('master' if touch == 0 else None)
-    assert validation['chart_metadata_confirmed'] is (touch == 0)
+    assert validation['difficulty'] == 'master'
+    assert validation['chart_metadata_confirmed'] is True
     assert validation['achievement_calc']['consistent'] is True
     assert validation['achievement_calc']['complete'] is True
     assert validation['calc_corrections'][0]['inferred_row'] is True
@@ -147,3 +147,34 @@ def test_explicit_zero_note_count_is_not_replaced_by_ocr_total(chart):
         )
 
     assert 'validation' not in output
+
+
+def test_known_note_counts_uniquely_identify_chart_with_one_missing_count():
+    fields = ('critical_perfect', 'perfect', 'great', 'good', 'miss')
+    values = {
+        'tap': [521, 308, 27, 5, 0],
+        'hold': [13, 5, 1, 0, 0],
+        'slide': [211, 0, 0, 0, 0],
+        'touch': [0, 0, 0, 0, 0],
+        'break': [48, 39, 2, 0, 1],
+    }
+    rows = {name: dict(zip(fields, counts)) for name, counts in values.items()}
+    song = dict(id='qzkago', title='QZKago Requiem', type='std', sheets=[
+        dict(difficulty='master', level='14', internalLevelValue=14.2,
+             noteCounts=dict(tap=900, hold=20, slide=220, touch=None, **{'break': 90})),
+        dict(difficulty='remaster', level='14+', internalLevelValue=14.8,
+             noteCounts=dict(tap=861, hold=19, slide=211, touch=None, **{'break': 90})),
+    ])
+    result = dict(parsed=dict(
+        title='QZKago Requiem', achievement=100.0897, sub_judgement=rows,
+    ))
+
+    with patch.object(recognizer, 'read_dxdata', return_value=([song], None)):
+        output = recognizer.validate_recognized_judgement(result)
+
+    validation = output['validation']
+    assert validation['chart_metadata_confirmed'] is True
+    assert validation['difficulty'] == 'remaster'
+    assert validation['level'] == '14+'
+    assert validation['internal_level'] == 14.8
+    assert validation['inferred_note_count_rows'] == []

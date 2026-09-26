@@ -975,7 +975,11 @@ def _fill_missing_note_counts_from_judgement(
         if any(value < 0 for value in values):
             continue
         note_counts[row_name] = sum(values)
-        inferred_rows.append(row_name)
+        # Preserve the original matcher semantics: a missing dxdata count and
+        # a complete all-zero OCR row are an exact zero-note match. Only a
+        # positive count synthesized from OCR makes chart metadata uncertain.
+        if note_counts[row_name] > 0:
+            inferred_rows.append(row_name)
 
     if inferred_rows and all(note_counts.get(row) is not None for row in JUDGEMENT_ROW_NAMES):
         note_counts["total"] = sum(int(note_counts[row]) for row in JUDGEMENT_ROW_NAMES)
@@ -1617,8 +1621,9 @@ def _apply_judgement_validation(result, best, title_match_type, *, preserve_inpu
         "type": song.get("type"),
         "cover_url": song.get("cover_url"),
         "cover_name": song.get("cover_name"),
-        # When note totals came from the OCR rows, the matching sheet is only a
-        # vehicle for Calc and must not be presented as an identified chart.
+        # Positive note totals synthesized from OCR cannot identify a sheet.
+        # Missing counts paired with complete zero rows retain the old exact
+        # zero-note matching semantics.
         "difficulty": sheet.get("difficulty") if chart_metadata_confirmed else None,
         "level": sheet.get("level") if chart_metadata_confirmed else None,
         "internal_level": (
