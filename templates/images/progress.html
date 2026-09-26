@@ -121,7 +121,7 @@
     height: auto;
   }
 </style>
-<section class="progress-page">
+<section class="progress-page progress-mode-{{ mode }}">
   {% if mode == 'plate' %}
     <header class="plate-heading">
       <div class="plate-stats">
@@ -183,22 +183,24 @@
       {% endfor %}
     </div>
   {% endif %}
-  {% for label, items in rows %}
-    <div class="level-row">
-      <div class="level-label">
-        <span data-fit="28" style="max-width: 76px;">{{ label }}</span>
+  <div class="level-list">
+    {% for label, items in rows %}
+      <div class="level-row">
+        <div class="level-label">
+          <span data-fit="28" style="max-width: 76px;">{{ label }}</span>
+        </div>
+        <div class="level-grid">
+          {% for item in items %}
+            <div class="level-item">
+              {% if markup %}
+                {{ item|safe }}
+              {% else %}
+                <img src="{{ item }}">
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
       </div>
-      <div class="level-grid">
-        {% for item in items %}
-          <div class="level-item">
-            {% if markup %}
-              {{ item|safe }}
-            {% else %}
-              <img src="{{ item }}">
-            {% endif %}
-          </div>
-        {% endfor %}
-      </div>
-    </div>
-  {% endfor %}
+    {% endfor %}
+  </div>
 </section>
