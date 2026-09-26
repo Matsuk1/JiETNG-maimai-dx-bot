@@ -171,6 +171,15 @@ def find_matching_songs(query: str, SONGS: list, max_results: int = 6, threshold
     Returns:
         list: 匹配的歌曲列表
     """
+    # The official song U+3000 has an intentionally blank display title.
+    # A bare ``info``/``record`` command targets only truly blank titles;
+    # do not let general normalization turn punctuation-only titles into matches.
+    if query == "":
+        return [
+            song for song in SONGS
+            if not str(song.get("title") or "").strip()
+        ][:max_results]
+
     matching_songs = []
 
     for song in SONGS:

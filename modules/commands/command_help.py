@@ -58,7 +58,10 @@ SUFFIX_HELP_ALIASES = {
     "prog": "level_rank_progress",
 }
 
-REQUIRED_PARAM_HELP_WORDS = set(FIRST_WORD_HELP_ALIASES) | set(SUFFIX_HELP_ALIASES)
+REQUIRED_PARAM_HELP_WORDS = (
+    set(FIRST_WORD_HELP_ALIASES)
+    | (set(SUFFIX_HELP_ALIASES) - {"info", "record"})
+)
 HIDDEN_HELP_COMMAND_WORDS = {"unknown"}
 HELP_INDEX_WORDS = {"help", "commands", "command", "帮助", "幫助", "ヘルプ", "コマンド"}
 

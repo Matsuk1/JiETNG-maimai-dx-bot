@@ -35,12 +35,14 @@ class SongInfoImageTests(unittest.TestCase):
                     b'image', fields=('main_title',))
                 namespace['search_song'].assert_awaited_once_with('user', '白ゆき', 'jp')
 
-    def test_text_search_and_missing_image(self):
+    def test_text_search_and_bare_command(self):
         namespace = self.handler_namespace()
         self.assertEqual(namespace['cmd_song_info'](self.context('白ゆき info', None)), 'song-result')
         namespace['_download_line_message_content'].assert_not_called()
         namespace['search_song'].assert_awaited_once_with('user', '白ゆき', 'jp')
-        self.assertEqual(namespace['cmd_song_info'](self.context('info', None)), 'info-error')
+        namespace['search_song'].reset_mock()
+        self.assertEqual(namespace['cmd_song_info'](self.context('info', None)), 'song-result')
+        namespace['search_song'].assert_awaited_once_with('user', '', 'jp')
 
     @staticmethod
     def context(text, quoted):

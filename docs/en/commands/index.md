@@ -47,8 +47,8 @@ Filters such as `-lv`, `-ra`, `-scr`, `-dx`, `-star`, `-diff`, `-ver`, `-type`, 
 
 | Format | Description |
 |--------|-------------|
-| `[song] record` | Personal record for a song |
-| `[song] info` | Song details |
+| `[song] record` / `record` | Personal record; omit the title for the blank-title song |
+| `[song] info` / `info` | Song details; omit the title for the blank-title song |
 | `artist <keyword> [page]` | Search by artist |
 | `designer <keyword> [page]` | Search by chart designer |
 | `bpm <BPM or range> [page]` | Search by BPM, e.g. `bpm 180` / `bpm 0-120` / `bpm 120-180` |

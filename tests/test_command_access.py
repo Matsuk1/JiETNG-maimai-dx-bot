@@ -1,13 +1,15 @@
 import ast
+import asyncio
 import re
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 
 from modules.commands import command_config as access
 from modules.commands.command_help import command_help_message, detect_command_help_key
+from modules.commands.command_help import detect_missing_param_help_key
 from modules.commands.command_parsers import parse_fix_record_command
 from modules.commands.command_router import Command, Exact
 from modules.score_recognition.presentation import build_fix_command
@@ -96,6 +98,35 @@ def test_denied_ai_request_does_not_enter_queue(monkeypatch):
 ])
 def test_help_aliases(query, key):
     assert detect_command_help_key(query) == key
+
+
+def test_bare_blank_title_commands_are_not_treated_as_missing_parameters():
+    assert detect_missing_param_help_key('info') is None
+    assert detect_missing_param_help_key('record') is None
+
+
+def test_song_record_route_and_handler_accept_bare_command():
+    path = Path(__file__).resolve().parents[1] / 'main.py'
+    tree = ast.parse(path.read_text())
+    route = next(node for node in ast.walk(tree)
+                 if isinstance(node, ast.Call)
+                 and isinstance(node.func, ast.Name) and node.func.id == 'Command'
+                 and any(k.arg == 'name' and isinstance(k.value, ast.Constant)
+                         and k.value.value == 'song_record' for k in node.keywords))
+    pattern = route.args[0].args[0].value
+    assert re.fullmatch(pattern, 'record', re.IGNORECASE)
+    assert re.fullmatch(pattern, '白ゆき record', re.IGNORECASE)
+
+    node = next(node for node in tree.body if isinstance(node, ast.FunctionDef)
+                and node.name == 'async_get_song_record_task')
+    get_song_record = AsyncMock(return_value='song-record')
+    namespace = dict(re=re, asyncio=asyncio, track_event=Mock(),
+                     get_song_record=get_song_record, smart_reply=Mock(), configuration={})
+    exec(compile(ast.Module(body=[node], type_ignores=[]), str(path), 'exec'), namespace)
+    ctx = SimpleNamespace(text='record', user_id='user', id_use='user', mai_ver_use='jp',
+                          reply_token='reply', source_type='user')
+    namespace['async_get_song_record_task'](ctx)
+    get_song_record.assert_awaited_once_with('user', 'user', '', 'jp')
 
 
 def test_help_messages_and_unknown_key():

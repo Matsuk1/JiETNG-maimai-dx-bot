@@ -69,7 +69,7 @@ vocaloid ap prog -up
 PRiSM PLUS ver
 ```
 
-`record` 按曲名或别名 搜索已保存的个人成绩；多个结果时选择候选。`records` 是个人成绩列表，可加页码；`levels` 是谱面列表，不支持这种页码后缀。
+`record` 按曲名或别名搜索已保存的个人成绩；直接发送 `record` 会查询空曲名歌曲，多个结果时选择候选。`records` 是个人成绩列表，可加页码；`levels` 是谱面列表，不支持这种页码后缀。
 
 `prog` 与 `levels` 仅支持等级 `11`、`11+`、`12`、`12+`、`13`、`13+`、`14`、`14+`、`15`，不支持小数定数；其中 `14+` 包含 15。也支持分类：`vocaloid`、`popani`、`touhou`、`gekichu`、`game`、`maimai`。目标为 `s`、`s+`、`ss`、`ss+`、`sss`、`sss+`、`fc`、`fc+`、`ap`、`ap+`、`fdx`、`fdx+`。
 

@@ -1,7 +1,7 @@
 """OCR title matching retains its precedence and stable song identities."""
 import pytest
 
-from modules.song_matcher import match_recognized_song_title, song_identity_key
+from modules.song_matcher import find_matching_songs, match_recognized_song_title, song_identity_key
 
 
 @pytest.mark.parametrize('query,title,kind', [
@@ -21,3 +21,10 @@ def test_exact_match_limit_and_chart_identity():
     assert match_recognized_song_title('Alpha Beta', [std, dx], 1) == ([std], 'exact')
     assert song_identity_key(std) != song_identity_key(dx)
     assert match_recognized_song_title('', [std, dx]) == ([], 'none')
+
+
+def test_empty_query_matches_only_blank_title():
+    blank = {'id': 'blank', 'type': 'dx', 'title': '\u3000'}
+    punctuation = {'id': 'punctuation', 'type': 'dx', 'title': '♪'}
+    named = {'id': 'named', 'type': 'dx', 'title': 'Alpha'}
+    assert find_matching_songs('', [punctuation, blank, named]) == [blank]

@@ -1766,7 +1766,10 @@ def async_generate_friend_record_task(ctx):
 
 def async_get_song_record_task(ctx):
     """Query using the command context resolved before queueing."""
-    acronym = re.sub(r"\s+record$", "", ctx.text, flags=re.IGNORECASE).strip()
+    text = ctx.text.strip()
+    acronym = "" if text.lower() == "record" else re.sub(
+        r"\s+record$", "", text, flags=re.IGNORECASE
+    ).strip()
     track_event("image_gen", user_id=ctx.user_id,
                 metadata={"command": "record", "source": "line"})
     reply_msg = asyncio.run(get_song_record(ctx.user_id, ctx.id_use, acronym, ctx.mai_ver_use))
@@ -3624,26 +3627,25 @@ def cmd_song_info(ctx):
     keyword = re.sub(r"(^info|\s+info|ってどんな曲)$", "", ctx.text.strip(), flags=re.IGNORECASE).strip()
     if not keyword:
         quoted_message_id = getattr(ctx.event.message, "quoted_message_id", None)
-        if not quoted_message_id:
-            return info_error(ctx.user_id)
-        try:
-            image_bytes = _download_line_message_content(quoted_message_id)
-            recognition = recognize_score_image_bytes(
-                image_bytes,
-                fields=("main_title",),
+        if quoted_message_id:
+            try:
+                image_bytes = _download_line_message_content(quoted_message_id)
+                recognition = recognize_score_image_bytes(
+                    image_bytes,
+                    fields=("main_title",),
+                )
+            except InvalidScoreImageError:
+                return song_error(ctx.user_id)
+            keyword = str(
+                (recognition.get("parsed") or {}).get("title") or ""
+            ).strip()
+            if not keyword:
+                return song_error(ctx.user_id)
+            logger.info(
+                "[SongInfo] OCR title search: user_id=%s title=%s",
+                ctx.user_id,
+                keyword,
             )
-        except InvalidScoreImageError:
-            return song_error(ctx.user_id)
-        keyword = str(
-            (recognition.get("parsed") or {}).get("title") or ""
-        ).strip()
-        if not keyword:
-            return song_error(ctx.user_id)
-        logger.info(
-            "[SongInfo] OCR title search: user_id=%s title=%s",
-            ctx.user_id,
-            keyword,
-        )
     return asyncio.run(search_song(ctx.user_id, keyword, ctx.mai_ver))
 
 def cmd_random_song(ctx):
@@ -3808,7 +3810,7 @@ COMMANDS = [
             async_generate_friend_record_task, queue=QUEUE_WEB,
             rate_limit_key="async_generate_friend_record_task",
             name="friend_rcd"),
-    Command(Regex(r"^.+\s+record$", re.IGNORECASE),
+    Command(Regex(r"^(?:record|.+\s+record)$", re.IGNORECASE),
             async_get_song_record_task, queue=QUEUE_WEB,
             mention_queryable=True,
             rate_limit_key="async_get_song_record_task",

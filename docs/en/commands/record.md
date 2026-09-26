@@ -69,7 +69,7 @@ vocaloid ap prog -up
 PRiSM PLUS ver
 ```
 
-`record` searches stored scores by title or alias, with a candidate list for multiple matches. `records` lists personal scores and accepts a page suffix; `levels` lists charts without that page suffix.
+`record` searches stored scores by title or alias; sending bare `record` queries the blank-title song. Multiple matches produce a candidate list. `records` lists personal scores and accepts a page suffix; `levels` lists charts without that page suffix.
 
 `prog` and `levels` accept levels `11`, `11+`, `12`, `12+`, `13`, `13+`, `14`, `14+`, `15`, but not decimal constants. Here `14+` includes level 15. They also accept categories: `vocaloid`, `popani`, `touhou`, `gekichu`, `game`, `maimai`. Targets: `s`, `s+`, `ss`, `ss+`, `sss`, `sss+`, `fc`, `fc+`, `ap`, `ap+`, `fdx`, `fdx+`.
 
