@@ -2496,7 +2496,7 @@ async def generate_level_rank_progress(user_id, id_use, level, rank=None, ver="j
 
     # 获取用户信息并创建用户信息图片
     user_info = _id_use_data.get('personal_info')
-    profile_img = generate_profile(user_info, scale=1.5, user_id=id_use)
+    profile_img = generate_profile(user_info, scale=1.3, user_id=id_use)
     img = _compose_user_images([profile_img, record_img], user_id)
 
     return await _upload_image_message(img, user_id)

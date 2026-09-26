@@ -45,6 +45,8 @@ class ImageDataTests(unittest.TestCase):
         self.assertEqual([label for label, _ in render.call_args.kwargs['rows']], ['14.2', '13.8'])
         self.assertEqual(render.call_args.kwargs['cards'][0][1], '1 (50.0%)')
         self.assertTrue(render.call_args.kwargs['markup'])
+        self.assertEqual(render.call_args.args[1], 1800)
+        self.assertAlmostEqual(render.call_args.kwargs['render_scale'], 2 / 3)
 
     def test_progress_entries_keep_cover_markup_for_single_final_render(self):
         songs = [{

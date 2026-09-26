@@ -414,7 +414,7 @@ def generate_level_rank_progress_image(
     level_name,
     rank_name,
     stats,
-    img_width=2700,
+    img_width=1800,
     max_per_row=15,
     margin=20,
     group_by="internal_level",
@@ -477,7 +477,8 @@ def generate_level_rank_progress_image(
     return render_template("progress.html", img_width, mode="progress", title=title_text,
                            margin=margin, max_per_row=max_per_row, cards=cards,
                            rows=[(label, [entry['cover'] for entry in entries])
-                                 for label, entries in rows], markup=True)
+                                 for label, entries in rows], markup=True,
+                           logical_width=2700, render_scale=img_width / 2700)
 
 
 def difficulty_color(difficulty):

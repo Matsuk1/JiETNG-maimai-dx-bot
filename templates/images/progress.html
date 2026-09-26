@@ -1,6 +1,10 @@
 <style>
   .progress-page {
     padding: {{ margin }}px;
+    {% if render_scale %}
+    width: {{ logical_width }}px;
+    zoom: {{ render_scale }};
+    {% endif %}
   }
 
   .progress-heading {
