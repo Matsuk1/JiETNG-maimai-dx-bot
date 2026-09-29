@@ -145,9 +145,9 @@ class VersionsResource(_BaseResource):
 
 
 class DxdataResource(_BaseResource):
-    def get(self) -> dict:
-        """``GET /dxdata``"""
-        return self._client._request("GET", "/dxdata")
+    def get(self, ver: str = "jp") -> dict:
+        """``GET /dxdata?ver=…`` —— 获取 JP 或 INTL 的完整 DXData。"""
+        return self._client._request("GET", "/dxdata", params={"ver": ver})
 
 
 class ImagesResource(_BaseResource):

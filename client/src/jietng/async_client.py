@@ -115,8 +115,9 @@ class AsyncVersionsResource(_BaseAsyncResource):
 
 
 class AsyncDxdataResource(_BaseAsyncResource):
-    async def get(self) -> dict:
-        return await self._client._request("GET", "/dxdata")
+    async def get(self, ver: str = "jp") -> dict:
+        """``GET /dxdata?ver=…`` —— 获取 JP 或 INTL 的完整 DXData。"""
+        return await self._client._request("GET", "/dxdata", params={"ver": ver})
 
 
 class AsyncImagesResource(_BaseAsyncResource):

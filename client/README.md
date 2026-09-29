@@ -46,6 +46,10 @@ with jietngClient(token="your_token") as client:
     result = client.score_recognition.recognize(image, ver="jp")
     print(result["song"]["id"], result["score"]["achievement"])
 
+    # 获取完整 DXData；ver 支持 "jp"（默认）或 "intl"
+    dxdata = client.dxdata.get(ver="intl")
+    print(len(dxdata["songs"]), "songs")
+
     # 也可以直接取得排版完成的 OCR 结果图片
     png = client.score_recognition.recognize_image(image, ver="jp")
     with open("ocr-result.png", "wb") as f:
@@ -72,6 +76,9 @@ async def main():
             image = f.read()
         result = await client.score_recognition.recognize(image, ver="jp")
         print(result["song"]["title"])
+
+        dxdata = await client.dxdata.get(ver="intl")
+        print(len(dxdata["songs"]), "songs")
 
         png = await client.score_recognition.recognize_image(image, ver="jp")
         with open("ocr-result.png", "wb") as f:
