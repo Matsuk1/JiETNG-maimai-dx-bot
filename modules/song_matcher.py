@@ -355,6 +355,13 @@ def song_identity_key(song):
 
 def match_recognized_song_title(title, songs, max_results=12):
     """Match noisy OCR text while preferring complete canonical song titles."""
+    # DX NET result screenshots do not expose a reliable UTAGE marker in the
+    # recognized title.  Keep regular charts ahead of same-title UTAGE entries
+    # while retaining UTAGE as a fallback when its judgement totals fit better.
+    songs = sorted(
+        songs,
+        key=lambda song: str(song.get("type") or "").lower() == "utage",
+    )
     normalized_exact_ocr = normalize_text(str(title or ""))
     normalized_ocr = _normalize_title_for_ocr(title)
     if not normalized_exact_ocr:

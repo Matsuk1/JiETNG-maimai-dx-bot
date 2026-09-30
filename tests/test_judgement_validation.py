@@ -37,6 +37,40 @@ def test_valid_chart_remains_complete_and_keeps_original_rows(chart, layout, pre
     assert not validation['calc_corrections']
 
 
+def test_same_title_tie_prefers_regular_chart_over_utage(chart):
+    regular, rows = chart
+    utage = copy.deepcopy(regular)
+    utage.update(id='test-utage', type='utage')
+    result = dict(parsed=dict(
+        title='Test Song', achievement=101.0, sub_judgement=rows,
+    ))
+
+    with patch.object(recognizer, 'read_dxdata', return_value=([utage, regular], None)):
+        output = recognizer.validate_recognized_judgement(result)
+
+    assert output['validation']['song_id'] == 'test'
+    assert output['validation']['type'] == 'dx'
+
+
+def test_same_title_utage_remains_fallback_when_regular_chart_does_not_fit(chart):
+    regular, rows = chart
+    utage = copy.deepcopy(regular)
+    utage.update(id='test-utage', type='utage')
+    regular['sheets'][0]['noteCounts'] = {
+        name: max(0, count - 1)
+        for name, count in regular['sheets'][0]['noteCounts'].items()
+    }
+    result = dict(parsed=dict(
+        title='Test Song', achievement=101.0, sub_judgement=rows,
+    ))
+
+    with patch.object(recognizer, 'read_dxdata', return_value=([utage, regular], None)):
+        output = recognizer.validate_recognized_judgement(result)
+
+    assert output['validation']['song_id'] == 'test-utage'
+    assert output['validation']['type'] == 'utage'
+
+
 @pytest.mark.parametrize('mode', ['missing_cell', 'overfull'])
 def test_single_cell_repairs_are_reported_without_mutating_ocr_rows(chart, mode):
     song, rows = chart

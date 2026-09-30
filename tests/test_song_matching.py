@@ -23,6 +23,21 @@ def test_exact_match_limit_and_chart_identity():
     assert match_recognized_song_title('', [std, dx]) == ([], 'none')
 
 
+def test_ocr_same_title_prefers_regular_charts_over_utage():
+    utage = {'id': 'utage', 'type': 'utage', 'title': 'Same Title'}
+    std = {'id': 'std', 'type': 'std', 'title': 'Same Title'}
+    dx = {'id': 'dx', 'type': 'dx', 'title': 'Same Title'}
+
+    assert match_recognized_song_title('Same Title', [utage, std, dx]) == (
+        [std, dx, utage],
+        'exact',
+    )
+    assert match_recognized_song_title('Same Title', [utage, dx], 1) == (
+        [dx],
+        'exact',
+    )
+
+
 def test_empty_query_matches_only_blank_title():
     blank = {'id': 'blank', 'type': 'dx', 'title': '\u3000'}
     punctuation = {'id': 'punctuation', 'type': 'dx', 'title': '♪'}
