@@ -62,7 +62,7 @@ https://your-domain.com/admin/panel
 |--------|-------------|
 | **User Management** | View all users, edit user data, delete users, trigger updates |
 | **Real-time Nicknames** | Automatic nickname caching from LINE SDK (5-minute cache) |
-| **Dual Queue Monitoring** | Image queue (3 concurrent) + Network queue (1 concurrent) |
+| **Task Queue Monitoring** | Image generation queue (5 concurrent) + Image query/recognition queue (1 concurrent by default) + Network task queue (2 concurrent) |
 | **Task Tracking** | Display recent 20 completed tasks with execution time statistics |
 | **Rate Limiting** | Prevent duplicate requests within 30-second window (max 2 per task type) |
 | **Business Analytics** | DAU/WAU/MAU, stickiness analysis, today's image/sync/bind stats, command breakdown, 30-day DAU trend chart, hourly heatmap |
@@ -74,7 +74,7 @@ https://your-domain.com/admin/panel
 
 - **Lazy Loading**: Immediate page display after login with asynchronous nickname loading
 - **Responsive Design**: Full support for desktop and mobile devices
-- **Dual Queue Architecture**: Separate image generation and network tasks for improved concurrency
+- **Three-Queue Architecture**: Separates image generation, image query/recognition, and network tasks to prevent different workloads from blocking one another
 - **Task Tracking**: Real-time display of running/queued/completed tasks with timing statistics
 - **Business Analytics**: MySQL events-based event tracking with automatic DAU/WAU/MAU aggregation, 30-day trend charts, and hourly distribution heatmaps
 - **Smart Rate Limiting**: Protect server resources from rapid repeated requests
