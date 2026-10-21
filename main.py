@@ -2518,6 +2518,10 @@ _B_COMMAND_WORDS = rank_command_words()
 HELP_B_COMMAND_WORDS = rank_command_words(hidden=HIDDEN_HELP_COMMAND_WORDS)
 
 
+def cmd_status(ctx):
+    return get_bot_status(ctx.user_id)
+
+
 # ---- 命令注册表 ----
 # 顺序：web > image > sync。同一文本不应被多个命令命中，命中即停。
 # self_only=True 集合与旧 _SELF_ONLY_EXACT_COMMANDS 保持一致（preserves prior behavior）。
