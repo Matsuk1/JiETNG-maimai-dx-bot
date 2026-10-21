@@ -1,0 +1,77 @@
+{# Shared data and layout; Claude palette only. #}
+<div class="cl-song">
+  {% include 'song.html' %}
+</div>
+<style>
+  .cl-song { color: #141413; }
+
+  /* Basic info card */
+  .cl-song .song {
+    border: 2px solid #E6E1D6;
+    border-radius: 26px;
+    background: #FFFFFF;
+  }
+  .cl-song .song-cover { border-radius: 18px; }
+  .cl-song .song dt { color: #87867F; }
+
+  /* Note and rating tables */
+  .cl-song .song-section-heading,
+  .cl-song .song-rating-heading {
+    border: 2px solid #E6E1D6;
+    border-radius: 18px;
+    background: #FFFFFF;
+  }
+  .cl-song .song-rating-note,
+  .cl-song .song-rating-rank small { color: #87867F; }
+
+  .cl-song .song-row {
+    border: 2px solid #E6E1D6;
+    border-left: 8px solid var(--border);
+    border-radius: 14px;
+    background: #FFFFFF;
+  }
+  .cl-song .song-table > .song-row:first-child {
+    border-left-color: #E6E1D6;
+    background: #F5F2EA;
+    color: #3D3D3A;
+  }
+  .cl-song .song-note-table .song-cell:nth-child(3),
+  .cl-song .song-note-table .song-cell:nth-child(9) { border-left-color: #E6E1D6; }
+
+  /* Note losses */
+  .cl-song .note-loss-card {
+    border: 2px solid #E6E1D6;
+    border-radius: 22px;
+    background: #FFFFFF;
+    color: #141413;
+  }
+  .cl-song .note-loss-level,
+  .cl-song .note-loss-table th:not([class]),
+  .cl-song .note-loss-tolerance-title { color: #87867F; }
+  .cl-song .note-loss-table td { background: #F7F5EF; }
+  .cl-song .note-loss-table .break-row td { background: #FBF1E3; }
+  .cl-song .note-loss-tolerance { background: #F9EDE6; }
+  .cl-song .note-loss-target + .note-loss-target { border-left-color: #D977573A; }
+  .cl-song .note-loss-target span { color: #D97757; }
+
+  /* Played records */
+  .cl-song .song-results { color: #141413; }
+  .cl-song .song-results-hero,
+  .cl-song .song-results-panel {
+    border: 2px solid #E6E1D6;
+    border-radius: 26px;
+    background: #FFFFFF;
+  }
+  .cl-song .song-results-artist,
+  .cl-song .song-results-category,
+  .cl-song .song-results-tag small { color: #87867F; }
+  .cl-song .song-results-tag { background: #F5F2EA; }
+  .cl-song .song-result-difficulty { border-radius: 16px; }
+  .cl-song .song-result-empty {
+    border: 2px dashed #E6E1D6;
+    border-radius: 18px;
+    background: #FAF9F5;
+    color: #87867F;
+  }
+  .cl-song .song-result-empty span { color: #C9C4B8; }
+</style>

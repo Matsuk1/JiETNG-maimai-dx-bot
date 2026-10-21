@@ -1,0 +1,101 @@
+{# Shared data and layout; Claude palette only. #}
+<div class="cl-progress">
+  {% include 'progress.html' %}
+</div>
+<style>
+  .cl-progress { color: #141413; }
+
+  .cl-progress .outlined {
+    color: #141413;
+    -webkit-text-stroke: 0;
+  }
+
+  .cl-progress .progress-heading {
+    font-size: 132px;
+    letter-spacing: -2px;
+    margin-bottom: 36px;
+  }
+
+  .cl-progress .summary {
+    position: relative;
+    height: 196px;
+    padding: 26px 30px 24px;
+    border: 2px solid #E6E1D6;
+    border-left: 2px solid #E6E1D6;
+    border-radius: 24px;
+    background: #FFFFFF;
+    box-shadow: none;
+  }
+
+  .cl-progress .summary::before {
+    content: '';
+    position: absolute;
+    left: 30px;
+    top: 0;
+    width: 64px;
+    height: 8px;
+    border-radius: 0 0 6px 6px;
+    background: var(--accent);
+  }
+
+  .cl-progress .summary-label,
+  .cl-progress .summary-percent { color: #87867F; }
+
+  .cl-progress .summary-label { font-size: 46px; }
+  .cl-progress .summary-percent { font-size: 38px; }
+  .cl-progress .summary-value { font-size: 84px; letter-spacing: -1px; }
+
+  .cl-progress .summary-progress {
+    height: 22px;
+    border: 0;
+    border-radius: 11px;
+    background: #EEEAE1;
+    box-shadow: none;
+    margin-bottom: 48px;
+  }
+
+  .cl-progress .plate-stat {
+    border: 2px solid #E6E1D6;
+    border-radius: 14px;
+    background: #FFFFFF;
+    box-shadow: none;
+    padding: 0 14px 0 12px;
+    gap: 8px;
+    font-size: 25px;
+  }
+
+  .cl-progress .plate-stat span:first-child {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    color: #3D3D3A;
+  }
+
+  .cl-progress .plate-stat span:first-child::before {
+    content: '';
+    flex-shrink: 0;
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    background: var(--accent);
+  }
+
+  .cl-progress .plate-stat span:last-child {
+    flex-shrink: 0;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .cl-progress .level-label {
+    border: 3px solid #E6E1D6;
+    border-radius: 22px;
+    background: #FFFFFF;
+    color: #141413;
+  }
+
+  .cl-progress .level-item {
+    border-radius: 12px;
+    overflow: hidden;
+  }
+</style>

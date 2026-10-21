@@ -1,12 +1,26 @@
 {% if inline %}
   {% set glass_inline = false %}
-  {% include 'inline_record.html' %}
+  <div class="cl-inline">{% include 'inline_record.html' %}</div>
+  <style>
+    .cl-inline .inline-record {
+      border: 2px solid #E6E1D6;
+      border-radius: 20px;
+      background: #FFFFFF;
+      color: #141413;
+    }
+    .cl-inline .inline-record-dx,
+    .cl-inline .inline-record-history,
+    .cl-inline .inline-record-ra-label { color: #87867F; }
+    .cl-inline .inline-record-icons::before,
+    .cl-inline .inline-record-ra::before { border-left-color: #E6E1D6; }
+    .cl-inline .inline-record-ra-value { color: #D97757; }
+  </style>
 {% else %}
 {% set abbr = {'basic': 'BAS', 'advanced': 'ADV', 'expert': 'EXP', 'master': 'MAS', 'remaster': 'Re:M'} %}
 <div style="
   position: relative;
   width: 300px;
-  height: 150px;
+  height: 140px;
   box-sizing: border-box;
   padding: 13px 14px 0;
   background: #FFFFFF;
@@ -20,9 +34,9 @@
     <div style="width: 74px; height: 74px; flex-shrink: 0; border-radius: 8px; overflow: hidden; margin-top: 2px;">
       <div style="transform: scale(.4933); transform-origin: top left;">{{ cover|safe }}</div>
     </div>
-    <div style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
+    <div style="flex: 1; min-width: 0; height: 74px; margin-top: 2px; display: flex; flex-direction: column;">
       <div class="ellipsis" style="font-size: 17px; line-height: 22px;" data-fit="12">{{ song.name }}</div>
-      <div style="display: flex; align-items: center; gap: 7px; margin-top: 5px; height: 20px; min-width: 0;">
+      <div style="display: flex; align-items: center; gap: 7px; margin-top: 2px; height: 20px; min-width: 0;">
         <span style="
           flex-shrink: 0;
           padding: 0 7px;
@@ -36,7 +50,7 @@
         ">{{ abbr[song.difficulty] if song.difficulty in abbr else '' }} {{ '%.1f'|format(song.internalLevelValue) }}</span>
         <span class="ellipsis" style="font-size: 12px; color: #87867F;">{{ version }}</span>
       </div>
-      <div style="margin-top: auto; font-size: 27px; line-height: 28px; letter-spacing: -.6px; white-space: nowrap;">{{ song.score }}</div>
+      <div style="margin-top: auto; font-size: 27px; line-height: 25px; letter-spacing: -.6px; white-space: nowrap;">{{ song.score }}</div>
     </div>
   </div>
   <div style="
@@ -44,7 +58,7 @@
     left: 14px;
     right: 14px;
     bottom: 0;
-    height: 43px;
+    height: 41px;
     border-top: 1px solid #EEEAE1;
     display: flex;
     align-items: center;

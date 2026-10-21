@@ -1,0 +1,41 @@
+{# Shared data and layout; Claude palette only. #}
+<div class="cl-score">
+  {% include 'score.html' %}
+</div>
+<style>
+  .cl-score .ocr-page { color: #141413; }
+  .cl-score .ocr-shell {
+    border: 2px solid #E6E1D6;
+    background: #FFFFFF;
+    box-shadow: none;
+  }
+  .cl-score .ocr-header,
+  .cl-score .ocr-dx,
+  .cl-score .ocr-table td,
+  .cl-score .ocr-break,
+  .cl-score .ocr-subtotals,
+  .cl-score .ocr-note { border-color: #E6E1D6; }
+  .cl-score .ocr-summary {
+    background: #F5F2EA;
+    border-right-color: #E6E1D6;
+  }
+  .cl-score .ocr-kicker,
+  .cl-score .ocr-label,
+  .cl-score .ocr-legend,
+  .cl-score .ocr-meter-bounds,
+  .cl-score .ocr-break-label,
+  .cl-score .ocr-part-label,
+  .cl-score .ocr-table td:first-child,
+  .cl-score .ocr-dx-value small,
+  .cl-score .ocr-star,
+  .cl-score .ocr-table th:first-child { color: #87867F; }
+  .cl-score .ocr-percentage { color: #3D3D3A; }
+  .cl-score .ocr-meter { background: #E6E1D6; box-shadow: none; }
+  .cl-score .ocr-meter-fill { background: linear-gradient(90deg, #E8A88E, #D97757); }
+  .cl-score .ocr-meter-position { background: #D97757; box-shadow: 0 1px 4px #D9775766; }
+  .cl-score .ocr-star { border-bottom-color: #EEEAE1; }
+  .cl-score .ocr-break-cell { border-left-color: #E6E1D6; }
+  .cl-score .ocr-total { background: #F9EDE6; color: #3D3D3A; }
+  .cl-score .ocr-total strong,
+  .cl-score .ocr-subtotals strong { color: #C15F3C; }
+</style>
