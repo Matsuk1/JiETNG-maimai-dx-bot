@@ -11,7 +11,7 @@ from modules.config_loader import (PLATES_DIR, ICON_TYPE_DIR, ICON_BASE_DIR, ICO
 from modules.images import cache as image_cache
 from modules.images.composition import compose_generated_images
 from modules.i18n import image_language, language_catalog, select_text
-from modules.maimai_manager import get_rating_image_path
+from modules.maimai_utils import get_rating_image_path
 from modules.record_manager import achievement_value, find_chart_record, get_single_ra, index_records_by_chart
 
 logger = logging.getLogger(__name__)

@@ -12,7 +12,7 @@ from datetime import datetime
 from typing import Any
 
 from modules.dbpool_manager import database_cursor
-from modules.maimai_manager import get_rating_image_path
+from modules.maimai_utils import get_rating_image_path
 from modules.record_manager import write_record
 from modules.user_db import get_user, save_user
 

@@ -4,12 +4,17 @@ from functools import wraps
 import logging
 import asyncio
 import aiohttp
-import unicodedata
 import re
 from urllib.parse import quote, urlencode
 from lxml import etree
 import os
 from modules.config_loader import DOMAIN, RATING_DIR
+from modules.maimai_utils import (
+    RATING_TIERS,
+    get_rating_image_path,
+    normalize,
+    parse_level_value,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -49,38 +54,6 @@ def _create_session(cookies=None, limit=10, *, timeout=None):
     return aiohttp.ClientSession(cookies=cookies, connector=connector, timeout=timeout)
 
 
-# Rating → 本地图片映射
-RATING_TIERS = [
-    (16750, "rainbow_extreme_4.png"),
-    (16500, "rainbow_extreme_3.png"),
-    (16250, "rainbow_extreme_2.png"),
-    (16000, "rainbow_extreme_1.png"),
-    (15750, "rainbow_4.png"),
-    (15500, "rainbow_3.png"),
-    (15250, "rainbow_2.png"),
-    (15000, "rainbow_1.png"),
-    (14750, "platinum_2.png"),
-    (14500, "platinum_1.png"),
-    (14250, "gold_2.png"),
-    (14000, "gold_1.png"),
-    (13000, "silver.png"),
-    (12000, "bronze.png"),
-    (10000, "purple.png"),
-    (7000,  "red.png"),
-    (4000,  "yellow.png"),
-    (2000,  "green.png"),
-    (1000,  "blue.png"),
-    (0,     "white.png"),
-]
-
-
-def get_rating_image_path(rating: int) -> str:
-    for threshold, filename in RATING_TIERS:
-        if rating >= threshold:
-            return os.path.join(RATING_DIR, filename)
-    return os.path.join(RATING_DIR, "white.png")
-
-
 def _static_asset_url(path):
     if not path:
         return ""
@@ -108,15 +81,6 @@ USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15",
 ]
-
-def normalize(s):
-    if not s:
-        return ""
-    s = unicodedata.normalize("NFKC", s)
-    s = s.replace("\u3000", " ").replace("\xa0", " ")
-    s = re.sub(r"\s+", " ", s)
-    return s.strip()
-
 
 def _chart_type(icon_paths, default="N/A"):
     for source in icon_paths:
@@ -242,33 +206,6 @@ async def _jp_login_session(headers):
         f"(last_status={last_status}, last_page={last_page})"
     )
 
-
-def parse_level_value(input_str):
-    input_str = input_str.strip()
-
-    if '.' in input_str:
-        try:
-            return [float(input_str)]
-        except ValueError:
-            logger.error(f"[Maimai] ✗ Failed to parse a float number with point(.): {input_str}")
-            return None
-
-    elif input_str.endswith('+'):
-        try:
-            base = int(input_str[:-1])
-            target = [round(base + i * 0.1, 1) for i in range(6, 10)]
-            return target
-        except ValueError:
-            logger.error(f"[Maimai] ✗ Failed to parse a number with plus(+): {input_str}")
-            return None
-
-    else:
-        try:
-            base = int(input_str)
-            return [round(base + i * 0.1, 1) for i in range(6)]
-        except ValueError:
-            logger.error(f"[Maimai] ✗ Failed to parse a number: {input_str}")
-            return None
 
 def extract_onclick_url_from_button(li, keyword):
     btn = li.xpath(f'.//button[contains(@class, "{keyword}")]/@onclick')
