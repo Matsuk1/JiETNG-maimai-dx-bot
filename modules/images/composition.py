@@ -78,12 +78,13 @@ def compose_images(images, timezone_offset=9, bg_filter=None):
     factor = inner_width / 1700
     logo_size = max(100, min(180, int(130 * factor)))
     footer_height = max(150, min(250, int(150 * factor)), 30 + int(10 * factor) + logo_size)
-    content_height = sum(image.height for image in images) + 5 * (len(images) - 1)
+    gap = max(20, int(30 * factor))
+    content_height = sum(image.height for image in images) + gap * (len(images) - 1)
     entries, y = [], 50
     for image in images:
         entries.append({"src": image_uri(image), "x": 40 + (inner_width - image.width) // 2,
                         "y": y, "width": image.width, "height": image.height})
-        y += image.height + 5
+        y += image.height + gap
 
     selected, blur, overlay = bg_filter, 20, 40
     if not skin_config()["uses_background"]:
