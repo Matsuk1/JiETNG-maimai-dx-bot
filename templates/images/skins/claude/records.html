@@ -1,0 +1,177 @@
+<style>
+  #image-root { background: #FAF9F5; }
+
+  .cl-records {
+    --cl-accent: #D97757;
+    --cl-text: #141413;
+    --cl-muted: #87867F;
+    --cl-line: #E6E1D6;
+    padding: 28px 20px 24px;
+    color: var(--cl-text);
+    background: #FAF9F5;
+  }
+
+  .cl-header {
+    margin-bottom: 8px;
+    background: #FFFFFF;
+    border: 1px solid var(--cl-line);
+    border-radius: 18px;
+  }
+
+  .cl-header-main {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 40px;
+    padding: 26px 32px 24px;
+  }
+
+  .cl-identity { flex: 1; min-width: 0; }
+
+  .cl-kicker, .cl-label {
+    font-size: 14px;
+    letter-spacing: 3px;
+    color: var(--cl-muted);
+  }
+
+  .cl-title {
+    margin: 6px 0 0;
+    font-size: 76px;
+    line-height: 1;
+    font-weight: normal;
+    white-space: nowrap;
+  }
+
+  .cl-rating { flex-shrink: 0; text-align: right; }
+
+  .cl-rating-value {
+    margin-top: 6px;
+    font-size: 76px;
+    line-height: 1;
+    letter-spacing: -2px;
+    color: var(--cl-accent);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .cl-equation {
+    margin-top: 8px;
+    font-size: 15px;
+    color: var(--cl-muted);
+  }
+
+  .cl-stats {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    margin: 0;
+    border-top: 1px solid var(--cl-line);
+  }
+
+  .cl-stat {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 32px;
+  }
+
+  .cl-stat + .cl-stat { border-left: 1px solid var(--cl-line); }
+  .cl-stat dt { font-size: 16px; color: var(--cl-muted); white-space: nowrap; }
+  .cl-stat dd { margin: 0; font-size: 24px; }
+
+  .cl-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 24px;
+    padding: 14px 32px;
+    border-top: 1px solid var(--cl-line);
+    font-size: 18px;
+  }
+
+  .cl-dot {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    vertical-align: -1px;
+  }
+
+  .cl-section {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 22px 4px 12px;
+    font-size: 15px;
+    letter-spacing: 2px;
+    color: var(--cl-muted);
+  }
+
+  .cl-section-name { flex-shrink: 0; color: var(--cl-text); }
+  .cl-section-rule { flex: 1; height: 1px; background: var(--cl-line); }
+  .cl-section-count { flex-shrink: 0; font-size: 13px; }
+
+  .cl-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 300px);
+    gap: 10px;
+  }
+
+  .cl-footer {
+    margin: 22px 4px 0;
+    font-size: 13px;
+    letter-spacing: 3px;
+    color: var(--cl-muted);
+    text-align: right;
+  }
+
+  .cl-footer b { font-weight: normal; color: var(--cl-accent); }
+</style>
+<section class="cl-records">
+  <header class="cl-header">
+    <div class="cl-header-main">
+      <div class="cl-identity">
+        <div class="cl-kicker">MAIMAI DX · {{ texts.best_slot }}</div>
+        <h1 class="cl-title" data-fit="38">{{ title }}</h1>
+      </div>
+      <div class="cl-rating">
+        <div class="cl-label">DX RATING</div>
+        <div class="cl-rating-value">{{ rating|trim }}</div>
+        {% if equation %}<div class="cl-equation">{{ equation }}</div>{% endif %}
+      </div>
+    </div>
+    <dl class="cl-stats">
+      {% for label, value in stats %}
+        <div class="cl-stat">
+          <dt>{{ label }}</dt>
+          <dd>{{ value }}</dd>
+        </div>
+      {% endfor %}
+    </dl>
+    {% if details %}
+      <div class="cl-details">
+        {% for key, tokens in details %}
+          <div>{{ key }}:
+            {% for text, color in tokens %}
+              {% if color %}<span class="cl-dot" style="background: {{ color }};"></span>{% else %}{{ text }}{% endif %}
+            {% endfor %}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </header>
+
+  {% for cards in [up, down] %}
+    {% if cards %}
+      <div class="cl-section">
+        <span class="cl-section-name">{{ 'B35' if title == 'B50' and loop.first else 'B15' if title == 'B50' else texts.heading }}</span>
+        <span class="cl-section-rule"></span>
+        <span class="cl-section-count">{{ cards|length }} {{ texts.tracks }}</span>
+      </div>
+      <div class="cl-grid">
+        {% for card in cards %}{{ card|safe }}{% endfor %}
+      </div>
+    {% endif %}
+  {% endfor %}
+
+  <footer class="cl-footer">JiETNG <b>·</b> CLAUDE</footer>
+</section>
