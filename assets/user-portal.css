@@ -933,6 +933,72 @@
   padding: 0;
 }
 
+.user-portal .portal-action-icon {
+  display: block;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.user-portal .portal-icon-secondary {
+  border: 0;
+  color: #a84d31;
+  background: #f2d8cd;
+  box-shadow: none;
+}
+
+.user-portal .portal-icon-secondary:hover {
+  color: #8d3f29;
+  background: #ebc5b6;
+  box-shadow: none;
+}
+
+.user-portal .portal-icon-danger {
+  border: 0;
+  color: #b64e50;
+  background: transparent;
+  box-shadow: none;
+}
+
+.user-portal .portal-icon-danger:hover {
+  color: #963b3d;
+  background: #f8e9e7;
+  box-shadow: none;
+}
+
+.user-portal .portal-icon-action .icon-check,
+.user-portal .portal-icon-action[data-copied] .icon-copy {
+  display: none;
+}
+
+.user-portal .portal-icon-action[data-copied] .icon-check {
+  display: block;
+}
+
+.user-portal.portal-settings-page .bg-option .portal-icon-action {
+  top: auto;
+  right: 5px;
+  bottom: 5px;
+  left: auto;
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0;
+  border-radius: 7px;
+  color: #fff;
+  background: rgba(47, 43, 39, 0.78);
+}
+
+.user-portal.portal-settings-page .bg-option .portal-action-icon {
+  width: 15px;
+  height: 15px;
+}
+
 .user-portal.portal-settings-page #import-token-create-btn {
   width: 42px;
   min-width: 42px;

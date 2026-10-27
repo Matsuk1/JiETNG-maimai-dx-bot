@@ -51,5 +51,8 @@ def test_import_token_copy_button_uses_translation_not_dict_method():
             import_token="secret-token",
         )
 
-    assert '<button type="button" class="copy-btn" id="copy-token-btn">\n        复制 Token\n      </button>' in html
+    assert 'class="copy-btn portal-icon-action portal-icon-secondary"' in html
+    assert 'aria-label="复制 Token"' in html
+    assert 'class="portal-action-icon icon-copy"' in html
+    assert '>复制 Token</button>' not in html
     assert "built-in method copy" not in html

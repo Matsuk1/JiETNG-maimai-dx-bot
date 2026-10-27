@@ -621,7 +621,11 @@
               <img src="/static/pics/bg/{{ file }}{% if file in custom_bg_filenames %}?t={{ range(100000) | random }}{% endif %}" alt="{{ file }}" loading="lazy" />
               <div class="check-mark">✓</div>
               {% if file in custom_bg_filenames %}
-              <button type="button" class="bg-delete-btn delete-custom-bg-btn" onclick='event.stopPropagation(); deleteCustomBg({{ file | tojson }}, this)'>削除</button>
+              <button type="button" class="bg-delete-btn delete-custom-bg-btn portal-icon-action portal-icon-danger"
+                      aria-label="削除" title="削除"
+                      onclick='event.stopPropagation(); deleteCustomBg({{ file | tojson }}, this)'>
+                <svg class="portal-action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M8 7l1 13h6l1-13M10 11v5M14 11v5"></path></svg>
+              </button>
               {% endif %}
             </div>
             {% endfor %}
@@ -690,14 +694,18 @@
         {% if item.is_owner %}
         <div class="perm-actions">
           <span class="badge perm-owner-label">作成者</span>
-          <button class="btn-danger"
+          <button class="btn-danger portal-icon-action portal-icon-danger"
                   onclick="revokePermission('{{ item.token_id }}', this)"
-                  id="perm-btn-{{ item.token_id }}">撤廃</button>
+                  id="perm-btn-{{ item.token_id }}" aria-label="撤廃" title="撤廃">
+            <svg class="portal-action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M8 7l1 13h6l1-13M10 11v5M14 11v5"></path></svg>
+          </button>
         </div>
         {% else %}
-        <button class="btn-danger"
+        <button class="btn-danger portal-icon-action portal-icon-danger"
                 onclick="revokePermission('{{ item.token_id }}', this)"
-                id="perm-btn-{{ item.token_id }}">撤廃</button>
+                id="perm-btn-{{ item.token_id }}" aria-label="撤廃" title="撤廃">
+          <svg class="portal-action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M8 7l1 13h6l1-13M10 11v5M14 11v5"></path></svg>
+        </button>
         {% endif %}
       </div>
       {% endfor %}
@@ -716,7 +724,11 @@
           <span class="list-item-label" id="import-token-result-title">Token（今回のみ表示）</span>
           <span class="token-value" id="import-token-value"></span>
         </div>
-        <button type="button" class="token-action-btn" id="import-token-copy-btn" onclick="copyImportToken()">コピー</button>
+        <button type="button" class="token-action-btn portal-icon-action portal-icon-secondary"
+                id="import-token-copy-btn" onclick="copyImportToken()" aria-label="コピー" title="コピー">
+          <svg class="portal-action-icon icon-copy" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="11" rx="2"></rect><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path></svg>
+          <svg class="portal-action-icon icon-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"></path></svg>
+        </button>
       </div>
       <div class="list-item token-create-row">
         <div class="token-note-field">
@@ -742,12 +754,16 @@
             {% if item.revoked %}
             <div class="perm-actions">
               <span class="badge import-token-revoked-label">Revoked</span>
-              <button type="button" class="btn-danger import-token-delete-btn"
-                      onclick="deleteImportToken('{{ item.token_id }}', this)">削除</button>
+              <button type="button" class="btn-danger import-token-delete-btn portal-icon-action portal-icon-danger"
+                      onclick="deleteImportToken('{{ item.token_id }}', this)" aria-label="削除" title="削除">
+                <svg class="portal-action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M8 7l1 13h6l1-13M10 11v5M14 11v5"></path></svg>
+              </button>
             </div>
             {% else %}
-            <button type="button" class="btn-danger import-token-revoke-btn"
-                    onclick="revokeImportToken('{{ item.token_id }}', this)">撤廃</button>
+            <button type="button" class="btn-danger import-token-revoke-btn portal-icon-action portal-icon-danger"
+                    onclick="revokeImportToken('{{ item.token_id }}', this)" aria-label="撤廃" title="撤廃">
+              <svg class="portal-action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M8 7l1 13h6l1-13M10 11v5M14 11v5"></path></svg>
+            </button>
             {% endif %}
           </div>
           {% endfor %}
@@ -893,7 +909,10 @@
       if (sectionCustomBg) sectionCustomBg.textContent = t.sectionCustomBg;
       const customBgHint = document.getElementById('custom-bg-hint-text');
       if (customBgHint) customBgHint.textContent = t.customBgHint;
-      document.querySelectorAll('.delete-custom-bg-btn').forEach(el => { el.textContent = t.deleteCustomBgBtn; });
+      document.querySelectorAll('.delete-custom-bg-btn').forEach(el => {
+        el.setAttribute('aria-label', t.deleteCustomBgBtn);
+        el.title = t.deleteCustomBgBtn;
+      });
       const deleteAllBtn = document.getElementById('delete-all-custom-bg-btn');
       if (deleteAllBtn) deleteAllBtn.textContent = t.deleteAllCustomBgBtn;
       const uploadText = document.getElementById('upload-text');
@@ -927,17 +946,26 @@
       const resultTitle = document.getElementById('import-token-result-title');
       if (resultTitle) resultTitle.textContent = t.importTokenResultTitle;
       const copyBtn = document.getElementById('import-token-copy-btn');
-      if (copyBtn && !copyBtn.dataset.copied) copyBtn.textContent = t.importTokenCopy;
+      if (copyBtn && !copyBtn.dataset.copied) {
+        copyBtn.setAttribute('aria-label', t.importTokenCopy);
+        copyBtn.title = t.importTokenCopy;
+      }
       const empty = document.getElementById('import-token-empty');
       if (empty) empty.textContent = t.importTokenEmpty;
       document.querySelectorAll('.import-token-revoke-btn').forEach(btn => {
-        if (!btn.disabled) btn.textContent = t.importTokenRevoke;
+        if (!btn.disabled) {
+          btn.setAttribute('aria-label', t.importTokenRevoke);
+          btn.title = t.importTokenRevoke;
+        }
       });
       document.querySelectorAll('.import-token-revoked-label').forEach(el => {
         el.textContent = t.importTokenRevoked;
       });
       document.querySelectorAll('.import-token-delete-btn').forEach(btn => {
-        if (!btn.disabled) btn.textContent = t.importTokenDelete;
+        if (!btn.disabled) {
+          btn.setAttribute('aria-label', t.importTokenDelete);
+          btn.title = t.importTokenDelete;
+        }
       });
     }
 
@@ -947,7 +975,10 @@
       if (panelTitle) panelTitle.textContent = pt.panelTitle;
       document.querySelectorAll('.perm-owner-label').forEach(el => el.textContent = pt.ownerLabel);
       document.querySelectorAll('[id^="perm-btn-"]').forEach(el => {
-        if (!el.disabled) el.textContent = pt.revokeBtn;
+        if (!el.disabled) {
+          el.setAttribute('aria-label', pt.revokeBtn);
+          el.title = pt.revokeBtn;
+        }
       });
     }
 
@@ -1000,6 +1031,12 @@
       });
     }
 
+    function portalTrashIcon() {
+      return '<svg class="portal-action-icon" viewBox="0 0 24 24" aria-hidden="true">'
+        + '<path d="M4 7h16M9 7V4h6v3M8 7l1 13h6l1-13M10 11v5M14 11v5"></path>'
+        + '</svg>';
+    }
+
     async function createImportToken() {
       const lang = document.getElementById('language').value || defaultLanguage;
       const t = translationFor(translations, lang);
@@ -1039,8 +1076,9 @@
           + '<span class="list-item-label">' + escapeHtml(displayNote) + '</span>'
           + '<span class="list-item-meta">' + escapeHtml(data.token_id) + ' · ' + escapeHtml(data.created_at) + '</span>'
           + '</div>'
-          + '<button type="button" class="btn-danger import-token-revoke-btn">'
-          + t.importTokenRevoke + '</button>';
+          + '<button type="button" class="btn-danger import-token-revoke-btn portal-icon-action portal-icon-danger"'
+          + ' aria-label="' + escapeHtml(t.importTokenRevoke) + '" title="' + escapeHtml(t.importTokenRevoke) + '">'
+          + portalTrashIcon() + '</button>';
         item.querySelector('button').addEventListener('click', function() {
           revokeImportToken(data.token_id, this);
         });
@@ -1061,11 +1099,13 @@
       if (!value) return;
       await navigator.clipboard.writeText(value);
       const btn = document.getElementById('import-token-copy-btn');
-      btn.textContent = t.importTokenCopied;
       btn.dataset.copied = '1';
+      btn.setAttribute('aria-label', t.importTokenCopied);
+      btn.title = t.importTokenCopied;
       setTimeout(() => {
         delete btn.dataset.copied;
-        btn.textContent = t.importTokenCopy;
+        btn.setAttribute('aria-label', t.importTokenCopy);
+        btn.title = t.importTokenCopy;
       }, 1400);
     }
 
@@ -1244,7 +1284,9 @@
             card.onclick = function() { toggleBg(card, filename); };
             card.innerHTML = '<img src="/static/pics/bg/' + filename + '?t=' + Date.now() + '" alt="' + filename + '" loading="lazy" />'
               + '<div class="check-mark">✓</div>'
-              + '<button type="button" class="bg-delete-btn delete-custom-bg-btn">' + t.deleteCustomBgBtn + '</button>';
+              + '<button type="button" class="bg-delete-btn delete-custom-bg-btn portal-icon-action portal-icon-danger"'
+              + ' aria-label="' + escapeHtml(t.deleteCustomBgBtn) + '" title="' + escapeHtml(t.deleteCustomBgBtn) + '">'
+              + portalTrashIcon() + '</button>';
             card.querySelector('button').onclick = function(event) {
               event.stopPropagation();
               deleteCustomBg(filename, this);

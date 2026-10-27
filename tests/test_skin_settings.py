@@ -59,6 +59,11 @@ def test_settings_roundtrip_and_invalid_skin_fallback(tmp_path):
     assert 'aria-label="Tokenを生成"' in html
     assert '>Tokenを生成</button>' not in html
     assert "createBtn.textContent = t.importTokenCreate" not in html
+    assert 'class="token-action-btn portal-icon-action portal-icon-secondary"' in html
+    assert 'class="portal-action-icon icon-copy"' in html
+    assert 'class="btn-danger import-token-revoke-btn portal-icon-action portal-icon-danger"' in html
+    assert "copyBtn.textContent = t.importTokenCopy" not in html
+    assert "el.textContent = pt.revokeBtn" not in html
     client.post('/linebot/settings?token=test',data={'image_skin':'../../private'})
     assert user['image_skin']=='default'
 
