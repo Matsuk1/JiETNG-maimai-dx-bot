@@ -14,7 +14,7 @@
   {% include 'common_styles.html' %}
 
   <link rel="stylesheet" href="/static/admin-panel.css?v=audit-20260920-11" media="not all">
-  <link rel="stylesheet" href="/static/admin-control-center.css?v=20261027-10">
+  <link rel="stylesheet" href="/static/admin-control-center.css?v=20261027-11">
 </head>
 <body class="admin-control-center admin-mobile-nav-collapsed">
   <svg aria-hidden="true" width="0" height="0" style="position:absolute;overflow:hidden;">
@@ -89,21 +89,6 @@
     </symbol>
     <symbol id="icon-x" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"></path></symbol>
   </svg>
-  <script>
-    // iOS standalone PWA 安全区域修复
-    // env(safe-area-inset-top) 在某些情况下返回 0，用 JS 探测并补救
-    !function() {
-      if (!navigator.standalone) return;
-      var probe = document.createElement('div');
-      probe.style.cssText = 'position:fixed;top:0;left:0;width:0;padding-top:env(safe-area-inset-top,0px);pointer-events:none;visibility:hidden;';
-      document.body.appendChild(probe);
-      var sat = parseFloat(getComputedStyle(probe).paddingTop) || 0;
-      document.body.removeChild(probe);
-      // env() 无效时的备用值（灵动岛 ≈ 59px，刘海屏 ≈ 44px）
-      if (!sat) sat = window.screen.height >= 852 ? 59 : 44;
-      document.body.style.paddingTop = (20 + sat) + 'px';
-    }();
-  </script>
   <div class="container admin-shell">
     <aside class="sidebar">
       <div class="brand-block">
@@ -194,9 +179,15 @@
     <!-- Users Tab -->
     <div id="users-tab" class="tab-content">
       <div class="section">
-        <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
-          <span>User Management ({{ total_users }} users)</span>
-          <div style="display: flex; gap: 8px;">
+        <div class="section-title users-section-title">
+          <span class="control-section-heading">
+            <span class="control-section-icon" aria-hidden="true"><svg><use href="#icon-users"></use></svg></span>
+            <span>
+              <strong>Users</strong>
+              <small><span id="user-result-count">{{ total_users }}</span> accounts in this view</small>
+            </span>
+          </span>
+          <div class="users-toolbar-actions">
             <button class="btn btn-primary btn-icon" type="button" onclick="loadAllNicknames(this, true)"
                     aria-label="Refresh nicknames" title="Refresh nicknames">
               <svg aria-hidden="true"><use href="#icon-refresh"></use></svg>
@@ -211,9 +202,12 @@
           <span style="color: var(--text-color); opacity: 0.7;">Refreshing user nicknames...</span>
         </div>
 
-        <input type="text" class="search-box" id="user-search" placeholder="Search by User ID or Nickname..." oninput="scheduleUserSearch()">
+        <label class="user-search-field" for="user-search">
+          <span>Find account</span>
+          <input type="search" class="search-box" id="user-search" placeholder="LINE ID or nickname" autocomplete="off" oninput="scheduleUserSearch()">
+        </label>
 
-        <div class="user-list" id="user-list">
+        <div class="user-list" id="user-list" aria-live="polite">
           <div class="empty-state">Open Users to load accounts</div>
         </div>
         <div style="margin-top:12px; display:flex; justify-content:center;">
@@ -953,6 +947,6 @@
     };
   </script>
   <script src="/static/admin-user-editor.js"></script>
-  <script src="/static/admin-panel.js?v=20261027-5"></script>
+  <script src="/static/admin-panel.js?v=20261027-6"></script>
 </body>
 </html>

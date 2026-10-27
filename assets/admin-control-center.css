@@ -17,6 +17,7 @@
   --control-red: var(--jietng-danger);
   --control-amber: var(--jietng-warning);
   min-height: 100dvh;
+  padding-top: 0 !important;
   color: var(--control-text);
   background: var(--control-bg);
   font-family: var(--jietng-font-sans);
@@ -311,11 +312,32 @@
 .admin-control-center .form-group > label { color: var(--control-text); font-size: 11px; font-weight: 680; }
 .admin-control-center .form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px; }
 
+.admin-control-center .users-section-title { justify-content: space-between; }
+.admin-control-center .users-toolbar-actions { display: flex; align-items: center; gap: 6px; }
+.admin-control-center .user-search-field { display: grid; gap: 6px; margin: 4px 0 18px; }
+.admin-control-center .user-search-field > span { color: var(--control-muted); font-size: 9px; font-weight: 680; letter-spacing: .04em; text-transform: uppercase; }
 .admin-control-center .user-list { border-top: 1px solid var(--control-line); }
-.admin-control-center .user-item { border-bottom: 1px solid var(--control-line-soft); }
-.admin-control-center .user-header { display: flex; min-height: 64px; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; cursor: pointer; }
+.admin-control-center .user-item { border-bottom: 1px solid var(--control-line); transition: background-color .15s ease; }
+.admin-control-center .user-item:hover { background: rgba(201,100,66,.025); }
+.admin-control-center .user-header { display: grid; min-height: 86px; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 20px; padding: 14px 0; outline: 0; cursor: pointer; }
+.admin-control-center .user-header:focus-visible { box-shadow: inset 3px 0 0 var(--control-accent); }
+.admin-control-center .user-identity { display: flex; min-width: 0; align-items: flex-start; gap: 12px; }
+.admin-control-center .user-region-mark { display: grid; width: 38px; height: 38px; flex: 0 0 38px; place-items: center; border: 1px solid #dfc8bc; border-radius: var(--jietng-radius-sm); color: var(--control-accent-strong); background: #f5e6de; font-size: 9px; font-weight: 760; letter-spacing: .03em; }
+.admin-control-center .user-identity-copy { display: grid; min-width: 0; flex: 1; gap: 4px; }
+.admin-control-center .user-title-row { display: flex; min-width: 0; align-items: center; gap: 8px; }
+.admin-control-center .user-nickname { overflow: hidden; color: var(--control-text); font-size: 14px; font-weight: 730; letter-spacing: -.015em; text-overflow: ellipsis; white-space: nowrap; }
+.admin-control-center .user-link-state { flex: 0 0 auto; color: var(--control-muted); font-size: 8px; font-weight: 700; letter-spacing: .035em; text-transform: uppercase; }
+.admin-control-center .user-link-state.is-linked { color: var(--control-green); }
+.admin-control-center .user-link-state.is-linked::before { display: inline-block; width: 5px; height: 5px; margin-right: 5px; border-radius: 50%; background: currentColor; vertical-align: 1px; content: ""; }
+.admin-control-center .user-id-row { display: flex; min-width: 0; align-items: baseline; gap: 7px; }
+.admin-control-center .user-id-row > span { flex: 0 0 auto; color: var(--control-muted); font-size: 8px; font-weight: 680; letter-spacing: .04em; }
+.admin-control-center .user-id-row code { overflow: hidden; color: var(--control-text); font-family: var(--jietng-font-mono); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.admin-control-center .user-meta-row { display: flex; min-width: 0; flex-wrap: wrap; align-items: center; gap: 4px 11px; color: var(--control-muted); font-size: 9px; }
+.admin-control-center .user-meta-row span + span::before { margin-right: 11px; color: var(--control-line); content: "•"; }
 .admin-control-center .user-actions { display: flex; width: auto; align-items: center; justify-content: flex-end; gap: 4px; }
-.admin-control-center .toggle-icon { min-width: 16px; color: var(--control-muted); font-size: 10px; text-align: center; }
+.admin-control-center .toggle-icon { display: grid; width: 24px; min-width: 24px; height: 34px; place-items: center; color: var(--control-muted); }
+.admin-control-center .toggle-icon svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.9; transition: transform .16s ease; }
+.admin-control-center .toggle-icon.is-open svg { transform: rotate(180deg); }
 .admin-control-center .user-data { display: none; padding: 0 0 16px; }
 .admin-control-center .user-data.expanded { display: block; }
 .admin-control-center .json-viewer { max-height: 460px; overflow: auto; border-left: 2px solid var(--control-accent); background: #f1ece5; }
@@ -508,8 +530,12 @@
   .admin-control-center .monitor-title { font-size: 16px; }
   .admin-control-center .command-list { gap: 11px; }
   .admin-control-center .system-summary { margin-top: -2px; }
-  .admin-control-center .user-header { align-items: flex-start; flex-direction: column; }
-  .admin-control-center .user-actions { width: 100%; justify-content: flex-start; }
+  .admin-control-center .users-section-title { align-items: center; }
+  .admin-control-center .user-header { min-height: 0; grid-template-columns: minmax(0,1fr); align-items: stretch; gap: 11px; padding: 14px 0; }
+  .admin-control-center .user-actions { width: 100%; justify-content: flex-end; padding-top: 10px; border-top: 1px solid var(--control-line-soft); }
+  .admin-control-center .toggle-icon { margin-left: auto; }
+  .admin-control-center .user-region-mark { width: 34px; height: 34px; flex-basis: 34px; }
+  .admin-control-center .user-meta-row { row-gap: 3px; }
   .admin-control-center .notice-card-head,
   .admin-control-center .tipad-card-head { align-items: flex-start; flex-direction: column; }
   .admin-control-center .notice-badges,

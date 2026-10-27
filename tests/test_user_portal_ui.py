@@ -39,8 +39,8 @@ def test_shared_and_admin_stylesheets_have_current_cache_versions():
 
     assert "/static/ui-system.css?v=20261027-6" in common
     assert "/static/admin-login.css?v=20261027-4" in admin_login
-    assert "/static/admin-control-center.css?v=20261027-10" in admin_panel
-    assert "/static/admin-panel.js?v=20261027-5" in admin_panel
+    assert "/static/admin-control-center.css?v=20261027-11" in admin_panel
+    assert "/static/admin-panel.js?v=20261027-6" in admin_panel
 
 
 def test_logo_css_preserves_transparency_and_safe_space():
@@ -104,3 +104,20 @@ def test_admin_panel_uses_flat_monitor_layout_and_icon_actions():
     )
     for action in forbidden_text_actions:
         assert action not in panel
+
+
+def test_admin_mobile_safe_area_and_user_list_hierarchy():
+    panel = (TEMPLATES / "admin_panel.html").read_text()
+    styles = (ROOT / "assets" / "admin-control-center.css").read_text()
+    script = (ROOT / "assets" / "admin-panel.js").read_text()
+
+    assert "navigator.standalone" not in panel
+    assert "document.body.style.paddingTop" not in panel
+    assert "padding-top: 0 !important" in styles
+    assert 'id="user-result-count"' in panel
+    assert 'class="user-search-field"' in panel
+    assert 'class="user-identity"' in script
+    assert 'class="user-id-row"' in script
+    assert 'class="user-meta-row"' in script
+    assert 'class="user-link-state ${linked ? \'is-linked\' : \'is-unbound\'}"' in script
+    assert "toggleIcon?.classList.toggle('is-open', expanded)" in script

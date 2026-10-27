@@ -186,14 +186,11 @@
     function toggleUserData(userId) {
       const dataElement = document.getElementById('data-' + userId);
       const toggleIcon = document.getElementById('toggle-' + userId);
-
-      if (dataElement.classList.contains('expanded')) {
-        dataElement.classList.remove('expanded');
-        toggleIcon.textContent = '▼';
-      } else {
-        dataElement.classList.add('expanded');
-        toggleIcon.textContent = '▲';
-      }
+      const header = dataElement?.previousElementSibling;
+      const expanded = !dataElement.classList.contains('expanded');
+      dataElement.classList.toggle('expanded', expanded);
+      toggleIcon?.classList.toggle('is-open', expanded);
+      header?.setAttribute('aria-expanded', expanded ? 'true' : 'false');
     }
 
     function triggerUpdate(userId, btn) {
@@ -380,19 +377,48 @@
     function userCardHtml(user) {
       const userId = escapeHtml(user.user_id);
       const nickname = escapeHtml(user.nickname || '');
+      let details = {};
+      try {
+        details = JSON.parse(user.json_str || '{}');
+      } catch (_) {
+        details = {};
+      }
+      const profile = details.personal_info && typeof details.personal_info === 'object'
+        ? details.personal_info : {};
+      const playerName = String(profile.name || '').trim();
+      const displayName = escapeHtml(user.nickname || playerName || 'Unnamed account');
+      const region = String(details.version || 'unknown').toUpperCase();
+      const regionLabel = region === 'JP' ? 'JP' : region === 'INTL' ? 'INTL' : '—';
+      const languageNames = {'ja': '日本語', 'zh-hans': '简中', 'zh-cn': '简中', 'zh-hant': '繁中', 'zh-tw': '繁中', 'en': 'English'};
+      const language = languageNames[String(details.language || '').toLowerCase()] || String(details.language || '').trim();
+      const rating = profile.rating === undefined || profile.rating === null ? '' : String(profile.rating);
+      const linked = Boolean(details.sega_id || playerName);
+      const metadata = [
+        language,
+        playerName && playerName !== user.nickname ? `Player ${playerName}` : '',
+        rating ? `Rating ${rating}` : '',
+        details.last_update ? `Updated ${details.last_update}` : '',
+      ].filter(Boolean).map(escapeHtml);
       return `
         <div class="user-item" data-user-id="${userId}" data-nickname="${nickname.toLowerCase()}">
-          <div class="list-item user-header" onclick="toggleUserData('${userId}')">
-            <div class="list-item-info">
-              <span class="list-item-label" style="font-family: 'Courier New', monospace; color: var(--accent-color);">${userId}</span>
-              <span class="list-item-meta user-nickname" style="font-family: inherit;">${nickname}</span>
+          <div class="user-header" role="button" tabindex="0" aria-expanded="false" onclick="toggleUserData('${userId}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleUserData('${userId}')}">
+            <div class="user-identity">
+              <span class="user-region-mark">${regionLabel}</span>
+              <div class="user-identity-copy">
+                <div class="user-title-row">
+                  <strong class="user-nickname">${displayName}</strong>
+                  <span class="user-link-state ${linked ? 'is-linked' : 'is-unbound'}">${linked ? 'Linked' : 'Unbound'}</span>
+                </div>
+                <div class="user-id-row"><span>LINE</span><code title="${userId}">${userId}</code></div>
+                <div class="user-meta-row">${metadata.length ? metadata.map(item => `<span>${item}</span>`).join('') : '<span>No profile data</span>'}</div>
+              </div>
             </div>
             <div class="user-actions" onclick="event.stopPropagation()">
               <button type="button" class="btn btn-primary btn-icon" onclick="triggerUpdate('${userId}', this)" aria-label="Queue score update" title="Queue score update">${adminIcon('activity')}</button>
               <button type="button" class="btn btn-success btn-icon" onclick="refreshUserData('${userId}', this)" aria-label="Refresh user data" title="Refresh user data">${adminIcon('refresh')}</button>
               <button type="button" class="btn btn-warning btn-icon" onclick="editUser('${userId}')" aria-label="Edit user" title="Edit user">${adminIcon('edit')}</button>
               <button type="button" class="btn btn-danger btn-icon" onclick="deleteUser('${userId}', this)" aria-label="Delete user" title="Delete user">${adminIcon('trash')}</button>
-              <span class="toggle-icon" id="toggle-${userId}">▼</span>
+              <span class="toggle-icon" id="toggle-${userId}" aria-hidden="true">${adminIcon('chevron-down')}</span>
             </div>
           </div>
           <div class="user-data" id="data-${userId}">
@@ -428,6 +454,8 @@
           }
           _usersOffset = data.offset + data.users.length;
           _usersHasMore = data.has_more;
+          const resultCount = document.getElementById('user-result-count');
+          if (resultCount) resultCount.textContent = data.total;
           if (moreBtn) {
             moreBtn.style.display = _usersHasMore ? 'inline-flex' : 'none';
             moreBtn.disabled = false;
