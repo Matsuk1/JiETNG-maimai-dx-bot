@@ -2,6 +2,7 @@ from unittest.mock import patch
 from pathlib import Path
 
 from modules.messages import layout, service
+from modules.commands.command_help import generate_help_index_flex
 from modules.perm_request_generator import generate_perm_request_message
 from modules.storelist_generator import generate_store_buttons
 
@@ -85,6 +86,7 @@ def test_all_flex_generators_reject_legacy_generic_blue_and_cold_gray():
         root / "modules/messages/layout.py",
         root / "modules/messages/scores.py",
         root / "modules/messages/service.py",
+        root / "modules/commands/command_help.py",
         root / "modules/perm_request_generator.py",
         root / "modules/storelist_generator.py",
     ]
@@ -147,3 +149,25 @@ def test_representative_flex_families_build_with_the_warm_contract():
         assert "#3C7FE8" not in serialized
         assert "#315B7D" not in serialized
         assert "#007AFF" not in serialized
+
+
+def test_shared_metric_and_utility_primitives_are_flat_not_pills():
+    metric = layout.metric_card("Uptime", "1h")
+    utility = layout.round_icon_action("→", {"type": "message", "label": "Open", "text": "open"})
+    page_action = layout.pill_action_box("Next", {"type": "message", "label": "Next", "text": "next"})
+
+    assert "backgroundColor" not in metric
+    assert "cornerRadius" not in metric
+    assert utility["width"] == utility["height"] == "32px"
+    assert utility["cornerRadius"] == "8px"
+    assert page_action["cornerRadius"] == "8px"
+
+
+def test_help_directory_uses_flat_rows_and_icon_only_drill_in_actions():
+    payload = generate_help_index_flex().to_dict()
+    nodes = list(walk(payload))
+    action_nodes = [node for node in nodes if node.get("action", {}).get("type") == "postback"]
+
+    assert action_nodes
+    assert all(node["contents"][0]["text"] == "→" for node in action_nodes)
+    assert not any(node.get("cornerRadius") in {"16px", "999px", "md"} for node in nodes)

@@ -1,16 +1,15 @@
 """Account, service, search and social LINE messages."""
 from modules.messages.layout import (
-    COLOR_AD_BG,
     COLOR_BORDER,
     COLOR_BRAND,
     COLOR_BRAND_SOFT,
+    COLOR_BRAND_STRONG,
     COLOR_DANGER,
     COLOR_SUCCESS,
     COLOR_TEXT_MUTED,
     COLOR_TEXT_PRIMARY,
     COLOR_TEXT_SECONDARY,
     COLOR_TIP,
-    COLOR_TIP_BG,
     COLOR_WARNING,
     COLOR_SURFACE,
     COLOR_SURFACE_SOFT,
@@ -309,6 +308,7 @@ def generate_notice_flex(notice_json, user_id=None):
 
     # 基础body内容
     body_contents = [
+        standard_product_header(title, date or None),
         {
             "type": "text",
             "text": content,
@@ -349,46 +349,13 @@ def generate_notice_flex(notice_json, user_id=None):
                 "text": button_value
             }
 
-        # 添加按钮卡片
-        button_box = {
-            "type": "box",
-            "layout": "vertical",
-            "contents": [
-                {
-                    "type": "button",
-                    "action": action,
-                    "style": "link",
-                    "height": "sm",
-                    "color": COLOR_BRAND
-                }
-            ],
-            "backgroundColor": COLOR_BRAND_SOFT,
-            "cornerRadius": "9px",
-            "paddingAll": "8px",
-            "margin": "md"
-        }
-        body_contents.append(button_box)
+        action_button = flex_action_button(action, color=COLOR_BRAND)
+        action_button["margin"] = "md"
+        body_contents.append(action_button)
 
     # 基础bubble结构
-    bubble = {
-        "type": "bubble",
-        "size": "mega",
-        "header": standard_header_box(title, "JiETNG"),
-        "body": {
-            "type": "box",
-            "layout": "vertical",
-            "contents": body_contents,
-            "paddingAll": "20px",
-            "backgroundColor": COLOR_SURFACE
-        },
-        "footer": {
-            "type": "box",
-            "layout": "vertical",
-            "contents": [],
-            "paddingAll": "12px",
-            "backgroundColor": COLOR_SURFACE_SOFT
-        }
-    }
+    bubble = standard_bubble(body_contents)
+    footer_contents = []
 
     # 如果启用投票，添加投票按钮
     if voting_enabled and user_id:
@@ -436,20 +403,23 @@ def generate_notice_flex(notice_json, user_id=None):
             ]
         }
 
-        bubble['footer']['contents'].append(vote_buttons)
-        bubble['footer']['contents'].append({
+        footer_contents.append(vote_buttons)
+        footer_contents.append({
             "type": "separator",
             "margin": "md"
         })
 
     # 添加日期
-    bubble['footer']['contents'].append({
-        "type": "text",
-        "text": date,
-        "size": "xs",
-        "color": COLOR_TEXT_MUTED,
-        "align": "end"
-    })
+    if footer_contents:
+        bubble["footer"] = {
+            "type": "box",
+            "layout": "vertical",
+            "contents": footer_contents,
+            "paddingStart": "20px",
+            "paddingEnd": "20px",
+            "paddingBottom": "16px",
+            "backgroundColor": COLOR_SURFACE,
+        }
 
     return FlexMessage(
         alt_text=title,
@@ -765,7 +735,6 @@ def generate_tip_ad_box(tip_ad, lang):
 
     # 确定颜色和图标
     is_ad = tip_ad.get('type') == 'ad'
-    bg_color = COLOR_AD_BG if is_ad else COLOR_TIP_BG
     text_color = COLOR_WARNING if is_ad else COLOR_TIP
     icon = "📢" if is_ad else "💡"
 
@@ -786,7 +755,7 @@ def generate_tip_ad_box(tip_ad, lang):
                     "text": text,
                     "size": "xs",
                     "wrap": True,
-                    "color": "#666666",
+                    "color": COLOR_TEXT_SECONDARY,
                     "flex": 1,
                     "margin": "sm"
                 }
@@ -838,10 +807,13 @@ def generate_tip_ad_box(tip_ad, lang):
     tip_ad_box = {
         "type": "box",
         "layout": "vertical",
-        "contents": box_contents,
-        "backgroundColor": bg_color,
-        "cornerRadius": "md",
-        "paddingAll": "12px",
+        "contents": [
+            {"type": "separator", "color": COLOR_BORDER},
+            *box_contents,
+        ],
+        "spacing": "sm",
+        "paddingTop": "12px",
+        "paddingBottom": "4px",
         "margin": "md"
     }
 
@@ -937,7 +909,7 @@ def _calc_note_rows(notes):
                     "type": "text",
                     "text": key.upper(),
                     "size": "sm",
-                    "color": "#666666",
+                    "color": COLOR_TEXT_MUTED,
                     "flex": 0,
                     "weight": "bold"
                 },
@@ -945,7 +917,7 @@ def _calc_note_rows(notes):
                     "type": "text",
                     "text": str(notes[key]),
                     "size": "sm",
-                    "color": "#111111",
+                    "color": COLOR_TEXT_PRIMARY,
                     "align": "end"
                 }
             ],
@@ -969,14 +941,14 @@ def _calc_score_rows(notes, scores):
 
     def get_judgement_color(score_name):
         if 'perfect' in score_name:
-            return "#FF9500"
+            return COLOR_WARNING
         elif 'great' in score_name:
-            return "#FF69B4"
+            return COLOR_BRAND
         elif 'good' in score_name:
-            return "#34C759"
+            return COLOR_SUCCESS
         elif 'miss' in score_name:
-            return "#999999"
-        return "#666666"
+            return COLOR_TEXT_MUTED
+        return COLOR_TEXT_SECONDARY
 
     first_group = True
     for note_type, judgements in note_groups:
@@ -1002,7 +974,7 @@ def _calc_score_rows(notes, scores):
                             "type": "text",
                             "text": score_name.replace('_', ' ').title(),
                             "size": "xs",
-                            "color": "#666666",
+                            "color": COLOR_TEXT_SECONDARY,
                             "flex": 3
                         },
                         {
@@ -1023,21 +995,21 @@ def _calc_score_rows(notes, scores):
 def _calc_header(difficulty, level, lang):
     # 难度映射和颜色
     difficulty_map = {
-        'basic': {'name': 'BASIC', 'color': '#34C759'},
-        'advanced': {'name': 'ADVANCED', 'color': '#FF9500'},
-        'expert': {'name': 'EXPERT', 'color': '#FF3B30'},
-        'master': {'name': 'MASTER', 'color': '#AF52DE'},
-        'remaster': {'name': 'Re:MASTER', 'color': '#D4A5F5'},
-        'utage': {'name': 'UTAGE', 'color': '#000000'}
+        'basic': {'name': 'BASIC'},
+        'advanced': {'name': 'ADVANCED'},
+        'expert': {'name': 'EXPERT'},
+        'master': {'name': 'MASTER'},
+        'remaster': {'name': 'Re:MASTER'},
+        'utage': {'name': 'UTAGE'}
     }
 
     # 生成标题文本
     if difficulty:
-        diff_info = difficulty_map.get(difficulty, {'name': difficulty.upper(), 'color': COLOR_BRAND})
+        diff_info = difficulty_map.get(difficulty, {'name': difficulty.upper()})
         title_text = diff_info['name']
         if level:
             title_text += f" (Lv. {level:.1f})"
-        header_color = diff_info['color']
+        header_color = COLOR_BRAND
     else:
         title_text = get_multilingual_text(_message_texts["calc_flex_text"]['title_distribution'], language=lang)
         header_color = COLOR_BRAND
@@ -1061,7 +1033,7 @@ def _calc_tolerance_rows(scores, lang):
                     "type": "text",
                     "text": achievement,
                     "size": "xs",
-                    "color": "#666666",
+                    "color": COLOR_TEXT_SECONDARY,
                     "flex": 3,
                     "weight": "bold",
                 },
@@ -1069,7 +1041,7 @@ def _calc_tolerance_rows(scores, lang):
                     "type": "text",
                     "text": label.format(count=int(allowed_loss / tap_great)),
                     "size": "xs",
-                    "color": "#FF69B4",
+                    "color": COLOR_BRAND,
                     "align": "end",
                     "flex": 4,
                     "weight": "bold",
@@ -1085,9 +1057,8 @@ def _calc_tolerance_rows(scores, lang):
             "type": "box",
             "layout": "vertical",
             "contents": rows,
-            "backgroundColor": "#FFF5F0",
-            "cornerRadius": "md",
-            "paddingAll": "12px",
+            "paddingTop": "10px",
+            "paddingBottom": "4px",
             "margin": "md",
         },
     ]
@@ -1103,7 +1074,7 @@ def _song_row(song, subtitle, command, *, first):
             "text": song_title,
             "size": "sm",
             "weight": "bold",
-            "color": "#000000",
+            "color": COLOR_TEXT_PRIMARY,
             "wrap": True,
             "maxLines": 2,
             "flex": 1,
@@ -1134,7 +1105,7 @@ def _song_row(song, subtitle, command, *, first):
                         "type": "text",
                         "text": subtitle,
                         "size": "xs",
-                        "color": "#666666",
+                        "color": COLOR_TEXT_MUTED,
                         "margin": "xs",
                         "wrap": True,
                         "maxLines": 1
@@ -1258,8 +1229,10 @@ def generate_ranking_flex(user_id, top5, nearby_entries=None, ver="jp"):
         }
 
         if highlight:
-            row["backgroundColor"] = COLOR_BRAND_SOFT
-            row["cornerRadius"] = "7px"
+            row_contents[0]["color"] = COLOR_BRAND_STRONG
+            row_contents[1]["color"] = COLOR_BRAND_STRONG
+            row_contents[1]["weight"] = "bold"
+            row_contents[2]["color"] = COLOR_BRAND_STRONG
 
         return row
 

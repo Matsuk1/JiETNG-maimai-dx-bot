@@ -90,7 +90,7 @@ def _generate_score_recognition_single_flex(result, user_id=None):
                 ),
             ],
         },
-        section_title(tr("breakdown"), accent="#267D8B"),
+        section_title(tr("breakdown"), accent=COLOR_BRAND),
     ]
     if len(table_rows) > 1:
         body_contents.append({
@@ -106,14 +106,13 @@ def _generate_score_recognition_single_flex(result, user_id=None):
 
     if loss_rows:
         body_contents.extend([
-            section_title(tr("loss_detail"), accent="#C0392B"),
+            section_title(tr("loss_detail"), accent=COLOR_BRAND),
             {
                 "type": "box",
                 "layout": "vertical",
                 "spacing": "sm",
-                "paddingAll": "8px",
-                "backgroundColor": COLOR_SURFACE_SOFT,
-                "cornerRadius": "6px",
+                "paddingStart": "2px",
+                "paddingEnd": "2px",
                 "contents": loss_rows,
             },
         ])
@@ -479,14 +478,13 @@ def _break_sections(break_detail, tr):
         )
 
     return [
-        section_title(tr("break_detail"), accent="#B86E19"),
+        section_title(tr("break_detail"), accent=COLOR_BRAND),
         {
             "type": "box",
             "layout": "vertical",
             "spacing": "sm",
-            "paddingAll": "8px",
-            "backgroundColor": COLOR_SURFACE_SOFT,
-            "cornerRadius": "6px",
+            "paddingStart": "2px",
+            "paddingEnd": "2px",
             "contents": [
                 _detail_row("CRITICAL", [
                     _detail_value_box(
@@ -717,9 +715,8 @@ def _achievement_metric_card(achievement_text, score_rank_name, combo_icon, tr):
         "layout": "horizontal",
         "spacing": "sm",
         "alignItems": "center",
-        "paddingAll": "11px",
-        "cornerRadius": "8px",
-        "backgroundColor": COLOR_SURFACE_SOFT,
+        "paddingTop": "10px",
+        "paddingBottom": "10px",
         "flex": 4,
         "contents": value_contents,
     }
@@ -730,9 +727,8 @@ def _detail_value_box(label, value, text_color, background_color):
         "type": "box",
         "layout": "vertical",
         "spacing": "xs",
-        "paddingAll": "6px",
-        "backgroundColor": background_color,
-        "cornerRadius": "4px",
+        "paddingTop": "5px",
+        "paddingBottom": "5px",
         "flex": 1,
         "contents": [
             {
@@ -788,9 +784,8 @@ def _loss_total_box(total_loss_text):
         "type": "box",
         "layout": "horizontal",
         "spacing": "sm",
-        "paddingAll": "6px",
-        "backgroundColor": "#FDEDEC",
-        "cornerRadius": "4px",
+        "paddingTop": "7px",
+        "paddingBottom": "5px",
         "contents": [
             {
                 "type": "text",

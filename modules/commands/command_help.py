@@ -8,6 +8,11 @@ from modules.i18n import (
     select_text as get_multilingual_text,
 )
 from modules.messages.layout import (
+    COLOR_BRAND_SOFT,
+    COLOR_BRAND_STRONG,
+    COLOR_TEXT_MUTED,
+    COLOR_TEXT_PRIMARY,
+    COLOR_TEXT_SECONDARY,
     body_row,
     help_filter_row,
     flex_text,
@@ -148,18 +153,16 @@ def _help_mode_card(title, body, accent):
         "type": "box",
         "layout": "vertical",
         "spacing": "xs",
-        "paddingAll": "10px",
-        "cornerRadius": "8px",
-        "borderWidth": "1px",
-        "borderColor": "#E6E8EC",
+        "paddingTop": "10px",
+        "paddingBottom": "10px",
         "contents": [
             flex_text(title, size="xs", color=accent, weight="bold"),
-            flex_text(body, size="xxs", color="#555555"),
+            flex_text(body, size="xxs", color=COLOR_TEXT_SECONDARY),
         ],
     }
 
 
-def _help_postback_button(label, data, color="#315B7D", display_text=None):
+def _help_postback_button(label, data, color=COLOR_BRAND_STRONG, display_text=None):
     action = {
         "type": "postback",
         "label": label,
@@ -170,16 +173,15 @@ def _help_postback_button(label, data, color="#315B7D", display_text=None):
     return {
         "type": "box",
         "layout": "vertical",
+        "width": "32px",
         "height": "32px",
-        "cornerRadius": "16px",
-        "backgroundColor": color,
+        "cornerRadius": "8px",
+        "backgroundColor": COLOR_BRAND_SOFT,
         "justifyContent": "center",
         "alignItems": "center",
-        "paddingStart": "12px",
-        "paddingEnd": "12px",
         "action": action,
         "contents": [
-            flex_text(label, size="xxs", color="#FFFFFF", weight="bold", align="center", wrap=False),
+            flex_text("→", size="sm", color=color, weight="bold", align="center", wrap=False),
         ],
     }
 
@@ -189,10 +191,8 @@ def _help_directory_card(title, desc, commands, action_data, accent):
         "type": "box",
         "layout": "horizontal",
         "spacing": "sm",
-        "paddingAll": "10px",
-        "cornerRadius": "8px",
-        "borderWidth": "1px",
-        "borderColor": "#E6E8EC",
+        "paddingTop": "11px",
+        "paddingBottom": "11px",
         "alignItems": "center",
         "contents": [
             {
@@ -204,8 +204,8 @@ def _help_directory_card(title, desc, commands, action_data, accent):
                     node
                     for node in (
                         flex_text(title, size="xs", color=accent, weight="bold"),
-                        flex_text(desc, size="xxs", color="#555555"),
-                        flex_text(commands, size="xxs", color="#6B7280") if commands else None,
+                        flex_text(desc, size="xxs", color=COLOR_TEXT_SECONDARY),
+                        flex_text(commands, size="xxs", color=COLOR_TEXT_MUTED) if commands else None,
                     )
                     if node is not None
                 ],
@@ -213,7 +213,7 @@ def _help_directory_card(title, desc, commands, action_data, accent):
             {
                 "type": "box",
                 "layout": "vertical",
-                "width": "86px",
+                "width": "32px",
                 "contents": [
                     _help_postback_button("HELP", action_data, accent),
                 ],
@@ -227,12 +227,11 @@ def _help_note_row(label, desc):
         "type": "box",
         "layout": "vertical",
         "spacing": "xs",
-        "paddingAll": "9px",
-        "cornerRadius": "8px",
-        "backgroundColor": "#F8FAFC",
+        "paddingTop": "9px",
+        "paddingBottom": "9px",
         "contents": [
-            flex_text(label, size="xs", color="#315B7D", weight="bold"),
-            flex_text(desc, size="xxs", color="#555555"),
+            flex_text(label, size="xs", color=COLOR_BRAND_STRONG, weight="bold"),
+            flex_text(desc, size="xxs", color=COLOR_TEXT_SECONDARY),
         ],
     }
 
@@ -326,9 +325,9 @@ def generate_standard_help_flex(help_data, user_id=None):
 
 def generate_b_records_help_flex(user_id=None):
     modes = [
-        ("Best", _help_i18n(user_id, 'b50_best50_b40_best40_b35_best35_b15_best15'), "#E85D75"),
-        ("All Best", _help_i18n(user_id, 'ab50_allb50_ab35_allb35'), "#8A63D2"),
-        ("Special", _help_i18n(user_id, 'ap50_fdx50_r50_rct50_idlb50_s50_sun50'), "#267D8B"),
+        ("Best", _help_i18n(user_id, 'b50_best50_b40_best40_b35_best35_b15_best15'), COLOR_BRAND_STRONG),
+        ("All Best", _help_i18n(user_id, 'ab50_allb50_ab35_allb35'), COLOR_BRAND_STRONG),
+        ("Special", _help_i18n(user_id, 'ap50_fdx50_r50_rct50_idlb50_s50_sun50'), COLOR_BRAND_STRONG),
     ]
     filters = [
         ("-lv / -level", _help_i18n(user_id, 'level_or_constant_one_value_is_exact_two_values_are_a_range'), "-lv 13.6   /   -lv 14 14.9"),
@@ -363,13 +362,12 @@ def generate_b_records_help_flex(user_id=None):
                 "type": "box",
                 "layout": "vertical",
                 "spacing": "xs",
-                "paddingAll": "10px",
-                "cornerRadius": "8px",
-                "backgroundColor": "#F7F8FA",
+                "paddingTop": "10px",
+                "paddingBottom": "10px",
                 "contents": [
-                    flex_text("b50 -lv 14 14.9 -diff mas rem -scr 100.5", size="xxs", color="#111111"),
-                    flex_text("ab50 -ver buddies -type dx", size="xxs", color="#111111"),
-                    flex_text("r50 -page 2", size="xxs", color="#111111"),
+                    flex_text("b50 -lv 14 14.9 -diff mas rem -scr 100.5", size="xxs", color=COLOR_TEXT_PRIMARY),
+                    flex_text("ab50 -ver buddies -type dx", size="xxs", color=COLOR_TEXT_PRIMARY),
+                    flex_text("r50 -page 2", size="xxs", color=COLOR_TEXT_PRIMARY),
                 ],
             },
         ]),
@@ -393,7 +391,7 @@ HELP_DIRECTORY_CATEGORIES = [
         "title_key": "account_and_system",
         "commands": "help / bind / rebind / settings / profile / unbind / update / export / status",
         "desc_key": "binding_settings_profile_sync_export_and_status",
-        "color": "#E85D75",
+        "color": COLOR_BRAND_STRONG,
         "items": [
             ("help", "help_index"),
             ("bind", "bind"),
@@ -411,7 +409,7 @@ HELP_DIRECTORY_CATEGORIES = [
         "title_key": "score_images",
         "commands": "b50 / b40 / ab50 / ap50 / fdx50 / r50 / idlb50 / s50",
         "desc_key": "best_all_best_recent_and_special_score_images",
-        "color": "#8A63D2",
+        "color": COLOR_BRAND_STRONG,
         "items": [
             ("b50", "b_records"),
             ("b40", "b_records"),
@@ -428,7 +426,7 @@ HELP_DIRECTORY_CATEGORIES = [
         "title_key": "songs_and_records",
         "commands": "info / rec / ai-rec / record",
         "desc_key": "song_details_score_image_recognition_single_song_records_and_son",
-        "color": "#267D8B",
+        "color": COLOR_BRAND_STRONG,
         "items": [
             ("info", "song_info"),
             ("rec", "score_recognition"),
@@ -441,7 +439,7 @@ HELP_DIRECTORY_CATEGORIES = [
         "title_key": "search",
         "commands": "artist / designer / bpm / random",
         "desc_key": "search_by_artist_designer_bpm_or_random_conditions",
-        "color": "#2F7D51",
+        "color": COLOR_BRAND_STRONG,
         "items": [
             ("artist", "search_by_artist"),
             ("designer", "search_by_designer"),
@@ -454,7 +452,7 @@ HELP_DIRECTORY_CATEGORIES = [
         "title_key": "lists_and_progress",
         "commands": "records / levels / ver / plate / prog",
         "desc_key": "level_lists_constant_lists_plate_completion_and_target_progress",
-        "color": "#B86E19",
+        "color": COLOR_BRAND_STRONG,
         "items": [
             ("records", "level_records"),
             ("levels", "level_rank_list"),
@@ -468,7 +466,7 @@ HELP_DIRECTORY_CATEGORIES = [
         "title_key": "social",
         "commands": "friends",
         "desc_key": "friend_list_and_friend_record_lookup",
-        "color": "#315B7D",
+        "color": COLOR_BRAND_STRONG,
         "items": [
             ("friends", "friend_list"),
         ],
@@ -478,7 +476,7 @@ HELP_DIRECTORY_CATEGORIES = [
         "title_key": "tools",
         "commands": "rank / rc / calc / refreshmenu",
         "desc_key": "ranking_rating_breakdown_note_scoring_and_utility_commands",
-        "color": "#6B7280",
+        "color": COLOR_BRAND_STRONG,
         "items": [
             ("rank", "ranking"),
             ("rc", "rc"),

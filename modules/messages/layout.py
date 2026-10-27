@@ -49,7 +49,7 @@ def pill(text, color=COLOR_BRAND_STRONG, bg_color=COLOR_BRAND_SOFT):
         "type": "box",
         "layout": "vertical",
         "backgroundColor": bg_color,
-        "cornerRadius": "999px",
+        "cornerRadius": "6px",
         "paddingTop": "3px",
         "paddingBottom": "3px",
         "paddingStart": "8px",
@@ -86,31 +86,16 @@ def section_title(title, accent=COLOR_BRAND):
 
 def help_filter_row(label, desc, example=None):
     contents = [
-        {
-            "type": "box",
-            "layout": "horizontal",
-            "contents": [
-                pill(label, color="#C93D47", bg_color="#FFF0F1"),
-            ],
-        },
+        flex_text(label, size="xxs", color=COLOR_BRAND_STRONG, weight="bold"),
         flex_text(desc, size="xxs", color=COLOR_TEXT_SECONDARY, margin="xs"),
     ]
     if example:
-        contents.append({
-            "type": "box",
-            "layout": "vertical",
-            "margin": "xs",
-            "paddingAll": "7px",
-            "cornerRadius": "8px",
-            "backgroundColor": COLOR_SURFACE_SOFT,
-            "contents": [
-                flex_text(example, size="xxs", color=COLOR_TEXT_PRIMARY),
-            ],
-        })
+        contents.append(flex_text(f"↳ {example}", size="xxs", color=COLOR_TEXT_MUTED, margin="xs"))
     return {
         "type": "box",
         "layout": "vertical",
-        "paddingBottom": "8px",
+        "paddingTop": "9px",
+        "paddingBottom": "9px",
         "contents": contents,
     }
 
@@ -200,7 +185,7 @@ def standard_header_box(title, subtitle=None, accent=COLOR_BRAND, title_color=CO
     contents = [
         flex_text(title, size="lg", color=title_color, weight="bold"),
     ]
-    if subtitle:
+    if subtitle and subtitle != "JiETNG":
         contents.append(flex_text(subtitle, size="xs", color=COLOR_TEXT_MUTED, margin="xs"))
     contents.append({
         "type": "box",
@@ -293,34 +278,44 @@ def song_type_icon(chart_type, width="42px", height="12px", margin=None):
     return icon
 
 
-def metric_card(label, value, value_color=COLOR_TEXT_PRIMARY, bg_color=COLOR_SURFACE_SOFT, flex=None):
-    card = {
+def metric_card(label, value, value_color=COLOR_TEXT_PRIMARY, bg_color=None, flex=None):
+    """A compact editorial metric cell, not a nested card."""
+    cell = {
         "type": "box",
         "layout": "vertical",
         "spacing": "xs",
-        "paddingAll": "11px",
-        "cornerRadius": "8px",
-        "backgroundColor": bg_color,
+        "paddingTop": "10px",
+        "paddingBottom": "10px",
         "contents": [
             flex_text(label, size="xxs", color=COLOR_TEXT_MUTED),
             flex_text(str(value), size="sm", color=value_color, weight="bold"),
         ],
     }
+    if bg_color:
+        cell["backgroundColor"] = bg_color
     if flex is not None:
-        card["flex"] = flex
-    return card
+        cell["flex"] = flex
+    return cell
 
 
 def metric_grid(cards):
     rows = []
     for i in range(0, len(cards), 2):
+        if i:
+            rows.append({"type": "separator", "color": COLOR_BORDER})
         row_cards = cards[i:i + 2]
         if len(row_cards) == 1:
             row_cards.append({"type": "filler"})
+        else:
+            row_cards = [
+                row_cards[0],
+                {"type": "separator", "color": COLOR_BORDER, "margin": "md"},
+                row_cards[1],
+            ]
         rows.append({
             "type": "box",
             "layout": "horizontal",
-            "spacing": "sm",
+            "spacing": "md",
             "contents": row_cards,
         })
     return rows
@@ -344,7 +339,7 @@ def pill_action_box(label, action, bg_color=COLOR_BRAND, text_color=COLOR_TEXT_I
         "type": "box",
         "layout": "vertical",
         "flex": flex,
-        "cornerRadius": "999px",
+        "cornerRadius": "8px",
         "backgroundColor": bg_color,
         "paddingAll": "0px",
         "justifyContent": "center",
@@ -367,14 +362,14 @@ def pill_action_box(label, action, bg_color=COLOR_BRAND, text_color=COLOR_TEXT_I
     return box
 
 
-def round_icon_action(label, action, bg_color=COLOR_BRAND, text_color=COLOR_TEXT_INVERSE):
+def round_icon_action(label, action, bg_color=COLOR_BRAND_SOFT, text_color=COLOR_BRAND_STRONG):
     return {
         "type": "box",
         "layout": "vertical",
         "flex": 0,
-        "width": "34px",
-        "height": "34px",
-        "cornerRadius": "17px",
+        "width": "32px",
+        "height": "32px",
+        "cornerRadius": "8px",
         "backgroundColor": bg_color,
         "justifyContent": "center",
         "alignItems": "center",

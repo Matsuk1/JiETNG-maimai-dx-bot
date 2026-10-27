@@ -52,7 +52,9 @@ def test_flex_common_and_break_totals_keep_layout():
                   'break_detail': {**dict.fromkeys(keys, 2),
                                    'loss_percentages': dict.fromkeys(keys, .002)}}}
     totals = [node for node in _nodes(generate_score_recognition_flex(result).to_dict())
-              if node.get('backgroundColor') == '#FDEDEC']
+              if node.get('layout') == 'horizontal'
+              and node.get('contents')
+              and node['contents'][0].get('text') == 'TOTAL']
     assert [node['contents'][1]['text'] for node in totals] == ['-0.0400%'] * 4 + ['-0.0280%']
     assert all(node['contents'][0]['text'] == 'TOTAL' and node['layout'] == 'horizontal'
                for node in totals)
