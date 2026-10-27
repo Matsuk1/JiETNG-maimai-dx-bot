@@ -5,19 +5,19 @@
   color-scheme: light;
   --jietng-font-sans: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
   --jietng-font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-  --jietng-ink-950: #101522;
-  --jietng-ink-900: #171d2b;
-  --jietng-ink-700: #394258;
-  --jietng-ink-500: #687188;
-  --jietng-ink-300: #aab1c0;
-  --jietng-paper: #f7f8fc;
-  --jietng-surface: #ffffff;
-  --jietng-surface-raised: rgba(255, 255, 255, 0.9);
-  --jietng-line: rgba(16, 21, 34, 0.11);
-  --jietng-line-strong: rgba(16, 21, 34, 0.2);
-  --jietng-blue: #3157e2;
-  --jietng-blue-hover: #2448ca;
-  --jietng-blue-soft: #e9edff;
+  --jietng-ink-950: #292724;
+  --jietng-ink-900: #35322e;
+  --jietng-ink-700: #56514b;
+  --jietng-ink-500: #7f7970;
+  --jietng-ink-300: #b5afa5;
+  --jietng-paper: #f7f4ee;
+  --jietng-surface: #fffefa;
+  --jietng-surface-raised: rgba(255, 254, 250, 0.92);
+  --jietng-line: rgba(55, 48, 41, 0.12);
+  --jietng-line-strong: rgba(55, 48, 41, 0.21);
+  --jietng-blue: #3c7fe8;
+  --jietng-blue-hover: #2d6fd2;
+  --jietng-blue-soft: #e9f1ff;
   --jietng-mint: #17a98f;
   --jietng-mint-soft: #dff7f1;
   --jietng-amber: #d98809;
@@ -35,18 +35,18 @@
   --jietng-ease: cubic-bezier(0.22, 1, 0.36, 1);
 
   /* Compatibility aliases for the existing templates. */
-  --bg-gradient-1: #f4f6fb;
-  --bg-gradient-2: #fbfbfd;
-  --bg-gradient-3: #eef2fb;
-  --bg-gradient-4: #e8eef9;
+  --bg-gradient-1: #f5f1ea;
+  --bg-gradient-2: #fffdf8;
+  --bg-gradient-3: #f0ece4;
+  --bg-gradient-4: #e9e4db;
   --text-color: var(--jietng-ink-950);
   --text-secondary: var(--jietng-ink-700);
   --text-tertiary: var(--jietng-ink-500);
   --glass-bg: rgba(255, 255, 255, 0.8);
   --glass-border: rgba(255, 255, 255, 0.76);
   --card-bg: var(--jietng-surface-raised);
-  --surface-bg: #f2f4f9;
-  --input-bg: #f4f6fa;
+  --surface-bg: #f4f0e9;
+  --input-bg: #f5f1ea;
   --hover-bg: rgba(49, 87, 226, 0.065);
   --accent-color: var(--jietng-blue);
   --accent-hover: var(--jietng-blue-hover);
@@ -92,9 +92,9 @@ html {
 body {
   color: var(--jietng-ink-950);
   background:
-    radial-gradient(circle at 8% -10%, rgba(49, 87, 226, 0.14), transparent 34rem),
-    radial-gradient(circle at 96% 4%, rgba(23, 169, 143, 0.1), transparent 30rem),
-    linear-gradient(145deg, #f8f9fd 0%, #f1f4fa 100%);
+    radial-gradient(circle at 8% -10%, rgba(208, 121, 87, 0.11), transparent 34rem),
+    radial-gradient(circle at 96% 4%, rgba(60, 127, 232, 0.08), transparent 30rem),
+    linear-gradient(145deg, #faf7f1 0%, #f3efe8 100%);
   font-family: var(--jietng-font-sans);
 }
 

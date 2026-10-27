@@ -15,8 +15,9 @@
   {% include 'common_styles.html' %}
 
   <link rel="stylesheet" href="/static/admin-panel.css?v=audit-20260920-11">
+  <link rel="stylesheet" href="/static/admin-control-center.css?v=20261027-1">
 </head>
-<body class="admin-mobile-nav-collapsed">
+<body class="admin-control-center admin-mobile-nav-collapsed">
   <svg aria-hidden="true" width="0" height="0" style="position:absolute;overflow:hidden;">
     <symbol id="icon-layout-dashboard" viewBox="0 0 24 24">
       <rect width="7" height="9" x="3" y="3" rx="1"></rect>
@@ -63,7 +64,7 @@
           <img class="brand-logo" src="/static/pics/logo.png" alt="">
           <div>
             <div class="brand-title">JiETNG</div>
-            <div class="brand-subtitle">Administration</div>
+            <div class="brand-subtitle">Control Center</div>
           </div>
         </div>
         <button class="mobile-nav-toggle" type="button" id="mobile-nav-toggle" aria-label="Toggle navigation" aria-expanded="false" onclick="toggleMobileNav()"></button>
@@ -74,11 +75,11 @@
         <div class="tabs nav-stack">
           <button class="tab active" data-tab="stats" onclick="switchTab('stats', this)">
             <span class="tab-icon"><svg aria-hidden="true"><use href="#icon-layout-dashboard"></use></svg></span>
-            <span class="tab-copy"><span class="tab-label">Overview</span><span class="tab-desc">health, traffic, queues</span></span>
+            <span class="tab-copy"><span class="tab-label">Overview</span><span class="tab-desc">health and activity</span></span>
           </button>
           <button class="tab" data-tab="operations" onclick="switchTab('operations', this)">
             <span class="tab-icon"><svg aria-hidden="true"><use href="#icon-activity"></use></svg></span>
-            <span class="tab-copy"><span class="tab-label">Operations <span id="notification-badge" style="display:none; background:#ff3b30; color:#fff; border-radius:999px; padding:1px 6px; font-size:11px; margin-left:4px;"></span></span><span class="tab-desc">logs and alerts</span></span>
+            <span class="tab-copy"><span class="tab-label">Operations <span id="notification-badge" style="display:none; background:#ff3b30; color:#fff; border-radius:999px; padding:1px 6px; font-size:11px; margin-left:4px;"></span></span><span class="tab-desc">diagnostics and logs</span></span>
           </button>
         </div>
 
@@ -101,16 +102,22 @@
             <span class="tab-copy"><span class="tab-label">Maintenance</span><span class="tab-desc">data, backups, assets, tokens</span></span>
           </button>
         </div>
+        <div class="sidebar-runtime" aria-label="Runtime status">
+          <div class="sidebar-runtime-head"><span class="runtime-dot" aria-hidden="true"></span><span>Service online</span></div>
+          <div class="sidebar-runtime-meta">{{ stats.uptime }} uptime</div>
+        </div>
       </div>
     </aside>
 
     <main class="admin-main">
       <div class="topbar">
         <div class="topbar-title">
+          <div class="topbar-eyebrow">JiETNG / Control Center</div>
           <h1 id="admin-page-title">Overview</h1>
           <div class="topbar-meta">Rendered {{ stats.timestamp }} · {{ stats.hostname }}:{{ stats.port }}</div>
         </div>
         <div class="topbar-actions">
+          <span class="control-live"><span aria-hidden="true"></span>Live</span>
           <button class="icon-button" id="notif-toggle-btn" onclick="toggleBrowserNotifications()" title="Enable/Disable browser notifications">
             <span id="notif-toggle-icon">✕</span>
             <span id="notif-toggle-label">Notifications</span>
