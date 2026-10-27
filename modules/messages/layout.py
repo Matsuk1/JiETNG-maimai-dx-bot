@@ -230,12 +230,12 @@ def standard_product_header(title, subtitle=None, accent=COLOR_BRAND):
         "borderColor": COLOR_BORDER,
         "backgroundColor": "#F4F0E9",
         "contents": [
+            flex_text(title, size="lg", color=COLOR_TEXT_PRIMARY, weight="bold"),
             {
                 "type": "box",
                 "layout": "horizontal",
                 "contents": [pill("JiETNG", color="#FFFFFF", bg_color=accent)],
             },
-            flex_text(title, size="lg", color=COLOR_TEXT_PRIMARY, weight="bold"),
         ],
     }
     if subtitle and subtitle != "JiETNG":
