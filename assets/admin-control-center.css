@@ -51,6 +51,7 @@
 }
 
 .admin-control-center .brand-title {
+  color: var(--control-text);
   font-size: 17px;
   font-weight: 850;
   letter-spacing: -0.03em;
