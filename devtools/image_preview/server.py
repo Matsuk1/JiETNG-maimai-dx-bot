@@ -61,7 +61,6 @@ def render_case(kind, data, skin="default", background=False):
     sample_bg = {'files': ['kaf.jpg'], 'blur': 12, 'overlay': 60} if background else None
     with RENDER_LOCK, use_skin(skin), ExitStack() as stack:
         # Scope the offline fixture assets to one render, without changing production files.
-        stack.enter_context(patch.object(html_cards, 'COVERS_DIR', str(ASSETS)))
         stack.enter_context(patch.object(image_cache, 'COVERS_DIR', str(ASSETS)))
         stack.enter_context(patch.object(image_cache, '_download_rgba', return_value=(None, None)))
         if kind in ('thumbnail', 'inline'):
