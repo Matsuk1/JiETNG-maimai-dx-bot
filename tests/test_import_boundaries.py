@@ -39,7 +39,10 @@ def test_account_and_status_cards_use_shared_layout():
         message = generate_account_action_flex(kind, 'https://example.test/action')
         bubble = message.contents.to_dict()
         assert bubble['type'] == 'bubble'
-        assert bubble['footer']['contents'][0]['action']['uri'] == 'https://example.test/action'
+        action_row = bubble['footer']['contents'][0]
+        icon_action = action_row['contents'][-1]
+        assert icon_action['action']['uri'] == 'https://example.test/action'
+        assert icon_action['contents'][0]['text'] == '→'
     for tone in ('info', 'success', 'error'):
         message = generate_status_flex('Status', 'Body', tone=tone)
         assert message.contents.to_dict()['body']['contents'][0]['contents'][0]['text'] == 'Status'

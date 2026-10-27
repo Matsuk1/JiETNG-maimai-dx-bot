@@ -6,6 +6,7 @@ from modules.messages.layout import (
     COLOR_BRAND_STRONG,
     COLOR_DANGER,
     COLOR_SUCCESS,
+    COLOR_TEXT_INVERSE,
     COLOR_TEXT_MUTED,
     COLOR_TEXT_PRIMARY,
     COLOR_TEXT_SECONDARY,
@@ -17,6 +18,7 @@ from modules.messages.layout import (
     flex_action_button,
     help_filter_row,
     flex_text,
+    labeled_icon_action,
     section_title,
     metric_card,
     metric_grid,
@@ -140,7 +142,11 @@ def generate_account_action_flex(action_type, url, user_id=None):
         body_text=body,
         alt_text=alt,
         actions=[
-            flex_action_button({"type": "uri", "label": button, "uri": url}, color=config["accent"])
+            labeled_icon_action(
+                button,
+                {"type": "uri", "uri": url},
+                bg_color=config["accent"],
+            )
         ],
         accent=config["accent"],
         user_id=user_id,
@@ -154,7 +160,7 @@ def generate_welcome_flex(user_id=None, bind_url=None, group=False):
     if bind_url:
         label = get_multilingual_text(_message_texts["sega_bind_button_text"], user_id)
         actions = [
-            flex_action_button({"type": "uri", "label": label, "uri": bind_url}, color=COLOR_BRAND)
+            labeled_icon_action(label, {"type": "uri", "uri": bind_url})
         ]
     return standard_action_bubble(
         title=title,
@@ -171,40 +177,79 @@ def generate_export_flex(user_id, meta):
     size_kb = max(1, round(meta["size"] / 1024))
     fmt_label = meta["fmt"].upper()
     title = get_multilingual_text(_message_texts["export_flex_title_text"], user_id)
-    body = get_multilingual_text(_message_texts["export_flex_summary_text"], user_id).format(
-        best=meta["best_count"],
-        recent=meta["recent_count"],
-        fmt=fmt_label,
-        size_kb=size_kb,
-    )
     foot = get_multilingual_text(_message_texts["export_flex_footnote_text"], user_id).format(ttl=meta["ttl_minutes"])
     btn = get_multilingual_text(_message_texts["export_flex_button_text"], user_id)
     copy_btn = get_multilingual_text(_message_texts["export_flex_copy_button_text"], user_id)
     alt = get_multilingual_text(_message_texts["export_alt_text"], user_id)
-    download_action = flex_action_button(
-        {"type": "uri", "label": btn, "uri": f"{meta['url']}?openExternalBrowser=1"}
+    download_action = labeled_icon_action(
+        btn,
+        {"type": "uri", "uri": f"{meta['url']}?openExternalBrowser=1"},
+        icon="↓",
     )
-    download_action["flex"] = 1
     copy_action = compact_icon_action(
         {"type": "clipboard", "clipboardText": meta["url"]},
         copy_btn,
     )
-    return standard_action_bubble(
-        title=title,
-        subtitle=fmt_label,
-        body_text=body,
-        note_text=foot,
-        alt_text=alt,
-        actions=[{
+    download_action["contents"].append(copy_action)
+
+    title_node = flex_text(title, size="md", color=COLOR_TEXT_PRIMARY, weight="bold", wrap=False)
+    title_node["adjustMode"] = "shrink-to-fit"
+    title_node["maxLines"] = 1
+    metric_cells = [
+        metric_card("Best", meta["best_count"], flex=1),
+        metric_card("Recent", meta["recent_count"], flex=1),
+        metric_card(fmt_label, f"{size_kb} KB", flex=1),
+    ]
+    metric_row = {
+        "type": "box",
+        "layout": "horizontal",
+        "spacing": "sm",
+        "paddingTop": "8px",
+        "paddingBottom": "8px",
+        "contents": [
+            metric_cells[0],
+            {"type": "separator", "color": COLOR_BORDER, "margin": "sm"},
+            metric_cells[1],
+            {"type": "separator", "color": COLOR_BORDER, "margin": "sm"},
+            metric_cells[2],
+        ],
+    }
+    bubble = standard_bubble([
+        {
+            "type": "box",
+            "layout": "vertical",
+            "spacing": "xs",
+            "paddingBottom": "10px",
+            "contents": [
+                title_node,
+                flex_text(fmt_label, size="xxs", color=COLOR_TEXT_MUTED, wrap=False),
+            ],
+        },
+        {"type": "separator", "color": COLOR_BORDER},
+        metric_row,
+        {"type": "separator", "color": COLOR_BORDER},
+        {
             "type": "box",
             "layout": "horizontal",
             "spacing": "sm",
             "alignItems": "center",
-            "contents": [download_action, copy_action],
-        }],
-        accent=COLOR_SUCCESS,
-        user_id=user_id,
-    )
+            "paddingTop": "10px",
+            "contents": [
+                flex_text("·", size="sm", color=COLOR_SUCCESS, weight="bold", wrap=False),
+                {**flex_text(foot, size="xxs", color=COLOR_TEXT_MUTED), "flex": 1},
+            ],
+        },
+    ])
+    bubble["footer"] = {
+        "type": "box",
+        "layout": "vertical",
+        "paddingStart": "18px",
+        "paddingEnd": "18px",
+        "paddingTop": "2px",
+        "paddingBottom": "14px",
+        "contents": [download_action],
+    }
+    return FlexMessage(alt_text=alt, contents=FlexContainer.from_dict(bubble))
 
 
 def create_text_message(msg_text_dict, user_id=None):

@@ -20,7 +20,7 @@ def walk(value):
 def test_shared_flex_palette_uses_warm_claude_accent():
     assert layout.COLOR_BRAND == "#C96442"
     assert layout.COLOR_BRAND_SOFT == "#F6E7E0"
-    assert layout.COLOR_SURFACE == "#FDFCFB"
+    assert layout.COLOR_SURFACE == "#FFFDF9"
 
 
 def test_product_header_is_sparse_not_a_nested_card():
@@ -60,6 +60,37 @@ def test_copy_actions_render_as_compact_icons_without_visible_labels():
         assert clipboard_box["contents"][0]["text"] == "⧉"
         visible_text = [node.get("text") for node in walk(clipboard_box) if node.get("type") == "text"]
         assert visible_text == ["⧉"]
+
+
+def test_export_flex_is_a_compact_metric_sheet_with_icon_only_actions():
+    with patch.object(service, "get_user_language", return_value="ja"):
+        payload = service.generate_export_flex("U123", {
+            "size": 707584,
+            "fmt": "json",
+            "best_count": 1192,
+            "recent_count": 50,
+            "ttl_minutes": 30,
+            "url": "https://example.test/export",
+        }).to_dict()
+
+    nodes = list(walk(payload))
+    title = next(node for node in nodes if node.get("adjustMode") == "shrink-to-fit")
+    visible_text = [node.get("text") for node in nodes if node.get("type") == "text"]
+    action_icons = [
+        node["contents"][0]["text"]
+        for node in nodes
+        if node.get("action", {}).get("type") in {"uri", "clipboard"}
+        and node.get("contents")
+    ]
+
+    assert title["size"] == "md"
+    assert title["wrap"] is False
+    assert title["adjustMode"] == "shrink-to-fit"
+    assert {"Best", "Recent", "JSON", "691 KB"}.issubset(visible_text)
+    assert "説明" not in visible_text
+    assert "注意" not in visible_text
+    assert set(action_icons) == {"↓", "⧉"}
+    assert not any(node.get("type") == "button" for node in nodes)
 
 
 def test_profile_flex_uses_dividers_instead_of_gray_row_cards():

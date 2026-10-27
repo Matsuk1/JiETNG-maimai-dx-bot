@@ -16,7 +16,7 @@ COLOR_BRAND_SOFT = "#F6E7E0"
 COLOR_TIP = "#765A46"
 COLOR_TIP_BG = "#F3ECE6"
 COLOR_AD_BG = "#F8EDDB"
-COLOR_SURFACE = "#FDFCFB"
+COLOR_SURFACE = "#FFFDF9"
 COLOR_SURFACE_SOFT = "#F6F2ED"
 COLOR_BORDER = "#DED8D0"
 
@@ -64,22 +64,22 @@ def section_title(title, accent=COLOR_BRAND):
     return {
         "type": "box",
         "layout": "horizontal",
-        "spacing": "sm",
+        "spacing": "xs",
         "alignItems": "center",
-        "margin": "lg",
+        "margin": "md",
         "contents": [
             {
                 "type": "box",
                 "layout": "vertical",
-                "width": "3px",
-                "height": "17px",
+                "width": "2px",
+                "height": "14px",
                 "cornerRadius": "2px",
                 "backgroundColor": accent,
                 "justifyContent": "center",
                 "alignItems": "center",
                 "contents": [{"type": "filler"}],
             },
-            flex_text(title, size="sm", color=COLOR_TEXT_PRIMARY, weight="bold"),
+            flex_text(title, size="xs", color=COLOR_TEXT_PRIMARY, weight="bold"),
         ],
     }
 
@@ -94,8 +94,8 @@ def help_filter_row(label, desc, example=None):
     return {
         "type": "box",
         "layout": "vertical",
-        "paddingTop": "9px",
-        "paddingBottom": "9px",
+        "paddingTop": "7px",
+        "paddingBottom": "7px",
         "contents": contents,
     }
 
@@ -119,29 +119,22 @@ def help_docs_footer(user_id=None):
     support_page_uri = f"{SUPPORT_PAGE}{'&' if '?' in SUPPORT_PAGE else '?'}openExternalBrowser=1"
     return {
         "type": "box",
-        "layout": "vertical",
-        "spacing": "sm",
-        "paddingAll": "12px",
+        "layout": "horizontal",
+        "spacing": "md",
+        "alignItems": "center",
+        "paddingStart": "18px",
+        "paddingEnd": "18px",
+        "paddingTop": "8px",
+        "paddingBottom": "14px",
         "contents": [
-            {
-                "type": "box",
-                "layout": "vertical",
-                "height": "38px",
-                "cornerRadius": "9px",
-                "backgroundColor": COLOR_BRAND,
-                "justifyContent": "center",
-                "alignItems": "center",
-                "paddingStart": "16px",
-                "paddingEnd": "16px",
-                "action": {
-                    "type": "uri",
-                    "label": label,
-                    "uri": support_page_uri,
-                },
-                "contents": [
-                    flex_text(label, size="sm", color=COLOR_TEXT_INVERSE, weight="bold", align="center", wrap=False),
-                ],
-            }
+            {**flex_text(label, size="xs", color=COLOR_TEXT_SECONDARY, weight="bold"), "flex": 1},
+            compact_icon_action(
+                {"type": "uri", "uri": support_page_uri},
+                label,
+                icon="↗",
+                bg_color=COLOR_BRAND,
+                icon_color=COLOR_TEXT_INVERSE,
+            ),
         ],
     }
 
@@ -154,7 +147,7 @@ def standard_bubble(contents, size="mega"):
             "type": "box",
             "layout": "vertical",
             "spacing": "none",
-            "paddingAll": "20px",
+            "paddingAll": "18px",
             "backgroundColor": COLOR_SURFACE,
             "contents": contents,
         },
@@ -219,9 +212,9 @@ def standard_product_header(title, subtitle=None, accent=COLOR_BRAND):
         "paddingStart": "2px",
         "paddingEnd": "2px",
         "paddingTop": "2px",
-        "paddingBottom": "13px",
+        "paddingBottom": "11px",
         "contents": [
-            flex_text(title, size="xl", color=COLOR_TEXT_PRIMARY, weight="bold"),
+            flex_text(title, size="lg", color=COLOR_TEXT_PRIMARY, weight="bold"),
         ],
     }
     if subtitle and subtitle != "JiETNG":
@@ -284,8 +277,8 @@ def metric_card(label, value, value_color=COLOR_TEXT_PRIMARY, bg_color=None, fle
         "type": "box",
         "layout": "vertical",
         "spacing": "xs",
-        "paddingTop": "10px",
-        "paddingBottom": "10px",
+        "paddingTop": "8px",
+        "paddingBottom": "8px",
         "contents": [
             flex_text(label, size="xxs", color=COLOR_TEXT_MUTED),
             flex_text(str(value), size="sm", color=value_color, weight="bold"),
@@ -406,24 +399,58 @@ def compact_icon_action(action, accessible_label, icon="⧉", bg_color=COLOR_BRA
     }
 
 
+def labeled_icon_action(label, action, icon="→", bg_color=COLOR_BRAND,
+                        icon_color=COLOR_TEXT_INVERSE):
+    """Keep the description outside an icon-only action target."""
+    return {
+        "type": "box",
+        "layout": "horizontal",
+        "spacing": "sm",
+        "alignItems": "center",
+        "contents": [
+            {**flex_text(label, size="xs", color=COLOR_TEXT_SECONDARY, weight="bold"), "flex": 1},
+            compact_icon_action(
+                action,
+                label,
+                icon=icon,
+                bg_color=bg_color,
+                icon_color=icon_color,
+            ),
+        ],
+    }
+
+
 def standard_action_bubble(title, subtitle, body_text, alt_text, actions=None, note_text=None,
                             accent=COLOR_BRAND, user_id=None):
-    sections = [
-        (help_ui("function", user_id), [
-            body_row(body_text)
-        ])
-    ]
-    if note_text:
-        sections.append((help_ui("notes", user_id), [
-            body_row(note_text)
-        ]))
-
     body_contents = [
         standard_product_header(title, subtitle, accent=accent),
+        {
+            "type": "box",
+            "layout": "vertical",
+            "paddingStart": "2px",
+            "paddingEnd": "2px",
+            "paddingTop": "6px",
+            "paddingBottom": "10px",
+            "contents": [flex_text(body_text, size="xs", color=COLOR_TEXT_SECONDARY)],
+        },
     ]
-    for section_label, rows in sections:
-        body_contents.append(section_title(section_label, accent=accent))
-        body_contents.append(separated_row_group(rows))
+    if note_text:
+        body_contents.extend([
+            {"type": "separator", "color": COLOR_BORDER, "margin": "sm"},
+            {
+                "type": "box",
+                "layout": "horizontal",
+                "spacing": "sm",
+                "alignItems": "flex-start",
+                "paddingStart": "2px",
+                "paddingEnd": "2px",
+                "paddingTop": "10px",
+                "contents": [
+                    flex_text("·", size="sm", color=accent, weight="bold", wrap=False),
+                    {**flex_text(note_text, size="xxs", color=COLOR_TEXT_MUTED), "flex": 1},
+                ],
+            },
+        ])
 
     bubble = standard_bubble(body_contents)
     if actions:
@@ -431,7 +458,10 @@ def standard_action_bubble(title, subtitle, body_text, alt_text, actions=None, n
             "type": "box",
             "layout": "vertical",
             "spacing": "sm",
-            "paddingAll": "12px",
+            "paddingStart": "18px",
+            "paddingEnd": "18px",
+            "paddingTop": "4px",
+            "paddingBottom": "14px",
             "contents": actions,
         }
     return FlexMessage(alt_text=alt_text, contents=FlexContainer.from_dict(bubble))
