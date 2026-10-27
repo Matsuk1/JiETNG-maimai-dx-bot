@@ -49,6 +49,11 @@ const copy = computed(() => ({
       <h2 id="start-heading">{{ copy.heading }}</h2>
       <ol class="start-steps">
         <li v-for="(step, index) in copy.steps" :key="index">
+          <span class="step-icon" aria-hidden="true">
+            <svg v-if="index === 0" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M16 11h6"/></svg>
+            <svg v-else-if="index === 1" viewBox="0 0 24 24"><path d="M20 7h-9M14 17H5M17 4l3 3-3 3M8 14l-3 3 3 3"/></svg>
+            <svg v-else viewBox="0 0 24 24"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg>
+          </span>
           <span class="step-number" aria-hidden="true">0{{ index + 1 }}</span>
           <h3>{{ step[0] }}</h3><p>{{ step[1] }}</p>
         </li>

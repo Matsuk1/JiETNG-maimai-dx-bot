@@ -79,12 +79,21 @@
 
 /* Shared documentation and homepage design. */
 :root {
-  --vp-c-brand-1: #2459c4;
-  --vp-c-brand-2: #1e4fab;
-  --vp-c-brand-3: #2861d6;
-  --vp-c-brand-soft: rgba(40, 97, 214, .1);
+  --vp-c-brand-1: #2d6fd2;
+  --vp-c-brand-2: #245fae;
+  --vp-c-brand-3: #3c7fe8;
+  --vp-c-brand-soft: rgba(60, 127, 232, .11);
+  --vp-c-bg: #f7f4ee;
+  --vp-c-bg-alt: #f1ece4;
+  --vp-c-bg-soft: #fffefa;
+  --vp-c-bg-elv: #fffefa;
+  --vp-c-bg-mute: #eee9e1;
+  --vp-c-divider: rgba(55, 48, 41, .13);
+  --vp-c-text-1: #292724;
+  --vp-c-text-2: #56514b;
+  --vp-c-text-3: #7f7970;
   --vp-home-hero-name-color: var(--vp-c-brand-1);
-  --vp-home-hero-image-background-image: radial-gradient(#b5d4fb, transparent 70%);
+  --vp-home-hero-image-background-image: radial-gradient(circle, rgba(208, 121, 87, .22), rgba(60, 127, 232, .1) 45%, transparent 70%);
   --vp-home-hero-image-filter: blur(40px);
 }
 .dark {
@@ -92,12 +101,27 @@
   --vp-c-brand-2: #b8cfff;
   --vp-c-brand-3: #3475e3;
   --vp-c-brand-soft: rgba(100, 150, 255, .14);
+  --vp-c-bg: #0d1119;
+  --vp-c-bg-alt: #101620;
+  --vp-c-bg-soft: #151b26;
+  --vp-c-bg-elv: #171e2a;
+  --vp-c-bg-mute: #1d2532;
+  --vp-c-divider: rgba(232, 237, 247, .12);
+  --vp-c-text-1: #edf0f7;
+  --vp-c-text-2: #c0c6d4;
+  --vp-c-text-3: #8f98aa;
   --vp-home-hero-image-background-image: radial-gradient(#163563, transparent 70%);
 }
-.VPHero .tagline { max-width: 560px; }
-.VPFeature { border: 1px solid var(--vp-c-divider); background: var(--vp-c-bg); transition: border-color .2s; }
-.VPFeature:hover { border-color: var(--vp-c-brand-1); }
-.VPFeature .icon { background: var(--vp-c-bg-soft); }
+.VPNav { background: color-mix(in srgb, var(--vp-c-bg) 88%, transparent); backdrop-filter: blur(18px) saturate(150%); }
+.VPNavBar { border-bottom-color: var(--vp-c-divider) !important; }
+.VPHero .name { font-weight: 850; letter-spacing: -.05em; }
+.VPHero .text { color: var(--vp-c-text-1); letter-spacing: -.04em; }
+.VPHero .tagline { max-width: 600px; color: var(--vp-c-text-2); font-size: 17px; line-height: 1.7; }
+.VPButton { border-radius: 11px !important; font-weight: 700 !important; }
+.VPButton.brand { box-shadow: 0 9px 22px rgba(60, 127, 232, .19); }
+.VPFeature { border: 1px solid var(--vp-c-divider); border-radius: 18px !important; background: var(--vp-c-bg-soft); box-shadow: 0 8px 24px rgba(55, 48, 41, .035); transition: border-color .2s, transform .2s, box-shadow .2s; }
+.VPFeature:hover { border-color: color-mix(in srgb, var(--vp-c-brand-1) 42%, var(--vp-c-divider)); box-shadow: 0 14px 34px rgba(55, 48, 41, .075); transform: translateY(-2px); }
+.VPFeature .icon { border: 1px solid var(--vp-c-divider); border-radius: 10px; background: var(--vp-c-bg-soft); }
 .sidebar-line-action { padding: 20px 0 8px; border-top: 1px solid var(--vp-c-divider); }
 a.line-friend-button {
   display: inline-flex; align-items: center; justify-content: center; gap: 10px;
@@ -111,21 +135,23 @@ a.line-friend-button:focus-visible, .home-content a:focus-visible { outline: 3px
 .home-content { max-width: 1152px; margin: 64px auto 0; padding-bottom: 64px; }
 .home-content h2 { margin: 0 0 20px; border: 0; padding: 0; font-size: clamp(24px, 3vw, 34px); line-height: 1.35; letter-spacing: -.03em; }
 .home-content p { color: var(--vp-c-text-2); line-height: 1.8; }
-.score-showcase { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 56px; padding: 40px; border-radius: 24px; background: var(--vp-c-bg-soft); }
+.score-showcase { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 56px; padding: 44px; border: 1px solid var(--vp-c-divider); border-radius: 26px; background: var(--vp-c-bg-soft); box-shadow: 0 20px 55px rgba(55, 48, 41, .07); }
 .score-showcase .eyebrow { margin: 0 0 16px; color: var(--vp-c-brand-1); font-size: 12px; font-weight: 700; letter-spacing: .08em; }
 .score-showcase figure { margin: 0; min-width: 0; }
 .vp-doc img, .VPHomeHero .VPImage { border-radius: 16px; }
-.score-showcase img { display: block; width: auto; height: auto; max-width: 100%; max-height: 420px; margin-inline: auto; border-radius: 16px; }
+.score-showcase img { display: block; width: auto; height: auto; max-width: 100%; max-height: 420px; margin-inline: auto; border: 1px solid var(--vp-c-divider); border-radius: 16px; background: #fff; box-shadow: 0 14px 30px rgba(55, 48, 41, .09); }
 .score-showcase figcaption { margin-top: 12px; text-align: center; color: var(--vp-c-text-2); font-size: 12px; }
 .home-start { padding: 64px 0; }
-.start-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; list-style: none; padding: 0; margin: 28px 0; }
-.start-steps li { border-top: 1px solid var(--vp-c-divider); padding-top: 20px; }
+.start-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; list-style: none; padding: 0; margin: 28px 0; }
+.start-steps li { position: relative; min-height: 210px; padding: 20px; border: 1px solid var(--vp-c-divider); border-radius: 18px; background: var(--vp-c-bg-soft); }
+.step-icon { display: grid; width: 34px; height: 34px; margin-bottom: 24px; place-items: center; border-radius: 10px; color: #fff; background: var(--vp-c-brand-3); box-shadow: 0 6px 14px rgba(60, 127, 232, .18); }
+.step-icon svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .step-number { font-size: 13px; color: var(--vp-c-brand-1); font-weight: 700; }
 .start-steps h3 { margin: 12px 0 8px; font-size: 18px; }
 .start-steps p { margin: 0; font-size: 14px; }
 .guide-link, .home-resources a { color: var(--vp-c-brand-1); font-weight: 600; }
 .guide-link:hover, .home-resources a:hover { text-decoration: underline; }
-.home-resources { border-top: 1px solid var(--vp-c-divider); padding-top: 32px; }
+.home-resources { padding: 28px; border: 1px solid var(--vp-c-divider); border-radius: 18px; background: var(--vp-c-bg-soft); }
 .home-resources h2 { font-size: 20px; }
 .home-resources > div { display: flex; flex-wrap: wrap; gap: 16px 32px; font-size: 14px; }
 .vp-doc div[class*='language-'] { border-radius: 10px; }
