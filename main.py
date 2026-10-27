@@ -1614,6 +1614,8 @@ async def process_sega_credentials(
     async with aiohttp.ClientSession(cookies=cookies, connector=connector, timeout=timeout) as session:
         dom = await fetch_dom(session, f"{base}/home/", ver)
 
+        if dom == "MAINTENANCE":
+            return "MAINTENANCE"
         if dom is None:
             return False
 

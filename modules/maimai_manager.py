@@ -19,10 +19,40 @@ from modules.maimai_utils import (
 logger = logging.getLogger(__name__)
 
 MAIMAI_LOGIN_TIMEOUT_SECONDS = 10
+MAIMAI_MAINTENANCE_HTTP_STATUSES = frozenset({502, 503, 504})
+
+_MAINTENANCE_PAGE_MARKERS = (
+    "メンテナンス中",
+    "メンテナンスを実施",
+    "メンテナンス時間",
+    "ただいまメンテナンス",
+    "under maintenance",
+    "currently undergoing maintenance",
+    "service temporarily unavailable",
+)
 
 
 class MaimaiServiceTimeout(TimeoutError):
     """The official maimai service did not finish within our request budget."""
+
+
+def _response_indicates_maintenance(response, html=""):
+    """Recognize official maintenance responses beyond the usual HTTP 503."""
+    status = getattr(response, "status", None)
+    if status in MAIMAI_MAINTENANCE_HTTP_STATUSES:
+        return True
+
+    response_url = str(getattr(response, "url", "") or "").lower()
+    if "maintenance" in response_url:
+        return True
+
+    page = (html or "").lower()
+    return any(marker in page for marker in _MAINTENANCE_PAGE_MARKERS)
+
+
+def _connection_indicates_maintenance(error):
+    """Treat an official-site connection outage as maintenance, not bad credentials."""
+    return isinstance(error, aiohttp.ClientConnectionError)
 
 
 def limit_maimai_operation_duration(operation):
@@ -163,33 +193,51 @@ async def _jp_login_session(headers):
                     headers=headers,
                 ) as response:
                     last_status = response.status
-                    if response.status == 503:
+                    if _response_indicates_maintenance(response):
                         token = "MAINTENANCE"
-                        logger.warning("[Maimai] ⚠ Server maintenance (503): server=JP")
+                        logger.warning(
+                            "[Maimai] ⚠ Server maintenance: server=JP, status=%s",
+                            response.status,
+                        )
                     else:
                         response.raise_for_status()
                         html = await response.text()
-                        dom = await asyncio.to_thread(etree.HTML, html)
-                        token, source = _extract_jp_login_token(session, html, dom)
-                        last_page = _describe_jp_login_page(html)
-                        if token and attempt:
-                            logger.info(
-                                "[Maimai] ✓ JP login token recovered: attempt=%s, source=%s",
-                                attempt + 1, source,
-                            )
-                        elif not token:
-                            token = "RATE_LIMITED"
+                        if _response_indicates_maintenance(response, html):
+                            token = "MAINTENANCE"
+                            last_page = "maintenance"
                             logger.warning(
-                                "[Maimai] ⚠ JP login token missing: attempt=%s/3, "
-                                "status=%s, html_len=%s, page=%s; not retrying",
-                                attempt + 1, last_status, len(html or ""), last_page,
+                                "[Maimai] ⚠ Server maintenance page: server=JP, status=%s",
+                                response.status,
                             )
+                        else:
+                            dom = await asyncio.to_thread(etree.HTML, html)
+                            token, source = _extract_jp_login_token(session, html, dom)
+                            last_page = _describe_jp_login_page(html)
+                            if token and attempt:
+                                logger.info(
+                                    "[Maimai] ✓ JP login token recovered: attempt=%s, source=%s",
+                                    attempt + 1, source,
+                                )
+                            elif not token:
+                                token = "RATE_LIMITED"
+                                logger.warning(
+                                    "[Maimai] ⚠ JP login token missing: attempt=%s/3, "
+                                    "status=%s, html_len=%s, page=%s; not retrying",
+                                    attempt + 1, last_status, len(html or ""), last_page,
+                                )
             except Exception as exc:
                 last_page = type(exc).__name__
-                logger.warning(
-                    "[Maimai] ⚠ JP login page fetch failed: attempt=%s/3, "
-                    "error=%s; discarding session", attempt + 1, last_page,
-                )
+                if _connection_indicates_maintenance(exc):
+                    token = "MAINTENANCE"
+                    logger.warning(
+                        "[Maimai] ⚠ Official site connection unavailable; treating as "
+                        "maintenance: server=JP, error=%s", last_page,
+                    )
+                else:
+                    logger.warning(
+                        "[Maimai] ⚠ JP login page fetch failed: attempt=%s/3, "
+                        "error=%s; discarding session", attempt + 1, last_page,
+                    )
 
             # Do not catch exceptions from the caller's POST/Aime requests:
             # they must not restart authentication or yield a second time.
@@ -243,11 +291,15 @@ async def fetch_dom(session: aiohttp.ClientSession, url: str, ver="jp") -> etree
 
     try:
         async with session.get(url, headers=headers, ssl=False) as resp:
-            if resp.status == 503:
-                logger.warning(f"[Maimai] ⚠ Server maintenance (503): url={url}")
+            if _response_indicates_maintenance(resp):
+                logger.warning(f"[Maimai] ⚠ Server maintenance: url={url}, status={resp.status}")
                 return "MAINTENANCE"
             resp.raise_for_status()
             html = await resp.text()
+
+            if _response_indicates_maintenance(resp, html):
+                logger.warning(f"[Maimai] ⚠ Server maintenance page: url={url}")
+                return "MAINTENANCE"
 
             if ("Please agree to the following terms of service before log in." in html or
                 "再度ログインしてください" in html):
@@ -255,6 +307,11 @@ async def fetch_dom(session: aiohttp.ClientSession, url: str, ver="jp") -> etree
 
             return await asyncio.to_thread(etree.HTML, html)
     except Exception as e:
+        if _connection_indicates_maintenance(e):
+            logger.warning(
+                f"[Maimai] ⚠ Official site connection unavailable; treating as maintenance: url={url}"
+            )
+            return "MAINTENANCE"
         logger.error(f"[Maimai] ✗ Fetch failed: url={url}, error={e}")
         return None
 
@@ -280,11 +337,24 @@ async def login_to_maimai(sega_id: str, password: str, ver="jp", aime=0):
                 async with session.get(
                     "https://lng-tgk-aime-gw.am-all.net/common_auth/login?site_id=maimaidxex&redirect_url=https://maimaidx-eng.com/maimai-mobile/&back_url=https://maimai.sega.com/"
                 ) as resp:
-                    if resp.status == 503:
-                        logger.warning("[Maimai] ⚠ Server maintenance (503): server=INTL")
+                    if _response_indicates_maintenance(resp):
+                        logger.warning(
+                            "[Maimai] ⚠ Server maintenance: server=INTL, status=%s",
+                            resp.status,
+                        )
                         return "MAINTENANCE"
                     resp.raise_for_status()
+                    html = await resp.text()
+                    if _response_indicates_maintenance(resp, html):
+                        logger.warning("[Maimai] ⚠ Server maintenance page: server=INTL")
+                        return "MAINTENANCE"
             except Exception as e:
+                if _connection_indicates_maintenance(e):
+                    logger.warning(
+                        "[Maimai] ⚠ Official site connection unavailable; treating as "
+                        "maintenance: server=INTL, error=%s", type(e).__name__,
+                    )
+                    return "MAINTENANCE"
                 logger.error(f"[Maimai] ✗ Failed to access INTL login page: error={e}")
                 raise
 
@@ -299,7 +369,13 @@ async def login_to_maimai(sega_id: str, password: str, ver="jp", aime=0):
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
                 allow_redirects=False
             ) as login_resp:
+                if _response_indicates_maintenance(login_resp):
+                    return "MAINTENANCE"
                 redirect_url = login_resp.headers.get("Location")
+                if not redirect_url:
+                    html = await login_resp.text()
+                    if _response_indicates_maintenance(login_resp, html):
+                        return "MAINTENANCE"
 
             # 检查重定向 URL
             if not redirect_url:
@@ -340,15 +416,23 @@ async def login_to_maimai(sega_id: str, password: str, ver="jp", aime=0):
                     "Content-Type": "application/x-www-form-urlencoded",
                 },
                 allow_redirects=True
-            ):
-                pass
+            ) as login_response:
+                if _response_indicates_maintenance(login_response):
+                    return "MAINTENANCE"
+                login_html = await login_response.text()
+                if _response_indicates_maintenance(login_response, login_html):
+                    return "MAINTENANCE"
 
             # 选择 AIME 卡
             async with session.get(
                 f"https://maimaidx.jp/maimai-mobile/aimeList/submit/?idx={aime}",
                 headers=headers,
-            ):
-                pass
+            ) as aime_response:
+                if _response_indicates_maintenance(aime_response):
+                    return "MAINTENANCE"
+                aime_html = await aime_response.text()
+                if _response_indicates_maintenance(aime_response, aime_html):
+                    return "MAINTENANCE"
 
             return session.cookie_jar.filter_cookies("https://maimaidx.jp")
 
