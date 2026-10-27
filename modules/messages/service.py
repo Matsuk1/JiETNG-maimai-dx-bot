@@ -14,10 +14,10 @@ from modules.messages.layout import (
     COLOR_WARNING,
     COLOR_SURFACE,
     COLOR_SURFACE_SOFT,
+    compact_icon_action,
     flex_action_button,
     help_filter_row,
     flex_text,
-    pill,
     section_title,
     metric_card,
     metric_grid,
@@ -182,19 +182,27 @@ def generate_export_flex(user_id, meta):
     btn = get_multilingual_text(_message_texts["export_flex_button_text"], user_id)
     copy_btn = get_multilingual_text(_message_texts["export_flex_copy_button_text"], user_id)
     alt = get_multilingual_text(_message_texts["export_alt_text"], user_id)
+    download_action = flex_action_button(
+        {"type": "uri", "label": btn, "uri": f"{meta['url']}?openExternalBrowser=1"}
+    )
+    download_action["flex"] = 1
+    copy_action = compact_icon_action(
+        {"type": "clipboard", "clipboardText": meta["url"]},
+        copy_btn,
+    )
     return standard_action_bubble(
         title=title,
         subtitle=fmt_label,
         body_text=body,
         note_text=foot,
         alt_text=alt,
-        actions=[
-            flex_action_button({"type": "uri", "label": btn, "uri": f"{meta['url']}?openExternalBrowser=1"}),
-            flex_action_button(
-                {"type": "clipboard", "label": copy_btn, "clipboardText": meta["url"]},
-                style="secondary",
-            ),
-        ],
+        actions=[{
+            "type": "box",
+            "layout": "horizontal",
+            "spacing": "sm",
+            "alignItems": "center",
+            "contents": [download_action, copy_action],
+        }],
         accent=COLOR_SUCCESS,
         user_id=user_id,
     )
@@ -548,14 +556,12 @@ def generate_user_info_flex(user_id):
         }
         contents = [value_block]
         if action:
-            copy_pill = pill(
-                action.get("label", ""),
-                color="#A84D31",
-                bg_color="#F6E7E0",
+            copy_icon = compact_icon_action(
+                {key: value for key, value in action.items() if key != "label"},
+                action.get("label", "Copy"),
             )
-            copy_pill["margin"] = "md"
-            copy_pill["action"] = action
-            contents.append(copy_pill)
+            copy_icon["margin"] = "md"
+            contents.append(copy_icon)
         return {
             "type": "box",
             "layout": "horizontal",

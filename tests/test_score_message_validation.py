@@ -48,7 +48,11 @@ def test_validation_hint_and_copy_command(consistent, complete, inferred, manual
     text = lambda key: select_text(catalog[key], language='en')
     displayed = [node.get('text') for node in nodes(payload)]
     assert (text('manual_fix_hint') in displayed) is manual
-    assert text('compact_fix' if compact else 'copy_fix') in displayed
+    copy_label = text('compact_fix' if compact else 'copy_fix')
+    copy_box = next(node for node in nodes(payload) if node.get('action', {}).get('type') == 'clipboard')
+    assert copy_label not in displayed
+    assert copy_box['width'] == '32px'
+    assert copy_box['action']['label'] == copy_label
     clipboard = next(node['clipboardText'] for node in nodes(payload) if node.get('type') == 'clipboard')
     assert parse_fix_record_command(clipboard) == (
         'Alpha Beta', 100.1234, result['parsed']['sub_judgement'])

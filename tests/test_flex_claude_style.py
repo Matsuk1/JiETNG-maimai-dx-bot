@@ -25,9 +25,40 @@ def test_shared_flex_palette_uses_warm_claude_accent():
 def test_product_header_is_sparse_not_a_nested_card():
     header = layout.standard_product_header("Profile", "JiETNG")
     assert header["contents"][0]["text"] == "Profile"
+    assert [node.get("text") for node in walk(header) if node.get("type") == "text"] == ["Profile"]
     assert "cornerRadius" not in header
     assert "borderColor" not in header
     assert "backgroundColor" not in header
+
+
+def test_copy_actions_render_as_compact_icons_without_visible_labels():
+    user = {
+        "sega_id": "example",
+        "version": "jp",
+        "personal_info": {"name": "Player", "rating": 15000},
+    }
+    with patch.object(service, "get_user", return_value=user), \
+         patch.object(service, "get_user_language", return_value="ja"):
+        profile = service.generate_user_info_flex("U123").to_dict()
+        export = service.generate_export_flex("U123", {
+            "size": 2048,
+            "fmt": "json",
+            "best_count": 50,
+            "recent_count": 10,
+            "ttl_minutes": 15,
+            "url": "https://example.test/export",
+        }).to_dict()
+
+    for payload in (profile, export):
+        clipboard_box = next(
+            node for node in walk(payload)
+            if node.get("action", {}).get("type") == "clipboard"
+        )
+        assert clipboard_box["width"] == "32px"
+        assert clipboard_box["height"] == "32px"
+        assert clipboard_box["contents"][0]["text"] == "⧉"
+        visible_text = [node.get("text") for node in walk(clipboard_box) if node.get("type") == "text"]
+        assert visible_text == ["⧉"]
 
 
 def test_profile_flex_uses_dividers_instead_of_gray_row_cards():

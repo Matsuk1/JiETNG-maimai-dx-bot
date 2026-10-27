@@ -22,9 +22,9 @@ from modules.messages.layout import (
     COLOR_TEXT_MUTED,
     COLOR_TEXT_PRIMARY,
     COLOR_TEXT_SECONDARY,
+    compact_icon_action,
     body_row,
     flex_text,
-    pill,
     section_title,
     metric_card,
     song_type_icon,
@@ -596,16 +596,13 @@ def _validation_sections(data: _ScoreData, tr):
     footer = None
     if fix_command:
         fix_label = tr("compact_fix" if break_row_inferred and fully_validated else "copy_fix")
-        fix_pill = pill(
+        fix_icon = compact_icon_action(
+            {
+                "type": "clipboard",
+                "clipboardText": fix_command,
+            },
             fix_label,
-            color="#B66A00",
-            bg_color="#FFF4E6",
         )
-        fix_pill["action"] = {
-            "type": "clipboard",
-            "label": "fix-rcd",
-            "clipboardText": fix_command,
-        }
         footer = {
             "type": "box",
             "layout": "horizontal",
@@ -615,8 +612,7 @@ def _validation_sections(data: _ScoreData, tr):
             "paddingEnd": "16px",
             "contents": [
                 {"type": "filler"},
-                fix_pill,
-                {"type": "filler"},
+                fix_icon,
             ],
         }
     return body_contents, footer

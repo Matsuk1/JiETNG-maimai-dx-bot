@@ -237,11 +237,6 @@ def standard_product_header(title, subtitle=None, accent=COLOR_BRAND):
         "paddingBottom": "13px",
         "contents": [
             flex_text(title, size="xl", color=COLOR_TEXT_PRIMARY, weight="bold"),
-            {
-                "type": "box",
-                "layout": "horizontal",
-                "contents": [pill("JiETNG", color=accent, bg_color=COLOR_BRAND_SOFT)],
-            },
         ],
     }
     if subtitle and subtitle != "JiETNG":
@@ -389,6 +384,29 @@ def round_icon_action(label, action, bg_color=COLOR_BRAND, text_color=COLOR_TEXT
         },
         "contents": [
             flex_text(label, size="md", color=text_color, weight="bold", align="center", wrap=False),
+        ],
+    }
+
+
+def compact_icon_action(action, accessible_label, icon="⧉", bg_color=COLOR_BRAND_SOFT,
+                        icon_color=COLOR_BRAND_STRONG):
+    """Compact square icon action for secondary utilities such as copy."""
+    return {
+        "type": "box",
+        "layout": "vertical",
+        "flex": 0,
+        "width": "32px",
+        "height": "32px",
+        "cornerRadius": "8px",
+        "backgroundColor": bg_color,
+        "justifyContent": "center",
+        "alignItems": "center",
+        "action": {
+            **action,
+            "label": accessible_label,
+        },
+        "contents": [
+            flex_text(icon, size="sm", color=icon_color, weight="bold", align="center", wrap=False),
         ],
     }
 
