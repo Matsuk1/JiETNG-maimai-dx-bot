@@ -17,7 +17,7 @@ DEFAULT_USER_SKIN = 'claude'
 
 
 def available_skins():
-    skins = [dict(id='default', label='Default', uses_background=True, templates=[])]
+    skins = [dict(id='default', label='Paper', uses_background=True, templates=[])]
     for manifest in sorted(SKINS.glob('*/skin.json')):
         skin_id = manifest.parent.name
         if not re.fullmatch(r'[a-z0-9_-]+', skin_id) or skin_id == 'default':

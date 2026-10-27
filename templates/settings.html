@@ -506,7 +506,7 @@
       }
     }
   </style>
-  <link rel="stylesheet" href="/static/user-portal.css?v=20261027-1">
+  <link rel="stylesheet" href="/static/user-portal.css?v=20261027-2">
 </head>
 <body class="user-portal portal-settings-page">
   <div id="loading-overlay"><div class="spinner"></div></div>
@@ -718,9 +718,11 @@
         </div>
         <button type="button" class="token-action-btn" id="import-token-copy-btn" onclick="copyImportToken()">コピー</button>
       </div>
-      <div class="list-item">
-        <label for="import-token-note" id="import-token-note-label">Token名</label>
-        <input type="text" id="import-token-note" maxlength="120" placeholder="Tool" autocomplete="off">
+      <div class="list-item token-create-row">
+        <div class="token-note-field">
+          <label for="import-token-note" id="import-token-note-label">Token名</label>
+          <input type="text" id="import-token-note" maxlength="120" placeholder="Tool" autocomplete="off">
+        </div>
         <button type="button" class="token-action-btn" id="import-token-create-btn" onclick="createImportToken()">Tokenを生成</button>
       </div>
       <div id="import-token-list">

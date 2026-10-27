@@ -5,6 +5,12 @@ from modules.images import skins as image_skins
 from modules.images.renderer import template
 
 
+def test_default_skin_is_presented_as_paper_without_changing_its_id():
+    default_skin = image_skins.available_skins()[0]
+    assert default_skin['id'] == 'default'
+    assert default_skin['label'] == 'Paper'
+
+
 def test_registered_overrides_fallback_and_path_safety(tmp_path):
     skin = tmp_path / 'sample'
     skin.mkdir()

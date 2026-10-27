@@ -10,14 +10,14 @@
   --jietng-ink-700: #56514b;
   --jietng-ink-500: #7f7970;
   --jietng-ink-300: #b5afa5;
-  --jietng-paper: #f7f4ee;
-  --jietng-surface: #fffefa;
-  --jietng-surface-raised: rgba(255, 254, 250, 0.92);
-  --jietng-line: rgba(55, 48, 41, 0.12);
-  --jietng-line-strong: rgba(55, 48, 41, 0.21);
-  --jietng-blue: #3c7fe8;
-  --jietng-blue-hover: #2d6fd2;
-  --jietng-blue-soft: #e9f1ff;
+  --jietng-paper: #f7f5f2;
+  --jietng-surface: #fdfcfb;
+  --jietng-surface-raised: rgba(253, 252, 251, 0.94);
+  --jietng-line: rgba(69, 59, 51, 0.14);
+  --jietng-line-strong: rgba(69, 59, 51, 0.24);
+  --jietng-blue: #c96442;
+  --jietng-blue-hover: #ad5134;
+  --jietng-blue-soft: #f6e7e0;
   --jietng-mint: #17a98f;
   --jietng-mint-soft: #dff7f1;
   --jietng-amber: #d98809;
@@ -26,19 +26,19 @@
   --jietng-coral-soft: #ffe8e9;
   --jietng-radius-xs: 8px;
   --jietng-radius-sm: 12px;
-  --jietng-radius-md: 18px;
-  --jietng-radius-lg: 26px;
-  --jietng-radius-xl: 34px;
-  --jietng-shadow-sm: 0 1px 2px rgba(16, 21, 34, 0.06), 0 8px 20px rgba(16, 21, 34, 0.04);
-  --jietng-shadow-md: 0 20px 45px rgba(22, 31, 52, 0.1);
-  --jietng-shadow-lg: 0 34px 90px rgba(22, 31, 52, 0.16);
+  --jietng-radius-md: 16px;
+  --jietng-radius-lg: 20px;
+  --jietng-radius-xl: 24px;
+  --jietng-shadow-sm: 0 1px 2px rgba(55, 45, 36, 0.04), 0 8px 20px rgba(55, 45, 36, 0.03);
+  --jietng-shadow-md: 0 14px 36px rgba(55, 45, 36, 0.07);
+  --jietng-shadow-lg: 0 24px 64px rgba(55, 45, 36, 0.1);
   --jietng-ease: cubic-bezier(0.22, 1, 0.36, 1);
 
   /* Compatibility aliases for the existing templates. */
-  --bg-gradient-1: #f5f1ea;
-  --bg-gradient-2: #fffdf8;
-  --bg-gradient-3: #f0ece4;
-  --bg-gradient-4: #e9e4db;
+  --bg-gradient-1: #f7f5f2;
+  --bg-gradient-2: #fbfaf8;
+  --bg-gradient-3: #f1ede8;
+  --bg-gradient-4: #ebe5de;
   --text-color: var(--jietng-ink-950);
   --text-secondary: var(--jietng-ink-700);
   --text-tertiary: var(--jietng-ink-500);
@@ -47,7 +47,7 @@
   --card-bg: var(--jietng-surface-raised);
   --surface-bg: #f4f0e9;
   --input-bg: #f5f1ea;
-  --hover-bg: rgba(49, 87, 226, 0.065);
+  --hover-bg: rgba(201, 100, 66, 0.07);
   --accent-color: var(--jietng-blue);
   --accent-hover: var(--jietng-blue-hover);
   --accent-light: var(--jietng-blue-soft);
@@ -92,9 +92,9 @@ html {
 body {
   color: var(--jietng-ink-950);
   background:
-    radial-gradient(circle at 8% -10%, rgba(208, 121, 87, 0.11), transparent 34rem),
-    radial-gradient(circle at 96% 4%, rgba(60, 127, 232, 0.08), transparent 30rem),
-    linear-gradient(145deg, #faf7f1 0%, #f3efe8 100%);
+    radial-gradient(circle at 8% -10%, rgba(201, 100, 66, 0.1), transparent 34rem),
+    radial-gradient(circle at 96% 4%, rgba(163, 116, 82, 0.055), transparent 30rem),
+    linear-gradient(145deg, #fbf9f6 0%, #f2eee9 100%);
   font-family: var(--jietng-font-sans);
 }
 
@@ -114,7 +114,7 @@ input[type="button"] {
 }
 
 :focus-visible {
-  outline: 3px solid rgba(49, 87, 226, 0.34);
+  outline: 3px solid rgba(201, 100, 66, 0.28);
   outline-offset: 3px;
 }
 
@@ -226,9 +226,9 @@ input[type="button"] {
     --jietng-surface-raised: rgba(22, 28, 40, 0.9);
     --jietng-line: rgba(226, 232, 244, 0.11);
     --jietng-line-strong: rgba(226, 232, 244, 0.2);
-    --jietng-blue: #7d96ff;
-    --jietng-blue-hover: #9aabff;
-    --jietng-blue-soft: rgba(90, 116, 240, 0.17);
+    --jietng-blue: #e28a68;
+    --jietng-blue-hover: #ed9a79;
+    --jietng-blue-soft: rgba(201, 100, 66, 0.18);
     --jietng-mint: #4bd6bb;
     --jietng-mint-soft: rgba(40, 185, 157, 0.15);
     --jietng-amber: #f1b54b;
@@ -244,7 +244,7 @@ input[type="button"] {
     --card-bg: var(--jietng-surface-raised);
     --surface-bg: #101621;
     --input-bg: #1b2230;
-    --hover-bg: rgba(125, 150, 255, 0.1);
+    --hover-bg: rgba(226, 138, 104, 0.1);
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.22), 0 8px 20px rgba(0, 0, 0, 0.18);
     --shadow-md: 0 20px 50px rgba(0, 0, 0, 0.32);
     --shadow-lg: 0 34px 90px rgba(0, 0, 0, 0.42);

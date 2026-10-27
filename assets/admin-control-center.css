@@ -1281,3 +1281,112 @@
   .admin-control-center .summary-tile { padding: 9px; }
   .admin-control-center .control-section-heading small { display: none; }
 }
+
+/* Keep hierarchy sparse: cards at module level, dividers inside. */
+.admin-control-center .monitor-total {
+  padding: 8px 0 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.admin-control-center .monitor-segment {
+  padding: 6px 10px;
+  border: 0;
+  border-left: 1px solid #e3ddd6;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.admin-control-center .monitor-segment:first-child {
+  border-left: 0;
+}
+
+.admin-control-center .monitor-mini-grid {
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid #e3ddd6;
+  border-radius: 11px;
+  background: var(--control-panel-soft);
+}
+
+.admin-control-center .mini-stat {
+  border: 0;
+  border-bottom: 1px solid #e3ddd6;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.admin-control-center .mini-stat:last-child {
+  border-bottom: 0;
+}
+
+.admin-control-center .system-summary {
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.admin-control-center .summary-tile {
+  border: 0;
+  border-right: 1px solid #e3ddd6;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.admin-control-center .summary-tile:last-child {
+  border-right: 0;
+}
+
+.admin-control-center .user-item,
+.admin-control-center .notification-card,
+.admin-control-center .list-item {
+  border: 0;
+  border-bottom: 1px solid #e5dfd8;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.admin-control-center .user-item:last-child,
+.admin-control-center .notification-card:last-child,
+.admin-control-center .list-item:last-child {
+  border-bottom: 0;
+}
+
+.admin-control-center .user-item:hover,
+.admin-control-center .notification-card:hover {
+  border-color: #e5dfd8;
+  background: #faf7f3;
+  box-shadow: none;
+}
+
+@media (min-width: 769px) {
+  .admin-control-center .monitor-mini-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1100px) {
+  .admin-control-center .summary-tile:nth-child(3n) { border-right: 0; }
+  .admin-control-center .summary-tile:nth-child(-n + 3) { border-bottom: 1px solid #e3ddd6; }
+}
+
+@media (max-width: 768px) {
+  .admin-control-center .mini-stat {
+    border-right: 1px solid #e3ddd6;
+    border-bottom: 0;
+  }
+  .admin-control-center .mini-stat:last-child { border-right: 0; }
+  .admin-control-center .summary-tile,
+  .admin-control-center .summary-tile:nth-child(3n) {
+    border-right: 1px solid #e3ddd6;
+    border-bottom: 1px solid #e3ddd6;
+  }
+  .admin-control-center .summary-tile:nth-child(2n) { border-right: 0; }
+  .admin-control-center .summary-tile:nth-last-child(-n + 2) { border-bottom: 0; }
+}
