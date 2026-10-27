@@ -510,10 +510,26 @@ def generate_user_info_flex(user_id):
     texts = _message_texts["user_info_flex_text"]
     user_data = get_user(user_id)
 
-    def _info_row(label, value, action=None, value_color=COLOR_TEXT_PRIMARY, sub_value=None):
+    def _info_row(
+        label,
+        value,
+        action=None,
+        value_color=COLOR_TEXT_PRIMARY,
+        sub_value=None,
+        compact_single_line=False,
+    ):
+        value_text = flex_text(
+            str(value),
+            size="xs" if compact_single_line else "sm",
+            color=value_color,
+            weight="bold",
+            wrap=not compact_single_line,
+        )
+        if compact_single_line:
+            value_text["adjustMode"] = "shrink-to-fit"
         value_contents = [
             flex_text(label, size="xxs", color=COLOR_TEXT_MUTED),
-            flex_text(str(value), size="sm", color=value_color, weight="bold"),
+            value_text,
         ]
         if sub_value:
             value_contents.append(flex_text(str(sub_value), size="xxs", color=COLOR_TEXT_MUTED, margin="xs"))
@@ -550,6 +566,7 @@ def generate_user_info_flex(user_id):
                 "label": get_multilingual_text(texts['copy_id'], language=lang),
                 "clipboardText": user_id,
             },
+            compact_single_line=True,
         )
     ]
 

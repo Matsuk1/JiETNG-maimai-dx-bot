@@ -80,6 +80,21 @@ def test_profile_flex_uses_dividers_instead_of_gray_row_cards():
     assert any(node.get("type") == "separator" and node.get("color") == layout.COLOR_BORDER for node in nodes)
 
 
+def test_profile_line_id_stays_on_one_adaptive_line_before_copy_icon():
+    line_id = "U0b3989b7f797f4d22d2bd1b89ca530b3"
+    with patch.object(service, "get_user", return_value=None), \
+         patch.object(service, "get_user_language", return_value="ja"):
+        payload = service.generate_user_info_flex(line_id).to_dict()
+
+    line_id_text = next(
+        node for node in walk(payload)
+        if node.get("type") == "text" and node.get("text") == line_id
+    )
+    assert line_id_text["size"] == "xs"
+    assert line_id_text["wrap"] is False
+    assert line_id_text["adjustMode"] == "shrink-to-fit"
+
+
 def test_all_flex_generators_reject_legacy_generic_blue_and_cold_gray():
     root = Path(__file__).resolve().parents[1]
     sources = [
