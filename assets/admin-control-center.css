@@ -98,9 +98,20 @@
 }
 
 .admin-control-center .tab-icon svg {
-  width: 15px;
-  height: 15px;
+  width: 16px;
+  height: 16px;
+  stroke-width: 2.25;
 }
+
+.admin-control-center .tab[data-tab="stats"] { --tab-icon-ink: #245fae; --tab-icon-plate: #e8f1ff; --tab-icon-line: #bfd4f4; }
+.admin-control-center .tab[data-tab="operations"] { --tab-icon-ink: #08745d; --tab-icon-plate: #e3f6f0; --tab-icon-line: #b6ded2; }
+.admin-control-center .tab[data-tab="users"] { --tab-icon-ink: #6646a8; --tab-icon-plate: #f0eafe; --tab-icon-line: #d5c6f1; }
+.admin-control-center .tab[data-tab="content"] { --tab-icon-ink: #9a5a08; --tab-icon-plate: #fff2d8; --tab-icon-line: #ecd19d; }
+.admin-control-center .tab[data-tab="tipad"] { --tab-icon-ink: #aa3f58; --tab-icon-plate: #fde9ee; --tab-icon-line: #efc3ce; }
+.admin-control-center .tab[data-tab="dxdata"] { --tab-icon-ink: #087183; --tab-icon-plate: #e1f5f7; --tab-icon-line: #b4dce1; }
+.admin-control-center .tab[data-tab="backups"] { --tab-icon-ink: #765039; --tab-icon-plate: #f6ece4; --tab-icon-line: #ddcabc; }
+.admin-control-center .tab[data-tab="backgrounds"] { --tab-icon-ink: #3d649d; --tab-icon-plate: #e8eff9; --tab-icon-line: #c3d1e6; }
+.admin-control-center .tab[data-tab="devtoken"] { --tab-icon-ink: #5545a2; --tab-icon-plate: #eceafd; --tab-icon-line: #cbc5ef; }
 
 .admin-control-center .tab:hover {
   color: #292724;
@@ -118,18 +129,18 @@
 
 .admin-control-center .tab-icon,
 .admin-control-center .tab.active .tab-icon {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border-radius: 9px;
-  color: #4e4943;
-  background: #fffefa;
-  box-shadow: inset 0 0 0 1px rgba(55, 48, 41, 0.09);
+  color: var(--tab-icon-ink, #3f3a35);
+  background: var(--tab-icon-plate, #fffefa);
+  box-shadow: inset 0 0 0 1px var(--tab-icon-line, #d5cec4), 0 2px 5px rgba(55, 48, 41, 0.06);
 }
 
 .admin-control-center .tab.active .tab-icon {
-  color: #245fae;
-  background: #dce9ff;
-  box-shadow: inset 0 0 0 1px rgba(60, 127, 232, 0.18);
+  color: var(--tab-icon-ink, #245fae);
+  background: #fff;
+  box-shadow: inset 0 0 0 2px var(--tab-icon-line, #bfd4f4), 0 4px 10px rgba(55, 48, 41, 0.09);
 }
 
 .admin-control-center .tab-label {
