@@ -8,7 +8,7 @@ import os
 from flask import Flask, request, render_template
 from PIL import Image
 
-from modules.images.skins import available_skins, current_skin, normalize_skin
+from modules.images.skins import DEFAULT_USER_SKIN, available_skins, current_skin, normalize_skin
 from modules.i18n import normalize_language, DEFAULT_WEB_LANGUAGE
 from modules.i18n import register_web_i18n
 from modules.images.skins import user_image
@@ -27,7 +27,7 @@ def settings_app(tmp_path):
                      user_exists=lambda user_id: True, get_user=lambda user_id: user,
                      normalize_language=normalize_language, DEFAULT_WEB_LANGUAGE=DEFAULT_WEB_LANGUAGE,
                      BG_DIR=str(tmp_path), available_skins=available_skins,
-                     normalize_skin=normalize_skin, logger=Mock(),
+                     normalize_skin=normalize_skin, DEFAULT_USER_SKIN=DEFAULT_USER_SKIN, logger=Mock(),
                      edit_user_value=lambda uid,key,value: user.update({key:value}),
                      link_bound_rich_menu=Mock(), load_dev_tokens=lambda: {},
                      generate_perm_token=lambda uid: 'permission', list_import_tokens=lambda uid: [],
@@ -55,6 +55,13 @@ def test_settings_roundtrip_and_invalid_skin_fallback(tmp_path):
     assert 'value="glass" data-uses-background="true" selected' in html
     client.post('/linebot/settings?token=test',data={'image_skin':'../../private'})
     assert user['image_skin']=='default'
+
+
+def test_user_without_skin_uses_warm_default():
+    from modules.images.skins import user_skin
+    with patch('modules.user_manager.get_user', return_value={}):
+        assert DEFAULT_USER_SKIN == 'claude'
+        assert user_skin('user') == 'claude'
 
 
 def test_async_request_skin_and_nested_target_are_isolated():

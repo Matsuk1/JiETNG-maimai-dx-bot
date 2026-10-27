@@ -256,7 +256,7 @@ from modules.commands.command_parsers import (
     resolve_progress_category as _resolve_progress_category,
 )
 from modules.dbpool_manager import close_pool
-from modules.images.skins import available_skins, normalize_skin, user_image, user_skin
+from modules.images.skins import DEFAULT_USER_SKIN, available_skins, normalize_skin, user_image, user_skin
 from modules.images.composition import compose_generated_images
 
 # System utilities
@@ -1095,7 +1095,7 @@ def website_settings():
         bg_blur = _parse_int(bg_blur_raw, 20, 0, 40)
         bg_overlay = _parse_int(bg_overlay_raw, 40, 0, 120)
 
-        image_skin = normalize_skin(request.form.get("image_skin", user_data.get("image_skin", "default")))
+        image_skin = normalize_skin(request.form.get("image_skin", user_data.get("image_skin", DEFAULT_USER_SKIN)))
 
         # 保存设置
         edit_user_value(user_id, "image_skin", image_skin)
@@ -1158,7 +1158,7 @@ def website_settings():
         "settings.html",
         user_language=user_language,
         image_skins=available_skins(),
-        image_skin=normalize_skin(user_data.get("image_skin", "default")),
+        image_skin=normalize_skin(user_data.get("image_skin", DEFAULT_USER_SKIN)),
         timezone=user_data.get('timezone', 9),
         bg_files=all_bg_files,
         user_bg_files=user_bg_files,

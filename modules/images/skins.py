@@ -13,6 +13,7 @@ from pathlib import Path
 
 TEMPLATES = Path(__file__).resolve().parents[2] / 'templates' / 'images'
 SKINS = TEMPLATES / 'skins'
+DEFAULT_USER_SKIN = 'claude'
 
 
 def available_skins():
@@ -83,7 +84,7 @@ _user_skin_active = ContextVar('user_image_skin_user_skin_active', default=False
 
 def user_skin(user_id):
     from modules.user_manager import get_user
-    return normalize_skin((get_user(user_id) or {}).get('image_skin', 'default')) if user_id else 'default'
+    return normalize_skin((get_user(user_id) or {}).get('image_skin', DEFAULT_USER_SKIN)) if user_id else DEFAULT_USER_SKIN
 
 
 @contextmanager
