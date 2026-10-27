@@ -760,6 +760,7 @@ def generate_tip_ad_box(tip_ad, lang):
         {
             "type": "box",
             "layout": "horizontal",
+            "margin": "lg",
             "contents": [
                 {
                     "type": "text",
@@ -828,9 +829,9 @@ def generate_tip_ad_box(tip_ad, lang):
             {"type": "separator", "color": COLOR_BORDER},
             *box_contents,
         ],
-        "spacing": "sm",
+        "spacing": "none",
         "paddingTop": "12px",
-        "paddingBottom": "4px",
+        "paddingBottom": "8px",
         "margin": "md"
     }
 

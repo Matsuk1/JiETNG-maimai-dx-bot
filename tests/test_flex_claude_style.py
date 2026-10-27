@@ -95,6 +95,18 @@ def test_profile_line_id_stays_on_one_adaptive_line_before_copy_icon():
     assert line_id_text["adjustMode"] == "shrink-to-fit"
 
 
+def test_tip_ad_content_keeps_space_below_its_divider():
+    tip_box = service.generate_tip_ad_box(
+        {"type": "tip", "text": {"ja": "Support JiETNG"}},
+        "ja",
+    )
+
+    assert tip_box["contents"][0]["type"] == "separator"
+    assert tip_box["contents"][1]["margin"] == "lg"
+    assert tip_box["spacing"] == "none"
+    assert tip_box["paddingBottom"] == "8px"
+
+
 def test_all_flex_generators_reject_legacy_generic_blue_and_cold_gray():
     root = Path(__file__).resolve().parents[1]
     sources = [
