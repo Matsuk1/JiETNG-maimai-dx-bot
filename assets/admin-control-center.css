@@ -429,6 +429,187 @@
   border-radius: 12px;
 }
 
+.control-section-title {
+  min-height: 46px;
+}
+
+.control-section-heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+}
+
+.control-section-heading > span:last-child {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.control-section-heading strong {
+  color: var(--control-text);
+  font-size: 13px;
+  font-weight: 820;
+}
+
+.control-section-heading small {
+  overflow: hidden;
+  color: var(--control-muted);
+  font-size: 9px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.control-section-icon {
+  display: inline-grid;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 9px;
+  color: #fff;
+  background: var(--control-accent);
+  box-shadow: 0 5px 12px rgba(60, 127, 232, 0.16);
+}
+
+.control-section-icon.is-neutral {
+  color: #5e5851;
+  background: #ebe5dc;
+  box-shadow: none;
+}
+
+.control-section-icon.is-amber {
+  color: #9c6814;
+  background: #fff0d3;
+  box-shadow: none;
+}
+
+.control-section-icon svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.admin-control-center .ai-monitor-section {
+  position: relative;
+  overflow: hidden;
+  padding: 20px;
+  border-top: 3px solid var(--control-accent);
+}
+
+.admin-control-center .ai-monitor-status {
+  display: inline-flex;
+  min-height: 27px;
+  align-items: center;
+  padding: 5px 9px;
+  border-radius: 999px;
+  color: #245fae;
+  background: #e9f1ff;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.ai-monitor-suggestions {
+  display: flex;
+  gap: 7px;
+  margin: -2px 0 14px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.ai-monitor-suggestions::-webkit-scrollbar {
+  display: none;
+}
+
+.ai-monitor-suggestions button {
+  min-height: 29px;
+  padding: 5px 10px;
+  border: 1px solid var(--control-line);
+  border-radius: 999px;
+  color: var(--control-muted);
+  background: var(--control-panel-soft);
+  font-size: 9px;
+  font-weight: 740;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.ai-monitor-suggestions button:hover {
+  border-color: rgba(60, 127, 232, 0.3);
+  color: var(--control-accent-strong);
+  background: #eef4ff;
+}
+
+.admin-control-center .ai-monitor-messages {
+  min-height: 180px;
+  padding: 14px;
+  border: 1px solid var(--control-line);
+  border-radius: 13px;
+  background: var(--control-panel-soft);
+}
+
+.admin-control-center .ai-monitor-empty {
+  display: grid;
+  min-height: 120px;
+  place-items: center;
+  color: var(--control-muted);
+}
+
+.admin-control-center .ai-monitor-message-body {
+  border-color: var(--control-line);
+  border-radius: 12px;
+  background: var(--control-panel);
+}
+
+.admin-control-center .ai-monitor-composer {
+  border-color: var(--control-line);
+  border-radius: 13px;
+  background: var(--control-panel-soft);
+}
+
+.admin-control-center .operations-grid {
+  gap: 15px;
+}
+
+.admin-control-center .operations-section {
+  padding: 18px;
+}
+
+.admin-control-center .log-viewer {
+  border-color: #292d35;
+  color: #dce2ed;
+  background: #171a20;
+  font-family: var(--jietng-font-mono);
+  font-size: 10px;
+  line-height: 1.65;
+}
+
+.admin-control-center .log-module-summary {
+  margin-bottom: 9px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .admin-control-center .ai-monitor-status {
+    color: #9ab6ff;
+    background: rgba(60, 127, 232, 0.16);
+  }
+
+  .control-section-icon.is-neutral {
+    color: #c8c0b6;
+    background: #292f3b;
+  }
+
+  .control-section-icon.is-amber {
+    color: #f0b95f;
+    background: rgba(226, 154, 37, 0.15);
+  }
+}
+
 @media (prefers-color-scheme: dark) {
   .admin-control-center {
     --control-bg: #0d1119;

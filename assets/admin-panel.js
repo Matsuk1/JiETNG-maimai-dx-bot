@@ -1651,6 +1651,14 @@
       }
     }
 
+    function useAIMonitorPrompt(prompt) {
+      const input = document.getElementById('ai-monitor-input');
+      if (!input || _aiMonitorBusy) return;
+      input.value = prompt;
+      input.focus();
+      input.setSelectionRange(input.value.length, input.value.length);
+    }
+
     const _aiMonitorInput = document.getElementById('ai-monitor-input');
     _aiMonitorInput?.addEventListener('compositionstart', function() {
       _aiMonitorComposing = true;

@@ -567,9 +567,14 @@
     <!-- Operations Tab -->
     <div id="operations-tab" class="tab-content">
       <div class="section ai-monitor-section">
-        <div class="section-title" style="display:flex; justify-content:space-between; align-items:center;">
-          <span>AI Diagnostics</span>
+        <div class="section-title control-section-title" style="display:flex; justify-content:space-between; align-items:center;">
+          <span class="control-section-heading"><span class="control-section-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3a5 5 0 0 0-5 5v1a4 4 0 0 0-2 7.46V18a3 3 0 0 0 3 3h8a3 3 0 0 0 3-3v-1.54A4 4 0 0 0 17 9V8a5 5 0 0 0-5-5Z"></path><path d="M9 13h.01M15 13h.01M9.5 17h5"></path></svg></span><span><strong>AI Diagnostics</strong><small>Ask about live service state and recent operations</small></span></span>
           <span class="ai-monitor-status" id="ai-monitor-status">Ready</span>
+        </div>
+        <div class="ai-monitor-suggestions" aria-label="Suggested diagnostics">
+          <button type="button" onclick="useAIMonitorPrompt('Check the recent logs for errors and summarize anything actionable.')">Recent errors</button>
+          <button type="button" onclick="useAIMonitorPrompt('Inspect the current task queues and explain any pressure or backlog.')">Queue pressure</button>
+          <button type="button" onclick="useAIMonitorPrompt('Summarize the current JiETNG service health and highlight risks.')">Health summary</button>
         </div>
         <div class="ai-monitor-messages" id="ai-monitor-messages" aria-live="polite">
           <div class="ai-monitor-empty" id="ai-monitor-empty">Ready for a diagnosis.</div>
@@ -589,6 +594,7 @@
               class="form-input ai-monitor-input"
               id="ai-monitor-input"
               maxlength="2000"
+              placeholder="Describe a symptom or ask for an operational summary…"
               onkeydown="handleAIMonitorKeydown(event)"
             ></textarea>
             <div class="ai-monitor-composer-footer">
@@ -618,8 +624,8 @@
 
       <div class="operations-grid">
         <div class="section operations-section" style="margin-bottom:0;">
-          <div class="section-title" style="display:flex; justify-content:space-between; align-items:center;">
-            <span>Runtime Logs</span>
+          <div class="section-title control-section-title" style="display:flex; justify-content:space-between; align-items:center;">
+            <span class="control-section-heading"><span class="control-section-icon is-neutral" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"></path><path d="m8 9 2 2-2 2M13 15h3"></path></svg></span><span><strong>Runtime Logs</strong><small>Latest application output by module</small></span></span>
             <div class="operations-actions">
               <button class="btn btn-primary" onclick="refreshLogs()">Refresh</button>
             </div>
@@ -629,8 +635,8 @@
         </div>
 
         <div class="section operations-section" style="margin-bottom:0;">
-          <div class="section-title" style="display:flex; justify-content:space-between; align-items:center;">
-            <span>Notifications</span>
+          <div class="section-title control-section-title" style="display:flex; justify-content:space-between; align-items:center;">
+            <span class="control-section-heading"><span class="control-section-icon is-amber" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M10 21h4"></path></svg></span><span><strong>Notifications</strong><small>Warnings and events requiring review</small></span></span>
             <div class="operations-actions">
               <button class="btn btn-primary" onclick="refreshNotifications()">Refresh</button>
               <button class="btn btn-danger" onclick="clearNotifications()">Clear</button>
