@@ -71,6 +71,10 @@
   flex-direction: column;
 }
 
+.admin-control-center .mobile-nav-content > .nav-stack:last-of-type {
+  padding-bottom: 18px;
+}
+
 .admin-control-center .side-section-label {
   margin: 20px 10px 8px;
   color: #928a80;
@@ -90,6 +94,11 @@
   border: 1px solid transparent;
   border-radius: 12px;
   color: #655f58;
+}
+
+.admin-control-center .tab-icon svg {
+  width: 15px;
+  height: 15px;
 }
 
 .admin-control-center .tab:hover {

@@ -26,22 +26,30 @@
       stats: 'Overview',
       operations: 'Operations',
       users: 'Users',
-      content: 'Content',
-      maintenance: 'Maintenance'
+      content: 'Notices',
+      tipad: 'Tip / Ad',
+      dxdata: 'DXData',
+      backups: 'Backups',
+      backgrounds: 'Assets',
+      devtoken: 'API Tokens'
     };
 
     const adminTabGroups = {
       stats: ['stats'],
       operations: ['operations'],
       users: ['users'],
-      content: ['notices', 'tipad'],
-      maintenance: ['dxdata', 'backups', 'backgrounds', 'devtoken']
+      content: ['notices'],
+      tipad: ['tipad'],
+      dxdata: ['dxdata'],
+      backups: ['backups'],
+      backgrounds: ['backgrounds'],
+      devtoken: ['devtoken']
     };
 
     function normalizeAdminTab(tabName) {
       if (tabName === 'logs' || tabName === 'notifications') return 'operations';
-      if (['notices', 'tipad'].includes(tabName)) return 'content';
-      if (['dxdata', 'backups', 'backgrounds', 'devtoken'].includes(tabName)) return 'maintenance';
+      if (tabName === 'notices') return 'content';
+      if (tabName === 'maintenance') return 'dxdata';
       return tabName || 'stats';
     }
 
@@ -69,16 +77,24 @@
       }
       if (tabName === 'content') {
         loadNotices();
+      }
+      if (tabName === 'tipad') {
         loadTipAds();
       }
       if (tabName === 'users') {
         loadUsers();
       }
-      if (tabName === 'maintenance') {
+      if (tabName === 'dxdata') {
         loadDXDataStatus();
         loadDXDataAudit();
+      }
+      if (tabName === 'backups') {
         loadBackups();
+      }
+      if (tabName === 'backgrounds') {
         loadBackgrounds();
+      }
+      if (tabName === 'devtoken') {
         loadDevTokens();
       }
     }
