@@ -2692,6 +2692,68 @@ def handle_location_message(event):
         source_type=getattr(event.source, 'type', 'user')
     )
 
+
+def handle_postback_command(event, text):
+    """Handle button-only commands before falling back to text dispatch."""
+    user_id = event.source.user_id
+    source_type = getattr(event.source, 'type', 'user')
+    cleaned = re.sub(r"\s+", " ", text.strip())
+
+    help_match = re.fullmatch(r"help\s+([A-Za-z0-9_]+)", cleaned, re.IGNORECASE)
+    if help_match:
+        reply_msg = _command_help_message(help_match.group(1), user_id)
+        if reply_msg is None:
+            reply_msg = input_error(user_id)
+        smart_reply(user_id, event.reply_token, reply_msg, configuration,
+                    addition=False, source_type=source_type)
+        return True
+
+    accept_match = re.fullmatch(r"accept-perm-request\s+(\S+)", cleaned, re.IGNORECASE)
+    if accept_match:
+        reply_msg = handle_accept_perm_request(user_id, accept_match.group(1))
+        smart_reply(user_id, event.reply_token, reply_msg, configuration,
+                    source_type=source_type)
+        return True
+
+    reject_match = re.fullmatch(r"reject-perm-request\s+(\S+)", cleaned, re.IGNORECASE)
+    if reject_match:
+        reply_msg = handle_reject_perm_request(user_id, reject_match.group(1))
+        smart_reply(user_id, event.reply_token, reply_msg, configuration,
+                    source_type=source_type)
+        return True
+
+    search_match = re.fullmatch(r"search-song\s+(\S{6})", cleaned, re.IGNORECASE)
+    if search_match:
+        if source_type == "user":
+            show_loading(user_id)
+        ver = get_user_field(user_id, 'version') or "jp"
+        reply_msg = asyncio.run(search_song_by_id(user_id, search_match.group(1), ver))
+        smart_reply(user_id, event.reply_token, reply_msg, configuration,
+                    addition=False, source_type=source_type)
+        return True
+
+    calc_match = re.fullmatch(r"calc-song\s+(\S{6})", cleaned, re.IGNORECASE)
+    if calc_match:
+        ver = get_user_field(user_id, 'version') or "jp"
+        reply_msg = calc_by_id(user_id, calc_match.group(1), ver)
+        smart_reply(user_id, event.reply_token, reply_msg, configuration,
+                    addition=False, source_type=source_type)
+        return True
+
+    record_match = re.fullmatch(r"search-record\s+(\S{6})(?:&id_use=(\S+))?", cleaned, re.IGNORECASE)
+    if record_match:
+        if source_type == "user":
+            show_loading(user_id)
+        ver = get_user_field(user_id, 'version') or "jp"
+        id_use = record_match.group(2) or user_id
+        reply_msg = asyncio.run(get_song_record_by_id(user_id, id_use, record_match.group(1), ver))
+        smart_reply(user_id, event.reply_token, reply_msg, configuration,
+                    source_type=source_type)
+        return True
+
+    return False
+
+
 # Postback 事件处理
 @handler.add(PostbackEvent)
 def handle_postback(event):
