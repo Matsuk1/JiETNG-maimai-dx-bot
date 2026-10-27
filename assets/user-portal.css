@@ -54,11 +54,12 @@
 .user-portal .ui-brand-mark {
   width: 40px;
   height: 40px;
-  border: 1px solid #d9d1c8;
-  border-radius: 10px;
-  object-fit: cover;
+  padding: 4px;
+  border: 0;
+  border-radius: 0;
+  object-fit: contain;
   object-position: center;
-  background: #fff;
+  background: transparent;
   box-shadow: none;
 }
 .user-portal .ui-brand-name { color: #302c28; font-size: 15px; font-weight: 730; letter-spacing: -.025em; }

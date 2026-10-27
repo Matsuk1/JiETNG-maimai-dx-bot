@@ -38,7 +38,7 @@
 
 .admin-control-center .brand-block { min-height: 46px; margin-bottom: 28px; padding: 0 4px 18px; border-bottom: 1px solid var(--control-line); }
 .admin-control-center .brand-identity { display: flex; align-items: center; gap: 10px; }
-.admin-control-center .brand-logo { display: block; width: 36px; height: 36px; flex: 0 0 36px; object-fit: cover; object-position: center; border: 1px solid var(--control-line); border-radius: var(--jietng-radius-sm); background: #fff; }
+.admin-control-center .brand-logo { display: block; width: 36px; height: 36px; box-sizing: border-box; flex: 0 0 36px; padding: 4px; object-fit: contain; object-position: center; border: 0; border-radius: 0; background: transparent; }
 .admin-control-center .brand-title { color: var(--control-text); font-size: 15px; font-weight: 760; letter-spacing: -.025em; }
 .admin-control-center .brand-subtitle { color: var(--control-muted); font-size: 10px; font-weight: 600; letter-spacing: .03em; }
 .admin-control-center .mobile-nav-toggle { display: none; }

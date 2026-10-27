@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 
@@ -18,7 +19,7 @@ USER_PORTAL_TEMPLATES = (
 def test_every_user_portal_page_uses_the_current_shared_stylesheet():
     for filename in USER_PORTAL_TEMPLATES:
         source = (TEMPLATES / filename).read_text()
-        assert "/static/user-portal.css?v=20261027-6" in source
+        assert "/static/user-portal.css?v=20261027-7" in source
 
 
 def test_every_html_brand_surface_uses_the_project_logo_asset():
@@ -26,6 +27,8 @@ def test_every_html_brand_surface_uses_the_project_logo_asset():
     for filename in filenames:
         source = (TEMPLATES / filename).read_text()
         assert 'src="/static/pics/logo.png"' in source
+        assert 'href="/static/pics/logo.png"' in source
+        assert "logo-padded.png" not in source
         assert '>J</span>' not in source
 
 
@@ -34,6 +37,31 @@ def test_shared_and_admin_stylesheets_have_current_cache_versions():
     admin_login = (TEMPLATES / "admin_login.html").read_text()
     admin_panel = (TEMPLATES / "admin_panel.html").read_text()
 
-    assert "/static/ui-system.css?v=20261027-4" in common
-    assert "/static/admin-login.css?v=20261027-3" in admin_login
-    assert "/static/admin-control-center.css?v=20261027-7" in admin_panel
+    assert "/static/ui-system.css?v=20261027-5" in common
+    assert "/static/admin-login.css?v=20261027-4" in admin_login
+    assert "/static/admin-control-center.css?v=20261027-8" in admin_panel
+
+
+def test_logo_css_preserves_transparency_and_safe_space():
+    shared = (ROOT / "assets" / "ui-system.css").read_text()
+    portal = (ROOT / "assets" / "user-portal.css").read_text()
+    admin = (ROOT / "assets" / "admin-control-center.css").read_text()
+
+    for source in (shared, portal, admin):
+        assert "object-fit: contain" in source
+        assert "background: transparent" in source
+        assert "border-radius: 0" in source
+
+
+def test_admin_web_app_icon_uses_transparent_logo_and_paper_palette():
+    main_source = (ROOT / "main.py").read_text()
+    icon_template = (TEMPLATES / "images" / "admin_icon.html").read_text()
+    manifest = json.loads((ROOT / "assets" / "manifest.json").read_text())
+
+    assert '"pics", "logo.png"' in main_source
+    assert '"pics", "logo-padded.png"' not in main_source
+    assert "background: rgb(247,243,237)" in icon_template
+    assert "padding: 88px" in icon_template
+    assert "object-fit: contain" in icon_template
+    assert manifest["background_color"] == "#f7f3ed"
+    assert manifest["theme_color"] == "#cf6846"

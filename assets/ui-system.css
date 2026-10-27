@@ -130,11 +130,13 @@ select {
   display: block;
   width: 38px;
   height: 38px;
-  object-fit: cover;
+  box-sizing: border-box;
+  padding: 4px;
+  object-fit: contain;
   object-position: center;
-  border: 1px solid var(--jietng-line);
-  border-radius: var(--jietng-radius-sm);
-  background: #fff;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 .ui-brand-copy { display: grid; gap: 0; }
 .ui-brand-name { color: var(--jietng-ink-950); font-size: 14px; font-weight: 750; letter-spacing: -0.02em; line-height: 1.2; }

@@ -19,7 +19,7 @@
 }
 
 .admin-login-brand { display: flex; align-items: center; gap: 9px; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid #e6dfd6; }
-.admin-login-page .ui-brand-mark { border-color: #d9d1c8; background: #fff; }
+.admin-login-page .ui-brand-mark { padding: 4px; border: 0; border-radius: 0; background: transparent; object-fit: contain; }
 .admin-login-icon { display: grid; width: 44px; height: 44px; place-items: center; margin: 0 0 18px; border: 1px solid #e6c9bc; border-radius: 13px; color: #ad5134; background: #f8e8e0; }
 .admin-login-icon svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .admin-login-page .login-header { margin-bottom: 24px; text-align: left; }

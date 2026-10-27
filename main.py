@@ -631,7 +631,7 @@ def linebot_reply():
 def admin_pwa_icon():
     """Serve the cached HTML-rendered PWA icon."""
     from modules.images.composition import admin_icon_png
-    website_logo = os.path.join(app.root_path, "assets", "pics", "logo-padded.png")
+    website_logo = os.path.join(app.root_path, "assets", "pics", "logo.png")
     return send_file(BytesIO(admin_icon_png(website_logo)), mimetype='image/png')
 
 

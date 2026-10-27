@@ -5,8 +5,8 @@
     "start_url": "/admin/panel",
     "scope": "/admin/",
     "display": "standalone",
-    "background_color": "#16213e",
-    "theme_color": "#4f6ef7",
+    "background_color": "#f7f3ed",
+    "theme_color": "#cf6846",
     "orientation": "portrait",
     "icons": [
         {
