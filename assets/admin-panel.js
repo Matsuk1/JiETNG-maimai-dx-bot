@@ -196,13 +196,11 @@
       }
     }
 
-    function triggerUpdate(userId) {
+    function triggerUpdate(userId, btn) {
       if (confirm('Trigger maimai_update for user ' + userId + '?\n\nThe update will run in the background.')) {
-        // 禁用按钮,显示加载状态
-        const btn = event.target;
-        const originalText = btn.textContent;
         btn.disabled = true;
-        btn.textContent = 'Queuing...';
+        btn.classList.add('is-loading');
+        btn.setAttribute('aria-busy', 'true');
 
         fetch('/admin/trigger_update', {
           method: 'POST',
@@ -216,21 +214,22 @@
 
           // 恢复按钮
           btn.disabled = false;
-          btn.textContent = originalText;
+          btn.classList.remove('is-loading');
+          btn.removeAttribute('aria-busy');
         })
         .catch(err => {
           alert('❌ Error: ' + err);
           btn.disabled = false;
-          btn.textContent = originalText;
+          btn.classList.remove('is-loading');
+          btn.removeAttribute('aria-busy');
         });
       }
     }
 
-    function refreshUserData(userId) {
-      const btn = event.target;
-      const originalText = btn.textContent;
+    function refreshUserData(userId, btn) {
       btn.disabled = true;
-      btn.textContent = 'Loading...';
+      btn.classList.add('is-loading');
+      btn.setAttribute('aria-busy', 'true');
 
       fetch('/admin/get_user_data', {
         method: 'POST',
@@ -259,12 +258,14 @@
         }
 
         btn.disabled = false;
-        btn.textContent = originalText;
+        btn.classList.remove('is-loading');
+        btn.removeAttribute('aria-busy');
       })
       .catch(err => {
         alert('❌ Network error: ' + err);
         btn.disabled = false;
-        btn.textContent = originalText;
+        btn.classList.remove('is-loading');
+        btn.removeAttribute('aria-busy');
       });
     }
 
@@ -332,11 +333,11 @@
       }
     });
 
-    function deleteUser(userId) {
+    function deleteUser(userId, button) {
       if (confirm('⚠️ Are you sure you want to delete this user?\n\nUser ID: ' + userId + '\n\nThis action CANNOT be undone!')) {
-        const button = event.target;
         button.disabled = true;
-        button.textContent = 'Deleting...';
+        button.classList.add('is-loading');
+        button.setAttribute('aria-busy', 'true');
 
         fetch('/admin/delete_user', {
           method: 'POST',
@@ -357,13 +358,15 @@
           } else {
             showToast('✗ ' + (data.message || 'Failed to delete user'));
             button.disabled = false;
-            button.textContent = 'Delete';
+            button.classList.remove('is-loading');
+            button.removeAttribute('aria-busy');
           }
         })
         .catch(err => {
           showToast('✗ Error: ' + err);
           button.disabled = false;
-          button.textContent = 'Delete';
+          button.classList.remove('is-loading');
+          button.removeAttribute('aria-busy');
         });
       }
     }
@@ -385,10 +388,10 @@
               <span class="list-item-meta user-nickname" style="font-family: inherit;">${nickname}</span>
             </div>
             <div class="user-actions" onclick="event.stopPropagation()">
-              <button class="btn btn-primary" onclick="triggerUpdate('${userId}')">Update</button>
-              <button class="btn btn-success" onclick="refreshUserData('${userId}')">Refresh</button>
-              <button class="btn btn-warning" onclick="editUser('${userId}')">Edit</button>
-              <button class="btn btn-danger" onclick="deleteUser('${userId}')">Delete</button>
+              <button type="button" class="btn btn-primary btn-icon" onclick="triggerUpdate('${userId}', this)" aria-label="Queue score update" title="Queue score update">${adminIcon('activity')}</button>
+              <button type="button" class="btn btn-success btn-icon" onclick="refreshUserData('${userId}', this)" aria-label="Refresh user data" title="Refresh user data">${adminIcon('refresh')}</button>
+              <button type="button" class="btn btn-warning btn-icon" onclick="editUser('${userId}')" aria-label="Edit user" title="Edit user">${adminIcon('edit')}</button>
+              <button type="button" class="btn btn-danger btn-icon" onclick="deleteUser('${userId}', this)" aria-label="Delete user" title="Delete user">${adminIcon('trash')}</button>
               <span class="toggle-icon" id="toggle-${userId}">▼</span>
             </div>
           </div>
@@ -663,7 +666,7 @@
                     </div>
                   </div>
                   <div class="notification-head-actions">
-                    <button class="btn notification-copy-btn" onclick="event.stopPropagation(); copyNotification(${i})">Copy</button>
+                    <button type="button" class="btn notification-copy-btn btn-icon" onclick="event.stopPropagation(); copyNotification(${i})" aria-label="Copy notification" title="Copy notification">${adminIcon('copy')}</button>
                     <span id="notif-arrow-${i}" style="color:var(--text-tertiary);">+</span>
                   </div>
                 </div>
@@ -704,6 +707,10 @@
 
     function escapeHtml(str) {
       return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function adminIcon(name, extraClass = '') {
+      return `<svg class="admin-action-icon ${extraClass}" aria-hidden="true"><use href="#icon-${name}"></use></svg>`;
     }
 
     // ===== DevToken Management =====
@@ -752,8 +759,8 @@
                     </td>
                     <td style="padding:8px;">
                       ${!t.revoked
-                        ? `<button class="btn btn-danger" style="font-size:11px; padding:4px 10px;" onclick="revokeDevToken('${escapeHtml(t.token_id)}')">Revoke</button>`
-                        : `<button class="btn btn-danger" style="font-size:11px; padding:4px 10px;" onclick="deleteDevToken('${escapeHtml(t.token_id)}')">Delete</button>`}
+                        ? `<button type="button" class="btn btn-danger btn-icon" onclick="revokeDevToken('${escapeHtml(t.token_id)}')" aria-label="Revoke token" title="Revoke token">${adminIcon('trash')}</button>`
+                        : `<button type="button" class="btn btn-danger btn-icon" onclick="deleteDevToken('${escapeHtml(t.token_id)}')" aria-label="Delete token" title="Delete token">${adminIcon('trash')}</button>`}
                     </td>
                   </tr>
                 `).join('')}
@@ -880,18 +887,18 @@
     }
 
     async function _applyNotifToggleUI() {
-      const icon = document.getElementById('notif-toggle-icon');
-      const label = document.getElementById('notif-toggle-label');
       const btn = document.getElementById('notif-toggle-btn');
       const sub = await _getSubscription().catch(() => null);
       if (sub) {
-        icon.textContent = '✓';
-        label.textContent = 'Notifications On';
+        btn.classList.add('is-active');
+        btn.setAttribute('aria-label', 'Notifications on');
+        btn.title = 'Notifications on';
         btn.style.borderColor = 'var(--accent-color)';
         btn.style.color = 'var(--accent-color)';
       } else {
-        icon.textContent = '✕';
-        label.textContent = 'Notifications Off';
+        btn.classList.remove('is-active');
+        btn.setAttribute('aria-label', 'Notifications off');
+        btn.title = 'Notifications off';
         btn.style.borderColor = 'var(--border-color)';
         btn.style.color = 'var(--text-color)';
       }
@@ -1148,7 +1155,6 @@
     }
 
     async function copyAIMonitorText(value, button) {
-      const original = button.textContent;
       try {
         if (navigator.clipboard?.writeText) {
           await navigator.clipboard.writeText(value);
@@ -1162,19 +1168,27 @@
           document.execCommand('copy');
           fallback.remove();
         }
-        button.textContent = 'Copied';
+        button.classList.add('is-copied');
+        button.setAttribute('aria-label', 'Copied');
+        button.title = 'Copied';
       } catch (_) {
-        button.textContent = 'Copy failed';
+        button.setAttribute('aria-label', 'Copy failed');
+        button.title = 'Copy failed';
       }
-      setTimeout(() => { button.textContent = original; }, 1400);
+      setTimeout(() => {
+        button.classList.remove('is-copied');
+        button.setAttribute('aria-label', button.dataset.copyLabel || 'Copy');
+        button.title = button.dataset.copyLabel || 'Copy';
+      }, 1400);
     }
 
     function makeAIMonitorCopyButton(value, label, className = '') {
       const button = document.createElement('button');
       button.type = 'button';
-      button.className = `ai-monitor-copy ${className}`.trim();
-      button.textContent = 'Copy';
+      button.className = `ai-monitor-copy btn-icon ${className}`.trim();
+      button.innerHTML = adminIcon('copy', 'icon-copy') + adminIcon('check', 'icon-check');
       button.title = label;
+      button.dataset.copyLabel = label;
       button.setAttribute('aria-label', label);
       button.addEventListener('click', () => copyAIMonitorText(value, button));
       return button;
@@ -1735,9 +1749,9 @@
     }
 
     function refreshStats(btn) {
-      const originalText = btn.textContent;
       btn.disabled = true;
-      btn.textContent = 'Loading...';
+      btn.classList.add('is-loading');
+      btn.setAttribute('aria-busy', 'true');
 
       fetch('/admin/api/overview?refresh=' + Date.now(), {redirect: 'manual'})
         .then(res => {
@@ -1788,12 +1802,14 @@
           document.getElementById('summary-host').textContent = s.hostname;
           showToast('✅ Stats refreshed', 'success');
           btn.disabled = false;
-          btn.textContent = originalText;
+          btn.classList.remove('is-loading');
+          btn.removeAttribute('aria-busy');
         })
         .catch(err => {
           showToast('❌ ' + err.message, 'error');
           btn.disabled = false;
-          btn.textContent = originalText;
+          btn.classList.remove('is-loading');
+          btn.removeAttribute('aria-busy');
         });
     }
 
@@ -1947,10 +1963,10 @@
           : '';
 
         const actionBtns = [
-          notice.status === 'published' ? `<button class="btn btn-primary" onclick="showNoticeStats('${notice.id}')">Stats</button>` : '',
+          notice.status === 'published' ? `<button type="button" class="btn btn-primary btn-icon" onclick="showNoticeStats('${notice.id}')" aria-label="View statistics" title="View statistics">${adminIcon('chart')}</button>` : '',
           notice.status === 'draft'     ? `<button class="btn btn-success" onclick="publishDraft('${notice.id}')">Publish</button>` : '',
-          `<button class="btn btn-warning" onclick="editNotice('${notice.id}')">Edit</button>`,
-          `<button class="btn btn-danger"  onclick="deleteNoticeConfirm('${notice.id}')">Delete</button>`,
+          `<button type="button" class="btn btn-warning btn-icon" onclick="editNotice('${notice.id}')" aria-label="Edit notice" title="Edit notice">${adminIcon('edit')}</button>`,
+          `<button type="button" class="btn btn-danger btn-icon" onclick="deleteNoticeConfirm('${notice.id}')" aria-label="Delete notice" title="Delete notice">${adminIcon('trash')}</button>`,
         ].filter(Boolean).join('');
 
         const buttonRow = notice.button ? `
@@ -2426,8 +2442,8 @@
             <td style="padding:8px; font-size:12px;">${backup.size_mb} MB</td>
             <td style="padding:8px; font-size:12px;">${backup.created_at}</td>
             <td style="padding:8px;">
-              <button onclick="downloadBackup('${backup.filename}')" class="btn btn-primary" style="font-size:11px; padding:4px 10px;">Download</button>
-              <button onclick="deleteBackup('${backup.filename}')" class="btn btn-danger" style="font-size:11px; padding:4px 10px;">Delete</button>
+              <button type="button" onclick="downloadBackup('${backup.filename}')" class="btn btn-primary btn-icon" aria-label="Download backup" title="Download backup">${adminIcon('download')}</button>
+              <button type="button" onclick="deleteBackup('${backup.filename}')" class="btn btn-danger btn-icon" aria-label="Delete backup" title="Delete backup">${adminIcon('trash')}</button>
             </td>
           </tr>
         `;
@@ -2522,8 +2538,8 @@
             </div>
             ${buttonRow}
             <div class="tipad-actions">
-              <button class="btn btn-warning" onclick="editTipAd('${tipad.id}')">Edit</button>
-              <button class="btn btn-danger" onclick="deleteTipAd('${tipad.id}')">Delete</button>
+              <button type="button" class="btn btn-warning btn-icon" onclick="editTipAd('${tipad.id}')" aria-label="Edit tip or ad" title="Edit tip or ad">${adminIcon('edit')}</button>
+              <button type="button" class="btn btn-danger btn-icon" onclick="deleteTipAd('${tipad.id}')" aria-label="Delete tip or ad" title="Delete tip or ad">${adminIcon('trash')}</button>
             </div>
           </article>`;
       }).join('') + '</div>';
@@ -2695,7 +2711,7 @@
           <img src="/static/pics/bg/${f.name}?t=${Date.now()}" alt="${f.name}" loading="lazy" />
           <div class="bg-size">${f.size}</div>
           <div class="bg-label" title="${f.name}">${f.name}</div>
-          <button class="bg-delete-btn" onclick="event.stopPropagation(); deleteBackground('${f.name}')">×</button>
+          <button type="button" class="bg-delete-btn btn-icon" onclick="event.stopPropagation(); deleteBackground('${f.name}')" aria-label="Delete background" title="Delete background">${adminIcon('trash')}</button>
           ${f.is_user ? '<span class="bg-user-badge">User</span>' : ''}
         </div>
       `).join('');

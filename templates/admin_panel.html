@@ -15,7 +15,7 @@
   {% include 'common_styles.html' %}
 
   <link rel="stylesheet" href="/static/admin-panel.css?v=audit-20260920-11">
-  <link rel="stylesheet" href="/static/admin-control-center.css?v=20261027-3">
+  <link rel="stylesheet" href="/static/admin-control-center.css?v=20261027-4">
 </head>
 <body class="admin-control-center admin-mobile-nav-collapsed">
   <svg aria-hidden="true" width="0" height="0" style="position:absolute;overflow:hidden;">
@@ -59,6 +59,29 @@
     <symbol id="icon-key" viewBox="0 0 24 24">
       <circle cx="8" cy="15" r="4"></circle><path d="m11 12 8-8M18 5l2 2M15 8l2 2"></path>
     </symbol>
+    <symbol id="icon-refresh" viewBox="0 0 24 24">
+      <path d="M20 11a8 8 0 0 0-14.9-4M4 4v5h5M4 13a8 8 0 0 0 14.9 4M20 20v-5h-5"></path>
+    </symbol>
+    <symbol id="icon-copy" viewBox="0 0 24 24">
+      <rect x="8" y="8" width="11" height="11" rx="2"></rect><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path>
+    </symbol>
+    <symbol id="icon-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"></path></symbol>
+    <symbol id="icon-trash" viewBox="0 0 24 24">
+      <path d="M4 7h16M9 7V4h6v3M8 7l1 13h6l1-13M10 11v5M14 11v5"></path>
+    </symbol>
+    <symbol id="icon-edit" viewBox="0 0 24 24">
+      <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"></path>
+    </symbol>
+    <symbol id="icon-download" viewBox="0 0 24 24">
+      <path d="M12 3v12M7 10l5 5 5-5M4 21h16"></path>
+    </symbol>
+    <symbol id="icon-log-out" viewBox="0 0 24 24">
+      <path d="M10 17l5-5-5-5M15 12H3M15 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"></path>
+    </symbol>
+    <symbol id="icon-chart" viewBox="0 0 24 24">
+      <path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path>
+    </symbol>
+    <symbol id="icon-x" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"></path></symbol>
   </svg>
   <script>
     // iOS standalone PWA 安全区域修复
@@ -152,11 +175,13 @@
         </div>
         <div class="topbar-actions">
           <span class="control-live"><span aria-hidden="true"></span>Live</span>
-          <button class="icon-button" id="notif-toggle-btn" onclick="toggleBrowserNotifications()" title="Enable/Disable browser notifications">
-            <span id="notif-toggle-icon">✕</span>
-            <span id="notif-toggle-label">Notifications</span>
+          <button class="icon-button btn-icon" type="button" id="notif-toggle-btn" onclick="toggleBrowserNotifications()"
+                  aria-label="Notifications off" title="Notifications off">
+            <svg aria-hidden="true"><use href="#icon-bell"></use></svg>
           </button>
-          <a href="/admin/logout" class="logout-btn">Logout</a>
+          <a href="/admin/logout" class="logout-btn btn-icon" aria-label="Logout" title="Logout">
+            <svg aria-hidden="true"><use href="#icon-log-out"></use></svg>
+          </a>
         </div>
       </div>
 
@@ -166,8 +191,9 @@
         <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
           <span>User Management ({{ total_users }} users)</span>
           <div style="display: flex; gap: 8px;">
-            <button class="btn btn-primary" onclick="loadAllNicknames(this, true)" style="font-size: 12px;">
-              Refresh Nicknames
+            <button class="btn btn-primary btn-icon" type="button" onclick="loadAllNicknames(this, true)"
+                    aria-label="Refresh nicknames" title="Refresh nicknames">
+              <svg aria-hidden="true"><use href="#icon-refresh"></use></svg>
             </button>
             <button class="btn btn-warning" onclick="clearNicknameCache()" style="font-size: 12px;">
               Clear Cache
@@ -248,7 +274,7 @@
           <section class="monitor-card health-panel">
             <div class="panel-heading" style="padding:0;">
               <div class="panel-heading-title"><span class="panel-heading-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path><circle cx="12" cy="12" r="3"></circle></svg></span><h2>Runtime Pressure</h2></div>
-              <button class="btn btn-primary" onclick="refreshStats(this)">Refresh</button>
+              <button class="btn btn-primary btn-icon" type="button" onclick="refreshStats(this)" aria-label="Refresh statistics" title="Refresh statistics"><svg aria-hidden="true"><use href="#icon-refresh"></use></svg></button>
             </div>
             <div class="health-row">
               <div class="health-label">CPU</div>
@@ -413,7 +439,7 @@
         </div>
 
         <div style="margin-top: 12px; text-align: center;">
-          <button class="btn btn-primary" onclick="loadNotices()">Refresh</button>
+          <button class="btn btn-primary btn-icon" type="button" onclick="loadNotices()" aria-label="Refresh notices" title="Refresh notices"><svg aria-hidden="true"><use href="#icon-refresh"></use></svg></button>
         </div>
       </div>
     </div>
@@ -424,7 +450,7 @@
         <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
           <span>DXData Status</span>
           <div style="display: flex; gap: 8px;">
-            <button class="btn btn-primary" onclick="loadDXDataStatus()" style="font-size: 12px;">Refresh</button>
+            <button class="btn btn-primary btn-icon" type="button" onclick="loadDXDataStatus()" aria-label="Refresh DXData status" title="Refresh DXData status"><svg aria-hidden="true"><use href="#icon-refresh"></use></svg></button>
             <button class="btn btn-success" id="update-dxdata-btn" onclick="updateDXData()" style="font-size: 12px;">Update &amp; Check</button>
           </div>
         </div>
@@ -438,7 +464,7 @@
       <section id="dxdata-audit-panel" class="section audit-panel">
           <div class="section-title audit-panel-header">
             <span>官网检查 · 定数 / 版本</span>
-            <button type="button" class="btn btn-primary" onclick="loadDXDataAudit()">刷新结果</button>
+            <button type="button" class="btn btn-primary btn-icon" onclick="loadDXDataAudit()" aria-label="刷新结果" title="刷新结果"><svg aria-hidden="true"><use href="#icon-refresh"></use></svg></button>
           </div>
           <p class="audit-intro">使用 SEGA ID 获取 JP / INTL 官网数据；定数检查覆盖 12、12+ 及以上谱面。</p>
           <details id="dxdata-audit-setup" class="audit-setup">
@@ -479,7 +505,7 @@
           <div class="section-title audit-panel-header">
             <span>NOTE 检查 · 音符数量</span>
             <div class="audit-panel-actions">
-              <button type="button" class="btn btn-primary" onclick="loadDXDataAudit()">刷新结果</button>
+              <button type="button" class="btn btn-primary btn-icon" onclick="loadDXDataAudit()" aria-label="刷新结果" title="刷新结果"><svg aria-hidden="true"><use href="#icon-refresh"></use></svg></button>
               <button type="button" class="btn btn-success" id="dxdata-note-start" onclick="startDXDataNoteAudit()">检查音符数量</button>
             </div>
           </div>
@@ -505,7 +531,7 @@
         </div>
 
         <div style="margin-top: 12px; text-align: center;">
-          <button class="btn btn-primary" onclick="loadTipAds()">Refresh</button>
+          <button class="btn btn-primary btn-icon" type="button" onclick="loadTipAds()" aria-label="Refresh tips and ads" title="Refresh tips and ads"><svg aria-hidden="true"><use href="#icon-refresh"></use></svg></button>
         </div>
       </div>
     </div>
@@ -515,7 +541,7 @@
       <div class="modal-content" style="max-width: 700px;">
         <div class="modal-header">
           <h2 class="modal-title" id="tipadFormTitle">Create Tip/Ad</h2>
-          <button class="close-btn" onclick="closeTipAdForm()">&times;</button>
+          <button class="close-btn btn-icon" type="button" onclick="closeTipAdForm()" aria-label="Close" title="Close"><svg aria-hidden="true"><use href="#icon-x"></use></svg></button>
         </div>
 
         <form id="tipadForm" onsubmit="saveTipAd(event)">
@@ -585,7 +611,7 @@
         <div class="section-title" style="display:flex; justify-content:space-between; align-items:center;">
           <span>Backup Management</span>
           <div style="display:flex; gap:8px;">
-            <button class="btn btn-primary" onclick="loadBackups()">Refresh</button>
+            <button class="btn btn-primary btn-icon" type="button" onclick="loadBackups()" aria-label="Refresh backups" title="Refresh backups"><svg aria-hidden="true"><use href="#icon-refresh"></use></svg></button>
             <button class="btn btn-success" id="create-backup-btn" onclick="createBackup()">Create</button>
           </div>
         </div>
@@ -661,7 +687,7 @@
           <div class="section-title control-section-title" style="display:flex; justify-content:space-between; align-items:center;">
             <span class="control-section-heading"><span class="control-section-icon is-neutral" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"></path><path d="m8 9 2 2-2 2M13 15h3"></path></svg></span><span><strong>Runtime Logs</strong><small>Latest application output by module</small></span></span>
             <div class="operations-actions">
-              <button class="btn btn-primary" onclick="refreshLogs()">Refresh</button>
+              <button class="btn btn-primary btn-icon" type="button" onclick="refreshLogs()" aria-label="Refresh logs" title="Refresh logs"><svg aria-hidden="true"><use href="#icon-refresh"></use></svg></button>
             </div>
           </div>
           <div id="log-module-summary" class="log-module-summary"></div>
@@ -672,7 +698,7 @@
           <div class="section-title control-section-title" style="display:flex; justify-content:space-between; align-items:center;">
             <span class="control-section-heading"><span class="control-section-icon is-amber" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M10 21h4"></path></svg></span><span><strong>Notifications</strong><small>Warnings and events requiring review</small></span></span>
             <div class="operations-actions">
-              <button class="btn btn-primary" onclick="refreshNotifications()">Refresh</button>
+              <button class="btn btn-primary btn-icon" type="button" onclick="refreshNotifications()" aria-label="Refresh notifications" title="Refresh notifications"><svg aria-hidden="true"><use href="#icon-refresh"></use></svg></button>
               <button class="btn btn-danger" onclick="clearNotifications()">Clear</button>
             </div>
           </div>
@@ -690,7 +716,7 @@
         <div class="section-title" style="display:flex; justify-content:space-between; align-items:center;">
           <span>Developer Token Management</span>
           <div style="display:flex; gap:8px;">
-            <button class="btn btn-primary" onclick="loadDevTokens()">Refresh</button>
+            <button class="btn btn-primary btn-icon" type="button" onclick="loadDevTokens()" aria-label="Refresh API tokens" title="Refresh API tokens"><svg aria-hidden="true"><use href="#icon-refresh"></use></svg></button>
             <button class="btn btn-success" onclick="showCreateTokenModal()">Create</button>
           </div>
         </div>
@@ -708,7 +734,7 @@
       <div class="modal-content" style="max-width:360px; width:calc(100% - 32px); max-height:none; padding:16px;">
         <div class="modal-header" style="margin-bottom:10px; padding-bottom:10px;">
           <h2 class="modal-title" style="font-size:16px;">Create Developer Token</h2>
-          <button class="close-btn" onclick="closeCreateTokenModal()">&times;</button>
+          <button class="close-btn btn-icon" type="button" onclick="closeCreateTokenModal()" aria-label="Close" title="Close"><svg aria-hidden="true"><use href="#icon-x"></use></svg></button>
         </div>
         <label style="display:block; margin-bottom:6px; font-size:13px; font-weight:600;">Note</label>
         <input type="text" id="create-token-note" placeholder="e.g. MyApp API"
@@ -725,7 +751,7 @@
       <div class="modal-content" style="max-width:420px; width:calc(100% - 32px); max-height:none; padding:16px;">
         <div class="modal-header" style="margin-bottom:10px; padding-bottom:10px;">
           <h2 class="modal-title" style="font-size:16px;">Token Created</h2>
-          <button class="close-btn" onclick="closeTokenCreatedModal()">&times;</button>
+          <button class="close-btn btn-icon" type="button" onclick="closeTokenCreatedModal()" aria-label="Close" title="Close"><svg aria-hidden="true"><use href="#icon-x"></use></svg></button>
         </div>
         <div style="background:var(--bg-color); border:1px solid var(--border-color); border-radius:6px; padding:10px 12px; margin-bottom:8px;">
           <div style="font-size:11px; opacity:0.6; margin-bottom:2px;">Token ID</div>
@@ -736,7 +762,7 @@
           <div id="created-token-value" style="font-family:monospace; font-size:12px; word-break:break-all; color:var(--success-color);"></div>
         </div>
         <div style="display:flex; gap:8px; justify-content:flex-end;">
-          <button class="btn btn-primary" onclick="copyCreatedToken()">Copy Token</button>
+          <button class="btn btn-primary btn-icon" type="button" onclick="copyCreatedToken()" aria-label="Copy token" title="Copy token"><svg aria-hidden="true"><use href="#icon-copy"></use></svg></button>
           <button class="btn" onclick="closeTokenCreatedModal()">Close</button>
         </div>
       </div>
@@ -780,7 +806,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h2 class="modal-title">Edit User Data</h2>
-        <button class="close-btn" onclick="closeEditModal()">&times;</button>
+        <button class="close-btn btn-icon" type="button" onclick="closeEditModal()" aria-label="Close" title="Close"><svg aria-hidden="true"><use href="#icon-x"></use></svg></button>
       </div>
 
       <form id="editUserForm" onsubmit="saveUserData(event)">
@@ -812,7 +838,7 @@
     <div class="modal-content" style="max-width: 800px;">
       <div class="modal-header">
         <h2 class="modal-title" id="notice-modal-title">Create Notice</h2>
-        <button class="close-btn" onclick="closeNoticeModal()">&times;</button>
+        <button class="close-btn btn-icon" type="button" onclick="closeNoticeModal()" aria-label="Close" title="Close"><svg aria-hidden="true"><use href="#icon-x"></use></svg></button>
       </div>
 
       <form id="noticeForm" onsubmit="saveNotice(event)">
@@ -902,7 +928,7 @@
     <div class="modal-content" style="max-width: 600px;">
       <div class="modal-header">
         <h2 class="modal-title">Notice Statistics</h2>
-        <button class="close-btn" onclick="closeStatsModal()">&times;</button>
+        <button class="close-btn btn-icon" type="button" onclick="closeStatsModal()" aria-label="Close" title="Close"><svg aria-hidden="true"><use href="#icon-x"></use></svg></button>
       </div>
 
       <div id="stats-content" style="padding: 20px;">
@@ -923,6 +949,6 @@
     };
   </script>
   <script src="/static/admin-user-editor.js"></script>
-  <script src="/static/admin-panel.js?v=audit-20260920-11"></script>
+  <script src="/static/admin-panel.js?v=20261027-4"></script>
 </body>
 </html>

@@ -204,6 +204,15 @@ def test_admin_template_renders_config_and_serves_assets():
     assert 'Process Memory' in page.select_one('.system-summary').get_text()
     assert html.index('window.JIETNG_ADMIN_CONFIG') < html.index('src="/static/admin-panel.js?')
     assert '/static/admin-panel.css?v=' in html
+    static_icon_actions = page.select('.btn-icon')
+    assert static_icon_actions
+    assert all(action.get('aria-label') and action.get('title') for action in static_icon_actions)
+    assert all(not action.get_text(strip=True) for action in static_icon_actions)
+    admin_js = (root / 'assets/admin-panel.js').read_text()
+    assert "function adminIcon(name" in admin_js
+    assert 'aria-label="Delete user"' in admin_js
+    assert 'aria-label="Copy notification"' in admin_js
+    assert 'button.textContent = \'Copy\'' not in admin_js
     for name in ('admin-panel.css', 'admin-monitor.css', 'admin-panel.js', 'admin-user-editor.js'):
         assert '/static/' + name in html
         response = application.test_client().get('/static/' + name)
