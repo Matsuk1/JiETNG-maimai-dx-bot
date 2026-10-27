@@ -414,7 +414,7 @@
       }
       if (moreBtn) {
         moreBtn.disabled = true;
-        moreBtn.textContent = 'Loading...';
+        setAdminIconButtonState(moreBtn, 'Loading more users', true);
       }
       return fetch(`/admin/api/users?offset=${offset}&limit=${USERS_PAGE_SIZE}&q=${encodeURIComponent(query)}`)
         .then(res => res.json())
@@ -431,7 +431,7 @@
           if (moreBtn) {
             moreBtn.style.display = _usersHasMore ? 'inline-flex' : 'none';
             moreBtn.disabled = false;
-            moreBtn.textContent = 'Load More';
+            setAdminIconButtonState(moreBtn, 'Load more users');
           }
         })
         .catch(err => {
@@ -711,6 +711,16 @@
 
     function adminIcon(name, extraClass = '') {
       return `<svg class="admin-action-icon ${extraClass}" aria-hidden="true"><use href="#icon-${name}"></use></svg>`;
+    }
+
+    function setAdminIconButtonState(button, label, loading = false, icon = '') {
+      if (!button) return;
+      button.setAttribute('aria-label', label);
+      button.setAttribute('title', label);
+      button.classList.toggle('is-loading', loading);
+      if (loading) button.setAttribute('aria-busy', 'true');
+      else button.removeAttribute('aria-busy');
+      if (icon) button.querySelector('use')?.setAttribute('href', `#icon-${icon}`);
     }
 
     // ===== DevToken Management =====
@@ -1409,7 +1419,7 @@
       if (button) {
         button.disabled = false;
         button.classList.toggle('stop', busy);
-        button.textContent = busy ? 'Stop' : 'Send';
+        setAdminIconButtonState(button, busy ? 'Stop diagnosis' : 'Send diagnosis', false, busy ? 'stop' : 'send');
       }
       setAIMonitorStatus(busy ? 'Checking' : 'Ready', busy);
     }
@@ -1815,7 +1825,7 @@
 
     function updateDXData() {
       const btn = document.getElementById('update-dxdata-btn');
-      btn.classList.add('btn-spinning');
+      setAdminIconButtonState(btn, 'Updating and checking DXData', true);
       btn.disabled = true;
       fetch('/admin/update_dxdata', {
         method: 'POST',
@@ -1823,7 +1833,7 @@
       })
       .then(res => res.json())
       .then(data => {
-        btn.classList.remove('btn-spinning');
+        setAdminIconButtonState(btn, 'Update and check DXData');
         btn.disabled = false;
         if (data.success) {
           const added = data.sheets_added || 0;
@@ -1835,7 +1845,7 @@
         }
       })
       .catch(err => {
-        btn.classList.remove('btn-spinning');
+        setAdminIconButtonState(btn, 'Update and check DXData');
         btn.disabled = false;
         showToast('✗ Network error: ' + err, 'error');
       });
@@ -1964,7 +1974,7 @@
 
         const actionBtns = [
           notice.status === 'published' ? `<button type="button" class="btn btn-primary btn-icon" onclick="showNoticeStats('${notice.id}')" aria-label="View statistics" title="View statistics">${adminIcon('chart')}</button>` : '',
-          notice.status === 'draft'     ? `<button class="btn btn-success" onclick="publishDraft('${notice.id}')">Publish</button>` : '',
+          notice.status === 'draft'     ? `<button type="button" class="btn btn-success btn-icon" onclick="publishDraft('${notice.id}')" aria-label="Publish notice" title="Publish notice">${adminIcon('send')}</button>` : '',
           `<button type="button" class="btn btn-warning btn-icon" onclick="editNotice('${notice.id}')" aria-label="Edit notice" title="Edit notice">${adminIcon('edit')}</button>`,
           `<button type="button" class="btn btn-danger btn-icon" onclick="deleteNoticeConfirm('${notice.id}')" aria-label="Delete notice" title="Delete notice">${adminIcon('trash')}</button>`,
         ].filter(Boolean).join('');
@@ -2016,7 +2026,7 @@
       document.getElementById('notice-button-type').value = 'uri';
       setLocalizedValues('.notice-button-label-input');
       document.getElementById('notice-button-value').value = '';
-      document.getElementById('notice-save-btn').textContent = 'Create';
+      setAdminIconButtonState(document.getElementById('notice-save-btn'), 'Create notice', false, 'check');
       document.getElementById('noticeModal').classList.add('show');
     }
 
@@ -2055,7 +2065,7 @@
                 document.getElementById('notice-button-value').value = '';
               }
 
-              document.getElementById('notice-save-btn').textContent = 'Update';
+              setAdminIconButtonState(document.getElementById('notice-save-btn'), 'Update notice', false, 'check');
               document.getElementById('noticeModal').classList.add('show');
             }
           }
@@ -2100,7 +2110,7 @@
 
       const btn = document.getElementById('notice-save-btn');
       btn.disabled = true;
-      btn.textContent = isUpdate ? 'Updating...' : 'Creating...';
+      setAdminIconButtonState(btn, isUpdate ? 'Updating notice' : 'Creating notice', true);
 
       fetch(url, {
         method: 'POST',
@@ -2117,12 +2127,12 @@
           showToast('✗ ' + data.message);
         }
         btn.disabled = false;
-        btn.textContent = isUpdate ? 'Update' : 'Create';
+        setAdminIconButtonState(btn, isUpdate ? 'Update notice' : 'Create notice');
       })
       .catch(err => {
         showToast('✗ Network error: ' + err);
         btn.disabled = false;
-        btn.textContent = isUpdate ? 'Update' : 'Create';
+        setAdminIconButtonState(btn, isUpdate ? 'Update notice' : 'Create notice');
       });
     }
 
@@ -2366,7 +2376,7 @@
     function createBackup() {
       const btn = document.getElementById('create-backup-btn');
       btn.disabled = true;
-      btn.textContent = 'Creating...';
+      setAdminIconButtonState(btn, 'Creating backup', true);
 
       fetch('/admin/backups', {
         method: 'POST',
@@ -2375,7 +2385,7 @@
         .then(res => res.json())
         .then(data => {
           btn.disabled = false;
-          btn.textContent = 'Create';
+          setAdminIconButtonState(btn, 'Create backup');
           if (data.success) {
             alert(data.message || 'Backup created successfully');
             loadBackups();
@@ -2385,7 +2395,7 @@
         })
         .catch(err => {
           btn.disabled = false;
-          btn.textContent = 'Create';
+          setAdminIconButtonState(btn, 'Create backup');
           alert('Network error: ' + err);
         });
     }
@@ -2726,7 +2736,7 @@
         area.classList.add('has-file');
         icon.textContent = '✓';
         text.textContent = input.files[0].name;
-        btn.style.display = 'block';
+        btn.style.display = 'inline-grid';
       } else {
         area.classList.remove('has-file');
         icon.textContent = '+';
@@ -2752,6 +2762,7 @@
 
       const btn = document.getElementById('admin-upload-btn');
       btn.disabled = true;
+      setAdminIconButtonState(btn, 'Uploading background', true);
 
       const formData = new FormData();
       formData.append('file', file);
@@ -2772,15 +2783,18 @@
             document.getElementById('admin-upload-text').textContent = 'Choose Image';
             btn.style.display = 'none';
             btn.disabled = false;
+            setAdminIconButtonState(btn, 'Upload background');
             loadBackgrounds();
           } else {
             showToast('✗ ' + (data.message || 'Upload failed'));
             btn.disabled = false;
+            setAdminIconButtonState(btn, 'Upload background');
           }
         })
         .catch(err => {
           showToast('✗ Network error: ' + err);
           btn.disabled = false;
+          setAdminIconButtonState(btn, 'Upload background');
         });
     }
 
@@ -3029,7 +3043,7 @@
       const button = document.getElementById('dxdata-audit-approve-versions');
       if (!report || report.stale || report.status !== 'complete' || button.disabled) return;
       button.disabled = true;
-      button.textContent = '保存中…';
+      setAdminIconButtonState(button, '正在保存版本修正', true);
       try {
         const data = await postDXDataAudit(
           '/admin/dxdata_audit/versions', {revision: report.revision, region}, '保存失败');
@@ -3039,6 +3053,7 @@
       } catch (error) {
         showToast(error.message, 'error');
       } finally {
+        setAdminIconButtonState(button, '一键通过全部版本修正');
         renderDXDataAudit();
       }
     }
@@ -3203,20 +3218,22 @@
             form.append(select);
           }
           const prompt = text(form, 'span', '是否修改？');
-          const yes = document.createElement('button'); yes.type = 'submit'; yes.className = 'btn btn-success'; yes.textContent = '修改';
-          const no = document.createElement('button'); no.type = 'button'; no.className = 'btn btn-cancel'; no.textContent = '不修改';
+          const yes = document.createElement('button'); yes.type = 'submit'; yes.className = 'btn btn-success btn-icon'; yes.innerHTML = adminIcon('check');
+          setAdminIconButtonState(yes, '应用修正');
+          const no = document.createElement('button'); no.type = 'button'; no.className = 'btn btn-cancel btn-icon'; no.innerHTML = adminIcon('x');
+          setAdminIconButtonState(no, '跳过修正');
           yes.disabled = running || report.stale || !chart.song_id;
           form.append(yes, no);
           no.onclick = () => {
             const skipped = card.classList.toggle('audit-skipped');
             prompt.textContent = skipped ? '已跳过' : '是否修改？';
             yes.disabled = skipped || running || report.stale || !chart.song_id;
-            no.textContent = skipped ? '重新选择' : '不修改';
+            setAdminIconButtonState(no, skipped ? '重新选择' : '跳过修正', false, skipped ? 'refresh' : 'x');
           };
           form.onsubmit = async event => {
             event.preventDefault();
             if (!chosenValue) return;
-            yes.disabled = true; no.disabled = true; yes.textContent = '保存中…';
+            yes.disabled = true; no.disabled = true; setAdminIconButtonState(yes, '正在保存修正', true);
             try {
               const data = await postDXDataAudit('/admin/dxdata_audit/correction', {
                 revision: report.revision, region, issue_index: index, song_id: chart.song_id,
@@ -3225,7 +3242,7 @@
               }, '保存失败');
               dxdataAuditReport = data.report; renderDXDataAudit(); showToast('已修改', 'success');
             } catch (error) {
-              showToast(error.message, 'error'); yes.disabled = false; no.disabled = false; yes.textContent = '修改';
+              showToast(error.message, 'error'); yes.disabled = false; no.disabled = false; setAdminIconButtonState(yes, '应用修正');
             }
           };
         }

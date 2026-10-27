@@ -39,7 +39,8 @@ def test_shared_and_admin_stylesheets_have_current_cache_versions():
 
     assert "/static/ui-system.css?v=20261027-6" in common
     assert "/static/admin-login.css?v=20261027-4" in admin_login
-    assert "/static/admin-control-center.css?v=20261027-8" in admin_panel
+    assert "/static/admin-control-center.css?v=20261027-10" in admin_panel
+    assert "/static/admin-panel.js?v=20261027-5" in admin_panel
 
 
 def test_logo_css_preserves_transparency_and_safe_space():
@@ -77,3 +78,29 @@ def test_admin_web_app_icon_uses_transparent_logo_and_paper_palette():
     assert "object-fit: contain" in icon_template
     assert manifest["background_color"] == "#f7f3ed"
     assert manifest["theme_color"] == "#cf6846"
+
+
+def test_admin_panel_uses_flat_monitor_layout_and_icon_actions():
+    panel = (TEMPLATES / "admin_panel.html").read_text()
+    styles = (ROOT / "assets" / "admin-control-center.css").read_text()
+    script = (ROOT / "assets" / "admin-panel.js").read_text()
+
+    assert ".tab-content { display: none; width: min(100%,1280px); margin-inline: auto; }" in styles
+    assert ".chart-panel { min-height: 0; }" in styles
+    assert "grid-template-columns: repeat(2,minmax(0,1fr))" in styles
+    assert 'id="ai-monitor-send" type="submit" aria-label="Send diagnosis"' in panel
+    assert 'id="create-backup-btn" onclick="createBackup()" aria-label="Create backup"' in panel
+    assert 'id="notice-save-btn" aria-label="Save notice"' in panel
+    assert "setAdminIconButtonState(button, busy ? 'Stop diagnosis' : 'Send diagnosis'" in script
+
+    forbidden_text_actions = (
+        ">Clear Cache<",
+        ">Load More<",
+        ">Create New Notice<",
+        ">Update &amp; Check<",
+        ">Create New Tip/Ad<",
+        ">Send<",
+        ">Save Changes<",
+    )
+    for action in forbidden_text_actions:
+        assert action not in panel
