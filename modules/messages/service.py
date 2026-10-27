@@ -1,12 +1,14 @@
 """Account, service, search and social LINE messages."""
 from modules.messages.layout import (
     COLOR_AD_BG,
+    COLOR_BORDER,
     COLOR_BRAND,
     COLOR_BRAND_SOFT,
     COLOR_DANGER,
     COLOR_SUCCESS,
     COLOR_TEXT_MUTED,
     COLOR_TEXT_PRIMARY,
+    COLOR_TEXT_SECONDARY,
     COLOR_TIP,
     COLOR_TIP_BG,
     COLOR_WARNING,
@@ -26,6 +28,7 @@ from modules.messages.layout import (
     standard_bubble,
     standard_header_box,
     standard_help_bubble,
+    standard_product_header,
 )
 from modules.i18n import (
     select_text as get_multilingual_text,
@@ -303,7 +306,7 @@ def generate_notice_flex(notice_json, user_id=None):
             "text": content,
             "wrap": True,
             "size": "sm",
-            "color": "#333333",
+            "color": COLOR_TEXT_PRIMARY,
             "margin": "none"
         }
     ]
@@ -348,12 +351,12 @@ def generate_notice_flex(notice_json, user_id=None):
                     "action": action,
                     "style": "link",
                     "height": "sm",
-                    "color": "#FF6B35"
+                    "color": COLOR_BRAND
                 }
             ],
-            "backgroundColor": "#FFF5F0",
-            "cornerRadius": "md",
-            "paddingAll": "12px",
+            "backgroundColor": COLOR_BRAND_SOFT,
+            "cornerRadius": "9px",
+            "paddingAll": "8px",
             "margin": "md"
         }
         body_contents.append(button_box)
@@ -375,7 +378,7 @@ def generate_notice_flex(notice_json, user_id=None):
             "layout": "vertical",
             "contents": [],
             "paddingAll": "12px",
-            "backgroundColor": "#F5F5F5"
+            "backgroundColor": COLOR_SURFACE_SOFT
         }
     }
 
@@ -390,8 +393,8 @@ def generate_notice_flex(notice_json, user_id=None):
         # 如果已投票，标记选中状态
         support_style = "primary"
         oppose_style = "primary"
-        support_color = "#17B169"
-        oppose_color = "#FF3B30"
+        support_color = COLOR_SUCCESS
+        oppose_color = COLOR_DANGER
 
         # 添加投票按钮
         vote_buttons = {
@@ -436,7 +439,7 @@ def generate_notice_flex(notice_json, user_id=None):
         "type": "text",
         "text": date,
         "size": "xs",
-        "color": "#999999",
+        "color": COLOR_TEXT_MUTED,
         "align": "end"
     })
 
@@ -692,7 +695,7 @@ def generate_update_result_flex(
     tz_str = format_timezone_string(user_id)
     accent = COLOR_SUCCESS if success else COLOR_DANGER
     body_contents = [
-        standard_header_box(
+        standard_product_header(
             get_multilingual_text(texts['title_success'] if success else texts['title_error'], language=lang),
             "JiETNG",
             accent=accent,
@@ -1203,7 +1206,7 @@ def generate_ranking_flex(user_id, top5, nearby_entries=None, ver="jp"):
     header = standard_header_box(title_text, ver_label)
 
     body_contents = [
-        {"type": "separator", "color": "#000000"}
+        {"type": "separator", "color": COLOR_BORDER}
     ]
 
     def make_row(entry, highlight=False):
@@ -1217,7 +1220,7 @@ def generate_ranking_flex(user_id, top5, nearby_entries=None, ver="jp"):
                 "text": f"#{rank}",
                 "size": "sm",
                 "weight": "bold",
-                "color": "#000000",
+                "color": COLOR_TEXT_PRIMARY,
                 "flex": 0,
                 "contents": []
             },
@@ -1225,7 +1228,7 @@ def generate_ranking_flex(user_id, top5, nearby_entries=None, ver="jp"):
                 "type": "text",
                 "text": name,
                 "size": "sm",
-                "color": "#000000",
+                "color": COLOR_TEXT_PRIMARY,
                 "flex": 3,
                 "wrap": True,
                 "maxLines": 1
@@ -1234,7 +1237,7 @@ def generate_ranking_flex(user_id, top5, nearby_entries=None, ver="jp"):
                 "type": "text",
                 "text": str(rating),
                 "size": "sm",
-                "color": "#666666",
+                "color": COLOR_TEXT_SECONDARY,
                 "flex": 0,
                 "align": "end"
             }
@@ -1249,9 +1252,8 @@ def generate_ranking_flex(user_id, top5, nearby_entries=None, ver="jp"):
         }
 
         if highlight:
-            row["borderWidth"] = "2px"
-            row["borderColor"] = "#000000"
-            row["cornerRadius"] = "4px"
+            row["backgroundColor"] = COLOR_BRAND_SOFT
+            row["cornerRadius"] = "7px"
 
         return row
 
@@ -1259,7 +1261,7 @@ def generate_ranking_flex(user_id, top5, nearby_entries=None, ver="jp"):
     for i, entry in enumerate(top5):
         body_contents.append(make_row(entry, highlight=entry.get("is_user", False)))
         if i < len(top5) - 1:
-            body_contents.append({"type": "separator", "color": "#DDDDDD"})
+            body_contents.append({"type": "separator", "color": COLOR_BORDER})
 
     # 用户不在前5，显示虚线分割 + 以用户为中心的附近名单
     if nearby_entries:
@@ -1271,7 +1273,7 @@ def generate_ranking_flex(user_id, top5, nearby_entries=None, ver="jp"):
                     "type": "text",
                     "text": "· · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·",
                     "size": "xxs",
-                    "color": "#999999",
+                    "color": COLOR_TEXT_MUTED,
                     "align": "center"
                 }
             ],
@@ -1280,7 +1282,7 @@ def generate_ranking_flex(user_id, top5, nearby_entries=None, ver="jp"):
         for i, entry in enumerate(nearby_entries):
             body_contents.append(make_row(entry, highlight=entry.get("is_user", False)))
             if i < len(nearby_entries) - 1:
-                body_contents.append({"type": "separator", "color": "#DDDDDD"})
+                body_contents.append({"type": "separator", "color": COLOR_BORDER})
 
     body = {
         "type": "box",
@@ -1453,7 +1455,7 @@ def generate_friend_buttons(user_id, alt_text, friend_list, group_size):
                                 "type": "text",
                                 "text": f"Rating: {rating}",
                                 "size": "xs",
-                                "color": "#999999",
+                                "color": COLOR_TEXT_MUTED,
                                 "margin": "xs"
                             }
                         ]
@@ -1555,7 +1557,7 @@ def generate_rc_flex(level: float, rc_data: list, user_id=None):
             content_rows.append({
                 "type": "separator",
                 "margin": "md",
-                "color": "#DDDDDD"
+                "color": COLOR_BORDER
             })
 
         # 按达成率倒序排列
@@ -1574,21 +1576,21 @@ def generate_rc_flex(level: float, rc_data: list, user_id=None):
                         "type": "text",
                         "text": score_text,
                         "size": "sm",
-                        "color": "#000000" if is_special else "#666666",
+                        "color": COLOR_TEXT_PRIMARY if is_special else COLOR_TEXT_SECONDARY,
                         "align": "start"
                     },
                     {
                         "type": "text",
                         "text": "→",
                         "size": "sm",
-                        "color": "#222222" if is_special else "#999999",
+                        "color": COLOR_TEXT_PRIMARY if is_special else COLOR_TEXT_MUTED,
                         "align": "center"
                     },
                     {
                         "type": "text",
                         "text": f"{rating}",
                         "size": "sm",
-                        "color": "#000000" if is_special else "#666666",
+                        "color": COLOR_TEXT_PRIMARY if is_special else COLOR_TEXT_SECONDARY,
                         "align": "end"
                     }
                 ],
@@ -1600,7 +1602,7 @@ def generate_rc_flex(level: float, rc_data: list, user_id=None):
     bubble = {
         "type": "bubble",
         "size": "mega",
-        "header": standard_header_box(title_text, "Rating Constant", accent="#AF52DE"),
+        "header": standard_header_box(title_text, "Rating Constant", accent=COLOR_BRAND),
         "body": {
             "type": "box",
             "layout": "vertical",
@@ -1643,10 +1645,10 @@ def generate_bot_status_flex(uptime_str, image_queue_size, web_queue_size,
     queue_busy = (image_queue_size + web_queue_size) > 0
     queue_color = COLOR_WARNING if queue_busy else COLOR_SUCCESS
     body_contents = [
-        standard_header_box(
+        standard_product_header(
             select_text(texts['title'], language=lang),
             "JiETNG",
-            accent="#111827",
+            accent=COLOR_BRAND,
         ),
         {
             "type": "box",
@@ -1655,7 +1657,7 @@ def generate_bot_status_flex(uptime_str, image_queue_size, web_queue_size,
             "contents": metric_grid([
                 metric_card(select_text(texts['uptime'], language=lang), uptime_str),
                 metric_card(select_text(texts['queue'], language=lang), queue_text, value_color=queue_color),
-                metric_card(select_text(texts['tasks_today'], language=lang), str(tasks_today), value_color="#8A63D2"),
+                metric_card(select_text(texts['tasks_today'], language=lang), str(tasks_today), value_color=COLOR_BRAND),
                 metric_card(select_text(texts['songs'], language=lang), songs_text),
             ]),
         },

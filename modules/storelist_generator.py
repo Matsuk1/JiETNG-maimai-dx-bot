@@ -2,6 +2,15 @@ import urllib.parse
 import re
 from linebot.v3.messaging import FlexMessage, FlexContainer
 from modules.messages.service import store_error
+from modules.messages.layout import (
+    COLOR_BORDER,
+    COLOR_BRAND_SOFT,
+    COLOR_BRAND_STRONG,
+    COLOR_SURFACE,
+    COLOR_TEXT_MUTED,
+    COLOR_TEXT_PRIMARY,
+    standard_product_header,
+)
 
 def generate_google_map_url(name: str, address: str = "", lat: float = None, lng: float = None):
     """生成不会触发“是否在App中打开”的 Google 地图网页链接"""
@@ -32,7 +41,7 @@ def parse_distance_km(distance_str: str) -> float:
 
 def generate_store_buttons(user_id, alt_text, store_list):
     """
-    生成机厅列表 Flex Message（黑白简约风）
+    生成机厅列表 Flex Message。
     - 仅显示 30km 内机厅
     - 每页 5 个
     - 右侧 📍 按钮（白底黑边，固定高度 + 增宽）
@@ -73,38 +82,38 @@ def generate_store_buttons(user_id, alt_text, store_list):
             # 左侧文字信息
             left_box_contents = [
                 {"type": "text", "text": name, "size": "sm", "weight": "bold",
-                 "color": "#000000", "wrap": True, "maxLines": 2}
+                 "color": COLOR_TEXT_PRIMARY, "wrap": True, "maxLines": 2}
             ]
             if address:
                 left_box_contents.append({
                     "type": "text", "text": address, "size": "xs",
-                    "color": "#666666", "margin": "xs", "wrap": True, "maxLines": 2
+                    "color": COLOR_TEXT_MUTED, "margin": "xs", "wrap": True, "maxLines": 2
                 })
             if distance:
                 left_box_contents.append({
                     "type": "text", "text": distance, "size": "xs",
-                    "color": "#999999", "margin": "xs"
+                    "color": COLOR_TEXT_MUTED, "margin": "xs"
                 })
 
             # 按钮
-            black_white_button = {
+            map_button = {
                 "type": "box",
                 "layout": "vertical",
                 "flex": 0,
                 "width": "40px",
                 "height": "40px",
-                "cornerRadius": "6px",
-                "borderColor": "#000000",
+                "cornerRadius": "10px",
+                "borderColor": "#E0B9A9",
                 "borderWidth": "1px",
-                "backgroundColor": "#FFFFFF",
+                "backgroundColor": COLOR_BRAND_SOFT,
                 "justifyContent": "center",
                 "alignItems": "center",
                 "contents": [
                     {
                         "type": "text",
-                        "text": "📍",
+                        "text": "↗",
                         "weight": "bold",
-                        "color": "#000000",
+                        "color": COLOR_BRAND_STRONG,
                         "align": "center",
                         "gravity": "center",
                         "size": "md",
@@ -125,54 +134,31 @@ def generate_store_buttons(user_id, alt_text, store_list):
                 "contents": [
                     {"type": "box", "layout": "vertical",
                      "flex": 3, "contents": left_box_contents},
-                    black_white_button
+                    map_button
                 ]
             }
 
             store_rows.append(row)
             if idx < len(group) - 1:
-                store_rows.append({"type": "separator", "margin": "sm"})
+                store_rows.append({"type": "separator", "margin": "sm", "color": COLOR_BORDER})
 
-        header_box = {
-            "type": "box",
-            "layout": "vertical",
-            "paddingAll": "16px",
-            "contents": [
-                {
-                    "type": "text",
-                    "text": alt_text,
-                    "weight": "bold",
-                    "size": "lg",
-                    "color": "#000000"
-                },
-                {
-                    "type": "text",
-                    "text": f"Page {page_num}/{total_pages} • {len(filtered_stores)} stores (≤30 km)",
-                    "size": "xs",
-                    "color": "#666666",
-                    "margin": "sm"
-                },
-                {
-                    "type": "separator",
-                    "color": "#DDDDDD",
-                    "margin": "md"
-                }
-            ]
-        }
+        header_box = standard_product_header(
+            alt_text,
+            f"Page {page_num}/{total_pages} • {len(filtered_stores)} stores (≤30 km)",
+        )
 
         # 基础 Bubble
         bubble = {
             "type": "bubble",
             "size": "mega",
-            "header": header_box,
             "body": {
                 "type": "box",
                 "layout": "vertical",
-                "contents": store_rows,
-                "paddingAll": "16px",
-                "backgroundColor": "#FFFFFF"
+                "contents": [header_box, *store_rows],
+                "paddingAll": "20px",
+                "backgroundColor": COLOR_SURFACE
             },
-            "styles": {"body": {"backgroundColor": "#FFFFFF"}}
+            "styles": {"body": {"backgroundColor": COLOR_SURFACE}}
         }
         bubbles.append(bubble)
 

@@ -6,6 +6,17 @@
 
 from linebot.v3.messaging import FlexMessage, FlexContainer
 from modules.i18n import language_catalog, select_text
+from modules.messages.layout import (
+    COLOR_BORDER,
+    COLOR_BRAND,
+    COLOR_DANGER,
+    COLOR_SUCCESS,
+    COLOR_SURFACE,
+    COLOR_TEXT_MUTED,
+    COLOR_TEXT_PRIMARY,
+    flex_action_button,
+    standard_product_header,
+)
 
 
 def _text(key, user_id, **values):
@@ -15,7 +26,7 @@ def _text(key, user_id, **values):
 
 def generate_perm_request_message(requests: list, user_id: str = None) -> FlexMessage:
     """
-    生成权限请求Flex消息（极简黑白风格）
+    生成权限请求 Flex 消息。
 
     Args:
         requests: 权限请求列表
@@ -38,7 +49,7 @@ def generate_perm_request_message(requests: list, user_id: str = None) -> FlexMe
     # 创建请求列表
     request_rows = []
     for idx, req in enumerate(requests):
-        # 用户信息box
+        # Request details stay as plain rows; only the actions are emphasized.
         info_box = {
             "type": "box",
             "layout": "vertical",
@@ -57,14 +68,14 @@ def generate_perm_request_message(requests: list, user_id: str = None) -> FlexMe
                     "type": "text",
                     "text": f"Token: {req.get('token_id', 'N/A')}",
                     "size": "xxs",
-                    "color": "#666666",
+                    "color": COLOR_TEXT_PRIMARY,
                     "margin": "xs"
                 },
                 {
                     "type": "text",
                     "text": req.get("timestamp", ""),
                     "size": "xs",
-                    "color": "#999999",
+                    "color": COLOR_TEXT_MUTED,
                     "margin": "xs"
                 }
             ]
@@ -80,26 +91,23 @@ def generate_perm_request_message(requests: list, user_id: str = None) -> FlexMe
             "spacing": "sm",
             "margin": "sm",
             "contents": [
-                {
-                    "type": "button",
-                    "style": "primary",
-                    "height": "sm",
-                    "action": {
+                flex_action_button(
+                    {
                         "type": "postback",
                         "label": accept_label,
-                        "data": f"accept-perm-request {req['request_id']}"
-                    }
-                },
-                {
-                    "type": "button",
-                    "style": "secondary",
-                    "height": "sm",
-                    "action": {
+                        "data": f"accept-perm-request {req['request_id']}",
+                    },
+                    color=COLOR_SUCCESS,
+                ),
+                flex_action_button(
+                    {
                         "type": "postback",
                         "label": reject_label,
-                        "data": f"reject-perm-request {req['request_id']}"
-                    }
-                }
+                        "data": f"reject-perm-request {req['request_id']}",
+                    },
+                    style="secondary",
+                    color=COLOR_DANGER,
+                ),
             ]
         }
 
@@ -110,7 +118,8 @@ def generate_perm_request_message(requests: list, user_id: str = None) -> FlexMe
         if idx < len(requests) - 1:
             request_rows.append({
                 "type": "separator",
-                "margin": "md"
+                "margin": "md",
+                "color": COLOR_BORDER,
             })
 
     # 获取标题和副标题
@@ -118,37 +127,18 @@ def generate_perm_request_message(requests: list, user_id: str = None) -> FlexMe
     count = len(requests)
     subtitle = _text("perm_request_notification_subtitle_text", user_id, count=count)
 
-    # 创建bubble（极简黑白风格）
+    # Sparse warm bubble shared with the rest of JiETNG.
     bubble = {
         "type": "bubble",
         "size": "mega",
-        "header": {
-            "type": "box",
-            "layout": "vertical",
-            "contents": [
-                {
-                    "type": "text",
-                    "text": title,
-                    "weight": "bold",
-                    "size": "md"
-                },
-                {
-                    "type": "text",
-                    "text": subtitle,
-                    "size": "xs",
-                    "color": "#999999",
-                    "margin": "sm"
-                }
-            ],
-            "paddingAll": "16px",
-            "paddingBottom": "0px"
-        },
         "body": {
             "type": "box",
             "layout": "vertical",
-            "contents": request_rows,
-            "paddingAll": "16px",
-        }
+            "contents": [standard_product_header(title, subtitle, accent=COLOR_BRAND), *request_rows],
+            "paddingAll": "20px",
+            "backgroundColor": COLOR_SURFACE,
+        },
+        "styles": {"body": {"backgroundColor": COLOR_SURFACE}},
     }
 
     return FlexMessage(

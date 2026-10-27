@@ -202,15 +202,24 @@ def standard_header_box(title, subtitle=None, accent=COLOR_BRAND, title_color=CO
     ]
     if subtitle:
         contents.append(flex_text(subtitle, size="xs", color=COLOR_TEXT_MUTED, margin="xs"))
+    contents.append({
+        "type": "box",
+        "layout": "vertical",
+        "width": "32px",
+        "height": "3px",
+        "margin": "md",
+        "cornerRadius": "2px",
+        "backgroundColor": accent,
+        "contents": [{"type": "filler"}],
+    })
     return {
         "type": "box",
         "layout": "vertical",
         "spacing": "xs",
-        "paddingStart": "2px",
-        "paddingEnd": "2px",
-        "paddingTop": "4px",
-        "paddingBottom": "14px",
-        "borderWidth": "0px",
+        "paddingStart": "20px",
+        "paddingEnd": "20px",
+        "paddingTop": "18px",
+        "paddingBottom": "10px",
         "backgroundColor": COLOR_SURFACE,
         "contents": contents,
     }
