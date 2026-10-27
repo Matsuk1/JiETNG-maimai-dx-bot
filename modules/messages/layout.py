@@ -6,17 +6,19 @@ from modules.i18n import localized_catalog, select_text as get_multilingual_text
 COLOR_TEXT_PRIMARY = "#292724"
 COLOR_TEXT_SECONDARY = "#56514B"
 COLOR_TEXT_MUTED = "#7F7970"
-COLOR_TEXT_INVERSE = "#FFFFFF"
-COLOR_SUCCESS = "#17A98F"
-COLOR_DANGER = "#DC4C55"
-COLOR_WARNING = "#D98809"
-COLOR_BRAND = "#3C7FE8"
-COLOR_TIP = "#6B63C7"
-COLOR_TIP_BG = "#EFEDFB"
-COLOR_AD_BG = "#FFF0DF"
-COLOR_SURFACE = "#FFFEFA"
-COLOR_SURFACE_SOFT = "#F7F4EE"
-COLOR_BORDER = "#DED8CF"
+COLOR_TEXT_INVERSE = "#FFFAF7"
+COLOR_SUCCESS = "#2F7D64"
+COLOR_DANGER = "#B74E4E"
+COLOR_WARNING = "#A86B22"
+COLOR_BRAND = "#C96442"
+COLOR_BRAND_STRONG = "#A84D31"
+COLOR_BRAND_SOFT = "#F6E7E0"
+COLOR_TIP = "#765A46"
+COLOR_TIP_BG = "#F3ECE6"
+COLOR_AD_BG = "#F8EDDB"
+COLOR_SURFACE = "#FDFCFB"
+COLOR_SURFACE_SOFT = "#F6F2ED"
+COLOR_BORDER = "#DED8D0"
 
 HELP_UI_TEXT = localized_catalog("message_manager.help_ui")
 
@@ -42,12 +44,12 @@ def flex_text(text, size="sm", color=COLOR_TEXT_PRIMARY, weight=None, wrap=True,
     return node
 
 
-def pill(text, color="#2D6FD2", bg_color="#E9F1FF"):
+def pill(text, color=COLOR_BRAND_STRONG, bg_color=COLOR_BRAND_SOFT):
     return {
         "type": "box",
         "layout": "vertical",
         "backgroundColor": bg_color,
-        "cornerRadius": "12px",
+        "cornerRadius": "999px",
         "paddingTop": "3px",
         "paddingBottom": "3px",
         "paddingStart": "8px",
@@ -69,13 +71,13 @@ def section_title(title, accent=COLOR_BRAND):
             {
                 "type": "box",
                 "layout": "vertical",
-                "width": "18px",
-                "height": "18px",
-                "cornerRadius": "6px",
+                "width": "3px",
+                "height": "17px",
+                "cornerRadius": "2px",
                 "backgroundColor": accent,
                 "justifyContent": "center",
                 "alignItems": "center",
-                "contents": [flex_text("·", size="xs", color=COLOR_TEXT_INVERSE, weight="bold", align="center", wrap=False)],
+                "contents": [{"type": "filler"}],
             },
             flex_text(title, size="sm", color=COLOR_TEXT_PRIMARY, weight="bold"),
         ],
@@ -117,10 +119,8 @@ def body_row(desc):
     return {
         "type": "box",
         "layout": "vertical",
-        "spacing": "xs",
-        "paddingAll": "9px",
-        "cornerRadius": "10px",
-        "backgroundColor": COLOR_SURFACE_SOFT,
+        "paddingTop": "9px",
+        "paddingBottom": "9px",
         "contents": [
             flex_text(desc, size="xxs", color=COLOR_TEXT_SECONDARY),
         ],
@@ -142,7 +142,7 @@ def help_docs_footer(user_id=None):
                 "type": "box",
                 "layout": "vertical",
                 "height": "38px",
-                "cornerRadius": "10px",
+                "cornerRadius": "9px",
                 "backgroundColor": COLOR_BRAND,
                 "justifyContent": "center",
                 "alignItems": "center",
@@ -154,7 +154,7 @@ def help_docs_footer(user_id=None):
                     "uri": support_page_uri,
                 },
                 "contents": [
-                    flex_text(label, size="sm", color="#FFFFFF", weight="bold", align="center", wrap=False),
+                    flex_text(label, size="sm", color=COLOR_TEXT_INVERSE, weight="bold", align="center", wrap=False),
                 ],
             }
         ],
@@ -168,8 +168,8 @@ def standard_bubble(contents, size="mega"):
         "body": {
             "type": "box",
             "layout": "vertical",
-            "spacing": "md",
-            "paddingAll": "16px",
+            "spacing": "none",
+            "paddingAll": "20px",
             "backgroundColor": COLOR_SURFACE,
             "contents": contents,
         },
@@ -186,12 +186,7 @@ def standard_help_bubble(title, subtitle, sections, alt_text, user_id=None, docs
     ]
     for title, rows in sections:
         body_contents.append(section_title(title))
-        body_contents.append({
-            "type": "box",
-            "layout": "vertical",
-            "spacing": "sm",
-            "contents": rows,
-        })
+        body_contents.append(separated_row_group(rows))
     bubble = standard_bubble(body_contents, "giga")
     if docs_button:
         bubble["footer"] = help_docs_footer(user_id)
@@ -201,40 +196,42 @@ def standard_help_bubble(title, subtitle, sections, alt_text, user_id=None, docs
     )
 
 
-def standard_header_box(title, subtitle=None, accent="#111827", title_color="#FFFFFF"):
+def standard_header_box(title, subtitle=None, accent=COLOR_BRAND, title_color=COLOR_TEXT_PRIMARY):
     contents = [
         flex_text(title, size="lg", color=title_color, weight="bold"),
     ]
     if subtitle:
-        contents.append(flex_text(subtitle, size="xs", color="#D1D5DB", margin="xs"))
+        contents.append(flex_text(subtitle, size="xs", color=COLOR_TEXT_MUTED, margin="xs"))
     return {
         "type": "box",
         "layout": "vertical",
         "spacing": "xs",
-        "paddingAll": "14px",
-        "cornerRadius": "8px",
-        "backgroundColor": accent,
+        "paddingStart": "2px",
+        "paddingEnd": "2px",
+        "paddingTop": "4px",
+        "paddingBottom": "14px",
+        "borderWidth": "0px",
+        "backgroundColor": COLOR_SURFACE,
         "contents": contents,
     }
 
 
 def standard_product_header(title, subtitle=None, accent=COLOR_BRAND):
-    """Warm, editorial header shared by user-facing command and help cards."""
+    """Sparse editorial header shared by user-facing command and help cards."""
     heading = {
         "type": "box",
         "layout": "vertical",
         "spacing": "sm",
-        "paddingAll": "15px",
-        "cornerRadius": "12px",
-        "borderWidth": "1px",
-        "borderColor": COLOR_BORDER,
-        "backgroundColor": "#F4F0E9",
+        "paddingStart": "2px",
+        "paddingEnd": "2px",
+        "paddingTop": "2px",
+        "paddingBottom": "13px",
         "contents": [
-            flex_text(title, size="lg", color=COLOR_TEXT_PRIMARY, weight="bold"),
+            flex_text(title, size="xl", color=COLOR_TEXT_PRIMARY, weight="bold"),
             {
                 "type": "box",
                 "layout": "horizontal",
-                "contents": [pill("JiETNG", color="#FFFFFF", bg_color=accent)],
+                "contents": [pill("JiETNG", color=accent, bg_color=COLOR_BRAND_SOFT)],
             },
         ],
     }
@@ -243,6 +240,22 @@ def standard_product_header(title, subtitle=None, accent=COLOR_BRAND):
             flex_text(subtitle, size="xs", color=COLOR_TEXT_MUTED)
         )
     return heading
+
+
+def separated_row_group(rows):
+    """Use whitespace and hairline separators instead of a stack of mini cards."""
+    contents = []
+    for index, row in enumerate(rows):
+        if index:
+            contents.append({"type": "separator", "color": COLOR_BORDER})
+        contents.append(row)
+    return {
+        "type": "box",
+        "layout": "vertical",
+        "paddingStart": "2px",
+        "paddingEnd": "2px",
+        "contents": contents,
+    }
 
 
 def song_type_icon(chart_type, width="42px", height="12px", margin=None):
@@ -321,7 +334,7 @@ def flex_action_button(action, style="primary", color=COLOR_BRAND):
     return button
 
 
-def pill_action_box(label, action, bg_color="#315B7D", text_color=COLOR_TEXT_INVERSE,
+def pill_action_box(label, action, bg_color=COLOR_BRAND, text_color=COLOR_TEXT_INVERSE,
                      flex=1, margin=None):
     box = {
         "type": "box",
@@ -350,7 +363,7 @@ def pill_action_box(label, action, bg_color="#315B7D", text_color=COLOR_TEXT_INV
     return box
 
 
-def round_icon_action(label, action, bg_color="#315B7D", text_color=COLOR_TEXT_INVERSE):
+def round_icon_action(label, action, bg_color=COLOR_BRAND, text_color=COLOR_TEXT_INVERSE):
     return {
         "type": "box",
         "layout": "vertical",
@@ -388,12 +401,7 @@ def standard_action_bubble(title, subtitle, body_text, alt_text, actions=None, n
     ]
     for section_label, rows in sections:
         body_contents.append(section_title(section_label, accent=accent))
-        body_contents.append({
-            "type": "box",
-            "layout": "vertical",
-            "spacing": "sm",
-            "contents": rows,
-        })
+        body_contents.append(separated_row_group(rows))
 
     bubble = standard_bubble(body_contents)
     if actions:

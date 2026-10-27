@@ -2,6 +2,7 @@
 from modules.messages.layout import (
     COLOR_AD_BG,
     COLOR_BRAND,
+    COLOR_BRAND_SOFT,
     COLOR_DANGER,
     COLOR_SUCCESS,
     COLOR_TEXT_MUTED,
@@ -9,6 +10,8 @@ from modules.messages.layout import (
     COLOR_TIP,
     COLOR_TIP_BG,
     COLOR_WARNING,
+    COLOR_SURFACE,
+    COLOR_SURFACE_SOFT,
     flex_action_button,
     help_filter_row,
     flex_text,
@@ -75,7 +78,7 @@ def _tip_ad_boxes(lang):
 
 def generate_status_flex(title_text, body_text, user_id=None, alt_text=None, tone="info"):
     accent_by_tone = {
-        "info": "#315B7D",
+        "info": COLOR_BRAND,
         "warning": COLOR_WARNING,
         "danger": COLOR_DANGER,
         "success": COLOR_SUCCESS,
@@ -88,7 +91,7 @@ def generate_status_flex(title_text, body_text, user_id=None, alt_text=None, ton
         subtitle="JiETNG",
         body_text=body,
         alt_text=alt,
-        accent=accent_by_tone.get(tone, "#315B7D"),
+        accent=accent_by_tone.get(tone, COLOR_BRAND),
         user_id=user_id,
     )
 
@@ -107,7 +110,7 @@ def generate_account_action_flex(action_type, url, user_id=None):
             "body": _message_texts["rebind_description_text"],
             "button": _message_texts["rebind_button_text"],
             "alt": _message_texts["rebind_title_alt_text"],
-            "accent": "#8A63D2",
+            "accent": COLOR_BRAND,
         },
         "unbind": {
             "title": _message_texts["unbind_title_alt_text"],
@@ -121,7 +124,7 @@ def generate_account_action_flex(action_type, url, user_id=None):
             "body": _message_texts["settings_description_text"],
             "button": _message_texts["settings_button_text"],
             "alt": _message_texts["settings_title_alt_text"],
-            "accent": "#315B7D",
+            "accent": COLOR_BRAND,
         },
     }
     config = configs[action_type]
@@ -365,7 +368,7 @@ def generate_notice_flex(notice_json, user_id=None):
             "layout": "vertical",
             "contents": body_contents,
             "paddingAll": "20px",
-            "backgroundColor": "#FFFFFF"
+            "backgroundColor": COLOR_SURFACE
         },
         "footer": {
             "type": "box",
@@ -537,25 +540,25 @@ def generate_user_info_flex(user_id):
             "type": "box",
             "layout": "vertical",
             "spacing": "xs",
+            "flex": 1,
             "contents": value_contents,
         }
         contents = [value_block]
         if action:
             copy_pill = pill(
                 action.get("label", ""),
-                color="#B66A00",
-                bg_color="#FFF4E6",
+                color="#A84D31",
+                bg_color="#F6E7E0",
             )
-            copy_pill["margin"] = "sm"
+            copy_pill["margin"] = "md"
             copy_pill["action"] = action
             contents.append(copy_pill)
         return {
             "type": "box",
-            "layout": "vertical",
-            "spacing": "sm",
-            "paddingAll": "10px",
-            "cornerRadius": "8px",
-            "backgroundColor": "#F8FAFC",
+            "layout": "horizontal",
+            "alignItems": "center",
+            "paddingTop": "11px",
+            "paddingBottom": "11px",
             "contents": contents,
         }
 
@@ -1021,14 +1024,14 @@ def _calc_header(difficulty, level, lang):
 
     # 生成标题文本
     if difficulty:
-        diff_info = difficulty_map.get(difficulty, {'name': difficulty.upper(), 'color': '#007AFF'})
+        diff_info = difficulty_map.get(difficulty, {'name': difficulty.upper(), 'color': COLOR_BRAND})
         title_text = diff_info['name']
         if level:
             title_text += f" (Lv. {level:.1f})"
         header_color = diff_info['color']
     else:
         title_text = get_multilingual_text(_message_texts["calc_flex_text"]['title_distribution'], language=lang)
-        header_color = "#007AFF"
+        header_color = COLOR_BRAND
 
     return title_text, header_color
 
@@ -1152,9 +1155,9 @@ def _song_list_message(title, subtitle, rows):
             "layout": "vertical",
             "contents": rows,
             "paddingAll": "16px",
-            "backgroundColor": "#FFFFFF"
+            "backgroundColor": COLOR_SURFACE
         },
-        "styles": {"body": {"backgroundColor": "#FFFFFF"}}
+        "styles": {"body": {"backgroundColor": COLOR_SURFACE}}
     }
 
     return FlexMessage(alt_text=title, contents=FlexContainer.from_dict(bubble))
@@ -1373,7 +1376,7 @@ def generate_song_list_flex(user_id, title, matching_songs, page, command_prefix
                 "data": f"{command_prefix} {query} {next_page}",
                 "displayText": f"{command_prefix} {query} {next_page}"
             },
-            bg_color="#315B7D",
+            bg_color=COLOR_BRAND,
             margin="md",
         ))
 
@@ -1387,8 +1390,8 @@ def generate_song_list_flex(user_id, title, matching_songs, page, command_prefix
                 "label": f"Go to ... (1~{total_pages})",
                 "uri": f"https://line.me/R/oaMessage/{LINE_ACCOUNT_ID}/?{quote(jump_text)}"
             },
-            bg_color="#E8EEF5",
-            text_color="#315B7D",
+            bg_color=COLOR_BRAND_SOFT,
+            text_color=COLOR_BRAND,
             margin="sm",
         ))
 

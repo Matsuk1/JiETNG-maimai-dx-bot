@@ -60,4 +60,4 @@ def test_carousel_card_order_and_single_language_lookup():
     carousel = generate_calc_carousel([first, second]).contents.to_dict()
     headers = [card['header']['contents'][0]['text'] for card in carousel['contents']]
     assert headers == ['MASTER (Lv. 13.7)', 'CUSTOM']
-    assert carousel['contents'][1]['header']['backgroundColor'] == '#007AFF'
+    assert carousel['contents'][1]['header']['backgroundColor'] == '#FDFCFB'

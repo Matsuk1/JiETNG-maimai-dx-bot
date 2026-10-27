@@ -15,6 +15,9 @@ from modules.score_recognition.presentation import (
     flex_score_rank as score_rank,
 )
 from modules.messages.layout import (
+    COLOR_BRAND,
+    COLOR_SURFACE,
+    COLOR_SURFACE_SOFT,
     COLOR_TEXT_MUTED,
     COLOR_TEXT_PRIMARY,
     COLOR_TEXT_SECONDARY,
@@ -94,7 +97,7 @@ def _generate_score_recognition_single_flex(result, user_id=None):
             "layout": "vertical",
             "spacing": "none",
             "cornerRadius": "8px",
-            "backgroundColor": "#FFFFFF",
+            "backgroundColor": COLOR_SURFACE,
             "contents": table_rows,
         })
     else:
@@ -108,7 +111,7 @@ def _generate_score_recognition_single_flex(result, user_id=None):
                 "layout": "vertical",
                 "spacing": "sm",
                 "paddingAll": "8px",
-                "backgroundColor": "#F8FAFC",
+                "backgroundColor": COLOR_SURFACE_SOFT,
                 "cornerRadius": "6px",
                 "contents": loss_rows,
             },
@@ -372,7 +375,7 @@ def _judgement_table(judgement, uncertain_cells):
             "layout": "horizontal",
             "spacing": "xs",
             "paddingAll": "8px",
-            "backgroundColor": "#F8FAFC" if index % 2 == 0 else "#FFFFFF",
+            "backgroundColor": COLOR_SURFACE_SOFT if index % 2 == 0 else COLOR_SURFACE,
             "contents": [
                 _table_cell(label, flex=2, weight="bold", align="start"),
                 judgement_cell(key, "critical_perfect", row_value("critical_perfect")),
@@ -470,7 +473,7 @@ def _break_sections(break_detail, tr):
             "layout": "vertical",
             "spacing": "sm",
             "paddingAll": "8px",
-            "backgroundColor": "#F8FAFC",
+            "backgroundColor": COLOR_SURFACE_SOFT,
             "cornerRadius": "6px",
             "contents": [
                 _detail_row("CRITICAL", [
@@ -554,7 +557,7 @@ def _validation_sections(data: _ScoreData, tr):
     )
     if not fully_validated and has_judgement_data:
         body_contents.extend([
-            section_title(tr("manual_fix"), accent="#315B7D"),
+            section_title(tr("manual_fix"), accent=COLOR_BRAND),
             {
                 "type": "text",
                 "text": tr("manual_fix_hint"),
@@ -566,7 +569,7 @@ def _validation_sections(data: _ScoreData, tr):
                 "type": "box",
                 "layout": "vertical",
                 "paddingAll": "10px",
-                "backgroundColor": "#F8FAFC",
+                "backgroundColor": COLOR_SURFACE_SOFT,
                 "cornerRadius": "6px",
                 "contents": [{
                     "type": "text",
@@ -708,7 +711,7 @@ def _achievement_metric_card(achievement_text, score_rank_name, combo_icon, tr):
         "alignItems": "center",
         "paddingAll": "11px",
         "cornerRadius": "8px",
-        "backgroundColor": "#F8FAFC",
+        "backgroundColor": COLOR_SURFACE_SOFT,
         "flex": 4,
         "contents": value_contents,
     }
