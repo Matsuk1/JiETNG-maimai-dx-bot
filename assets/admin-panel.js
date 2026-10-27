@@ -1694,6 +1694,22 @@
       }
     }
 
+    function renderOverviewSignal(stats) {
+      const signal = document.getElementById('overview-signal');
+      if (!signal) return;
+      const maxQueue = Number(stats.max_queue_size) || 0;
+      const underPressure = Number(stats.cpu_percent) >= 85
+        || Number(stats.memory_percent) >= 85
+        || (maxQueue > 0 && Number(stats.image_queue_size) >= maxQueue)
+        || (maxQueue > 0 && Number(stats.web_queue_size) >= maxQueue);
+      signal.classList.toggle('is-warning', underPressure);
+      document.getElementById('overview-signal-title').textContent = underPressure
+        ? 'Runtime pressure detected' : 'All systems operational';
+      document.getElementById('overview-signal-detail').textContent = underPressure
+        ? 'Review resource and queue pressure below.'
+        : 'Resources and task queues are within their operating range.';
+    }
+
     function refreshStats(btn) {
       const originalText = btn.textContent;
       btn.disabled = true;
@@ -1711,6 +1727,7 @@
           if (!data.success) throw new Error(data.message || 'Refresh failed');
           const s = data.stats;
           renderComponentMemory(s);
+          renderOverviewSignal(s);
           document.getElementById('overview-total-users').textContent = s.total_users;
           document.getElementById('overview-user-delta').textContent = `+${s.today_new_users} today`;
           document.getElementById('overview-user-segments').innerHTML = `
