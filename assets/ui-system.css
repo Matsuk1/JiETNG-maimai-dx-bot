@@ -117,6 +117,8 @@ button, [role="button"] { touch-action: manipulation; }
 ::selection { color: #fffaf7; background: var(--jietng-accent); }
 
 select {
+  -webkit-appearance: none;
+  appearance: none;
   background-image:
     linear-gradient(45deg, transparent 50%, var(--jietng-ink-500) 50%),
     linear-gradient(135deg, var(--jietng-ink-500) 50%, transparent 50%);

@@ -506,7 +506,7 @@
       }
     }
   </style>
-  <link rel="stylesheet" href="/static/user-portal.css?v=20261027-7">
+  <link rel="stylesheet" href="/static/user-portal.css?v=20261027-8">
 </head>
 <body class="user-portal portal-settings-page">
   <div id="loading-overlay"><div class="spinner"></div></div>
@@ -520,7 +520,9 @@
     </header>
     <div class="settings-header">
       <h2 id="page-heading">設定</h2>
-      <input type="submit" id="submit-btn" value="保存" form="settings-form" />
+      <button type="submit" id="submit-btn" form="settings-form" aria-label="保存" title="保存">
+        <svg class="portal-action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"></path></svg>
+      </button>
     </div>
     <form method="POST" id="settings-form">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
@@ -923,7 +925,8 @@
       if (uploadSub) uploadSub.textContent = t.uploadSub;
       const uploadBtn = document.getElementById('upload-btn');
       if (uploadBtn) uploadBtn.textContent = t.uploadBtn;
-      document.getElementById('submit-btn').value = t.submitBtn;
+      document.getElementById('submit-btn').setAttribute('aria-label', t.submitBtn);
+      document.getElementById('submit-btn').title = t.submitBtn;
       updateImportTokenPanel(lang);
       updatePermPanel(lang);
     }
