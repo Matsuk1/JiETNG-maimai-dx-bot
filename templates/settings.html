@@ -506,7 +506,7 @@
       }
     }
   </style>
-  <link rel="stylesheet" href="/static/user-portal.css?v=20261027-2">
+  <link rel="stylesheet" href="/static/user-portal.css?v=20261027-3">
 </head>
 <body class="user-portal portal-settings-page">
   <div id="loading-overlay"><div class="spinner"></div></div>
@@ -679,7 +679,7 @@
     </form>
 
     {% if perm_list is defined and perm_list %}
-    <div class="list-panel" style="margin-top: 28px;">
+    <section class="list-panel portal-section permission-panel">
       <div class="list-panel-header" id="perm-panel-title">アクセス権限の管理</div>
       {% for item in perm_list %}
       <div class="list-item" id="perm-item-{{ item.token_id }}">
@@ -701,7 +701,7 @@
         {% endif %}
       </div>
       {% endfor %}
-    </div>
+    </section>
     {% endif %}
 
     <div class="list-panel token-panel portal-section">
