@@ -53,6 +53,12 @@ def test_settings_roundtrip_and_invalid_skin_fallback(tmp_path):
     assert user['bg_files']==['sample.png'] and user['bg_blur']==12
     html=client.get('/linebot/settings?token=test').get_data(as_text=True)
     assert 'value="glass" data-uses-background="true" selected' in html
+    assert 'id="import-token-create-btn"' in html
+    assert 'portal-icon-action' in html
+    assert 'class="token-generate-icon"' in html
+    assert 'aria-label="Tokenを生成"' in html
+    assert '>Tokenを生成</button>' not in html
+    assert "createBtn.textContent = t.importTokenCreate" not in html
     client.post('/linebot/settings?token=test',data={'image_skin':'../../private'})
     assert user['image_skin']=='default'
 

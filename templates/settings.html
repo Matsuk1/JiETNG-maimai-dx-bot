@@ -506,7 +506,7 @@
       }
     }
   </style>
-  <link rel="stylesheet" href="/static/user-portal.css?v=20261027-3">
+  <link rel="stylesheet" href="/static/user-portal.css?v=20261027-4">
 </head>
 <body class="user-portal portal-settings-page">
   <div id="loading-overlay"><div class="spinner"></div></div>
@@ -723,7 +723,13 @@
           <label for="import-token-note" id="import-token-note-label">Token名</label>
           <input type="text" id="import-token-note" maxlength="120" placeholder="Tool" autocomplete="off">
         </div>
-        <button type="button" class="token-action-btn" id="import-token-create-btn" onclick="createImportToken()">Tokenを生成</button>
+        <button type="button" class="token-action-btn portal-icon-action" id="import-token-create-btn"
+                onclick="createImportToken()" aria-label="Tokenを生成" title="Tokenを生成">
+          <svg class="token-generate-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="7.5" cy="15.5" r="3.5"></circle>
+            <path d="M10 13l9-9M16 5l3 3M13 8l3 3"></path>
+          </svg>
+        </button>
       </div>
       <div id="import-token-list">
         {% if import_tokens %}
@@ -910,7 +916,10 @@
       const help = document.getElementById('import-token-help');
       if (help) help.textContent = t.importTokenHelp;
       const createBtn = document.getElementById('import-token-create-btn');
-      if (createBtn && !createBtn.disabled) createBtn.textContent = t.importTokenCreate;
+      if (createBtn) {
+        createBtn.setAttribute('aria-label', t.importTokenCreate);
+        createBtn.title = t.importTokenCreate;
+      }
       const noteLabel = document.getElementById('import-token-note-label');
       if (noteLabel) noteLabel.textContent = t.importTokenNoteLabel;
       const noteInput = document.getElementById('import-token-note');
@@ -1003,6 +1012,8 @@
         return;
       }
       btn.disabled = true;
+      btn.classList.add('is-loading');
+      btn.setAttribute('aria-busy', 'true');
       try {
         const res = await fetch('/linebot/settings/import_tokens?token=' + encodeURIComponent(settingsToken()), {
           method: 'POST',
@@ -1038,7 +1049,8 @@
         alert(t.importTokenCreateError + (e.message ? '\n' + e.message : ''));
       } finally {
         btn.disabled = false;
-        btn.textContent = t.importTokenCreate;
+        btn.classList.remove('is-loading');
+        btn.removeAttribute('aria-busy');
       }
     }
 
