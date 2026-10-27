@@ -14,7 +14,7 @@
   {% include 'common_styles.html' %}
 
   <link rel="stylesheet" href="/static/admin-panel.css?v=audit-20260920-11" media="not all">
-  <link rel="stylesheet" href="/static/admin-control-center.css?v=20261027-5">
+  <link rel="stylesheet" href="/static/admin-control-center.css?v=20261027-6">
 </head>
 <body class="admin-control-center admin-mobile-nav-collapsed">
   <svg aria-hidden="true" width="0" height="0" style="position:absolute;overflow:hidden;">
@@ -769,7 +769,7 @@
 
     <!-- Notifications Tab -->
     <!-- Backgrounds Tab -->
-    <link rel="stylesheet" href="/static/admin-monitor.css">
+    <link rel="stylesheet" href="/static/admin-monitor.css" media="not all">
 
     <div id="backgrounds-tab" class="tab-content">
       <div class="section">
@@ -778,14 +778,14 @@
           <span id="admin-bg-count" style="font-size:12px; color:var(--text-tertiary);"></span>
         </div>
 
-        <div style="background:var(--surface-bg); border:1px solid var(--border-color); border-radius:var(--radius-md); margin-bottom:16px;">
+        <div class="background-browser">
           <div id="admin-bg-grid" class="admin-bg-grid">
             <div style="text-align:center; padding:30px 40px; color:var(--text-tertiary); white-space:nowrap;">Loading...</div>
           </div>
         </div>
 
         <div class="section-title">Upload</div>
-        <div style="background:var(--surface-bg); border:1px solid var(--border-color); border-radius:var(--radius-md);">
+        <div class="background-upload">
           <div class="admin-upload-area" id="admin-upload-area" onclick="document.getElementById('bg-upload-input').click()">
             <div class="upload-icon" id="admin-upload-icon">+</div>
             <div class="upload-text" id="admin-upload-text">Choose Image</div>

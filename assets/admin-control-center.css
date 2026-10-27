@@ -408,6 +408,8 @@
 .admin-control-center .audit-results { margin-top: 16px; border-top: 1px solid var(--control-line); }
 
 .admin-control-center .admin-bg-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(150px,1fr)); gap: 10px; margin-top: 16px; }
+.admin-control-center .background-browser { margin-bottom: 28px; padding-bottom: 24px; border-bottom: 1px solid var(--control-line); }
+.admin-control-center .background-upload { padding-top: 4px; }
 .admin-control-center .admin-bg-option { position: relative; overflow: hidden; aspect-ratio: 16/10; border: 1px solid var(--control-line); border-radius: var(--jietng-radius-sm); background: var(--control-soft); }
 .admin-control-center .admin-bg-option img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .admin-control-center .bg-label { position: absolute; right: 0; bottom: 0; left: 0; padding: 6px 8px; color: #fff; background: rgba(45,41,37,.78); font-size: 9px; }
@@ -416,7 +418,8 @@
 .admin-control-center .bg-delete-btn { position: absolute; top: 5px; right: 5px; }
 .admin-control-center .admin-upload-area { display: grid; min-height: 140px; place-items: center; align-content: center; gap: 3px; border: 1px dashed var(--jietng-line-strong); border-radius: var(--jietng-radius-sm); color: var(--control-muted); cursor: pointer; }
 .admin-control-center .admin-upload-area:hover { border-color: var(--control-accent); color: var(--control-accent-strong); }
-.admin-control-center .admin-upload-btn { width: 100%; margin-top: 8px; border-color: var(--control-accent); color: #fffaf7; background: var(--control-accent); }
+.admin-control-center .admin-upload-area input[type="file"] { display: none; }
+.admin-control-center .admin-upload-btn { display: none; width: 100%; margin-top: 8px; border-color: var(--control-accent); color: #fffaf7; background: var(--control-accent); }
 
 .admin-control-center table { width: 100%; border-collapse: collapse; }
 .admin-control-center th { padding: 10px 8px; border-bottom: 1px solid var(--control-line); color: var(--control-muted); font-size: 9px; font-weight: 650; text-align: left; }
