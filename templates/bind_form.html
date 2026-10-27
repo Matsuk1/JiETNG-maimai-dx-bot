@@ -428,11 +428,21 @@
       }
     }
   </style>
+  <link rel="stylesheet" href="/static/user-portal.css?v=20261027-1">
 </head>
-<body>
+<body class="user-portal portal-form-page">
   <div id="loading-overlay"><div class="spinner"></div></div>
-  <div class="container">
+  <div class="container portal-card">
+    <header class="portal-brandbar">
+      <div class="ui-brand" aria-label="JiETNG">
+        <span class="ui-brand-mark" aria-hidden="true">J</span>
+        <span class="ui-brand-copy"><span class="ui-brand-name">JiETNG</span><span class="ui-brand-context">Account</span></span>
+      </div>
+      <span class="ui-pill">LINE</span>
+    </header>
+    <div class="portal-heading">
     <h2 id="page-heading">SEGA アカウント連携</h2>
+    </div>
     <form method="POST">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
       <input type="hidden" id="aime" name="aime" value="{% if mode == 'rebind' %}{{ aime }}{% else %}0{% endif %}"/>
@@ -487,7 +497,7 @@
 
       </div>
 
-      <input type="submit" id="submit-btn" value="連携" />
+      <input type="submit" id="submit-btn" class="portal-primary-action" value="連携" />
     </form>
 
     <div class="notice">
