@@ -57,13 +57,13 @@ def test_copy_actions_render_as_compact_icons_without_visible_labels():
         )
         assert clipboard_box["width"] == "32px"
         assert clipboard_box["height"] == "32px"
-        assert clipboard_box["contents"][0]["text"] == "⧉"
+        assert clipboard_box["contents"][0]["text"] == "⎘"
         visible_text = [node.get("text") for node in walk(clipboard_box) if node.get("type") == "text"]
-        assert visible_text == ["⧉"]
+        assert visible_text == ["⎘"]
 
 
 def test_export_flex_is_a_compact_metric_sheet_with_icon_only_actions():
-    with patch.object(service, "get_user_language", return_value="ja"):
+    with patch("modules.i18n.get_user_language", return_value="ja"):
         payload = service.generate_export_flex("U123", {
             "size": 707584,
             "fmt": "json",
@@ -89,8 +89,21 @@ def test_export_flex_is_a_compact_metric_sheet_with_icon_only_actions():
     assert {"Best", "Recent", "JSON", "691 KB"}.issubset(visible_text)
     assert "説明" not in visible_text
     assert "注意" not in visible_text
-    assert set(action_icons) == {"↓", "⧉"}
+    assert "·" not in visible_text
+    assert set(action_icons) == {"↓", "⎘"}
     assert not any(node.get("type") == "button" for node in nodes)
+
+    expiry = next(node for node in nodes if node.get("text") == "リンクは 30 分後に自動で失効します")
+    assert expiry["align"] == "start"
+
+    icon_row = next(
+        node for node in nodes
+        if node.get("type") == "box"
+        and node.get("layout") == "horizontal"
+        and [child.get("width") for child in node.get("contents", [])] == ["32px", "32px"]
+    )
+    assert icon_row["alignItems"] == "center"
+    assert [child["height"] for child in icon_row["contents"]] == ["32px", "32px"]
 
 
 def test_profile_flex_uses_dividers_instead_of_gray_row_cards():

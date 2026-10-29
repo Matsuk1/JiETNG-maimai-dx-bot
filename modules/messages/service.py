@@ -181,16 +181,37 @@ def generate_export_flex(user_id, meta):
     btn = get_multilingual_text(_message_texts["export_flex_button_text"], user_id)
     copy_btn = get_multilingual_text(_message_texts["export_flex_copy_button_text"], user_id)
     alt = get_multilingual_text(_message_texts["export_alt_text"], user_id)
-    download_action = labeled_icon_action(
-        btn,
+    download_icon = compact_icon_action(
         {"type": "uri", "uri": f"{meta['url']}?openExternalBrowser=1"},
+        btn,
         icon="↓",
+        bg_color=COLOR_BRAND,
+        icon_color=COLOR_TEXT_INVERSE,
     )
     copy_action = compact_icon_action(
         {"type": "clipboard", "clipboardText": meta["url"]},
         copy_btn,
     )
-    download_action["contents"].append(copy_action)
+    download_action = {
+        "type": "box",
+        "layout": "horizontal",
+        "alignItems": "center",
+        "contents": [
+            {
+                **flex_text(btn, size="xs", color=COLOR_TEXT_SECONDARY, weight="bold", wrap=False),
+                "flex": 1,
+                "gravity": "center",
+            },
+            {
+                "type": "box",
+                "layout": "horizontal",
+                "flex": 0,
+                "spacing": "sm",
+                "alignItems": "center",
+                "contents": [download_icon, copy_action],
+            },
+        ],
+    }
 
     title_node = flex_text(title, size="md", color=COLOR_TEXT_PRIMARY, weight="bold", wrap=False)
     title_node["adjustMode"] = "shrink-to-fit"
@@ -230,13 +251,14 @@ def generate_export_flex(user_id, meta):
         {"type": "separator", "color": COLOR_BORDER},
         {
             "type": "box",
-            "layout": "horizontal",
-            "spacing": "sm",
-            "alignItems": "center",
+            "layout": "vertical",
             "paddingTop": "10px",
+            "paddingBottom": "2px",
             "contents": [
-                flex_text("·", size="sm", color=COLOR_SUCCESS, weight="bold", wrap=False),
-                {**flex_text(foot, size="xxs", color=COLOR_TEXT_MUTED), "flex": 1},
+                {
+                    **flex_text(foot, size="xxs", color=COLOR_TEXT_MUTED, align="start"),
+                    "gravity": "center",
+                },
             ],
         },
     ])
