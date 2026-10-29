@@ -57,9 +57,9 @@ def test_copy_actions_render_as_compact_icons_without_visible_labels():
         )
         assert clipboard_box["width"] == "32px"
         assert clipboard_box["height"] == "32px"
-        assert clipboard_box["contents"][0]["text"] == "⎘"
+        assert clipboard_box["contents"][0]["text"] == "⧉"
         visible_text = [node.get("text") for node in walk(clipboard_box) if node.get("type") == "text"]
-        assert visible_text == ["⎘"]
+        assert visible_text == ["⧉"]
 
 
 def test_export_flex_is_a_compact_metric_sheet_with_icon_only_actions():
@@ -90,7 +90,7 @@ def test_export_flex_is_a_compact_metric_sheet_with_icon_only_actions():
     assert "説明" not in visible_text
     assert "注意" not in visible_text
     assert "·" not in visible_text
-    assert set(action_icons) == {"↓", "⎘"}
+    assert set(action_icons) == {"↓", "⧉"}
     assert not any(node.get("type") == "button" for node in nodes)
 
     expiry = next(node for node in nodes if node.get("text") == "リンクは 30 分後に自動で失効します")

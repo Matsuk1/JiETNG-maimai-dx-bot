@@ -376,7 +376,7 @@ def round_icon_action(label, action, bg_color=COLOR_BRAND_SOFT, text_color=COLOR
     }
 
 
-def compact_icon_action(action, accessible_label, icon="⎘", bg_color=COLOR_BRAND_SOFT,
+def compact_icon_action(action, accessible_label, icon="⧉", bg_color=COLOR_BRAND_SOFT,
                         icon_color=COLOR_BRAND_STRONG):
     """Compact square icon action for secondary utilities such as copy."""
     return {
