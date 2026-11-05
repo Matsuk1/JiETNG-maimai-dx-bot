@@ -10,11 +10,12 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="JiETNG Admin">
   <link rel="apple-touch-icon" href="/static/admin-icon.png">
-  <meta name="theme-color" content="#f7f3ed">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#faf9f5">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#262624">
   {% include 'common_styles.html' %}
 
   <link rel="stylesheet" href="/static/admin-panel.css?v=audit-20260920-11" media="not all">
-  <link rel="stylesheet" href="/static/admin-control-center.css?v=20261027-11">
+  <link rel="stylesheet" href="/static/admin-control-center.css?v=20261105-6">
 </head>
 <body class="admin-control-center admin-mobile-nav-collapsed">
   <svg aria-hidden="true" width="0" height="0" style="position:absolute;overflow:hidden;">
@@ -96,7 +97,6 @@
           <img class="brand-logo" src="/static/pics/logo.png" alt="">
           <div>
             <div class="brand-title">JiETNG</div>
-            <div class="brand-subtitle">Control Center</div>
           </div>
         </div>
         <button class="mobile-nav-toggle" type="button" id="mobile-nav-toggle" aria-label="Toggle navigation" aria-expanded="false" onclick="toggleMobileNav()"></button>
@@ -107,11 +107,11 @@
         <div class="tabs nav-stack">
           <button class="tab active" data-tab="stats" onclick="switchTab('stats', this)">
             <span class="tab-icon"><svg aria-hidden="true"><use href="#icon-layout-dashboard"></use></svg></span>
-            <span class="tab-copy"><span class="tab-label">Overview</span><span class="tab-desc">health and activity</span></span>
+            <span class="tab-copy"><span class="tab-label">Overview</span></span>
           </button>
           <button class="tab" data-tab="operations" onclick="switchTab('operations', this)">
             <span class="tab-icon"><svg aria-hidden="true"><use href="#icon-activity"></use></svg></span>
-            <span class="tab-copy"><span class="tab-label">Operations <span id="notification-badge" style="display:none; background:#ff3b30; color:#fff; border-radius:999px; padding:1px 6px; font-size:11px; margin-left:4px;"></span></span><span class="tab-desc">diagnostics and logs</span></span>
+            <span class="tab-copy"><span class="tab-label">Operations <span id="notification-badge" style="display:none; background:var(--jietng-danger); color:var(--jietng-on-accent); border-radius:999px; padding:1px 6px; font-size:11px; margin-left:4px;"></span></span></span>
           </button>
         </div>
 
@@ -119,15 +119,15 @@
         <div class="tabs nav-stack">
           <button class="tab" data-tab="users" onclick="switchTab('users', this)">
             <span class="tab-icon"><svg aria-hidden="true"><use href="#icon-users"></use></svg></span>
-            <span class="tab-copy"><span class="tab-label">Users</span><span class="tab-desc">accounts, sync, JSON edit</span></span>
+            <span class="tab-copy"><span class="tab-label">Users</span></span>
           </button>
           <button class="tab" data-tab="content" onclick="switchTab('content', this)">
             <span class="tab-icon"><svg aria-hidden="true"><use href="#icon-megaphone"></use></svg></span>
-            <span class="tab-copy"><span class="tab-label">Notices</span><span class="tab-desc">publish announcements</span></span>
+            <span class="tab-copy"><span class="tab-label">Notices</span></span>
           </button>
           <button class="tab" data-tab="tipad" onclick="switchTab('tipad', this)">
             <span class="tab-icon"><svg aria-hidden="true"><use href="#icon-spark"></use></svg></span>
-            <span class="tab-copy"><span class="tab-label">Tip / Ad</span><span class="tab-desc">post-update messages</span></span>
+            <span class="tab-copy"><span class="tab-label">Tip / Ad</span></span>
           </button>
         </div>
 
@@ -135,24 +135,27 @@
         <div class="tabs nav-stack">
           <button class="tab" data-tab="dxdata" onclick="switchTab('dxdata', this)">
             <span class="tab-icon"><svg aria-hidden="true"><use href="#icon-database"></use></svg></span>
-            <span class="tab-copy"><span class="tab-label">DXData</span><span class="tab-desc">catalog and audits</span></span>
+            <span class="tab-copy"><span class="tab-label">DXData</span></span>
           </button>
           <button class="tab" data-tab="backups" onclick="switchTab('backups', this)">
             <span class="tab-icon"><svg aria-hidden="true"><use href="#icon-archive"></use></svg></span>
-            <span class="tab-copy"><span class="tab-label">Backups</span><span class="tab-desc">snapshots and recovery</span></span>
+            <span class="tab-copy"><span class="tab-label">Backups</span></span>
           </button>
           <button class="tab" data-tab="backgrounds" onclick="switchTab('backgrounds', this)">
             <span class="tab-icon"><svg aria-hidden="true"><use href="#icon-image"></use></svg></span>
-            <span class="tab-copy"><span class="tab-label">Assets</span><span class="tab-desc">shared backgrounds</span></span>
+            <span class="tab-copy"><span class="tab-label">Assets</span></span>
           </button>
           <button class="tab" data-tab="devtoken" onclick="switchTab('devtoken', this)">
             <span class="tab-icon"><svg aria-hidden="true"><use href="#icon-key"></use></svg></span>
-            <span class="tab-copy"><span class="tab-label">API Tokens</span><span class="tab-desc">developer access</span></span>
+            <span class="tab-copy"><span class="tab-label">API Tokens</span></span>
           </button>
         </div>
         <div class="sidebar-runtime" aria-label="Runtime status">
-          <div class="sidebar-runtime-head"><span class="runtime-dot" aria-hidden="true"></span><span>Service online</span></div>
-          <div class="sidebar-runtime-meta">{{ stats.uptime }} uptime</div>
+          <span class="sidebar-avatar" aria-hidden="true">A</span>
+          <div class="sidebar-runtime-copy">
+            <div class="sidebar-runtime-head"><span class="runtime-dot" aria-hidden="true"></span><span id="sidebar-status">Service online</span></div>
+            <div class="sidebar-runtime-meta" id="sidebar-uptime">{{ stats.uptime }} uptime</div>
+          </div>
         </div>
       </div>
     </aside>
@@ -160,12 +163,10 @@
     <main class="admin-main">
       <div class="topbar">
         <div class="topbar-title">
-          <div class="topbar-eyebrow">JiETNG / Control Center</div>
           <h1 id="admin-page-title">Overview</h1>
-          <div class="topbar-meta">Rendered {{ stats.timestamp }} · {{ stats.hostname }}:{{ stats.port }}</div>
         </div>
         <div class="topbar-actions">
-          <span class="control-live"><span aria-hidden="true"></span>Live</span>
+          <span class="control-live"><span aria-hidden="true"></span><span id="overview-live-label">Live</span></span>
           <button class="icon-button btn-icon" type="button" id="notif-toggle-btn" onclick="toggleBrowserNotifications()"
                   aria-label="Notifications off" title="Notifications off">
             <svg aria-hidden="true"><use href="#icon-bell"></use></svg>
@@ -183,7 +184,7 @@
           <span class="control-section-heading">
             <span class="control-section-icon" aria-hidden="true"><svg><use href="#icon-users"></use></svg></span>
             <span>
-              <strong>Users</strong>
+              <strong>Accounts</strong>
               <small><span id="user-result-count">{{ total_users }}</span> accounts in this view</small>
             </span>
           </span>
@@ -219,61 +220,70 @@
     <!-- Stats Tab -->
     <div id="stats-tab" class="tab-content active">
       <div class="monitor-board">
-        {% set overview_pressure = stats.cpu_percent >= 85 or stats.memory_percent >= 85 or stats.image_queue_size >= stats.max_queue_size or stats.web_queue_size >= stats.max_queue_size %}
-        <section class="overview-signal{% if overview_pressure %} is-warning{% endif %}" id="overview-signal" aria-live="polite">
-          <span class="overview-signal-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M3 12h4l2.2-6 4.1 12 2.2-6H21"></path></svg>
-          </span>
+        <section class="overview-signal" id="overview-signal" aria-live="polite">
+          <span class="overview-signal-icon" aria-hidden="true"><svg><use href="#icon-activity"></use></svg></span>
           <span class="overview-signal-copy">
-            <strong id="overview-signal-title">{{ 'Runtime pressure detected' if overview_pressure else 'All systems operational' }}</strong>
-            <span id="overview-signal-detail">{{ 'Review resource and queue pressure below.' if overview_pressure else 'Resources and task queues are within their operating range.' }}</span>
+            <strong id="overview-signal-title">Checking service status</strong>
+            <span id="overview-signal-detail">Loading the latest runtime data.</span>
           </span>
-          <span class="overview-signal-time">Updated {{ stats.timestamp }}</span>
+          <span class="overview-signal-time" id="overview-updated">Updated {{ stats.timestamp }}</span>
+          <button class="btn btn-primary btn-icon" type="button" onclick="refreshStats(this)" aria-label="Refresh statistics" title="Refresh statistics"><svg aria-hidden="true"><use href="#icon-refresh"></use></svg></button>
         </section>
-        <div class="monitor-hero">
-          <section class="monitor-card monitor-primary">
-            <div class="monitor-head">
-              <div>
-                <div class="monitor-title">Service Health</div>
-                <div class="monitor-subtitle">Live operating view for JiETNG</div>
-              </div>
-              <span class="live-badge">Online</span>
+
+        <section class="kpi-strip" aria-label="Key metrics">
+          <div class="kpi">
+            <div class="kpi-label">Total users</div>
+            <div class="kpi-value" id="overview-total-users">{{ stats.total_users }}</div>
+            <div class="kpi-note"><span class="kpi-delta" id="overview-user-delta">+{{ stats.today_new_users }} today</span></div>
+            <div class="kpi-note" id="overview-user-regions">JP {{ stats.jp_users }} · INTL {{ stats.intl_users }}</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">DAU</div>
+            <div class="kpi-value" id="overview-dau">{{ stats.dau }}</div>
+            <div class="kpi-note" id="overview-dau-note"></div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">WAU</div>
+            <div class="kpi-value" id="overview-wau">{{ stats.wau }}</div>
+            <div class="kpi-note" id="overview-wau-note"></div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">MAU</div>
+            <div class="kpi-value" id="overview-mau">{{ stats.mau }}</div>
+            <div class="kpi-note" id="overview-stickiness">DAU/MAU {{ stats.stickiness }}%</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Sync success</div>
+            <div class="kpi-value" id="overview-sync">{{ stats.sync_success_rate }}%</div>
+            <div class="kpi-note" id="overview-sync-note"></div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Task success</div>
+            <div class="kpi-value" id="summary-task-success">—</div>
+            <div class="kpi-note" id="summary-task-note"></div>
+            <div class="kpi-note">Since restart</div>
+          </div>
+        </section>
+
+        <div class="monitor-grid">
+          <section class="monitor-card">
+            <div class="panel-heading">
+              <h2>Activity Trend</h2>
+              <span id="overview-trend-summary">Last 30 days</span>
             </div>
-            <div class="monitor-total">
-              <div class="monitor-total-main">
-                <div>
-                  <div class="monitor-total-label">Total Users</div>
-                  <div class="monitor-number" id="overview-total-users">{{ stats.total_users }}</div>
-                </div>
-                <div class="monitor-total-delta" id="overview-user-delta">+{{ stats.today_new_users }} today</div>
-              </div>
-              <div class="monitor-segments" id="overview-user-segments">
-                <div class="monitor-segment"><strong>{{ stats.jp_users }}</strong>JP users</div>
-                <div class="monitor-segment"><strong>{{ stats.intl_users }}</strong>INTL users</div>
-                <div class="monitor-segment"><strong>{{ stats.mau }}</strong>MAU</div>
-              </div>
+            <div class="chart-panel">
+              <div id="dau-tooltip" class="chart-tooltip" hidden></div>
+              <div id="dau-chart"></div>
             </div>
-            <div class="monitor-mini-grid">
-              <div class="mini-stat">
-                <div class="mini-label">DAU</div>
-                <div class="mini-value" id="overview-dau">{{ stats.dau }}</div>
-              </div>
-              <div class="mini-stat">
-                <div class="mini-label">WAU</div>
-                <div class="mini-value" id="overview-wau">{{ stats.wau }}</div>
-              </div>
-              <div class="mini-stat">
-                <div class="mini-label">Stickiness</div>
-                <div class="mini-value" id="overview-stickiness">{{ stats.stickiness }}%</div>
-              </div>
-            </div>
+            <p class="chart-hint">Select a day to open its activity below.</p>
           </section>
 
           <section class="monitor-card health-panel">
-            <div class="panel-heading" style="padding:0;">
-              <div class="panel-heading-title"><span class="panel-heading-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path><circle cx="12" cy="12" r="3"></circle></svg></span><h2>Runtime Pressure</h2></div>
-              <button class="btn btn-primary btn-icon" type="button" onclick="refreshStats(this)" aria-label="Refresh statistics" title="Refresh statistics"><svg aria-hidden="true"><use href="#icon-refresh"></use></svg></button>
+            <div class="panel-heading">
+              <h2>Runtime Pressure</h2>
+              <span id="summary-queue-backlog"></span>
             </div>
+            <div class="health-group-label">Resources</div>
             <div class="health-row">
               <div class="health-label">CPU</div>
               <div class="health-track"><div class="health-fill" id="overview-cpu-fill" style="width: {{ stats.cpu_percent }}%;"></div></div>
@@ -291,142 +301,79 @@
               <div class="health-value">{{ (component.memory_mb|string + ' MiB') if component.memory_mb is not none else 'N/A' }}</div>
             </div>
             {% endfor %}
+            <div class="health-group-label">Queues</div>
             <div class="health-row">
               <div class="health-label">Images</div>
-              <div class="health-track"><div class="health-fill" id="overview-image-queue-fill" style="width: {{ (stats.image_queue_size / stats.max_queue_size * 100) if stats.max_queue_size else 0 }}%;"></div></div>
+              <div class="health-track"><div class="health-fill" id="overview-image-queue-fill"></div></div>
               <div class="health-value" id="overview-image-queue">{{ stats.image_queue_size }}/{{ stats.max_queue_size }}</div>
             </div>
             <div class="health-row">
+              <div class="health-label">Image query</div>
+              <div class="health-track"><div class="health-fill" id="overview-image-query-queue-fill"></div></div>
+              <div class="health-value" id="overview-image-query-queue">{{ stats.image_query_queue_size }}/{{ stats.max_queue_size }}</div>
+            </div>
+            <div class="health-row">
               <div class="health-label">Web</div>
-              <div class="health-track"><div class="health-fill" id="overview-web-queue-fill" style="width: {{ (stats.web_queue_size / stats.max_queue_size * 100) if stats.max_queue_size else 0 }}%;"></div></div>
+              <div class="health-track"><div class="health-fill" id="overview-web-queue-fill"></div></div>
               <div class="health-value" id="overview-web-queue">{{ stats.web_queue_size }}/{{ stats.max_queue_size }}</div>
             </div>
-          </section>
-        </div>
-
-        <div class="monitor-grid">
-          <section class="monitor-card">
-            <div class="panel-heading">
-              <div class="panel-heading-title"><span class="panel-heading-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 18 9 12l4 4 8-10"></path><path d="M17 6h4v4"></path></svg></span><h2>Activity Trend</h2></div>
-              <span>Last 30 days</span>
-            </div>
-            {% set ns = namespace(m=1) %}
-            {% for p in stats.dau_30d %}{% if p.dau > ns.m %}{% set ns.m = p.dau %}{% endif %}{% endfor %}
-            {% set chart_l = 34 %}{% set chart_t = 18 %}{% set chart_w = 552 %}{% set chart_h = 170 %}
-            <div class="chart-panel" style="position:relative;">
-              <div id="dau-tooltip" style="display:none; position:absolute; pointer-events:none; background:var(--card-bg); border:1px solid var(--border-color); border-radius:999px; padding:5px 10px; font-size:12px; font-weight:700; box-shadow:var(--shadow-md); z-index:10; white-space:nowrap;"></div>
-              <svg id="dau-svg" viewBox="0 0 620 228" preserveAspectRatio="xMidYMid meet" style="width:100%; height:auto;">
-                {% for i in range(5) %}
-                  {% set yv = (ns.m * (4 - i) / 4)|round|int %}
-                  {% set yy = chart_t + chart_h * i / 4 %}
-                  <line x1="{{ chart_l }}" y1="{{ yy }}" x2="{{ chart_l + chart_w }}" y2="{{ yy }}" stroke="var(--border-color)" stroke-width="1" opacity="0.52" />
-                  <text x="{{ chart_l - 8 }}" y="{{ yy + 4 }}" text-anchor="end" fill="var(--text-tertiary)" font-size="10">{{ yv }}</text>
-                {% endfor %}
-                <polyline fill="none" stroke="var(--accent-color)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"
-                  points="{% for p in stats.dau_30d %}{{ chart_l + loop.index0 * (chart_w / 29) }},{{ chart_t + chart_h - (p.dau / ns.m * chart_h) }} {% endfor %}" />
-                {% for p in stats.dau_30d %}
-                  <circle class="dau-dot" cx="{{ chart_l + loop.index0 * (chart_w / 29) }}" cy="{{ chart_t + chart_h - (p.dau / ns.m * chart_h) }}" r="4" fill="var(--card-bg)" stroke="var(--accent-color)" stroke-width="3" data-date="{{ p.date }}" data-full-date="{{ p.full_date }}" data-dau="{{ p.dau }}" />
-                {% endfor %}
-                {% for p in stats.dau_30d %}
-                  {% if loop.index0 % 6 == 0 or loop.last %}
-                    <text x="{{ chart_l + loop.index0 * (chart_w / 29) }}" y="{{ chart_t + chart_h + 24 }}" text-anchor="middle" fill="var(--text-tertiary)" font-size="10">{{ p.date }}</text>
-                  {% endif %}
-                {% endfor %}
-              </svg>
-            </div>
-          </section>
-
-          <section class="monitor-card">
-            <div class="panel-heading">
-              <div class="panel-heading-title"><span class="panel-heading-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="3"></rect><path d="M8 2v4M16 2v4M3 9h18"></path></svg></span><h2>Today</h2></div>
-              <span>Command mix</span>
-            </div>
-            <div class="command-list">
-              <div class="mini-stat">
-                <div class="mini-label">Image Calls</div>
-                <div class="mini-value" id="stat-image-calls">{{ stats.today_image_calls }}</div>
-              </div>
-              <div class="mini-stat">
-                <div class="mini-label">Webhook Events</div>
-                <div class="mini-value" id="stat-webhook-msgs">{{ stats.today_webhook_msgs }}</div>
-              </div>
-              <div class="mini-stat">
-                <div class="mini-label">Sync Success</div>
-                <div class="mini-value" id="stat-sync">{{ stats.today_sync_success }} / {{ stats.today_sync_total }}</div>
-              </div>
-              <div class="mini-stat">
-                <div class="mini-label">Record Exports</div>
-                <div class="mini-value" id="stat-record-exports">{{ stats.today_record_exports }}</div>
-              </div>
-              <div class="mini-stat">
-                <div class="mini-label">Record Imports</div>
-                <div class="mini-value" id="stat-record-imports">{{ stats.today_record_imports }}</div>
-              </div>
-              <div class="mini-stat">
-                <div class="mini-label">Dropped Events</div>
-                <div class="mini-value" id="stat-event-dropped">{{ stats.event_dropped }}</div>
-              </div>
+            <div class="last-failure" id="overview-last-failure" hidden>
+              <div class="health-group-label">Last task failure</div>
+              <div class="last-failure-meta" id="overview-last-failure-meta"></div>
+              <div class="last-failure-error" id="overview-last-failure-error"></div>
             </div>
           </section>
         </div>
 
-        {% if stats.image_command_breakdown %}
-        {% set cmd_max = stats.image_command_breakdown[0].count if stats.image_command_breakdown else 1 %}
-        <section class="monitor-card">
+        <section class="monitor-card day-report">
           <div class="panel-heading">
-            <div class="panel-heading-title"><span class="panel-heading-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="m21 15-5-5L5 21"></path></svg></span><h2>Image Command Breakdown</h2></div>
-            <span>Today</span>
-          </div>
-          <div class="command-list">
-            {% for row in stats.image_command_breakdown %}
-            <div class="command-row">
-              <div class="command-name">{{ row.command }}</div>
-              <div class="command-bar"><span style="width: {{ (row.count / cmd_max * 100) if cmd_max > 0 else 0 }}%;"></span></div>
-              <div class="command-count">{{ row.count }}</div>
+            <h2 id="activity-title">Today's Activity</h2>
+            <div class="day-controls">
+              <button class="day-today-btn" type="button" id="overview-today-btn" hidden>Back to today</button>
+              <label class="day-picker"><span class="sr-only">Report date</span><input type="date" id="hourly-date"></label>
             </div>
-            {% endfor %}
+          </div>
+          <div class="day-grid">
+            <div class="day-stats">
+              <div class="mini-stat"><div class="mini-label">Image calls</div><div class="mini-value" id="stat-image-calls"></div></div>
+              <div class="mini-stat"><div class="mini-label">Webhook events</div><div class="mini-value" id="stat-webhook-msgs"></div></div>
+              <div class="mini-stat"><div class="mini-label">Sync runs</div><div class="mini-value" id="stat-sync"></div><div class="mini-note" id="stat-sync-rate"></div></div>
+              <div class="mini-stat"><div class="mini-label">Bindings</div><div class="mini-value" id="stat-bindings"></div><div class="mini-note" id="stat-unbinds"></div></div>
+              <div class="mini-stat"><div class="mini-label">Record exports</div><div class="mini-value" id="stat-record-exports"></div></div>
+              <div class="mini-stat"><div class="mini-label">Record imports</div><div class="mini-value" id="stat-record-imports"></div></div>
+            </div>
+            <div class="day-block">
+              <div class="day-block-head"><h3>Hourly events</h3><span id="hourly-summary"></span></div>
+              <div id="hourly-chart"></div>
+            </div>
+            <div class="day-block">
+              <div class="day-block-head"><h3>Image commands</h3></div>
+              <div class="command-list" id="breakdown-chart"></div>
+            </div>
+          </div>
+          <div class="sync-failures" id="sync-failures" hidden>
+            <h3>Sync failure reasons</h3>
+            <ul id="sync-failure-list"></ul>
           </div>
         </section>
-        {% endif %}
 
-        {% set completed_tasks = stats.total_tasks_processed %}
-        {% set successful_tasks = completed_tasks - stats.total_tasks_failed - stats.total_tasks_timed_out %}
-        {% set success_rate = (successful_tasks / completed_tasks * 100) if completed_tasks else 100 %}
-        {% set queued_tasks = stats.image_queue_size + stats.image_query_queue_size + stats.web_queue_size %}
         <div class="system-summary" aria-label="System summary">
-          <div class="summary-tile">
-            <div class="summary-label">Uptime</div>
-            <div class="summary-value" id="summary-uptime">{{ stats.uptime }}</div>
-          </div>
-          <div class="summary-tile" title="{{ successful_tasks }} successful, {{ stats.total_tasks_failed }} failed, {{ stats.total_tasks_timed_out }} timed out">
-            <div class="summary-label">Task Success</div>
-            <div class="summary-value" id="summary-task-success">{{ success_rate|round(1) }}%</div>
-          </div>
-          <div class="summary-tile">
-            <div class="summary-label">Queue Backlog</div>
-            <div class="summary-value" id="summary-queue-backlog">{{ queued_tasks }}</div>
-          </div>
-          <div class="summary-tile">
-            <div class="summary-label">Process Memory</div>
-            <div class="summary-value" id="summary-process-memory">{{ stats.process_memory_mb }} MB</div>
-          </div>
-          <div class="summary-tile">
-            <div class="summary-label">Runtime</div>
-            <div class="summary-value" id="summary-runtime">Python {{ stats.python_version }}</div>
-          </div>
-          <div class="summary-tile">
-            <div class="summary-label">Host</div>
-            <div class="summary-value" id="summary-host" title="{{ stats.hostname }}">{{ stats.hostname }}</div>
-          </div>
+          <div class="summary-tile"><div class="summary-label">Uptime</div><div class="summary-value" id="summary-uptime">{{ stats.uptime }}</div></div>
+          <div class="summary-tile"><div class="summary-label">Process Memory</div><div class="summary-value" id="summary-process-memory">{{ stats.process_memory_mb }} MB</div></div>
+          <div class="summary-tile"><div class="summary-label">Threads</div><div class="summary-value" id="summary-threads">{{ stats.thread_count }}</div></div>
+          <div class="summary-tile"><div class="summary-label">Dropped events</div><div class="summary-value" id="stat-event-dropped">{{ stats.event_dropped }}</div></div>
+          <div class="summary-tile"><div class="summary-label">Runtime</div><div class="summary-value" id="summary-runtime">Python {{ stats.python_version }}</div></div>
+          <div class="summary-tile"><div class="summary-label">Host</div><div class="summary-value" id="summary-host">{{ stats.hostname }}:{{ stats.port }}</div></div>
         </div>
       </div>
+      <script type="application/json" id="overview-initial-stats">{{ stats | tojson }}</script>
     </div>
 
     <!-- Notices Tab -->
     <div id="notices-tab" class="tab-content">
       <div class="section">
         <div class="section-title" style="display:flex; justify-content:space-between; align-items:center;">
-          <span>Notice Management</span>
+          <span>All notices</span>
           <button class="btn btn-success btn-icon" type="button" onclick="showCreateNoticeModal()" aria-label="Create notice" title="Create notice"><svg aria-hidden="true"><use href="#icon-plus"></use></svg></button>
         </div>
 
@@ -446,7 +393,7 @@
     <div id="dxdata-tab" class="tab-content">
       <div class="section">
         <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
-          <span>DXData Status</span>
+          <span>Catalog status</span>
           <div style="display: flex; gap: 8px;">
             <button class="btn btn-primary btn-icon" type="button" onclick="loadDXDataStatus()" aria-label="Refresh DXData status" title="Refresh DXData status"><svg aria-hidden="true"><use href="#icon-refresh"></use></svg></button>
             <button class="btn btn-success btn-icon" type="button" id="update-dxdata-btn" onclick="updateDXData()" aria-label="Update and check DXData" title="Update and check DXData"><svg aria-hidden="true"><use href="#icon-refresh"></use></svg></button>
@@ -518,7 +465,7 @@
     <div id="tipad-tab" class="tab-content">
       <div class="section">
         <div class="section-title" style="display:flex; justify-content:space-between; align-items:center;">
-          <span>Tip/Ad Management</span>
+          <span>All tips and ads</span>
           <button class="btn btn-success btn-icon" type="button" onclick="showCreateTipAdForm()" aria-label="Create tip or ad" title="Create tip or ad"><svg aria-hidden="true"><use href="#icon-plus"></use></svg></button>
         </div>
 
@@ -607,7 +554,7 @@
     <div id="backups-tab" class="tab-content">
       <div class="section">
         <div class="section-title" style="display:flex; justify-content:space-between; align-items:center;">
-          <span>Backup Management</span>
+          <span>Snapshots</span>
           <div style="display:flex; gap:8px;">
             <button class="btn btn-primary btn-icon" type="button" onclick="loadBackups()" aria-label="Refresh backups" title="Refresh backups"><svg aria-hidden="true"><use href="#icon-refresh"></use></svg></button>
             <button class="btn btn-success btn-icon" type="button" id="create-backup-btn" onclick="createBackup()" aria-label="Create backup" title="Create backup"><svg aria-hidden="true"><use href="#icon-plus"></use></svg></button>
@@ -712,7 +659,7 @@
     <div id="devtoken-tab" class="tab-content">
       <div class="section">
         <div class="section-title" style="display:flex; justify-content:space-between; align-items:center;">
-          <span>Developer Token Management</span>
+          <span>Tokens</span>
           <div style="display:flex; gap:8px;">
             <button class="btn btn-primary btn-icon" type="button" onclick="loadDevTokens()" aria-label="Refresh API tokens" title="Refresh API tokens"><svg aria-hidden="true"><use href="#icon-refresh"></use></svg></button>
             <button class="btn btn-success btn-icon" type="button" onclick="showCreateTokenModal()" aria-label="Create API token" title="Create API token"><svg aria-hidden="true"><use href="#icon-plus"></use></svg></button>
@@ -947,6 +894,7 @@
     };
   </script>
   <script src="/static/admin-user-editor.js"></script>
-  <script src="/static/admin-panel.js?v=20261027-6"></script>
+  <script src="/static/admin-panel.js?v=20261105-2"></script>
+  <script src="/static/admin-overview.js?v=20261105-3"></script>
 </body>
 </html>

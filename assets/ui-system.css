@@ -3,29 +3,43 @@
  * for modal layers; repeated content is not boxed into decorative cards.
  */
 :root {
-  color-scheme: light;
-  --jietng-font-sans: "Avenir Next", "Hiragino Sans", "Yu Gothic UI", "Yu Gothic", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color-scheme: light dark;
+  --jietng-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "PingFang SC", "Yu Gothic UI", "Noto Sans CJK SC", sans-serif;
   --jietng-font-mono: "SFMono-Regular", "Cascadia Mono", Consolas, monospace;
-  --jietng-ink-950: #2d2925;
-  --jietng-ink-900: #3b3530;
-  --jietng-ink-700: #5d554e;
-  --jietng-ink-500: #756d64;
-  --jietng-ink-300: #a49b91;
-  --jietng-paper: #f7f3ed;
-  --jietng-surface: #fcfaf7;
-  --jietng-surface-soft: #f1ece5;
-  --jietng-line: #d8d0c6;
-  --jietng-line-soft: #e7e1da;
-  --jietng-line-strong: #bbb0a4;
+  --jietng-ink-950: #1f1e1d;
+  --jietng-ink-900: #2b2a28;
+  --jietng-ink-700: #55544f;
+  --jietng-ink-500: #73726c;
+  --jietng-ink-300: #a3a29b;
+  --jietng-paper: #faf9f5;
+  --jietng-surface: #ffffff;
+  --jietng-surface-soft: #f0eee6;
+  --jietng-line: #e8e6dc;
+  --jietng-line-soft: #f0eee6;
+  --jietng-line-strong: #c9c6ba;
   --jietng-accent: #c96442;
-  --jietng-accent-strong: #a84d31;
-  --jietng-accent-soft: #f2dfd6;
+  --jietng-accent-strong: #ae5630;
+  --jietng-accent-soft: #f7e9e2;
   --jietng-success: #2f7d64;
-  --jietng-success-soft: #e4f0eb;
+  --jietng-success-soft: #e6f1ec;
   --jietng-warning: #9a641f;
-  --jietng-warning-soft: #f5ead7;
+  --jietng-warning-soft: #f6ecdb;
   --jietng-danger: #b54e50;
-  --jietng-danger-soft: #f7e4e3;
+  --jietng-danger-soft: #f8e8e7;
+  --jietng-font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Hiragino Mincho ProN", "Songti SC", "Noto Serif CJK SC", Georgia, serif;
+  --jietng-rail: #f5f4ed;
+  --jietng-field: #ffffff;
+  --jietng-hover: rgba(31, 30, 29, .05);
+  --jietng-active: rgba(31, 30, 29, .08);
+  --jietng-strong: #000000;
+  --jietng-on-accent: #ffffff;
+  --jietng-accent-line: #e8c9ba;
+  --jietng-danger-line: #ecd0cf;
+  --jietng-danger-solid: #b54e50;
+  --jietng-data-soft: #e3ab97;
+  --jietng-code-bg: #2d2c2a;
+  --jietng-code-ink: #e8e6dc;
+  --jietng-logo-plate: transparent;
   --jietng-space-1: 4px;
   --jietng-space-2: 8px;
   --jietng-space-3: 12px;
@@ -54,8 +68,8 @@
   --glass-border: var(--jietng-line);
   --card-bg: var(--jietng-surface);
   --surface-bg: var(--jietng-surface-soft);
-  --input-bg: #faf7f3;
-  --hover-bg: #f4e8e1;
+  --input-bg: var(--jietng-field);
+  --hover-bg: var(--jietng-hover);
   --accent-color: var(--jietng-accent);
   --accent-hover: var(--jietng-accent-strong);
   --accent-light: var(--jietng-accent-soft);
@@ -82,6 +96,44 @@
   --transition-fast: 120ms var(--jietng-ease);
   --transition-base: 180ms var(--jietng-ease);
   --transition-slow: 280ms var(--jietng-ease);
+}
+
+/* Dark surfaces follow the system setting on every web surface. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --jietng-ink-950: #f5f4ef;
+    --jietng-ink-900: #e8e6dc;
+    --jietng-ink-700: #c2c0b6;
+    --jietng-ink-500: #9c9a92;
+    --jietng-ink-300: #76756e;
+    --jietng-paper: #262624;
+    --jietng-surface: #30302e;
+    --jietng-surface-soft: #3a3a37;
+    --jietng-rail: #1f1e1d;
+    --jietng-field: #262624;
+    --jietng-line: #454540;
+    --jietng-line-soft: #3a3a37;
+    --jietng-line-strong: #5c5b55;
+    --jietng-hover: rgba(255, 255, 255, .06);
+    --jietng-active: rgba(255, 255, 255, .1);
+    --jietng-strong: #ffffff;
+    --jietng-accent: #d97757;
+    --jietng-accent-strong: #e8967a;
+    --jietng-accent-soft: #48322a;
+    --jietng-accent-line: #6d4737;
+    --jietng-success: #63b898;
+    --jietng-success-soft: #25382f;
+    --jietng-warning: #dcab62;
+    --jietng-warning-soft: #3e3323;
+    --jietng-danger: #e58486;
+    --jietng-danger-soft: #472c2c;
+    --jietng-danger-line: #6e4040;
+    --jietng-danger-solid: #b0494c;
+    --jietng-data-soft: #8a5340;
+    --jietng-code-bg: #1f1e1d;
+    --jietng-logo-plate: #faf9f5;
+    --jietng-shadow-modal: 0 24px 70px rgba(0, 0, 0, .5);
+  }
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -114,7 +166,7 @@ input, select, textarea { font-size: 16px; }
 button, [role="button"], select, input[type="submit"], input[type="button"] { -webkit-tap-highlight-color: transparent; }
 button, [role="button"] { touch-action: manipulation; }
 :focus-visible { outline: 2px solid var(--jietng-accent); outline-offset: 3px; }
-::selection { color: #fffaf7; background: var(--jietng-accent); }
+::selection { color: var(--jietng-on-accent); background: var(--jietng-accent); }
 
 select {
   -webkit-appearance: none;
@@ -141,7 +193,7 @@ select {
   background: transparent;
 }
 .ui-brand-copy { display: grid; gap: 0; }
-.ui-brand-name { color: var(--jietng-ink-950); font-size: 14px; font-weight: 750; letter-spacing: -0.02em; line-height: 1.2; }
+.ui-brand-name { color: var(--jietng-ink-950); font-family: var(--jietng-font-serif); font-size: 16px; font-weight: 500; letter-spacing: -0.01em; line-height: 1.2; }
 .ui-brand-context { color: var(--jietng-ink-500); font-size: 10px; font-weight: 600; letter-spacing: 0.04em; line-height: 1.3; }
 .ui-pill {
   display: inline-flex;
@@ -234,7 +286,7 @@ select {
   cursor: pointer;
   white-space: nowrap;
 }
-.btn-danger:hover { color: #fffafa; background: var(--jietng-danger); }
+.btn-danger:hover { color: var(--jietng-on-accent); background: var(--jietng-danger-solid); }
 .btn-danger:disabled { cursor: not-allowed; opacity: 0.45; }
 
 @media (prefers-reduced-motion: reduce) {

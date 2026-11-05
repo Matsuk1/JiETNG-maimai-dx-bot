@@ -1,3 +1,4 @@
+import re
 import json
 from pathlib import Path
 
@@ -19,7 +20,7 @@ USER_PORTAL_TEMPLATES = (
 def test_every_user_portal_page_uses_the_current_shared_stylesheet():
     for filename in USER_PORTAL_TEMPLATES:
         source = (TEMPLATES / filename).read_text()
-        assert "/static/user-portal.css?v=20261027-8" in source
+        assert "/static/user-portal.css?v=20261105-3" in source
 
 
 def test_every_html_brand_surface_uses_the_project_logo_asset():
@@ -37,10 +38,11 @@ def test_shared_and_admin_stylesheets_have_current_cache_versions():
     admin_login = (TEMPLATES / "admin_login.html").read_text()
     admin_panel = (TEMPLATES / "admin_panel.html").read_text()
 
-    assert "/static/ui-system.css?v=20261027-6" in common
-    assert "/static/admin-login.css?v=20261027-4" in admin_login
-    assert "/static/admin-control-center.css?v=20261027-11" in admin_panel
-    assert "/static/admin-panel.js?v=20261027-6" in admin_panel
+    assert "/static/ui-system.css?v=20261105-2" in common
+    assert "/static/admin-login.css?v=20261105-2" in admin_login
+    assert "/static/admin-control-center.css?v=20261105-6" in admin_panel
+    assert "/static/admin-panel.js?v=20261105-2" in admin_panel
+    assert "/static/admin-overview.js?v=20261105-3" in admin_panel
 
 
 def test_logo_css_preserves_transparency_and_safe_space():
@@ -76,8 +78,8 @@ def test_admin_web_app_icon_uses_transparent_logo_and_paper_palette():
     assert "background: rgb(247,243,237)" in icon_template
     assert "padding: 88px" in icon_template
     assert "object-fit: contain" in icon_template
-    assert manifest["background_color"] == "#f7f3ed"
-    assert manifest["theme_color"] == "#cf6846"
+    assert manifest["background_color"] == "#faf9f5"
+    assert manifest["theme_color"] == "#faf9f5"
 
 
 def test_admin_panel_uses_flat_monitor_layout_and_icon_actions():
@@ -121,3 +123,19 @@ def test_admin_mobile_safe_area_and_user_list_hierarchy():
     assert 'class="user-meta-row"' in script
     assert 'class="user-link-state ${linked ? \'is-linked\' : \'is-unbound\'}"' in script
     assert "toggleIcon?.classList.toggle('is-open', expanded)" in script
+
+
+def test_admin_overview_elements_match_its_script():
+    panel = (TEMPLATES / "admin_panel.html").read_text()
+    script = (ROOT / "assets" / "admin-overview.js").read_text()
+    panel_script = (ROOT / "assets" / "admin-panel.js").read_text()
+
+    dynamic = {"overview-image-queue", "overview-image-query-queue", "overview-web-queue",
+               "overview-image-queue-fill", "overview-image-query-queue-fill", "overview-web-queue-fill"}
+    referenced = set(re.findall(r"(?:\$|setText)\('([a-zA-Z0-9-]+)'", script))
+    missing = {name for name in (referenced | dynamic) - {"dau-cursor"} if f'id="{name}"' not in panel}
+    assert not missing
+    assert 'href="#icon-activity"' in panel
+    assert "function refreshStats" not in panel_script
+    assert "_cmdLabels" not in panel_script
+    assert "Rendered {{" not in panel

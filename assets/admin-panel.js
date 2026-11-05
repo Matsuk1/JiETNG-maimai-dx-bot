@@ -1759,98 +1759,6 @@
         .catch(err => alert('Error refreshing logs: ' + err));
     }
 
-    function renderComponentMemory(stats) {
-      for (const component of stats.memory_components || []) {
-        const row = Array.from(document.querySelectorAll('[data-memory-component]'))
-          .find(element => element.dataset.memoryComponent === component.key);
-        if (!row) continue;
-        row.querySelector('.health-value').textContent = component.memory_mb == null
-          ? 'N/A' : component.memory_mb + ' MiB';
-        row.querySelector('.health-fill').style.width = Math.max(0, Math.min(100, component.percent || 0)) + '%';
-      }
-    }
-
-    function renderOverviewSignal(stats) {
-      const signal = document.getElementById('overview-signal');
-      if (!signal) return;
-      const maxQueue = Number(stats.max_queue_size) || 0;
-      const underPressure = Number(stats.cpu_percent) >= 85
-        || Number(stats.memory_percent) >= 85
-        || (maxQueue > 0 && Number(stats.image_queue_size) >= maxQueue)
-        || (maxQueue > 0 && Number(stats.web_queue_size) >= maxQueue);
-      signal.classList.toggle('is-warning', underPressure);
-      document.getElementById('overview-signal-title').textContent = underPressure
-        ? 'Runtime pressure detected' : 'All systems operational';
-      document.getElementById('overview-signal-detail').textContent = underPressure
-        ? 'Review resource and queue pressure below.'
-        : 'Resources and task queues are within their operating range.';
-    }
-
-    function refreshStats(btn) {
-      btn.disabled = true;
-      btn.classList.add('is-loading');
-      btn.setAttribute('aria-busy', 'true');
-
-      fetch('/admin/api/overview?refresh=' + Date.now(), {redirect: 'manual'})
-        .then(res => {
-          if (res.type === 'opaqueredirect' || res.status === 401 || res.status === 302) {
-            throw new Error('Session expired, please re-login');
-          }
-          if (!res.ok) throw new Error('HTTP ' + res.status);
-          return res.json();
-        })
-        .then(data => {
-          if (!data.success) throw new Error(data.message || 'Refresh failed');
-          const s = data.stats;
-          renderComponentMemory(s);
-          renderOverviewSignal(s);
-          document.getElementById('overview-total-users').textContent = s.total_users;
-          document.getElementById('overview-user-delta').textContent = `+${s.today_new_users} today`;
-          document.getElementById('overview-user-segments').innerHTML = `
-            <div class="monitor-segment"><strong>${s.jp_users}</strong>JP users</div>
-            <div class="monitor-segment"><strong>${s.intl_users}</strong>INTL users</div>
-            <div class="monitor-segment"><strong>${s.mau}</strong>MAU</div>
-          `;
-          document.getElementById('overview-dau').textContent = s.dau;
-          document.getElementById('overview-wau').textContent = s.wau;
-          document.getElementById('overview-stickiness').textContent = s.stickiness + '%';
-          document.getElementById('overview-cpu').textContent = s.cpu_percent + '%';
-          document.getElementById('overview-memory').textContent = `${s.memory_used_gb}/${s.total_memory} GB`;
-          document.getElementById('overview-image-queue').textContent = `${s.image_queue_size}/${s.max_queue_size}`;
-          document.getElementById('overview-web-queue').textContent = `${s.web_queue_size}/${s.max_queue_size}`;
-          document.getElementById('overview-cpu-fill').style.width = Math.max(0, Math.min(100, s.cpu_percent)) + '%';
-          document.getElementById('overview-memory-fill').style.width = Math.max(0, Math.min(100, s.memory_percent)) + '%';
-          const imageQueuePct = s.max_queue_size ? (s.image_queue_size / s.max_queue_size * 100) : 0;
-          const webQueuePct = s.max_queue_size ? (s.web_queue_size / s.max_queue_size * 100) : 0;
-          document.getElementById('overview-image-queue-fill').style.width = Math.max(0, Math.min(100, imageQueuePct)) + '%';
-          document.getElementById('overview-web-queue-fill').style.width = Math.max(0, Math.min(100, webQueuePct)) + '%';
-          document.getElementById('stat-image-calls').textContent = s.today_image_calls;
-          document.getElementById('stat-webhook-msgs').textContent = s.today_webhook_msgs;
-          document.getElementById('stat-sync').textContent = `${s.today_sync_success} / ${s.today_sync_total}`;
-          document.getElementById('stat-record-exports').textContent = s.today_record_exports;
-          document.getElementById('stat-record-imports').textContent = s.today_record_imports;
-          document.getElementById('stat-event-dropped').textContent = s.event_dropped;
-          const successfulTasks = Math.max(0, s.total_tasks_processed - s.total_tasks_failed - s.total_tasks_timed_out);
-          const successRate = s.total_tasks_processed ? (successfulTasks / s.total_tasks_processed * 100) : 100;
-          document.getElementById('summary-uptime').textContent = s.uptime;
-          document.getElementById('summary-task-success').textContent = successRate.toFixed(1) + '%';
-          document.getElementById('summary-queue-backlog').textContent = s.image_queue_size + s.image_query_queue_size + s.web_queue_size;
-          document.getElementById('summary-process-memory').textContent = s.process_memory_mb + ' MB';
-          document.getElementById('summary-runtime').textContent = 'Python ' + s.python_version;
-          document.getElementById('summary-host').textContent = s.hostname;
-          showToast('✅ Stats refreshed', 'success');
-          btn.disabled = false;
-          btn.classList.remove('is-loading');
-          btn.removeAttribute('aria-busy');
-        })
-        .catch(err => {
-          showToast('❌ ' + err.message, 'error');
-          btn.disabled = false;
-          btn.classList.remove('is-loading');
-          btn.removeAttribute('aria-busy');
-        });
-    }
-
     function updateDXData() {
       const btn = document.getElementById('update-dxdata-btn');
       setAdminIconButtonState(btn, 'Updating and checking DXData', true);
@@ -2221,7 +2129,7 @@
 
       container.innerHTML = `
         <div style="margin-bottom: 24px;">
-          <h3 style="font-size: 14px; color: #666; margin-bottom: 12px;">📖 Read Statistics</h3>
+          <h3 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 12px;">📖 Read Statistics</h3>
           <div style="padding: 16px; border-radius: 8px;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
               <span>Total Users:</span>
@@ -2229,34 +2137,34 @@
             </div>
             <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
               <span>Read Count:</span>
-              <strong style="color: #17B169;">${stats.read_count}</strong>
+              <strong style="color: var(--jietng-success);">${stats.read_count}</strong>
             </div>
             <div style="display: flex; justify-content: space-between;">
               <span>Read Percentage:</span>
-              <strong style="color: #17B169;">${stats.read_percentage}%</strong>
+              <strong style="color: var(--jietng-success);">${stats.read_percentage}%</strong>
             </div>
 
             <!-- Progress bar -->
-            <div style="margin-top: 12px; background: #E9ECEF; height: 8px; border-radius: 4px; overflow: hidden;">
-              <div style="width: ${stats.read_percentage}%; height: 100%; background: linear-gradient(90deg, #17B169, #28C76F); transition: width 0.3s;"></div>
+            <div style="margin-top: 12px; background: var(--jietng-surface-soft); height: 8px; border-radius: 4px; overflow: hidden;">
+              <div style="width: ${stats.read_percentage}%; height: 100%; background: var(--jietng-success); transition: width 0.3s;"></div>
             </div>
           </div>
         </div>
 
         <div>
-          <h3 style="font-size: 14px; color: #666; margin-bottom: 12px;">🗳️ Voting Statistics</h3>
+          <h3 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 12px;">🗳️ Voting Statistics</h3>
           <div style="padding: 16px; border-radius: 8px;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
               <span>Support:</span>
-              <strong style="color: #17B169;">${stats.support_count} (${supportPct}%)</strong>
+              <strong style="color: var(--jietng-success);">${stats.support_count} (${supportPct}%)</strong>
             </div>
             <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
               <span>Oppose:</span>
-              <strong style="color: #FF3B30;">${stats.oppose_count} (${opposePct}%)</strong>
+              <strong style="color: var(--jietng-danger);">${stats.oppose_count} (${opposePct}%)</strong>
             </div>
             <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
               <span>No Vote:</span>
-              <strong style="color: #999;">${stats.no_vote_count}</strong>
+              <strong style="color: var(--jietng-ink-500);">${stats.no_vote_count}</strong>
             </div>
             <div style="display: flex; justify-content: space-between;">
               <span>Vote Participation:</span>
@@ -2265,8 +2173,8 @@
 
             <!-- Vote visualization -->
             <div style="margin-top: 12px; display: flex; height: 8px; border-radius: 4px; overflow: hidden;">
-              <div style="width: ${supportPct}%; background: #17B169;"></div>
-              <div style="width: ${opposePct}%; background: #FF3B30;"></div>
+              <div style="width: ${supportPct}%; background: var(--jietng-success);"></div>
+              <div style="width: ${opposePct}%; background: var(--jietng-danger);"></div>
             </div>
           </div>
         </div>
@@ -2845,135 +2753,6 @@
           showToast('✗ Network error: ' + err);
         });
     }
-
-    var _cmdLabels = {
-      // 新版命令路由（cmd.name，snake_case）
-      'b_records': 'B-Records',
-      'song_info': 'Song Info', 'plate': 'Plate',
-      'version_songs': 'Version Songs', 'level_rank_list': 'Level / Constant List',
-      'level_rank_progress': 'Level + Rank Progress',
-      'level_records': 'Level Records', 'random_song': 'Random Song',
-      // web async tasks + API 端点
-      'song-record': 'Song Record', 'song-record-id': 'Song Record (ID)',
-      'friend-rcd': 'Friend Record', 'song-info': 'Song Info (API)',
-      'progress': 'Progress (API)', 'level-list': 'Level List (API)',
-      // 历史数据（重构前事件，可能仍在 DB）
-      'b50': 'Best 50 (legacy)', 'b40': 'Best 40 (legacy)',
-      'b35': 'Best 35 (legacy)', 'b15': 'Best 15 (legacy)',
-      'ab35': 'All Best 35 (legacy)', 'ab50': 'All Best 50 (legacy)',
-      'apb50': 'AP Best 50 (legacy)', 'fdxb50': 'FDX Best 50 (legacy)',
-      'rct50': 'Recent 50 (legacy)', 'idealb50': 'Ideal Best 50 (legacy)',
-      'unknown': 'Unknown (legacy)', 'random': 'Random Song (legacy)',
-      'version-list': 'Version List (legacy)', 'record-list': 'Record List (legacy)'
-    };
-
-    function _loadDateData(date) {
-      if (!date) return;
-      var today = new Date().getFullYear() + '-' + String(new Date().getMonth()+1).padStart(2,'0') + '-' + String(new Date().getDate()).padStart(2,'0');
-      var isToday = (date === today);
-      var titleEl = document.getElementById('activity-title');
-      if (titleEl) titleEl.textContent = isToday ? "Today's Activity" : date + ' Activity';
-
-      fetch('/admin/api/hourly?date=' + date)
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-          // Hourly chart
-          var chart = document.getElementById('hourly-chart');
-          var hourly = data.hourly || [];
-          var maxV = Math.max.apply(null, hourly) || 1;
-          var html = '';
-          for (var i = 0; i < 24; i++) {
-            var v = hourly[i] || 0;
-            var opacity = (0.25 + 0.75 * v / maxV).toFixed(2);
-            var height = (10 + 90 * v / maxV).toFixed(1);
-            html += '<div title="' + i + ':00 — ' + v + '" style="background:var(--accent-color);opacity:' + opacity + ';height:' + height + '%;border-radius:3px 3px 0 0;"></div>';
-          }
-          if (chart) chart.innerHTML = html;
-
-          // Activity cards
-          var el;
-          if ((el = document.getElementById('stat-image-calls'))) el.textContent = data.image_calls || 0;
-          if ((el = document.getElementById('stat-webhook-msgs'))) el.textContent = data.webhook_msgs || 0;
-          if ((el = document.getElementById('stat-record-exports'))) el.textContent = data.record_exports || 0;
-          if ((el = document.getElementById('stat-record-imports'))) el.textContent = data.record_imports || 0;
-          if ((el = document.getElementById('stat-bindings'))) el.textContent = data.bindings || 0;
-          if ((el = document.getElementById('stat-unbinds'))) el.textContent = (data.unbinds || 0) + ' unbinds';
-          if ((el = document.getElementById('stat-sync'))) el.textContent = (data.sync_success || 0) + ' / ' + (data.sync_total || 0);
-          if ((el = document.getElementById('stat-sync-rate'))) el.textContent = (data.sync_success_rate || 0) + '% success';
-
-          // Breakdown
-          var bd = data.image_command_breakdown || [];
-          var bdChart = document.getElementById('breakdown-chart');
-          var bdTitle = document.getElementById('breakdown-title');
-          if (bdTitle) bdTitle.textContent = 'Image calls breakdown (' + (isToday ? 'today' : date) + ')';
-          if (bdChart) {
-            if (bd.length === 0) {
-              bdChart.innerHTML = '<div style="opacity:0.5;font-size:13px;">No data</div>';
-            } else {
-              var cmdMax = bd[0].count || 1;
-              var bhtml = '';
-              for (var j = 0; j < bd.length; j++) {
-                var row = bd[j];
-                var label = _cmdLabels[row.command] || row.command;
-                var pct = (row.count / cmdMax * 100).toFixed(1);
-                bhtml += '<div style="display:flex;align-items:center;gap:10px;">' +
-                  '<div style="min-width:130px;font-size:13px;">' + label + '</div>' +
-                  '<div style="flex:1;height:14px;background:var(--border-color);opacity:0.3;border-radius:4px;overflow:hidden;">' +
-                  '<div style="height:100%;background:var(--accent-color);width:' + pct + '%;border-radius:4px;"></div></div>' +
-                  '<div style="min-width:50px;text-align:right;font-weight:600;font-size:13px;">' + row.count + '</div></div>';
-              }
-              bdChart.innerHTML = bhtml;
-            }
-          }
-        })
-        .catch(function(err) { showToast('Failed to load data: ' + err); });
-    }
-
-    function initStatsInteractions() {
-      // DAU chart: hover tooltip + click to load date
-      var svg = document.getElementById('dau-svg');
-      var tooltip = document.getElementById('dau-tooltip');
-      if (svg && tooltip) {
-        svg.querySelectorAll('.dau-dot').forEach(function(dot) {
-          dot.addEventListener('mouseenter', function() {
-            var rect = svg.parentElement.getBoundingClientRect();
-            var dotRect = dot.getBoundingClientRect();
-            tooltip.textContent = this.dataset.date + ' · DAU ' + this.dataset.dau;
-            tooltip.style.display = 'block';
-            var tx = dotRect.left - rect.left + dotRect.width / 2 - tooltip.offsetWidth / 2;
-            var ty = dotRect.top - rect.top - tooltip.offsetHeight - 8;
-            tooltip.style.left = Math.max(0, Math.min(tx, rect.width - tooltip.offsetWidth)) + 'px';
-            tooltip.style.top = ty + 'px';
-            this.setAttribute('r', '6');
-          });
-          dot.addEventListener('mouseleave', function() {
-            tooltip.style.display = 'none';
-            this.setAttribute('r', '3.5');
-          });
-          dot.addEventListener('click', function() {
-            var fullDate = this.dataset.fullDate;
-            var dateInput = document.getElementById('hourly-date');
-            if (dateInput) {
-              dateInput.value = fullDate;
-              _loadDateData(fullDate);
-            }
-          });
-        });
-      }
-
-      // Hourly date picker
-      var dateInput = document.getElementById('hourly-date');
-      if (dateInput) {
-        var today = new Date().getFullYear() + '-' + String(new Date().getMonth()+1).padStart(2,'0') + '-' + String(new Date().getDate()).padStart(2,'0');
-        dateInput.value = today;
-        dateInput.max = today;
-        dateInput.addEventListener('change', function() { _loadDateData(this.value); });
-        // 页面加载时立即用本地日期刷新，避免 DB 时区与浏览器时区不一致
-        _loadDateData(today);
-      }
-    }
-
-    initStatsInteractions();
 
     let dxdataAuditReport = null;
     let dxdataAuditTimer = null;
