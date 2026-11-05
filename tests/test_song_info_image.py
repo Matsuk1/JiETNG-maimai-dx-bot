@@ -8,13 +8,15 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import AsyncMock, Mock
 
-SOURCE = Path(__file__).resolve().parents[1] / 'main.py'
-TREE = ast.parse(SOURCE.read_text())
+MAIN_SOURCE = Path(__file__).resolve().parents[1] / 'main.py'
+MAIN_TREE = ast.parse(MAIN_SOURCE.read_text())
+HANDLER_SOURCE = Path(__file__).resolve().parents[1] / 'modules' / 'commands' / 'handlers.py'
+HANDLER_TREE = ast.parse(HANDLER_SOURCE.read_text())
 
 
 class SongInfoImageTests(unittest.TestCase):
     def test_song_info_route_accepts_bare_command(self):
-        route = next(node for node in ast.walk(TREE)
+        route = next(node for node in ast.walk(MAIN_TREE)
                      if isinstance(node, ast.Call)
                      and isinstance(node.func, ast.Name) and node.func.id == 'Command'
                      and any(k.arg == 'name' and isinstance(k.value, ast.Constant)
@@ -57,7 +59,7 @@ class SongInfoImageTests(unittest.TestCase):
                          recognize_score_image_bytes=Mock(return_value={'parsed': {'title': '白ゆき'}}),
                          search_song=AsyncMock(return_value='song-result'),
                          info_error=Mock(return_value='info-error'), song_error=Mock(return_value='song-error'))
-        node = next(node for node in TREE.body if isinstance(node, ast.FunctionDef)
+        node = next(node for node in HANDLER_TREE.body if isinstance(node, ast.FunctionDef)
                     and node.name == 'cmd_song_info')
-        exec(compile(ast.Module(body=[node], type_ignores=[]), str(SOURCE), 'exec'), namespace)
+        exec(compile(ast.Module(body=[node], type_ignores=[]), str(HANDLER_SOURCE), 'exec'), namespace)
         return namespace

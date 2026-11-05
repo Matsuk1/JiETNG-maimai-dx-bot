@@ -171,17 +171,23 @@ def test_missing_token_returns_without_retry(monkeypatch, entrypoint):
     maimai.asyncio.sleep.assert_not_awaited()
 
 
-def test_rate_limit_reaches_binding_and_sync_user_message():
+def test_rate_limit_reaches_binding_and_sync_user_message(monkeypatch):
     # Load only these handlers; importing main starts production services.
     import ast
     from pathlib import Path
     from types import SimpleNamespace
     import time
     from modules.i18n import language_catalog
+    from modules import image_orchestrator
+
+    monkeypatch.setattr(
+        image_orchestrator,
+        'get_multilingual_text',
+        lambda texts, uid: texts['zh'],
+    )
 
     source = Path(__file__).resolve().parents[1] / 'main.py'
-    names = {'process_sega_credentials', '_sync_maimai_user_data',
-             'maimai_update', 'login_rate_limit_message'}
+    names = {'process_sega_credentials', '_sync_maimai_user_data', 'maimai_update'}
     nodes = [node for node in ast.parse(source.read_text()).body
              if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name in names]
     login = AsyncMock(return_value='RATE_LIMITED')
@@ -189,6 +195,7 @@ def test_rate_limit_reaches_binding_and_sync_user_message():
         DEFAULT_WEB_LANGUAGE='zh', login_to_maimai=login, time=time,
         limit_maimai_operation_duration=lambda *_: lambda func: func,
         get_user=lambda uid: {'sega_id': 'test', 'sega_pwd': 'test'},
+        login_rate_limit_message=image_orchestrator.login_rate_limit_message,
         language_catalog=language_catalog,
         get_multilingual_text=lambda texts, uid: texts['zh'], TextMessage=SimpleNamespace,
     )
