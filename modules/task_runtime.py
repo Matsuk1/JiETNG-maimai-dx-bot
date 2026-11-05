@@ -99,6 +99,31 @@ def _start_tracking(task_id, func, context, tracking, lock):
         )
 
 
+def summarize_task_activity(tracking, lock, now=None):
+    """Compact view of live tasks for the admin overview."""
+    now = now or datetime.now()
+    with lock:
+        running = [dict(item) for item in tracking.get("running", [])]
+        completed = [dict(item) for item in tracking.get("completed", [])]
+    ages = []
+    for item in running:
+        try:
+            started = datetime.strptime(item.get("started_at", ""), "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            continue
+        ages.append(max(0, int((now - started).total_seconds())))
+    last_failure = next((item for item in completed if item.get("error")), None)
+    return {
+        "running_tasks": len(running),
+        "longest_running_seconds": max(ages, default=0),
+        "last_task_failure": last_failure and {
+            "function": last_failure.get("function"),
+            "error": last_failure.get("error"),
+            "finished_at": last_failure.get("finished_at"),
+        },
+    }
+
+
 def _finish_tracking(task_id, outcome, tracking, lock, max_completed):
     if not task_id:
         return

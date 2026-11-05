@@ -21,7 +21,7 @@ _BATCH_MAX_SIZE = 100
 _BATCH_MAX_WAIT = 1.0  # 秒
 
 # get_business_stats 结果 TTL 缓存（秒）
-_STATS_CACHE_TTL = 30
+_STATS_CACHE_TTL = 60
 
 logger = logging.getLogger(__name__)
 
@@ -279,7 +279,20 @@ def _activity_stats(cursor, date_filter, args=()):
         "sync_total": sync_total,
         "sync_success": sync_success,
         "sync_success_rate": round(sync_success / sync_total * 100, 1) if sync_total else 0.0,
+        "sync_failures": _sync_failures(cursor, date_filter, args),
     }
+
+
+def _sync_failures(cursor, date_filter, args=()):
+    # JSON null 经 JSON_UNQUOTE 后是字符串 'null'
+    cursor.execute(
+        "SELECT NULLIF(JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.error')), 'null') AS reason, COUNT(*) AS cnt "
+        "FROM events WHERE event_type='sync_task' "
+        f"AND JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.success')) = 'false' AND {date_filter} "
+        "GROUP BY reason ORDER BY cnt DESC LIMIT 5",
+        args,
+    )
+    return [{"reason": reason or "Unknown", "count": count} for reason, count in cursor.fetchall()]
 
 
 def _hourly_distribution(cursor, date_filter, args=()):
@@ -311,10 +324,10 @@ _stats_cache = {"ts": 0.0, "data": None}
 
 
 def get_business_stats(force_refresh: bool = False) -> dict:
-    """带 TTL 缓存的业务指标查询（默认 30s）。force_refresh=True 跳过 TTL 检查。
+    """带 TTL 缓存的业务指标查询（默认 60s）。force_refresh=True 跳过 TTL 检查。
     DB 错误时不污染缓存；若有任何旧缓存可用则返回旧值（哪怕已过期），无缓存才返回零数据。
-    返回 dict 含 'business_stats_at'（数据真实生成时间，YYYY-MM-DD HH:MM:SS），
-    用于区分"页面渲染时间"与"业务数据快照时间"。
+    返回 dict 含 'business_stats_at'（数据真实生成时间，无可用数据时为 None）与
+    'business_stats_ok'（本次是否取到最新数据，False 时调用方看到的是旧值或零值）。
     """
     now = time.monotonic()
     if not force_refresh:
@@ -324,32 +337,34 @@ def get_business_stats(force_refresh: bool = False) -> dict:
     data, ok = _compute_business_stats()
     if ok:
         data["business_stats_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        data["business_stats_ok"] = True
         with _stats_cache_lock:
             _stats_cache["ts"] = time.monotonic()
             _stats_cache["data"] = data
         return {**data, **get_tracker_health()}
     # 失败：优先返回任何已有缓存（可能过期），否则返回零数据
     if _stats_cache["data"] is not None:
-        return {**_stats_cache["data"], **get_tracker_health()}
-    data["business_stats_at"] = (
-        datetime.now().strftime("%Y-%m-%d %H:%M:%S") + " (DB error)"
-    )
+        return {**_stats_cache["data"], "business_stats_ok": False, **get_tracker_health()}
+    data["business_stats_at"] = None
+    data["business_stats_ok"] = False
     return {**data, **get_tracker_health()}
 
 
 def _compute_business_stats() -> tuple[dict, bool]:
     """
     聚合返回业务指标。返回 (data, ok) —— ok=False 时调用方不应缓存结果。
-      dau / wau / mau / stickiness
+      dau / dau_same_time_yesterday / wau / mau / stickiness
       today_new_users / today_image_calls / today_webhook_msgs
       today_bindings / today_unbinds / today_sync_total / today_sync_success / sync_success_rate
+      today_sync_failures  (失败原因 Top 5)
       image_command_breakdown
-      dau_30d  (日期 → DAU，近 30 天)
+      dau_30d  (日期 → DAU、新用户数，近 30 天)
       hourly_today  (0-23 小时 → 调用量)
     """
     ok = True
     out = {
         "dau": 0,
+        "dau_same_time_yesterday": 0,
         "wau": 0,
         "mau": 0,
         "stickiness": 0.0,
@@ -364,6 +379,7 @@ def _compute_business_stats() -> tuple[dict, bool]:
         "today_sync_total": 0,
         "today_sync_success": 0,
         "sync_success_rate": 0.0,
+        "today_sync_failures": [],
         "image_command_breakdown": [],
         "dau_30d": [],
         "hourly_today": [0] * 24,
@@ -372,6 +388,12 @@ def _compute_business_stats() -> tuple[dict, bool]:
         with database_cursor() as (_, cursor):
 
             # DAU / WAU / MAU（active = 产生任意事件的 distinct user_id）
+            # 今日数据是部分日，昨日同一时刻才是可比的基线
+            out["dau_same_time_yesterday"] = _scalar(
+                cursor,
+                "SELECT COUNT(DISTINCT user_id) FROM events WHERE user_id IS NOT NULL "
+                "AND ts >= DATE_SUB(CURDATE(), INTERVAL 1 DAY) AND ts < DATE_SUB(NOW(), INTERVAL 1 DAY)",
+            )
             out["dau"] = _scalar(
                 cursor,
                 "SELECT COUNT(DISTINCT user_id) FROM events WHERE user_id IS NOT NULL AND ts >= CURDATE()",
@@ -388,19 +410,6 @@ def _compute_business_stats() -> tuple[dict, bool]:
                 out["stickiness"] = round(out["dau"] / out["mau"] * 100, 1)
 
             # 今日分事件统计
-            # today_new_users：今日首次有 user_bind 事件、且该 user_id 历史上从未 bind 过的 distinct 用户数
-            out["today_new_users"] = _scalar(
-                cursor,
-                """
-            SELECT COUNT(*) FROM (
-                SELECT user_id, MIN(ts) AS first_bind
-                FROM events
-                WHERE event_type='user_bind' AND user_id IS NOT NULL
-                GROUP BY user_id
-                HAVING first_bind >= CURDATE()
-            ) t
-        """,
-            )
             out["today_sync_cmd_calls"] = _scalar(
                 cursor,
                 "SELECT COUNT(*) FROM events WHERE event_type='sync_cmd' AND ts >= CURDATE()",
@@ -416,6 +425,7 @@ def _compute_business_stats() -> tuple[dict, bool]:
                 today_sync_total=activity["sync_total"],
                 today_sync_success=activity["sync_success"],
                 sync_success_rate=activity["sync_success_rate"],
+                today_sync_failures=activity["sync_failures"],
             )
             out["image_command_breakdown"] = _image_command_breakdown(
                 cursor, "ts >= CURDATE()"
@@ -430,6 +440,18 @@ def _compute_business_stats() -> tuple[dict, bool]:
             ORDER BY d
         """)
             by_date = {str(r[0]): r[1] for r in cursor.fetchall()}
+            # 新用户：首次 user_bind 落在当天、且此前从未 bind 过的 distinct 用户
+            cursor.execute("""
+            SELECT DATE(first_bind) AS d, COUNT(*) FROM (
+                SELECT user_id, MIN(ts) AS first_bind
+                FROM events
+                WHERE event_type='user_bind' AND user_id IS NOT NULL
+                GROUP BY user_id
+                HAVING first_bind >= DATE_SUB(CURDATE(), INTERVAL 29 DAY)
+            ) t
+            GROUP BY d
+        """)
+            new_by_date = {str(r[0]): r[1] for r in cursor.fetchall()}
             cursor.execute("SELECT CURDATE()")
             today = cursor.fetchone()[0]
             series = []
@@ -440,9 +462,11 @@ def _compute_business_stats() -> tuple[dict, bool]:
                         "date": d.strftime("%m-%d"),
                         "full_date": str(d),
                         "dau": by_date.get(str(d), 0),
+                        "new_users": new_by_date.get(str(d), 0),
                     }
                 )
             out["dau_30d"] = series
+            out["today_new_users"] = new_by_date.get(str(today), 0)
 
             out["hourly_today"] = _hourly_distribution(cursor, "ts >= CURDATE()")
     except Exception as e:
@@ -463,6 +487,7 @@ def get_hourly_stats(date_str):
         dict: {'hourly': [0]*24, 'image_command_breakdown': [...]}
     """
     result = {
+        "ok": True,
         "hourly": [0] * 24,
         "image_command_breakdown": [],
         "image_calls": 0,
@@ -474,6 +499,7 @@ def get_hourly_stats(date_str):
         "sync_total": 0,
         "sync_success": 0,
         "sync_success_rate": 0.0,
+        "sync_failures": [],
     }
     try:
         with database_cursor() as (_, cursor):
@@ -485,6 +511,7 @@ def get_hourly_stats(date_str):
             )
             result.update(_activity_stats(cursor, date_filter, args))
     except Exception as e:
+        result["ok"] = False
         logger.error(
             "[EventTracker] get_hourly_stats failed: date=%s error=%s", date_str, e
         )

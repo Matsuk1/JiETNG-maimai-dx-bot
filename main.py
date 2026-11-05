@@ -303,6 +303,7 @@ from modules.task_runtime import (
     cleanup_rate_limiter_tracking,
     TaskOutcome,
     discard_queued,
+    summarize_task_activity,
     execute_task,
     queue_worker,
     track_queued,
@@ -2951,11 +2952,8 @@ def _build_admin_overview_stats(force_refresh=False):
         'total_users': total_users,
         'jp_users': jp_users,
         'intl_users': intl_users,
-        'jp_percent': round((jp_users / total_users * 100) if total_users > 0 else 0, 1),
-        'intl_percent': round((intl_users / total_users * 100) if total_users > 0 else 0, 1),
         'cpu_percent': cpu_percent,
         'cpu_count_total': cpu_count,
-        'cpu_count_used': round(cpu_percent / 100 * cpu_count, 1),
         'memory_percent': round(memory.percent, 1),
         'memory_used_gb': round(memory.used / (1024**3), 1),
         'total_memory': round(memory.total / (1024**3), 1),
@@ -2963,7 +2961,6 @@ def _build_admin_overview_stats(force_refresh=False):
         'uptime': uptime_str,
         'python_version': platform.python_version(),
         'platform': f"{platform.system()} {platform.release()}",
-        'platform_short': platform.system(),
         'hostname': socket.gethostname(),
         'port': PORT,
         'image_queue_size': image_queue.qsize(),
@@ -2974,6 +2971,7 @@ def _build_admin_overview_stats(force_refresh=False):
         'total_tasks_processed': task_stats['tasks_processed'],
         'total_tasks_failed': task_stats['tasks_failed'],
         'total_tasks_timed_out': task_stats['tasks_timed_out'],
+        **summarize_task_activity(task_tracking, task_tracking_lock),
         'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     }
     stats.update(get_business_stats(force_refresh=force_refresh))
