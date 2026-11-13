@@ -112,8 +112,8 @@
   --vp-c-text-3: #8f98aa;
   --vp-home-hero-image-background-image: radial-gradient(#163563, transparent 70%);
 }
-.VPNav { background: color-mix(in srgb, var(--vp-c-bg) 88%, transparent); backdrop-filter: blur(18px) saturate(150%); }
-.VPNavBar { border-bottom-color: var(--vp-c-divider) !important; }
+.VPNav { background: color-mix(in srgb, var(--vp-c-bg) 88%, transparent); }
+.VPNavBar { border-bottom-color: var(--vp-c-divider) !important; backdrop-filter: blur(18px) saturate(150%); }
 .VPHero .name { font-weight: 850; letter-spacing: -.05em; }
 .VPHero .text { color: var(--vp-c-text-1); letter-spacing: -.04em; }
 .VPHero .tagline { max-width: 600px; color: var(--vp-c-text-2); font-size: 17px; line-height: 1.7; }
