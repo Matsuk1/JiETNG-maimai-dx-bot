@@ -2505,11 +2505,16 @@ def process_image_data(
     *,
     debug_output_dir: str | Path | None = None,
     engine_factory=None,
+    layout_override: str | None = None,
 ) -> dict[str, Any]:
     """Run the production OCR pipeline entirely in memory."""
     started_at = time.perf_counter()
     debug_images = {} if debug_output_dir is not None else None
-    metadata = crop_result_fields_in_memory(source_image, debug_images=debug_images)
+    metadata = crop_result_fields_in_memory(
+        source_image,
+        debug_images=debug_images,
+        layout_override=layout_override,
+    )
     debug_metadata = None
     debug_input = None
     if debug_output_dir is not None:

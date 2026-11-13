@@ -21,6 +21,20 @@ class CropAdapterTests(unittest.TestCase):
                 self.assertEqual(field['detector'],expected['fields'][name]['detector'])
             self.assertTrue((Path(directory)/'debug/source/debug_overlay.png').exists())
 
+    def test_dxnet_layout_override_bypasses_photo_detection(self):
+        image = Image.new('RGB', (640, 960), 'white')
+        expected = {'layout': 'dxnet', 'screen': {}, 'fields': {}}
+        with patch.object(cropper, 'is_dxnet_result_screenshot') as detect, patch.object(
+            cropper, '_dxnet_fields_in_memory', return_value=expected
+        ) as dxnet:
+            result = cropper.crop_result_fields_in_memory(
+                image,
+                layout_override='dxnet',
+            )
+        self.assertIs(result, expected)
+        detect.assert_not_called()
+        dxnet.assert_called_once()
+
 class OcrAdapterTests(unittest.TestCase):
     def test_incomplete_full_table_ocr_retries_only_missing_rows(self):
         from modules.score_recognition import ocr

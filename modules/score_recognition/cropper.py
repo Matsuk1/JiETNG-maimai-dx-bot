@@ -1303,10 +1303,17 @@ def _dxnet_fields_in_memory(image: Image.Image) -> dict:
     }
 
 
-def crop_result_fields_in_memory(source_image: Image.Image, *, debug_images: dict | None = None) -> dict:
+def crop_result_fields_in_memory(
+    source_image: Image.Image,
+    *,
+    debug_images: dict | None = None,
+    layout_override: str | None = None,
+) -> dict:
     """Crop only OCR fields without creating debug files."""
     image = ImageOps.exif_transpose(source_image).convert("RGB")
-    if is_dxnet_result_screenshot(image):
+    if layout_override not in {None, "dxnet"}:
+        raise ValueError(f"Unsupported score layout override: {layout_override}")
+    if layout_override == "dxnet" or is_dxnet_result_screenshot(image):
         if debug_images is not None:
             debug_images["screen"] = image.copy()
         return _dxnet_fields_in_memory(image)

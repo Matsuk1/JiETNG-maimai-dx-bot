@@ -1713,6 +1713,46 @@ def validate_recognized_judgement(
     raw_parsed = deepcopy(result.get("raw_parsed", result.get("parsed") or {}))
     result = _validate_recognized_judgement(result, ver, allow_ocr_alignment, preserve_input)
     result["raw_parsed"] = raw_parsed
+    source_layout = str(
+        (result.get("crop_metadata") or {}).get("layout") or ""
+    ).lower()
+    if (
+        image_bytes
+        and source_layout
+        and source_layout != "dxnet"
+        and not preserve_input
+        and not _score_is_validated(result)
+    ):
+        try:
+            fallback = recognize_score_image_bytes(
+                image_bytes,
+                ver=ver,
+                layout_override="dxnet",
+            )
+            fallback_raw = deepcopy(fallback.get("parsed") or {})
+            fallback = _validate_recognized_judgement(
+                fallback,
+                ver,
+                allow_ocr_alignment,
+                preserve_input,
+            )
+            fallback["raw_parsed"] = fallback_raw
+            if _score_is_validated(fallback):
+                logger.info(
+                    "[Recognize] DX NET OCR fallback passed after %s layout failed validation",
+                    source_layout,
+                )
+                return fallback
+            logger.info(
+                "[Recognize] DX NET OCR fallback did not pass validation; keeping %s result",
+                source_layout,
+            )
+        except Exception as exc:
+            logger.info(
+                "[Recognize] DX NET OCR fallback unavailable after %s layout: %s",
+                source_layout,
+                type(exc).__name__,
+            )
     return result
 
 
@@ -1976,6 +2016,7 @@ def recognize_score_image_bytes(
     fields: tuple[str, ...] | None = None,
     line_like_preprocess: bool = False,
     ver: str = "jp",
+    layout_override: str | None = None,
 ) -> dict[str, Any]:
     global _ENGINE_REQUEST_COUNT, _OCR_LAST_USED
     try:
@@ -2008,13 +2049,36 @@ def recognize_score_image_bytes(
                 logger.info("[Recognize] OCR lock wait: %.3fs", lock_wait_seconds)
             rss_before = _process_rss_mb()
             ocr_fields, _, process_image_data = _load_ocr_module()
-            try:
-                result = process_image_data(
+            selected_fields = tuple(fields or ocr_fields)
+
+            def process(layout=None):
+                kwargs = {"engine_factory": _engine}
+                if layout is not None:
+                    kwargs["layout_override"] = layout
+                return process_image_data(
                     image,
-                    fields or ocr_fields,
+                    selected_fields,
                     None,
-                    engine_factory=_engine,
+                    **kwargs,
                 )
+
+            try:
+                try:
+                    result = process(layout_override)
+                except Exception as primary_error:
+                    if layout_override is not None:
+                        raise
+                    from modules.score_recognition.cropper import is_dxnet_result_screenshot
+                    if is_dxnet_result_screenshot(image):
+                        raise
+                    try:
+                        result = process("dxnet")
+                    except Exception:
+                        raise primary_error
+                    logger.info(
+                        "[Recognize] DX NET OCR fallback completed after photo OCR error: %s",
+                        type(primary_error).__name__,
+                    )
             finally:
                 _OCR_LAST_USED = time.monotonic()
             _ENGINE_REQUEST_COUNT += 1

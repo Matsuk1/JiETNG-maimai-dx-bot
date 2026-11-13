@@ -100,6 +100,115 @@ def test_local_ocr_success_does_not_call_codex():
     ask.assert_not_called()
 
 
+def test_photo_ocr_exception_retries_once_with_dxnet_layout():
+    from unittest.mock import Mock
+    raw = image_bytes()
+    fallback = {'crop_metadata': {'layout': 'dxnet'}, 'parsed': {'title': 'Test'}}
+    process = Mock(side_effect=[ValueError('photo crop failed'), fallback])
+    with patch.object(recognizer, '_load_ocr_module', return_value=(('main_title',), None, process)), \
+         patch('modules.score_recognition.cropper.is_dxnet_result_screenshot', return_value=False):
+        result = recognizer.recognize_score_image_bytes(raw)
+
+    assert result is fallback
+    assert process.call_count == 2
+    assert 'layout_override' not in process.call_args_list[0].kwargs
+    assert process.call_args_list[1].kwargs['layout_override'] == 'dxnet'
+
+
+def test_dxnet_ocr_exception_is_not_retried():
+    from unittest.mock import Mock
+    raw = image_bytes()
+    process = Mock(side_effect=ValueError('dxnet crop failed'))
+    with patch.object(recognizer, '_load_ocr_module', return_value=(('main_title',), None, process)), \
+         patch('modules.score_recognition.cropper.is_dxnet_result_screenshot', return_value=True):
+        with pytest.raises(ValueError, match='dxnet crop failed'):
+            recognizer.recognize_score_image_bytes(raw)
+
+    process.assert_called_once()
+
+
+def test_failed_photo_validation_retries_dxnet_ocr_and_uses_valid_result():
+    original = {
+        'crop_metadata': {'layout': 'arcade'},
+        'parsed': {'title': 'Bad photo OCR', 'sub_judgement': {}},
+    }
+    fallback = {
+        'crop_metadata': {'layout': 'dxnet'},
+        'parsed': {'title': 'Recovered', 'sub_judgement': {}},
+    }
+    validated_fallback = {
+        **fallback,
+        'validation': {
+            'song_id': 'test',
+            'achievement_calc': {'consistent': True, 'complete': True},
+            'uncertain_cells': [],
+        },
+    }
+    with patch.object(
+        recognizer,
+        '_validate_recognized_judgement',
+        side_effect=[original, validated_fallback],
+    ), patch.object(
+        recognizer,
+        'recognize_score_image_bytes',
+        return_value=fallback,
+    ) as retry:
+        result = recognizer.validate_recognized_judgement(
+            original,
+            ver='intl',
+            image_bytes=b'original-image',
+        )
+
+    retry.assert_called_once_with(
+        b'original-image',
+        ver='intl',
+        layout_override='dxnet',
+    )
+    assert result['validation']['song_id'] == 'test'
+    assert result['raw_parsed']['title'] == 'Recovered'
+
+
+def test_failed_dxnet_validation_does_not_retry_ocr():
+    result = {
+        'crop_metadata': {'layout': 'dxnet'},
+        'parsed': {'title': 'Failed', 'sub_judgement': {}},
+    }
+    with patch.object(recognizer, 'recognize_score_image_bytes') as retry:
+        output = recognizer.validate_recognized_judgement(
+            result,
+            image_bytes=b'original-image',
+        )
+    retry.assert_not_called()
+    assert output['raw_parsed']['title'] == 'Failed'
+
+
+def test_failed_dxnet_fallback_keeps_original_photo_result():
+    original = {
+        'crop_metadata': {'layout': 'arcade'},
+        'parsed': {'title': 'Original photo OCR', 'sub_judgement': {}},
+    }
+    fallback = {
+        'crop_metadata': {'layout': 'dxnet'},
+        'parsed': {'title': 'Failed fallback', 'sub_judgement': {}},
+    }
+    with patch.object(
+        recognizer,
+        '_validate_recognized_judgement',
+        side_effect=[original, fallback],
+    ), patch.object(
+        recognizer,
+        'recognize_score_image_bytes',
+        return_value=fallback,
+    ):
+        result = recognizer.validate_recognized_judgement(
+            original,
+            image_bytes=b'original-image',
+        )
+
+    assert result['parsed']['title'] == 'Original photo OCR'
+    assert result['raw_parsed']['title'] == 'Original photo OCR'
+
+
 def test_detection_failure_without_codex_preserves_original_error():
     with patch.object(recognizer, '_load_ocr_module', side_effect=ValueError('four corners')), patch.object(
         codex_agent, 'recognize_score_with_codex', return_value=None):
