@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, AsyncIterator, Mapping, Optional, Tuple
+from typing import Any, AsyncIterator, Mapping, Optional, Tuple, Union
 
 import httpx
 
@@ -14,6 +14,13 @@ from ._http import (
     _build_headers,
     _check_response,
 )
+
+
+def _image_format(value: str) -> str:
+    normalized = str(value).strip().lower()
+    if normalized not in {"png", "base64"}:
+        raise ValueError("format must be 'png' or 'base64'")
+    return normalized
 
 
 class _BaseAsyncResource:
@@ -105,8 +112,17 @@ class AsyncSongsResource(_BaseAsyncResource):
             params["user_id"] = user_id
         return await self._client._request("GET", "/songs/search", params=params)
 
-    async def info(self, song_id: str) -> bytes:
-        return await self._client._request("GET", f"/songs/{song_id}/image", binary=True)
+    async def info(
+        self,
+        song_id: str,
+        ver: str = "jp",
+        format: str = "png",
+    ) -> Union[bytes, dict]:
+        format = _image_format(format)
+        return await self._client._request(
+            "GET", f"/songs/{song_id}/image",
+            params={"ver": ver, "format": format}, binary=format != "base64",
+        )
 
 
 class AsyncVersionsResource(_BaseAsyncResource):
@@ -121,23 +137,38 @@ class AsyncDxdataResource(_BaseAsyncResource):
 
 
 class AsyncImagesResource(_BaseAsyncResource):
-    async def user_song(self, user_id: str, song_id: str) -> bytes:
+    async def user_song(
+        self, user_id: str, song_id: str, format: str = "png",
+    ) -> Union[bytes, dict]:
+        format = _image_format(format)
         return await self._client._request(
-            "GET", f"/users/{user_id}/songs/{song_id}/image", binary=True,
+            "GET", f"/users/{user_id}/songs/{song_id}/image",
+            params={"format": format}, binary=format != "base64",
         )
 
-    async def records(self, user_id: str, command: str = "b50") -> bytes:
+    async def records(
+        self, user_id: str, command: str = "b50", format: str = "png",
+    ) -> Union[bytes, dict]:
+        format = _image_format(format)
         return await self._client._request(
             "GET", f"/users/{user_id}/image",
-            params={"command": command}, binary=True,
+            params={"command": command, "format": format}, binary=format != "base64",
         )
 
-    async def plate(self, user_id: str, title: str, filter_mode: Optional[str] = None) -> bytes:
+    async def plate(
+        self,
+        user_id: str,
+        title: str,
+        filter_mode: Optional[str] = None,
+        format: str = "png",
+    ) -> Union[bytes, dict]:
+        format = _image_format(format)
         params: dict = {"title": title}
         if filter_mode:
             params["filter"] = filter_mode
+        params["format"] = format
         return await self._client._request(
-            "GET", f"/users/{user_id}/plate", params=params, binary=True,
+            "GET", f"/users/{user_id}/plate", params=params, binary=format != "base64",
         )
 
     async def achievement(
@@ -146,14 +177,18 @@ class AsyncImagesResource(_BaseAsyncResource):
         level: str,
         rank: Optional[str] = None,
         filter_mode: Optional[str] = None,
-    ) -> bytes:
+        format: str = "png",
+    ) -> Union[bytes, dict]:
+        format = _image_format(format)
         params: dict = {"level": level}
         if rank:
             params["rank"] = rank
         if filter_mode:
             params["filter"] = filter_mode
+        params["format"] = format
         return await self._client._request(
-            "GET", f"/users/{user_id}/achievement", params=params, binary=True,
+            "GET", f"/users/{user_id}/achievement", params=params,
+            binary=format != "base64",
         )
 
 

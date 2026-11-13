@@ -48,8 +48,8 @@ POST /api/v2/users/<user_id>/sync/stream
 ```http
 GET /api/v2/users/<user_id>/image?command=b50
 GET /api/v2/users/<user_id>/songs/<song_id>/image
-GET /api/v2/users/<user_id>/plate?title=真神
-GET /api/v2/users/<user_id>/achievement?level=14%2B&rank=sss
+GET /api/v2/users/<user_id>/plate?title=真神&filter=uncleared
+GET /api/v2/users/<user_id>/achievement?level=14%2B&rank=sss&filter=unplayed
 GET /api/v2/songs/<song_id>/image?ver=jp
 GET /api/v2/users/<user_id>/export?fmt=json
 GET /api/v2/songs/search?q=ヒバナ&ver=jp&max_results=10
@@ -57,7 +57,7 @@ GET /api/v2/versions
 GET /api/v2/dxdata?ver=jp
 ```
 
-用户图片、导出需要该用户的访问权限与已保存的数据。图片默认返回 PNG，可加 `format=base64` 返回 `{ "success": true, "format": "base64", "image": "..." }`。JSON/XML 导出使用 `fmt`。`achievement` 可省略 `rank` 查看谱面列表；`plate`、`achievement` 接口不提供 LINE 的 `-uc/-up/-c` 筛选参数。
+用户图片、导出需要该用户的访问权限与已保存的数据。图片默认返回 PNG，可加 `format=base64` 返回 `{ "success": true, "format": "base64", "image": "..." }`。JSON/XML 导出使用 `fmt`。`achievement` 可省略 `rank` 查看谱面列表。`plate`、`achievement` 可传 `filter=uncleared|unplayed|cleared`，分别对应 LINE 的 `-uc`、`-up`、`-c`；非法值返回 400，筛选后无结果返回 404。
 
 `songs/search` 的 `max_results` 默认 10、范围 1–50；当前匹配器最多返回指定数量，宽泛查询可能只得到前一批候选；请缩小查询。服务器版本选择为显式 `ver` > 有权限的 `user_id` 对应版本 > `jp`。无结果返回成功且 `songs` 为空。使用搜索返回的歌曲 ID 调用歌曲图片端点。
 
@@ -158,6 +158,7 @@ curl -X POST https://jietng-endpoint.matsuk1.com/api/v2/score-recognition \
     "type_label": "DX",
     "type_icon_url": "https://maimaidx.jp/maimai-mobile/img/music_dx.png",
     "difficulty_label": "MASTER",
+    "chart_metadata_confirmed": true,
     "difficulty_style": {
       "background": "#9F51DC",
       "text": "#FFFFFF",
@@ -165,6 +166,8 @@ curl -X POST https://jietng-endpoint.matsuk1.com/api/v2/score-recognition \
     }
   },
   "validation": {
+    "chart_metadata_confirmed": true,
+    "inferred_note_count_rows": [],
     "title_match_type": "exact",
     "exact_title_match": true,
     "compared_rows": 5,
@@ -194,6 +197,7 @@ curl -X POST https://jietng-endpoint.matsuk1.com/api/v2/score-recognition \
 - `score.loss_detail` 是 Flex “详细判定”使用的普通 Note 失分数据，只列出 TAP、HOLD、SLIDE、TOUCH 中产生失分的行；百分比保留四位小数。
 - `break_detail` 是 Flex “BREAK 详细判定”使用的当前最可能 BREAK 细分结果；`loss_percentages` 和 `total_loss` 是各细分格及整行损失的达成率百分比。`candidate_count` 是当前 BREAK 行内部的细分候选数，整行由 Calc 推定时可选字段 `row_candidate_count` 表示可行的整行候选数。无法得到离散匹配时为 `{}`。
 - `metadata` 包含 Flex 标题、谱面类型图标、难度标签和难度配色，可直接用于客户端复刻当前 OCR FlexMsg。
+- `chart_metadata_confirmed` 表示谱面难度、等级和定数是否由曲库物量唯一确认；为 `false` 时 `chart.difficulty`、`chart.level`、`chart.internal_level` 为 `null`。`inferred_note_count_rows` 列出由完整 OCR 判定表补足物量的行。
 - `row_offset`、`column_offset` 表示 OCR 表格经过的行列对齐修正，`0` 表示未移动。
 - `miss_corrections` 记录根据谱面物量把 OCR MISS 从 `ocr` 修正为 `validated` 的行。
 - `achievement_calc` 记录 Calc 可接受区间及 OCR 达成率是否一致。

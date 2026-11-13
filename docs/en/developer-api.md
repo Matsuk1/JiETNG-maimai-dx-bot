@@ -48,8 +48,8 @@ Requires user access and full SEGA binding. The response is `application/x-ndjso
 ```http
 GET /api/v2/users/<user_id>/image?command=b50
 GET /api/v2/users/<user_id>/songs/<song_id>/image
-GET /api/v2/users/<user_id>/plate?title=真神
-GET /api/v2/users/<user_id>/achievement?level=14%2B&rank=sss
+GET /api/v2/users/<user_id>/plate?title=真神&filter=uncleared
+GET /api/v2/users/<user_id>/achievement?level=14%2B&rank=sss&filter=unplayed
 GET /api/v2/songs/<song_id>/image?ver=jp
 GET /api/v2/users/<user_id>/export?fmt=json
 GET /api/v2/songs/search?q=ヒバナ&ver=jp&max_results=10
@@ -57,7 +57,7 @@ GET /api/v2/versions
 GET /api/v2/dxdata?ver=jp
 ```
 
-User images/exports require access and stored data. Images default to PNG; `format=base64` returns `{ "success": true, "format": "base64", "image": "..." }`. Exports use `fmt=json` or `fmt=xml`. Omit `rank` on `achievement` for a chart list. The plate/achievement APIs do not expose LINE's `-uc/-up/-c` filters.
+User images/exports require access and stored data. Images default to PNG; `format=base64` returns `{ "success": true, "format": "base64", "image": "..." }`. Exports use `fmt=json` or `fmt=xml`. Omit `rank` on `achievement` for a chart list. Plate/achievement accept `filter=uncleared|unplayed|cleared`, corresponding to LINE's `-uc`, `-up`, and `-c`. Invalid values return 400; an empty filtered result returns 404.
 
 `songs/search` accepts `max_results` from 1–50 (default 10). The current matcher returns at most that many entries; broad queries may return only the first candidates, so refine the query. Version precedence is explicit `ver`, then an authorized `user_id`'s version, then `jp`. No matches is a successful response with empty `songs`. Use returned song IDs in song-image requests.
 
@@ -92,7 +92,8 @@ The successful JSON contains:
 - `score.achievement`: recognized achievement percentage.
 - `score.judgements`: fixed `tap`, `hold`, `slide`, `touch`, and `break` rows; each contains `critical_perfect`, `perfect`, `great`, `good`, and `miss`.
 - `score.break_detail`: the current most likely BREAK sub-grades shown by the Flex result. `candidate_count` counts sub-grade candidates within the selected BREAK row; optional `row_candidate_count` counts feasible aggregate rows when Calc inferred the entire row. It is `{}` when no discrete match is available.
-- `validation`: title match type, row/column alignment, MISS corrections, Calc range/corrections, and uncertain OCR cells.
+- `validation`: title match type, row/column alignment, MISS corrections, Calc range/corrections, uncertain OCR cells, and chart-metadata confirmation.
+- `chart_metadata_confirmed` reports whether chart difficulty, level, and internal level were uniquely confirmed from catalog note counts. When false, those three `chart` fields are `null`; `inferred_note_count_rows` lists rows whose note counts came from the complete OCR table.
 
 Example response:
 
@@ -113,6 +114,8 @@ Example response:
     "break_detail": {"critical_perfect": 20, "perfect_high": 12, "perfect_low": 1, "great_high": 0, "great_middle": 0, "great_low": 0, "good": 0, "miss": 0, "candidate_count": 1}
   },
   "validation": {
+    "chart_metadata_confirmed": true,
+    "inferred_note_count_rows": [],
     "title_match_type": "exact",
     "exact_title_match": true,
     "compared_rows": 5,

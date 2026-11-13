@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Iterator, Mapping, Optional, Tuple
+from typing import Any, Iterator, Mapping, Optional, Tuple, Union
 
 import httpx
 
@@ -14,6 +14,13 @@ from ._http import (
     _build_headers,
     _check_response,
 )
+
+
+def _image_format(value: str) -> str:
+    normalized = str(value).strip().lower()
+    if normalized not in {"png", "base64"}:
+        raise ValueError("format must be 'png' or 'base64'")
+    return normalized
 
 
 # ============================================================
@@ -133,9 +140,20 @@ class SongsResource(_BaseResource):
             params["user_id"] = user_id
         return self._client._request("GET", "/songs/search", params=params)
 
-    def info(self, song_id: str) -> dict:
+    def info(
+        self,
+        song_id: str,
+        ver: str = "jp",
+        format: str = "png",
+    ) -> Union[bytes, dict]:
         """``GET /songs/{song_id}/image`` —— 返回歌曲信息图片（PNG bytes）。"""
-        return self._client._request("GET", f"/songs/{song_id}/image", binary=True)
+        format = _image_format(format)
+        return self._client._request(
+            "GET",
+            f"/songs/{song_id}/image",
+            params={"ver": ver, "format": format},
+            binary=format != "base64",
+        )
 
 
 class VersionsResource(_BaseResource):
@@ -153,26 +171,39 @@ class DxdataResource(_BaseResource):
 class ImagesResource(_BaseResource):
     """图片生成系列（返回 PNG bytes）。"""
 
-    def user_song(self, user_id: str, song_id: str) -> bytes:
+    def user_song(self, user_id: str, song_id: str, format: str = "png") -> Union[bytes, dict]:
         """``GET /users/{user_id}/songs/{song_id}/image``"""
+        format = _image_format(format)
         return self._client._request(
-            "GET", f"/users/{user_id}/songs/{song_id}/image", binary=True,
+            "GET", f"/users/{user_id}/songs/{song_id}/image",
+            params={"format": format}, binary=format != "base64",
         )
 
-    def records(self, user_id: str, command: str = "b50") -> bytes:
+    def records(
+        self, user_id: str, command: str = "b50", format: str = "png",
+    ) -> Union[bytes, dict]:
         """``GET /users/{user_id}/image?command=…`` —— b50/rct50/apb50/… 等成绩图。"""
+        format = _image_format(format)
         return self._client._request(
             "GET", f"/users/{user_id}/image",
-            params={"command": command}, binary=True,
+            params={"command": command, "format": format}, binary=format != "base64",
         )
 
-    def plate(self, user_id: str, title: str, filter_mode: Optional[str] = None) -> bytes:
+    def plate(
+        self,
+        user_id: str,
+        title: str,
+        filter_mode: Optional[str] = None,
+        format: str = "png",
+    ) -> Union[bytes, dict]:
         """``GET /users/{user_id}/plate?title=…&filter=…``"""
+        format = _image_format(format)
         params: dict = {"title": title}
         if filter_mode:
             params["filter"] = filter_mode
+        params["format"] = format
         return self._client._request(
-            "GET", f"/users/{user_id}/plate", params=params, binary=True,
+            "GET", f"/users/{user_id}/plate", params=params, binary=format != "base64",
         )
 
     def achievement(
@@ -181,15 +212,19 @@ class ImagesResource(_BaseResource):
         level: str,
         rank: Optional[str] = None,
         filter_mode: Optional[str] = None,
-    ) -> bytes:
+        format: str = "png",
+    ) -> Union[bytes, dict]:
         """``GET /users/{user_id}/achievement?level=…&rank=…&filter=…``"""
+        format = _image_format(format)
         params: dict = {"level": level}
         if rank:
             params["rank"] = rank
         if filter_mode:
             params["filter"] = filter_mode
+        params["format"] = format
         return self._client._request(
-            "GET", f"/users/{user_id}/achievement", params=params, binary=True,
+            "GET", f"/users/{user_id}/achievement", params=params,
+            binary=format != "base64",
         )
 
 

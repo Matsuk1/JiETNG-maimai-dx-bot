@@ -24,6 +24,7 @@ from modules.record_manager import (
     PLATE_RULES,
     PROGRESS_RANKS,
     SUPPORTED_PROGRESS_LEVELS,
+    filter_progress_entries,
     read_record,
 )
 from modules.images.songs import song_info_generate
@@ -42,6 +43,7 @@ class ImageApiServices:
 
 
 _services: ImageApiServices | None = None
+PROGRESS_FILTER_MODES = {"uncleared", "unplayed", "cleared"}
 
 
 def configure_image_api(*, background_filter, generate_profile, select_records):
@@ -83,6 +85,23 @@ def _authorized_user(user_id, token_id, rate_key):
     if "personal_info" not in result:
         return None, (jsonify({"error": "User info not found, please sync first"}), 404)
     return result, None
+
+
+def _progress_filter():
+    value = request.args.get("filter")
+    if value is None or not value.strip():
+        return None, None
+    mode = value.strip().lower()
+    if mode not in PROGRESS_FILTER_MODES:
+        supported = ", ".join(sorted(PROGRESS_FILTER_MODES))
+        return None, (
+            jsonify({
+                "error": "Invalid parameter",
+                "message": f"Parameter 'filter' must be one of: {supported}",
+            }),
+            400,
+        )
+    return mode, None
 
 
 @image_api.route("/api/v2/songs/<song_id>/image", methods=["GET"])
@@ -219,6 +238,9 @@ def api_v2_generate_plate(user_id):
         return jsonify({"error": "title parameter is required"}), 400
     if len(title) not in (2, 3):
         return jsonify({"error": "Invalid title length, must be 2 or 3 characters"}), 400
+    filter_mode, error = _progress_filter()
+    if error:
+        return error
 
     ver = _udata.get("version", "jp")
     song_record = read_record(user_id, ver=ver)
@@ -242,6 +264,9 @@ def api_v2_generate_plate(user_id):
     target_type, target_icon = PLATE_RULES[plate_type]
     target_data, target_num = build_plate_entries(
         songs, version_records, target_version, target_type, target_icon, ver)
+    target_data = filter_progress_entries(target_data, filter_mode)
+    if not target_data:
+        return jsonify({"error": "No matching data"}), 404
     plate_img = generate_plate_image(target_data, title, headers=target_num)
 
     profile_img = _services.generate_profile(_udata['personal_info'], user_id=user_id)
@@ -277,6 +302,9 @@ def api_v2_generate_achievement(user_id):
         return jsonify({"error": f"Invalid level, supported: {list(SUPPORTED_PROGRESS_LEVELS)}"}), 400
     if rank is not None and rank not in PROGRESS_RANKS:
         return jsonify({"error": f"Invalid rank, supported: {list(PROGRESS_RANKS)}"}), 400
+    filter_mode, error = _progress_filter()
+    if error:
+        return error
 
     ver = _udata.get("version", "jp")
     song_record = read_record(user_id, ver=ver)
@@ -286,6 +314,9 @@ def api_v2_generate_achievement(user_id):
     songs, _ = read_dxdata(ver)
     target_data, stats = build_progress_entries(
         songs, song_record, level, None, rank, ver, PROGRESS_RANKS.get(rank))
+    if not target_data:
+        return jsonify({"error": "No matching data"}), 404
+    target_data = filter_progress_entries(target_data, filter_mode)
     if not target_data:
         return jsonify({"error": "No matching data"}), 404
 

@@ -36,7 +36,9 @@ def register_song_commands(bot: JiETNGDiscordBot) -> None:
         lang = interaction_lang(interaction)
         songs, payload = await _search_songs(bot, query, ver)
         if len(songs) != 1:
-            view = SongChoiceView(bot, songs, mode="song", owner_id=None) if songs else None
+            view = SongChoiceView(
+                bot, songs, mode="song", owner_id=None, ver=ver,
+            ) if songs else None
             await interaction.response.send_message(
                 song_search_summary(payload, lang),
                 view=view,
@@ -47,7 +49,7 @@ def register_song_commands(bot: JiETNGDiscordBot) -> None:
         song_id = await _single_song_id(interaction, songs[0], lang)
         if song_id is None:
             return
-        image = await bot.jietng.songs.info(song_id)
+        image = await bot.jietng.songs.info(song_id, ver=ver)
         await interaction.followup.send(
             file=attachment(image, f"jietng-song-{safe_filename_part(song_id)}.png")
         )
@@ -55,16 +57,17 @@ def register_song_commands(bot: JiETNGDiscordBot) -> None:
     @bot.tree.command(name="record", description=localized_description("cmd.record.desc"))
     @app_commands.describe(
         query=localized_description("param.query"),
-        ver=localized_description("param.ver"),
     )
     async def record(
         interaction: discord.Interaction,
         query: str,
-        ver: ServerVersion = "jp",
     ) -> None:
         lang = interaction_lang(interaction)
-        songs, payload = await _search_songs(bot, query, ver)
         user_id = resolve_user_id(bot, interaction)
+        payload = await bot.jietng.songs.search(
+            query.strip(), user_id=user_id, max_results=6,
+        )
+        songs = payload.get("songs") or []
         if len(songs) != 1:
             view = (
                 SongChoiceView(

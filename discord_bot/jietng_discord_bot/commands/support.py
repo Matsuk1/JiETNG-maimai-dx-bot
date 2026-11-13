@@ -308,6 +308,7 @@ class SongChoiceButton(discord.ui.Button):
         mode: str,
         owner_id: Optional[int],
         user_id: Optional[str] = None,
+        ver: str = "jp",
         row: Optional[int] = None,
     ):
         super().__init__(
@@ -320,6 +321,7 @@ class SongChoiceButton(discord.ui.Button):
         self.mode = mode
         self.owner_id = owner_id
         self.user_id = user_id
+        self.ver = ver
 
     async def callback(self, interaction: discord.Interaction) -> None:
         lang = interaction_lang(interaction)
@@ -340,7 +342,7 @@ class SongChoiceButton(discord.ui.Button):
                 image = await self.bot.jietng.images.user_song(self.user_id, song_id)
                 filename = f"jietng-{safe_filename_part(self.user_id)}-song-{safe_filename_part(song_id)}.png"
             else:
-                image = await self.bot.jietng.songs.info(song_id)
+                image = await self.bot.jietng.songs.info(song_id, ver=self.ver)
                 filename = f"jietng-song-{safe_filename_part(song_id)}.png"
         except APIError as exc:
             await interaction.followup.send(display_error(exc, lang), ephemeral=True)
@@ -357,6 +359,7 @@ class SongChoiceView(discord.ui.View):
         mode: str,
         owner_id: Optional[int],
         user_id: Optional[str] = None,
+        ver: str = "jp",
     ):
         super().__init__(timeout=180)
         for index, song in enumerate(songs[:10]):
@@ -367,6 +370,7 @@ class SongChoiceView(discord.ui.View):
                     mode=mode,
                     owner_id=owner_id,
                     user_id=user_id,
+                    ver=ver,
                     row=index // 5,
                 )
             )

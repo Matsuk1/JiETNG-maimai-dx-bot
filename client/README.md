@@ -32,6 +32,10 @@ with jietngClient(token="your_token") as client:
     with open("b50.png", "wb") as f:
         f.write(png)
 
+    # 图片接口也可直接取得 API 的 base64 JSON 响应
+    encoded = client.images.records("U1234567890", format="base64")
+    print(encoded["format"], len(encoded["image"]))
+
     # 流式同步：先收到 accepted，结束时收到 completed / failed
     for event in client.users.sync_stream("U1234567890"):
         print(event["event"], event.get("message"))
@@ -101,7 +105,7 @@ asyncio.run(main())
 | `client.imports` | `records` |
 | `client.score_recognition` | `recognize / recognize_image` |
 
-所有方法的形参 / 返回结构与 [JiETNG API 文档](https://jietng.matsuk1.com/developer-api) 一一对应。
+所有方法的形参 / 返回结构与 [JiETNG API 文档](https://jietng.matsuk1.com/developer-api) 对应；图片方法默认返回 PNG bytes，传入 `format="base64"` 时返回 API 的 base64 JSON 对象。
 
 ## 错误处理
 

@@ -48,8 +48,8 @@ POST /api/v2/users/<user_id>/sync/stream
 ```http
 GET /api/v2/users/<user_id>/image?command=b50
 GET /api/v2/users/<user_id>/songs/<song_id>/image
-GET /api/v2/users/<user_id>/plate?title=真神
-GET /api/v2/users/<user_id>/achievement?level=14%2B&rank=sss
+GET /api/v2/users/<user_id>/plate?title=真神&filter=uncleared
+GET /api/v2/users/<user_id>/achievement?level=14%2B&rank=sss&filter=unplayed
 GET /api/v2/songs/<song_id>/image?ver=jp
 GET /api/v2/users/<user_id>/export?fmt=json
 GET /api/v2/songs/search?q=ヒバナ&ver=jp&max_results=10
@@ -57,7 +57,7 @@ GET /api/v2/versions
 GET /api/v2/dxdata?ver=jp
 ```
 
-ユーザー画像・エクスポートには権限と保存済みデータが必要です。画像は既定で PNG。`format=base64` なら `{ "success": true, "format": "base64", "image": "..." }`。エクスポートは `fmt=json` / `fmt=xml`。`achievement` は `rank` を省略すると譜面一覧です。plate/achievement API には LINE の `-uc/-up/-c` フィルターはありません。
+ユーザー画像・エクスポートには権限と保存済みデータが必要です。画像は既定で PNG。`format=base64` なら `{ "success": true, "format": "base64", "image": "..." }`。エクスポートは `fmt=json` / `fmt=xml`。`achievement` は `rank` を省略すると譜面一覧です。plate/achievement は `filter=uncleared|unplayed|cleared` を受け付け、LINE の `-uc`、`-up`、`-c` に対応します。不正値は 400、フィルター後に候補がない場合は 404 です。
 
 `songs/search` の `max_results` は 1–50、既定 10。現マッチャーは指定件数まで返すため、広い検索では先頭候補のみになることがあります。検索を絞ってください。バージョンは明示 `ver` > 権限のある `user_id` のバージョン > `jp`。候補なしは空の `songs` を持つ成功応答です。取得した曲 ID を楽曲画像に使用します。
 
@@ -92,7 +92,8 @@ curl -X POST https://jietng-endpoint.matsuk1.com/api/v2/score-recognition \
 - `score.achievement`：達成率。
 - `score.judgements`：`tap`、`hold`、`slide`、`touch`、`break`。各行は `critical_perfect`、`perfect`、`great`、`good`、`miss` を必ず含みます。
 - `score.break_detail`：Flex で表示する現在最も可能性の高い BREAK 詳細判定です。`candidate_count` は選択した BREAK 行内の詳細候補数、Calc が行全体を推定した場合の任意フィールド `row_candidate_count` は行候補数です。離散的に一致する候補がない場合は `{}` です。
-- `validation`：曲名一致方式、行列補正、MISS 補正、Calc 検証・補正、不確実な OCR セル。
+- `validation`：曲名一致方式、行列補正、MISS 補正、Calc 検証・補正、不確実な OCR セル、譜面メタデータの確認状態。
+- `chart_metadata_confirmed` は難易度・レベル・譜面定数が曲庫の物量から一意に確認できたかを示します。`false` の場合、この 3 つの `chart` フィールドは `null` です。`inferred_note_count_rows` は完全な OCR 判定表から物量を補った行です。
 
 ```json
 {
@@ -111,6 +112,8 @@ curl -X POST https://jietng-endpoint.matsuk1.com/api/v2/score-recognition \
     "break_detail": {"critical_perfect": 20, "perfect_high": 12, "perfect_low": 1, "great_high": 0, "great_middle": 0, "great_low": 0, "good": 0, "miss": 0, "candidate_count": 1}
   },
   "validation": {
+    "chart_metadata_confirmed": true,
+    "inferred_note_count_rows": [],
     "title_match_type": "exact",
     "exact_title_match": true,
     "compared_rows": 5,

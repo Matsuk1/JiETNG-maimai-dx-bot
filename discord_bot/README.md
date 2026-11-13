@@ -54,7 +54,7 @@ python -m jietng_discord_bot
 - `/achievement level [rank] [filter_mode]` sends a level / achievement image.
 - `/plate title [filter_mode]` sends a plate image.
 - `/song query [ver]` searches by song title / alias; one match sends the song info image, multiple matches send public selection buttons.
-- `/record query [ver]` searches by song title / alias; one match sends your single-song record image, multiple matches send selection buttons.
+- `/record query` searches using the linked user's saved JP/INTL server version; one match sends your single-song record image, multiple matches send selection buttons.
 - `/rec image [ver]` uploads a JPEG, PNG, or WebP result image through the JiETNG SDK 0.3 recognition API and displays the matched song, chart, judgements, BREAK details, and validation metadata.
 - `/export format` downloads your processed records as JSON or XML.
 - `/settings` creates your JiETNG settings button.
