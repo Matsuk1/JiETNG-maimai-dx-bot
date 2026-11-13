@@ -32,6 +32,10 @@ _MAIN_SCREEN_MODEL_UNAVAILABLE = False
 _MODEL_LOCK = threading.Lock()
 _MODELS_LAST_USED = 0.0
 CROPPER_IDLE_SECONDS = max(0, float(os.getenv("JIETNG_CROPPER_IDLE_SECONDS", "300")))
+PHOTO_CROP_MIN_KEYPOINT_CONFIDENCE = max(
+    0.0,
+    min(1.0, float(os.getenv("JIETNG_PHOTO_CROP_MIN_KEYPOINT_CONFIDENCE", "0.55"))),
+)
 
 
 def _warm_cropper_predictor(loader) -> None:
@@ -124,6 +128,10 @@ class Box:
 
     def to_tuple(self) -> tuple[int, int, int, int]:
         return self.left, self.top, self.right, self.bottom
+
+
+class LowConfidencePhotoCropError(ValueError):
+    """The photo pose model found a crop, but its corner points were unreliable."""
 
 
 def _sample_mask_points(
@@ -425,6 +433,7 @@ def _main_screen_pose_image(image: Image.Image) -> tuple[Box | None, Image.Image
     width, height = image.size
     image_area = max(1, width * height)
     candidates: list[tuple[float, Box, Image.Image]] = []
+    saw_low_confidence_candidate = False
     for index, raw_points in enumerate(points_tensor):
         points = np.asarray(raw_points.cpu(), dtype=np.float32)
         if points.shape != (4, 2) or not np.isfinite(points).all():
@@ -437,6 +446,22 @@ def _main_screen_pose_image(image: Image.Image) -> tuple[Box | None, Image.Image
         if aspect < 1.8 or area_ratio < 0.025:
             continue
 
+        if confidence_tensor is not None:
+            point_confidences = np.asarray(
+                confidence_tensor[index].cpu(),
+                dtype=np.float32,
+            ).reshape(-1)
+            if (
+                len(point_confidences) != 4
+                or not np.isfinite(point_confidences).all()
+                or float(point_confidences.min()) < PHOTO_CROP_MIN_KEYPOINT_CONFIDENCE
+            ):
+                saw_low_confidence_candidate = True
+                continue
+            confidence = float(point_confidences.mean())
+        else:
+            confidence = 0.5
+
         warped = _warp_main_screen_quad(image, points)
         if warped is None:
             continue
@@ -444,14 +469,12 @@ def _main_screen_pose_image(image: Image.Image) -> tuple[Box | None, Image.Image
         if warped_aspect < 1.8:
             continue
 
-        if confidence_tensor is not None:
-            confidence = float(np.asarray(confidence_tensor[index].cpu(), dtype=np.float32).mean())
-        else:
-            confidence = 0.5
         score = confidence * 10.0 + min(aspect, 5.0) * 0.35 + min(area_ratio * 10.0, 2.0)
         candidates.append((score, box, warped))
 
     if not candidates:
+        if saw_low_confidence_candidate:
+            raise LowConfidencePhotoCropError("main-screen keypoint confidence is too low")
         return None, None
     _, box, warped = max(candidates, key=lambda item: item[0])
     return box, warped
@@ -499,6 +522,7 @@ def _cropper_pose_table(image: Image.Image) -> tuple[Box | None, Image.Image | N
     confidence_tensor = getattr(keypoints, "conf", None)
     width, height = image.size
     candidates: list[tuple[float, Box, Image.Image]] = []
+    saw_low_confidence_candidate = False
     for index, raw_points in enumerate(points_tensor):
         points = np.asarray(raw_points.cpu(), dtype=np.float32)
         if points.shape != (4, 2) or not np.isfinite(points).all():
@@ -511,18 +535,32 @@ def _cropper_pose_table(image: Image.Image) -> tuple[Box | None, Image.Image | N
         if center_y_ratio > 0.42 or aspect < 1.45:
             continue
 
+        if confidence_tensor is not None:
+            point_confidences = np.asarray(
+                confidence_tensor[index].cpu(),
+                dtype=np.float32,
+            ).reshape(-1)
+            if (
+                len(point_confidences) != 4
+                or not np.isfinite(point_confidences).all()
+                or float(point_confidences.min()) < PHOTO_CROP_MIN_KEYPOINT_CONFIDENCE
+            ):
+                saw_low_confidence_candidate = True
+                continue
+            confidence = float(point_confidences.mean())
+        else:
+            confidence = 0.5
+
         warped = _warp_quad(image, points)
         if warped is None:
             continue
 
-        if confidence_tensor is not None:
-            confidence = float(np.asarray(confidence_tensor[index].cpu(), dtype=np.float32).mean())
-        else:
-            confidence = 0.5
         score = confidence * 10.0 + (1.0 - abs(center_y_ratio - 0.14)) + min(aspect, 4.0) * 0.25
         candidates.append((score, box, warped))
 
     if not candidates:
+        if saw_low_confidence_candidate:
+            raise LowConfidencePhotoCropError("judgement-table keypoint confidence is too low")
         return None, None
     _, box, warped = max(candidates, key=lambda item: item[0])
     return box, warped
@@ -1075,20 +1113,6 @@ def is_dxnet_result_screenshot(image: Image.Image) -> bool:
     width, height = image.size
     if width <= 0 or height / width < 1.2:
         return False
-    sample = image.resize((80, 80), Image.Resampling.BILINEAR)
-    pixels = sample.load()
-    vivid_cyan = sum(
-        1
-        for y in range(sample.height)
-        for x in range(sample.width)
-        if (
-            pixels[x, y][0] < 120
-            and pixels[x, y][1] > 140
-            and pixels[x, y][2] > 180
-        )
-    )
-    if vivid_cyan / (sample.width * sample.height) < 0.08:
-        return False
     judgement_table = detect_dxnet_judgement_table(image)
     return (
         judgement_table is not None
@@ -1319,7 +1343,15 @@ def crop_result_fields_in_memory(
         return _dxnet_fields_in_memory(image)
     screen = detect_result_screen(image)
     main_source = image
-    main_screen_box, main_screen_image = detect_main_screen_with_cropper_model(image)
+    try:
+        main_screen_box, main_screen_image = detect_main_screen_with_cropper_model(image)
+    except LowConfidencePhotoCropError:
+        logging.getLogger(__name__).info(
+            "[Recognize] Main-screen crop confidence too low; switching directly to DX NET"
+        )
+        if debug_images is not None:
+            debug_images["screen"] = image.copy()
+        return _dxnet_fields_in_memory(image)
     if main_screen_image is not None:
         main_source = main_screen_image
         screen = Box(0, 0, main_source.width, main_source.height)
@@ -1336,7 +1368,15 @@ def crop_result_fields_in_memory(
     sub_judgement_image = None
     sub_judgement_detector = "blue_grid"
     if not main_screen_only:
-        candidate, _, detector, warped_table = detect_sub_judgement_table_with_cropper_model(image)
+        try:
+            candidate, _, detector, warped_table = detect_sub_judgement_table_with_cropper_model(image)
+        except LowConfidencePhotoCropError:
+            logging.getLogger(__name__).info(
+                "[Recognize] Judgement-table crop confidence too low; switching directly to DX NET"
+            )
+            if debug_images is not None:
+                debug_images["screen"] = image.copy()
+            return _dxnet_fields_in_memory(image)
         if is_complete_sub_judgement_table(candidate):
             sub_judgement_table = candidate
             sub_judgement_image = warped_table

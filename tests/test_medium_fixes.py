@@ -137,6 +137,48 @@ assert.equal(sent.length, 1);
 
 
 class CropFallbackTests(unittest.TestCase):
+    def test_dxnet_detection_uses_lower_judgement_table_despite_white_bars(self):
+        image = Image.new("RGB", (500, 1000), "white")
+        lower_table = cropper.Box(20, 600, 480, 760)
+        with patch.object(cropper, "detect_dxnet_judgement_table", return_value=lower_table):
+            self.assertTrue(cropper.is_dxnet_result_screenshot(image))
+
+        upper_table = cropper.Box(20, 100, 480, 260)
+        with patch.object(cropper, "detect_dxnet_judgement_table", return_value=upper_table):
+            self.assertFalse(cropper.is_dxnet_result_screenshot(image))
+
+    def test_low_confidence_main_screen_points_are_rejected(self):
+        image = Image.new("RGB", (500, 1000), "black")
+        points = Mock()
+        points.cpu.return_value = [[50, 400], [450, 400], [450, 550], [50, 550]]
+        confidence = Mock()
+        confidence.cpu.return_value = [0.99, 0.98, 0.54, 0.99]
+        prediction = Mock()
+        prediction.keypoints.xy = [points]
+        prediction.keypoints.conf = [confidence]
+        model = Mock()
+        model.predict.return_value = [prediction]
+
+        with patch.object(cropper, "_load_main_screen_model", return_value=model):
+            with self.assertRaises(cropper.LowConfidencePhotoCropError):
+                cropper.detect_main_screen_with_cropper_model(image)
+
+    def test_low_confidence_photo_crop_switches_directly_to_dxnet(self):
+        image = Image.new("RGB", (500, 1000), "white")
+        expected = {"layout": "dxnet", "screen": {}, "fields": {}}
+        with patch.object(cropper, "is_dxnet_result_screenshot", return_value=False), \
+             patch.object(cropper, "detect_result_screen"), \
+             patch.object(
+                 cropper,
+                 "detect_main_screen_with_cropper_model",
+                 side_effect=cropper.LowConfidencePhotoCropError("low confidence"),
+             ), \
+             patch.object(cropper, "_dxnet_fields_in_memory", return_value=expected) as dxnet:
+            result = cropper.crop_result_fields_in_memory(image)
+
+        self.assertIs(result, expected)
+        dxnet.assert_called_once_with(image)
+
     def run_crop(self, fallback, model=None, size=(500, 1000)):
         image = Image.new("RGB", size)
         screen = cropper.Box(0, 400, 500, 900)
