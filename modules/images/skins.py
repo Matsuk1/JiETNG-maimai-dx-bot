@@ -15,8 +15,6 @@ TEMPLATES = Path(__file__).resolve().parents[2] / 'templates' / 'images'
 SKINS = TEMPLATES / 'skins'
 DEFAULT_USER_SKIN = 'origin'
 LEGACY_USER_SKINS = {'claude', 'default'}
-_BASE_SKIN_CONFIG = dict(id='default', label='Paper', uses_background=True,
-                         templates=[])
 
 
 def available_skins():
@@ -38,9 +36,11 @@ def available_skins():
     return skins
 
 
-def resolve_template(name, skin='default'):
-    """Resolve only registered overrides; always retain the default fallback."""
-    if skin != 'default' and any(item['id'] == skin for item in available_skins()):
+def resolve_template(name, skin=DEFAULT_USER_SKIN):
+    """Resolve registered overrides; Origin is the shared base template set."""
+    if skin in LEGACY_USER_SKINS:
+        skin = DEFAULT_USER_SKIN
+    if skin != DEFAULT_USER_SKIN and any(item['id'] == skin for item in available_skins()):
         if Path(name).name == name and (SKINS / skin / name).is_file():
             return f'skins/{skin}/{name}'
     return name
@@ -48,7 +48,7 @@ def resolve_template(name, skin='default'):
 
 # Template expansion happens on the caller thread before screenshot submission.
 # ContextVar keeps nested generators in one skin without cross-request leakage.
-_current_skin = ContextVar('image_skin', default='default')
+_current_skin = ContextVar('image_skin', default=DEFAULT_USER_SKIN)
 
 
 def current_skin():
@@ -75,14 +75,11 @@ def skinnable(function):
 
 def skin_config(skin=None):
     selected = current_skin() if skin is None else skin
-    if selected == 'default':
-        return _BASE_SKIN_CONFIG
-    if selected == 'claude':
+    if selected in LEGACY_USER_SKINS:
         selected = DEFAULT_USER_SKIN
     skins = available_skins()
     return next((item for item in skins if item['id'] == selected),
-                next((item for item in skins if item['id'] == DEFAULT_USER_SKIN),
-                     _BASE_SKIN_CONFIG))
+                next(item for item in skins if item['id'] == DEFAULT_USER_SKIN))
 
 
 def normalize_skin(skin):

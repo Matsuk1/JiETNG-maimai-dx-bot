@@ -78,7 +78,7 @@ def test_user_without_skin_uses_origin():
 def test_origin_has_no_claude_branding():
     skin = next(item for item in available_skins() if item['id'] == 'origin')
     assert skin['label'] == 'Origin'
-    records = (ROOT / 'templates/images/skins/origin/records.html').read_text()
+    records = (ROOT / 'templates/images/records.html').read_text()
     assert 'CLAUDE' not in records
 
 
@@ -100,7 +100,7 @@ def test_async_request_skin_and_nested_target_are_isolated():
 
     with patch('modules.images.skins.user_skin',side_effect=lambda uid:'glass' if uid=='sender' else 'default'):
         assert asyncio.run(run())==[('glass',)*3,('default',)*3]
-    assert current_skin()=='default'
+    assert current_skin()=='origin'
 
 
 def test_background_disabled_skin_does_not_read_background_files():

@@ -18,7 +18,7 @@ from modules.images import records as html_cards
 from modules.images import cache as image_cache
 from modules.images import records as records
 from modules.images import songs as songs
-from modules.images.skins import available_skins, use_skin
+from modules.images.skins import DEFAULT_USER_SKIN, available_skins, use_skin
 from modules.images.renderer import file_uri, image_uri, render_template
 from modules.images.composition import compose_generated_images
 
@@ -55,7 +55,7 @@ def clean_data(value):
     return value
 
 
-def render_case(kind, data, skin="default", background=False):
+def render_case(kind, data, skin=DEFAULT_USER_SKIN, background=False):
     """Use production generators in this isolated development process."""
     data = clean_data(copy.deepcopy(data))
     sample_bg = {'files': ['kaf.jpg'], 'blur': 12, 'overlay': 60} if background else None
@@ -178,7 +178,7 @@ def create_app():
             return jsonify(error='示例数据必须是 JSON 对象'), 400
         started = time.perf_counter()
         try:
-            png, size = render_case(kind, data, skin=request.args.get('skin', 'default'),
+            png, size = render_case(kind, data, skin=request.args.get('skin', DEFAULT_USER_SKIN),
                                     background=request.args.get('background') == 'sample')
         except Exception as exc:
             app.logger.warning('Preview failed: %s: %s', type(exc).__name__, exc)

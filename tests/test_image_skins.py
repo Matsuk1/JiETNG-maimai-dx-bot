@@ -8,9 +8,14 @@ from modules.images.renderer import template
 def test_retired_default_skin_is_replaced_by_origin():
     skins = image_skins.available_skins()
     assert {skin['id'] for skin in skins} == {'origin', 'glass'}
+    assert image_skins.current_skin() == 'origin'
+    assert image_skins.resolve_template('records.html', image_skins.current_skin()) == \
+        'records.html'
     assert image_skins.normalize_skin('default') == 'origin'
     assert image_skins.normalize_skin('claude') == 'origin'
-    assert image_skins.skin_config('default')['id'] == 'default'
+    assert image_skins.skin_config('default')['id'] == 'origin'
+    assert image_skins.resolve_template('records.html', 'default') == 'records.html'
+    assert not (image_skins.SKINS / 'origin' / 'records.html').exists()
 
 
 def test_registered_overrides_fallback_and_path_safety(tmp_path):
@@ -96,7 +101,7 @@ def test_nested_skin_scope_is_isolated_and_restored_on_error():
 
     with ThreadPoolExecutor(max_workers=4) as pool:
         assert list(pool.map(render, ['glass', 'default'] * 8)) == ['glass', 'default'] * 8
-    assert current_skin() == 'default'
+    assert current_skin() == 'origin'
 
 
 def test_glass_cover_dimensions_inside_version_grid():

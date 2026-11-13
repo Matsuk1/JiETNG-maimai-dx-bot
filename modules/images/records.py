@@ -1,5 +1,5 @@
 """Record, cover, progress and score image rendering."""
-from modules.images.skins import skinnable
+from modules.images.skins import DEFAULT_USER_SKIN, skinnable
 from pathlib import Path
 import logging
 import os
@@ -557,7 +557,7 @@ def thumbnail_html(song, inline=False, skin=None, language="ja"):
     # Thumbnail owns the rounded crop. Use the plain generated cover so its
     # artwork and built-in type badge fill that crop without a second glass frame.
     cover = '' if inline else cover_html(song.get('cover_url'), song.get('type'),
-                                         cover_name=song.get('cover_name'), skin='default')
+                                         cover_name=song.get('cover_name'), skin=DEFAULT_USER_SKIN)
     return template('thumbnail.html', skin=skin, song=song, inline=inline, icons=icons, cover=cover,
                     play_count_label=_image_text('records.play_count', language),
                     color=difficulty_color(song.get('difficulty')),

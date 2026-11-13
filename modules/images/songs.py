@@ -1,4 +1,4 @@
-from modules.images.skins import skinnable
+from modules.images.skins import DEFAULT_USER_SKIN, skinnable
 import os
 import re
 
@@ -32,7 +32,7 @@ def song_info_generate(
 def _render_basic_info_image(song_json, language="en"):
     from modules.images.renderer import render_template
     cover = cover_html(song_json.get("cover_url"), song_json.get("type"),
-                       cover_name=song_json.get("cover_name"), skin="default")
+                       cover_name=song_json.get("cover_name"), skin=DEFAULT_USER_SKIN)
     info = [(_song_text(key, language), song_json.get(key, default))
             for key, default in (("artist", "UNKNOWN"), ("category", "UNKNOWN"),
                                  ("bpm", "-"), ("version", "UNKNOWN"))]

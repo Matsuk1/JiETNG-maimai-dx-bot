@@ -1,4 +1,6 @@
-<div class="profile-card" style="
+{# Shared coordinates and assets; Origin palette only. #}
+<div class="cl-profile">
+  <div class="profile-card" style="
   position: relative;
   width: 1363px;
   height: 218px;
@@ -73,3 +75,26 @@
     paint-order: stroke fill;
   ">{{ user.trophy_content }}</div>
 </div>
+
+</div>
+<style>
+  .cl-profile {
+    --profile-name-border: #E6E1D6;
+    --profile-name-background: #FFFFFF;
+    color: #141413;
+  }
+
+  .cl-profile .profile-card {
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .cl-profile .profile-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 2px solid #E6E1D6;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+</style>

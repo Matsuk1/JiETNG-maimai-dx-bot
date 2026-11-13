@@ -125,7 +125,7 @@ class ImageDataTests(unittest.TestCase):
         with patch('modules.images.records.icon_uri', side_effect=lambda v,*_: 'data:' + v), \
              patch('modules.images.records.cover_html', return_value='') as cover:
             html = thumbnail_html(record)
-        self.assertEqual(cover.call_args.kwargs['skin'], 'default')
+        self.assertEqual(cover.call_args.kwargs['skin'], 'origin')
         self.assertIn('data:fcp', html)
         self.assertIn('data:fdx', html)
         self.assertIn('&lt;img src=x&gt;', html)
