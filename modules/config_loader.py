@@ -386,5 +386,6 @@ def read_dxdata(ver="jp", *, include_generated=True, include_manual=True):
 
 def load_user():
     """初始化用户表"""
-    from modules.user_db import init_users_table
+    from modules.user_db import init_users_table, migrate_legacy_image_skins
     init_users_table()
+    migrate_legacy_image_skins()

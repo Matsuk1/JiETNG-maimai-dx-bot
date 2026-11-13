@@ -50,6 +50,25 @@ class SessionTests(unittest.TestCase):
 
 
 class UserUpdateTests(unittest.TestCase):
+    def test_legacy_image_skin_values_are_migrated_to_origin(self):
+        cursor = Mock(rowcount=12)
+
+        @contextmanager
+        def database_cursor(**kwargs):
+            self.assertTrue(kwargs["write"])
+            yield None, cursor
+
+        with patch.object(user_db, "database_cursor", database_cursor):
+            self.assertEqual(user_db.migrate_legacy_image_skins(), 12)
+
+        sql, args = cursor.execute.call_args.args
+        self.assertIn("JSON_SET", sql)
+        self.assertIn("JSON_UNQUOTE(JSON_EXTRACT", sql)
+        self.assertEqual(
+            args,
+            ('$.image_skin', '"origin"', '$.image_skin', 'claude', 'default'),
+        )
+
     def test_editor_submits_only_changed_fields(self):
         editor = (Path(__file__).resolve().parents[1] / "assets/admin-user-editor.js").read_text()
         script = '''

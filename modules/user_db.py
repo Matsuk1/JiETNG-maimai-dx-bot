@@ -41,6 +41,25 @@ def init_users_table() -> None:
         logger.exception("[UserDB] Failed to initialize users table")
 
 
+def migrate_legacy_image_skins() -> int:
+    """Replace retired Claude/default user selections with Origin."""
+    try:
+        with database_cursor(write=True) as (_, cursor):
+            cursor.execute(
+                "UPDATE users SET data = JSON_SET(data, %s, CAST(%s AS JSON)), "
+                "updated_at = CURRENT_TIMESTAMP "
+                "WHERE JSON_UNQUOTE(JSON_EXTRACT(data, %s)) IN (%s, %s)",
+                ('$.image_skin', _encode_json('origin'), '$.image_skin',
+                 'claude', 'default'),
+            )
+            migrated = cursor.rowcount
+        logger.info("[UserDB] Migrated %s legacy image skin selections to Origin", migrated)
+        return migrated
+    except Exception:
+        logger.exception("[UserDB] Failed to migrate legacy image skin selections")
+        return 0
+
+
 def load_all_users() -> dict:
     """Load all users as a ``{user_id: data}`` mapping."""
     try:

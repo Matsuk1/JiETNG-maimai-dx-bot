@@ -5,10 +5,12 @@ from modules.images import skins as image_skins
 from modules.images.renderer import template
 
 
-def test_default_skin_is_presented_as_paper_without_changing_its_id():
-    default_skin = image_skins.available_skins()[0]
-    assert default_skin['id'] == 'default'
-    assert default_skin['label'] == 'Paper'
+def test_retired_default_skin_is_replaced_by_origin():
+    skins = image_skins.available_skins()
+    assert {skin['id'] for skin in skins} == {'origin', 'glass'}
+    assert image_skins.normalize_skin('default') == 'origin'
+    assert image_skins.normalize_skin('claude') == 'origin'
+    assert image_skins.skin_config('default')['id'] == 'default'
 
 
 def test_registered_overrides_fallback_and_path_safety(tmp_path):

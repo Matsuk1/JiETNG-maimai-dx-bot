@@ -58,7 +58,8 @@ python scripts/compare_image_migration.py artifacts/image-migration
 调试台可切换皮肤并记住浏览器选择，递归监听皮肤模板修改。
 成绩列表、卡片、封面、单曲、资料、进度、版本、识别结果和合成页脚均已接入。
 后台图标和 404 占位图不参与皮肤切换。用户在 settings 中选择皮肤，
-选择保存在现有用户 JSON 的 `image_skin` 字段，无需数据库表迁移。
+选择保存在现有用户 JSON 的 `image_skin` 字段。启动时会把旧的 `claude` 和
+`default` 选择一次性迁移为 `origin`，读取遗漏的旧值时也会兼容归一化。
 LINE 图片命令、好友/提及查询、识别结果与带用户的图片 API 会自动读取选择；
 提及他人时使用请求者的皮肤。没有用户身份的接口保持默认皮肤。
 业务生成器仍可传入 `skin`；组合调用也可用 `with use_skin("glass"):`。
@@ -72,7 +73,7 @@ LINE 图片命令、好友/提及查询、识别结果与带用户的图片 API 
 generate_records_picture(up_songs, down_songs, title="B50", skin="glass")
 ```
 
-`uses_background` 区分使用用户背景图和自带背景的皮肤。默认皮肤和 Glass
+`uses_background` 区分使用用户背景图和自带背景的皮肤。Glass
 设为 `true`，沿用用户背景开关、图片、模糊和遮罩。新皮肤若设为 `false`
 （或省略），合成时不加载用户背景图，settings 会停用背景区域并保留原设置。
 Glass 页面自身透明，背景只在最后合成时应用一次；关闭背景时使用默认底色。

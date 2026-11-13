@@ -65,14 +65,21 @@ def test_settings_roundtrip_and_invalid_skin_fallback(tmp_path):
     assert "copyBtn.textContent = t.importTokenCopy" not in html
     assert "el.textContent = pt.revokeBtn" not in html
     client.post('/linebot/settings?token=test',data={'image_skin':'../../private'})
-    assert user['image_skin']=='default'
+    assert user['image_skin']=='origin'
 
 
-def test_user_without_skin_uses_warm_default():
+def test_user_without_skin_uses_origin():
     from modules.images.skins import user_skin
     with patch('modules.user_manager.get_user', return_value={}):
-        assert DEFAULT_USER_SKIN == 'claude'
-        assert user_skin('user') == 'claude'
+        assert DEFAULT_USER_SKIN == 'origin'
+        assert user_skin('user') == 'origin'
+
+
+def test_origin_has_no_claude_branding():
+    skin = next(item for item in available_skins() if item['id'] == 'origin')
+    assert skin['label'] == 'Origin'
+    records = (ROOT / 'templates/images/skins/origin/records.html').read_text()
+    assert 'CLAUDE' not in records
 
 
 def test_async_request_skin_and_nested_target_are_isolated():

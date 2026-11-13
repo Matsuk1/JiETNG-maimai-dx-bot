@@ -13,11 +13,14 @@ from pathlib import Path
 
 TEMPLATES = Path(__file__).resolve().parents[2] / 'templates' / 'images'
 SKINS = TEMPLATES / 'skins'
-DEFAULT_USER_SKIN = 'claude'
+DEFAULT_USER_SKIN = 'origin'
+LEGACY_USER_SKINS = {'claude', 'default'}
+_BASE_SKIN_CONFIG = dict(id='default', label='Paper', uses_background=True,
+                         templates=[])
 
 
 def available_skins():
-    skins = [dict(id='default', label='Paper', uses_background=True, templates=[])]
+    skins = []
     for manifest in sorted(SKINS.glob('*/skin.json')):
         skin_id = manifest.parent.name
         if not re.fullmatch(r'[a-z0-9_-]+', skin_id) or skin_id == 'default':
@@ -72,10 +75,19 @@ def skinnable(function):
 
 def skin_config(skin=None):
     selected = current_skin() if skin is None else skin
-    return next((item for item in available_skins() if item['id'] == selected), available_skins()[0])
+    if selected == 'default':
+        return _BASE_SKIN_CONFIG
+    if selected == 'claude':
+        selected = DEFAULT_USER_SKIN
+    skins = available_skins()
+    return next((item for item in skins if item['id'] == selected),
+                next((item for item in skins if item['id'] == DEFAULT_USER_SKIN),
+                     _BASE_SKIN_CONFIG))
 
 
 def normalize_skin(skin):
+    if skin in LEGACY_USER_SKINS:
+        return DEFAULT_USER_SKIN
     return skin_config(skin)['id']
 
 
